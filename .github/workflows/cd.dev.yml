@@ -5,16 +5,16 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Build image
-        run: docker build -t anchor-python-bp-dev:latest -f Dockerfile .
+        run: docker build -t aivideo-dev:latest -f Dockerfile .
 
       - name: Save image 
-        run: docker save anchor-python-bp-dev:latest | gzip > dev.tar.gz
+        run: docker save aivideo-dev:latest | gzip > aivideo-dev.tar.gz
 
       - name: Copy image to server
         uses: appleboy/scp-action@v0.1.7
@@ -22,8 +22,8 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
-          source: "dev.tar.gz"
-          target: "/home/${{ secrets.USERNAME }}/boilerplate-python/dev_source_code"
+          source: "aivideo-dev.tar.gz"
+          target: "/home/${{ secrets.USERNAME }}/aivideo_be/dev"
  
       - name: Deploy image on server
         uses: appleboy/ssh-action@v0.1.8
@@ -32,9 +32,9 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd /home/${{ secrets.USERNAME }}/boilerplate-python/dev_source_code
+            cd /home/${{ secrets.USERNAME }}/aivideo_be/dev
             git pull origin dev
-            docker load --input dev.tar.gz
+            docker load --input aivideo-dev.tar.gz
             docker compose -f docker-compose.yml up -d
-            rm -f dev.tar.gz
+            rm -f aivideo-dev.tar.gz
 
