@@ -52,7 +52,7 @@ class UserData(BaseModel):
     is_active: bool
     is_deleted: bool
     is_verified: bool
-    is_super_admin: bool
+    is_superadmin: bool
     created_at: datetime
     updated_at: datetime
 
@@ -83,7 +83,7 @@ class AdminCreateUser(BaseModel):
     is_active: bool = False
     is_deleted: bool = False
     is_verified: bool = False
-    is_super_admin: bool = False
+    is_superadmin: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -129,35 +129,3 @@ class ChangePasswordSchema(BaseModel):
 
     old_password: str
     new_password: str
-
-
-class ChangePwdRet(BaseModel):
-    """schema for returning change password response"""
-
-    status_code: int
-    message: str
-
-
-class MagicLinkRequest(BaseModel):
-    """Schema for magic link creation"""
-
-    email: EmailStr
-
-
-class MagicLinkResponse(BaseModel):
-    """Schema for magic link respone"""
-
-    message: str
-
-class UserRoleSchema(BaseModel):
-    """Schema for user role"""
-
-    role: str
-    user_id: str
-    org_id: str
-
-    @field_validator("role")
-    def role_validator(cls, value):
-        if value not in ["admin", "user", "guest", "owner"]:
-            raise ValueError("Role has to be one of admin, guest, user, or owner")
-        return value
