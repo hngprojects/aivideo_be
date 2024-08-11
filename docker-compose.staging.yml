@@ -1,8 +1,8 @@
 services:
-  app_staging:
-    image: anchor-python-bp-staging:latest
+  aivideo_app_staging:
+    image: aivideo-staging:latest
     command: ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 7001 --reload"]
-    container_name: app_staging
+    container_name: aivideo_staging
     networks:
       - hng-network
     restart: unless-stopped
@@ -12,14 +12,14 @@ services:
     volumes:
       - .env:/app/.env    
     depends_on:
-      - staging_db
+      - aivideo_staging_db
 
-  staging_db:
+  aivideo_staging_db:
     image: postgres:14.12
-    container_name: staging_db
+    container_name: aivideo_staging_db
     restart: always
     volumes:
-      - staging_db:/var/lib/postgresql/data
+      - aivideo_staging_db:/var/lib/postgresql/data
       - .env:/app/.env
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD?Variable not set}
@@ -29,7 +29,7 @@ services:
       - hng-network
 
 volumes:
-  staging_db:
+  aivideo_staging_db:
 
 networks:
   hng-network:
