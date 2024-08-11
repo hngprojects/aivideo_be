@@ -1,8 +1,8 @@
 services:
-  app_prod:
-    image: anchor-python-bp-prod:latest
+  aivideo_app_prod:
+    image: aivideo-prod:latest
     command: ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 7001 --reload"]
-    container_name: app_prod
+    container_name: aivideo_prod
     networks:
       - hng-network
     restart: unless-stopped
@@ -12,14 +12,14 @@ services:
     volumes:
       - .env:/app/.env    
     depends_on:
-      - prod_db
+      - aivideo_prod_db
 
-  prod_db:
+  aivideo_prod_db:
     image: postgres:14.12
-    container_name: prod_db
+    container_name: aivideo_prod_db
     restart: always
     volumes:
-      - prod_db:/var/lib/postgresql/data
+      - aivideo_prod_db:/var/lib/postgresql/data
       - .env:/app/.env
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD?Variable not set}
@@ -29,7 +29,7 @@ services:
       - hng-network
 
 volumes:
-  prod_db:
+  aivideo_prod_db:
 
 networks:
   hng-network:
