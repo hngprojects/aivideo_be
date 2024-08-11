@@ -3,7 +3,6 @@ from sqlalchemy import Column, String, ARRAY, DECIMAL
 from sqlalchemy.orm import relationship
 from api.v1.models.base_model import BaseTableModel
 
-
 class BillingPlan(BaseTableModel):
     __tablename__ = 'billing_plans'
 
