@@ -5,16 +5,16 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Build image
-        run: docker build -t anchor-python-bp-prod:latest -f Dockerfile .
+        run: docker build -t aivideo-prod:latest -f Dockerfile .
 
       - name: Save image 
-        run: docker save anchor-python-bp-prod:latest | gzip > prod.tar.gz
+        run: docker save aivideo-prod:latest | gzip > aivideo-prod.tar.gz
 
       - name: Copy image to server
         uses: appleboy/scp-action@v0.1.7
@@ -22,8 +22,8 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
-          source: "prod.tar.gz"
-          target: "/home/${{ secrets.USERNAME }}/boilerplate-python/prod_source_code"
+          source: "aivideo-prod.tar.gz"
+          target: "/home/${{ secrets.USERNAME }}/aivideo_be/prod"
  
       - name: Deploy image on server
         uses: appleboy/ssh-action@v0.1.8
@@ -32,8 +32,8 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd /home/${{ secrets.USERNAME }}/boilerplate-python/prod_source_code
+            cd /home/${{ secrets.USERNAME }}/aivideo_be/prod
             git pull origin main
-            docker load --input prod.tar.gz
+            docker load --input aivideo-prod.tar.gz
             docker compose -f docker-compose.prod.yml up -d
-            rm -f prod.tar.gz
+            rm -f aivideo-prod.tar.gz
