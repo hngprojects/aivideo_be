@@ -35,5 +35,5 @@ jobs:
             cd /home/${{ secrets.USERNAME }}/aivideo_be/staging
             git pull origin staging
             docker load --input aivideo-staging.tar.gz
-            docker compose -f docker-compose.staging.yml up -d
+            docker compose -f compose.yml -f compose.staging.yml up -d
             rm -f aivideo-staging.tar.gz
