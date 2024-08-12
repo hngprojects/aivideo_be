@@ -36,7 +36,7 @@ git add .
 git stash
 git checkout $BRANCH
 git pull origin $BRANCH
-docker stack deploy -c compose.yaml -c compose/compose.${ENV}.yaml core-product-be-${ENV}-stack
+docker stack deploy -c compose.yaml -c compose/compose.${ENV}.yaml  core-product-be-${ENV}-stack 
 rm -f aivideo-${ENV}.tar.gz
 
 

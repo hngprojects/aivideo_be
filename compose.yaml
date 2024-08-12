@@ -22,14 +22,15 @@ services:
   db:
     image: postgres:14.12
     restart: always
-    env_file:
-      - .env.dev
+    # env_file:
+    #   - .env.dev
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD?Variable not set}
       - POSTGRES_USER=${DB_USER?Variable not set}
       - POSTGRES_DB=${DB_NAME?Variable not set}
     volumes:
       - db:/var/lib/postgresql/data
+      - ./env.dev:/.env
     networks:
       - hng-network
     healthcheck:
