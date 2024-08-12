@@ -22,3 +22,9 @@ class BlogService:
         db.commit()
         db.refresh(new_blogpost)
         return new_blogpost
+    
+    def fetch_all(self):
+        """Fetch all blog posts"""
+
+        blogs = self.db.query(Blog).filter(Blog.is_deleted == False).all()
+        return blogs

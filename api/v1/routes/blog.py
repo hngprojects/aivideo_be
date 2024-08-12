@@ -35,3 +35,14 @@ def create_blog(
         status_code=201,
         data=jsonable_encoder(new_blogpost),
     )
+
+@blog.get("/", response_model=success_response)
+def get_all_blogs(db: Session = Depends(get_db), limit: int = 10, skip: int = 0):
+    """Endpoint to get all blogs"""
+
+    return paginated_response(
+        db=db,
+        model=Blog,
+        limit=limit,
+        skip=skip,
+    )
