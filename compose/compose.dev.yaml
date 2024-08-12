@@ -3,10 +3,10 @@ name: aivideo-dev
 services:
   app:
     env_file:
-      - .env.dev
+      - ./.env.dev
     ports:
       - 7100:7001
 
   db:
     env_file:
-      - .env.dev
+      - ./.env.dev
