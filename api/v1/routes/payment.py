@@ -1,5 +1,5 @@
 from fastapi import Depends, APIRouter, status, HTTPException, Request
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from typing import Annotated
 
@@ -19,9 +19,9 @@ from api.v1.models import User
 payment = APIRouter(prefix="/payments", tags=["Payments"])
 
 
-@payment.get("/configure/{billing_plan_id}/{payment_gateway}", 
+@payment.get("/initiate/{billing_plan_id}/{payment_gateway}", 
              status_code=status.HTTP_200_OK)
-def configure_payment(
+def initiate_payment(
     billing_plan_id: str,
     payment_gateway: str,
     request: Request,
@@ -41,10 +41,10 @@ def configure_payment(
     # GET billing plan
     bill_plan = bp_service.fetch(db, billing_plan_id)
 
-    # CONFIGURE return url
-    redirect_url = request.url_for(
-        'handle_payment', billing_plan_id=billing_plan_id, 
-        payment_gateway=payment_gateway)
+    # # CONFIGURE return url
+    # redirect_url = request.url_for(
+    #     'handle_payment', billing_plan_id=billing_plan_id, 
+    #     payment_gateway=payment_gateway)
     
     # GENERATE transaction reference
     tx_ref = f"{current_user.id}#{datetime.now(tz=timezone.utc).timestamp()}"
@@ -53,10 +53,11 @@ def configure_payment(
     payment_data = {
         "tx_ref": tx_ref,
         "price": bill_plan.price,
-        "redirect_url": f"{redirect_url}",
+        # "redirect_url": f"{redirect_url}",
         "currency": bill_plan.currency,
         "user_email": current_user.email,
         "public_key": settings.RAVE_PUBLIC_KEY,
+        "private_key": settings.RAVE,
         "payment_title": "Convey AI Video Suites",
         "payment_description": "User subscription payment",
         "action_url": pg_service.FLUTTERWAVE_ONE_OFF_PAY_URL,
@@ -71,12 +72,13 @@ def configure_payment(
     )
 
 
-@payment.post("/handle/{billing_plan_id}/{payment_gateway}", 
+@payment.post("/complete/{billing_plan_id}/{payment_gateway}", 
               response_model=CreatePaymentResponse, 
               status_code=status.HTTP_201_CREATED)
-def handle_payment(
+def complete_payment(
     billing_plan_id: str,
     payment_gateway: str,
+    handle_payment: str,
     request: Request,
     payment_schema: CreatePaymentSchema,
     current_user: Annotated[User, Depends(user_service.get_current_user)],
@@ -109,7 +111,6 @@ def handle_payment(
     #     amount=bill_plan.amount,
     #     currency=bill_plan.currency,
     #     transaction_id=resp_d['transaction_id']
-
     # )
 
     # CREATE payment

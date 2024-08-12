@@ -6,7 +6,6 @@ from typing import Any, Optional
 from decimal import Decimal
 from decouple import config
 
-from api.utils.settings import settings
 from api.v1.models.payment import Payment
 from api.v1.models import User, BillingPlan
 from api.utils.db_validators import check_model_existence
