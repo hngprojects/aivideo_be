@@ -1,0 +1,10 @@
+name: aivideo-staging
+
+services:
+  app:
+    image: ${COMPOSE_PROJECT_NAME}:latest
+    ports:
+      - 7102:7001  
+
+
+
