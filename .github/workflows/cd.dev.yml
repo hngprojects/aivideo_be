@@ -23,7 +23,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           source: "aivideo-dev.tar.gz"
-          target: "/home/${{ secrets.USERNAME }}/aivideo_be/dev"
+          target: "/home/${{ secrets.USERNAME }}/aivideo_be"
 
       - name: Deploy image on server
         uses: appleboy/ssh-action@v0.1.8
