@@ -1,5 +1,5 @@
 # Use an official Python runtime as the base image
-FROM python:3.12-alpine
+FROM python:3.12.4-alpine
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
