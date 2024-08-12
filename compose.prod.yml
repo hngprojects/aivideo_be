@@ -1,0 +1,17 @@
+services:
+  aivideo_app_prod:
+    image: aivideo-prod:latest
+    ports:
+      - 7103:7001  
+    depends_on:
+      - aivideo_prod_db
+
+  aivideo_prod_db:
+    volumes:
+      - aivideo_prod_db:/var/lib/postgresql/data
+      - .env:/app/.env
+
+
+volumes:
+  aivideo_prod_db:
+

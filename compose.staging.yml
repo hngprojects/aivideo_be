@@ -1,0 +1,18 @@
+services:
+  aivideo_app_staging:
+    image: aivideo-staging:latest
+    ports:
+      - 7102:7001  
+    depends_on:
+      - aivideo_staging_db
+
+  aivideo_staging_db:
+    volumes:
+      - aivideo_staging_db:/var/lib/postgresql/data
+      - .env:/app/.env
+
+
+volumes:
+  aivideo_staging_db:
+
+
