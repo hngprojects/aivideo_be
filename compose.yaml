@@ -26,6 +26,8 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD?Variable not set}
       - POSTGRES_USER=${DB_USER?Variable not set}
       - POSTGRES_DB=${DB_NAME?Variable not set}
+    volumes:
+      - db:/var/lib/postgresql/data
     networks:
       - hng-network
     healthcheck:

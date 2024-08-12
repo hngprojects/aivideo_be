@@ -2,14 +2,11 @@ name: aivideo-dev
 
 services:
   app:
-    image: ${COMPOSE_PROJECT_NAME}:latest
     env_file:
       - .env.dev
     ports:
       - 7100:7001
 
   db:
-    volumes:
-      - dev_db:/var/lib/postgresql/data
     env_file:
       - .env.dev
