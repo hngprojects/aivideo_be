@@ -33,4 +33,5 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           script: |
             cd /home/${{ secrets.USERNAME }}/aivideo_be
+            chmod +x deploy.sh
             ./deploy.sh dev
