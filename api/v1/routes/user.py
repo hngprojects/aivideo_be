@@ -7,8 +7,11 @@ from api.utils.success_response import success_response
 from api.v1.models.user import User
 from api.v1.schemas.user import (
     ChangePasswordSchema,
-    AllUsersResponse, UserUpdate,
-    AdminCreateUserResponse, AdminCreateUser
+    AllUsersResponse,
+    UserUpdate,
+    AdminCreateUserResponse,
+    AdminCreateUser,
+    UserStatResponse
 )
 from api.db.database import get_db
 from api.v1.services.user import user_service
@@ -40,16 +43,20 @@ def get_current_user_details(
     )
 
 
-@user_router.get('/delete', status_code=200)
-async def delete_account(request: Request, db: Session = Depends(get_db), current_user: User = Depends(user_service.get_current_user)):
-    '''Endpoint to delete a user account'''
+@user_router.get("/delete", status_code=200)
+async def delete_account(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user),
+):
+    """Endpoint to delete a user account"""
 
     # Delete current user
     user_service.delete(db=db)
 
     return success_response(
         status_code=200,
-        message='User deleted successfully',
+        message="User deleted successfully",
     )
 
 
@@ -66,41 +73,58 @@ async def change_password(
     return success_response(status_code=200, message="Password changed successfully")
 
 
-@user_router.patch("/",status_code=status.HTTP_200_OK)
+@user_router.patch("/", status_code=status.HTTP_200_OK)
 def update_current_user(
-    current_user : Annotated[User , Depends(user_service.get_current_user)],
-    schema : UserUpdate,
-    db : Session = Depends(get_db),
+    current_user: Annotated[User, Depends(user_service.get_current_user)],
+    schema: UserUpdate,
+    db: Session = Depends(get_db),
 ):
-
-    user = user_service.update(db=db, schema= schema, current_user=current_user)
+    user = user_service.update(db=db, schema=schema, current_user=current_user)
 
     return success_response(
         status_code=status.HTTP_200_OK,
-        message='User Updated Successfully',
-        data= jsonable_encoder(
+        message="User Updated Successfully",
+        data=jsonable_encoder(
             user,
-            exclude=['password', 'is_superadmin', 'is_deleted', 'is_verified', 'updated_at', 'created_at', 'is_active']
-        )
+            exclude=[
+                "password",
+                "is_superadmin",
+                "is_deleted",
+                "is_verified",
+                "updated_at",
+                "created_at",
+                "is_active",
+            ],
+        ),
     )
 
 
 @user_router.patch("/{user_id}", status_code=status.HTTP_200_OK)
 def update_user(
-    user_id : str,
-    current_user : Annotated[User , Depends(user_service.get_current_super_admin)],
-    schema : UserUpdate,
-    db : Session = Depends(get_db)
+    user_id: str,
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    schema: UserUpdate,
+    db: Session = Depends(get_db),
 ):
-    user = user_service.update(db=db, schema=schema, id=user_id, current_user=current_user)
+    user = user_service.update(
+        db=db, schema=schema, id=user_id, current_user=current_user
+    )
 
     return success_response(
         status_code=status.HTTP_200_OK,
-        message='User Updated Successfully',
-        data= jsonable_encoder(
+        message="User Updated Successfully",
+        data=jsonable_encoder(
             user,
-            exclude=['password', 'is_superadmin', 'is_deleted', 'is_verified', 'updated_at', 'created_at', 'is_active']
-        )
+            exclude=[
+                "password",
+                "is_superadmin",
+                "is_deleted",
+                "is_verified",
+                "updated_at",
+                "created_at",
+                "is_active",
+            ],
+        ),
     )
 
 
@@ -129,15 +153,17 @@ def delete_user(
     # soft-delete the user
     user_service.delete(db=db, id=user_id)
 
-@user_router.get('/', status_code=status.HTTP_200_OK, response_model=AllUsersResponse)
+
+@user_router.get("/", status_code=status.HTTP_200_OK, response_model=AllUsersResponse)
 async def get_users(
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
     db: Annotated[Session, Depends(get_db)],
-    page: int = 1, per_page: int = 10,
+    page: int = 1,
+    per_page: int = 10,
     is_active: Optional[bool] = Query(None),
     is_deleted: Optional[bool] = Query(None),
     is_verified: Optional[bool] = Query(None),
-    is_superadmin: Optional[bool] = Query(None)
+    is_superadmin: Optional[bool] = Query(None),
 ):
     """
     Retrieves all users.
@@ -154,20 +180,23 @@ async def get_users(
         UserData
     """
     query_params = {
-        'is_active': is_active,
-        'is_deleted': is_deleted,
-        'is_verified': is_verified,
-        'is_superadmin': is_superadmin,
+        "is_active": is_active,
+        "is_deleted": is_deleted,
+        "is_verified": is_verified,
+        "is_superadmin": is_superadmin,
     }
     return user_service.fetch_all(db, page, per_page, **query_params)
 
-@user_router.post("/", status_code=status.HTTP_201_CREATED, response_model=AdminCreateUserResponse)
+
+@user_router.post(
+    "/", status_code=status.HTTP_201_CREATED, response_model=AdminCreateUserResponse
+)
 def admin_registers_user(
     user_request: AdminCreateUser,
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    '''
+    """
     Endpoint for an admin to register a user.
     Args:
         user_request: the body containing the user details to register
@@ -175,40 +204,59 @@ def admin_registers_user(
         db: database Session object
     Returns:
         AdminCreateUserResponse: The full details of the newly created user
-    '''
+    """
     return user_service.super_admin_create_user(db, user_request)
-    
 
-@user_router.get('/{role_id}/roles', status_code=status.HTTP_200_OK)
+
+@user_router.get("/{role_id}/roles", status_code=status.HTTP_200_OK)
 async def get_users_by_role(
-    role_id: Literal["admin", "user", "guest", "owner"], 
-    db: Session = Depends(get_db), 
-    current_user: User = Depends(user_service.get_current_user)
+    role_id: Literal["admin", "user", "guest", "owner"],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user),
 ):
-    '''Endpoint to get all users by role'''
+    """Endpoint to get all users by role"""
     users = user_service.get_users_by_role(db, role_id, current_user)
 
     return success_response(
         status_code=200,
-        message='Users retrieved successfully',
-        data=jsonable_encoder(users)
+        message="Users retrieved successfully",
+        data=jsonable_encoder(users),
     )
 
 
 @user_router.get("/{user_id}", status_code=status.HTTP_200_OK)
 def get_user_by_id(
-    user_id : str,
-    db : Session = Depends(get_db),
-    current_user: User = Depends(user_service.get_current_user)
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user),
 ):
-    
     user = user_service.get_user_by_id(db=db, id=user_id)
 
     return success_response(
         status_code=status.HTTP_200_OK,
-        message='User retrieved successfully',
-        data = jsonable_encoder(
-            user, 
-            exclude=['password', 'is_superadmin', 'is_deleted', 'is_verified', 'updated_at', 'created_at', 'is_active']
-        )
+        message="User retrieved successfully",
+        data=jsonable_encoder(
+            user,
+            exclude=[
+                "password",
+                "is_superadmin",
+                "is_deleted",
+                "is_verified",
+                "updated_at",
+                "created_at",
+                "is_active",
+            ],
+        ),
     )
+
+
+@user_router.get(
+    "/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
+)
+def get_user_statistics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_super_admin),
+):
+    stats_data = user_service.get_users_statistics(db)
+
+    return success_response(status.HTTP_200_OK, "User statistics retrieved successfully", data=stats_data)

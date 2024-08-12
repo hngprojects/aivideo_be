@@ -129,3 +129,15 @@ class ChangePasswordSchema(BaseModel):
 
     old_password: str
     new_password: str
+
+class UserStatData(BaseModel):
+    total_users: int
+    active_users: int
+    inactive_users: int
+    deleted: int
+
+class UserStatResponse(BaseModel):
+    status: str
+    message: str
+    data: UserStatData
+    status_code: int

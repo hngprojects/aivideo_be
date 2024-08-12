@@ -476,5 +476,26 @@ class UserService(Service):
             random.choices(string.digits, k=6)
         ), datetime.utcnow() + timedelta(minutes=10)
 
+    def get_users_statistics(self, db: Session):
+        """
+        Fetch stats for all users in the database
+        Args:
+            db: database Session object
+        """
+
+        query = db.query(User)
+
+        total_user_count = query.count()
+        active_user_count = query.filter(User.is_active is True).count()
+        inactive_user_count = query.filter(User.is_active is False).count()
+        deleted_user_count = query.filter(User.is_deleted is True).count()
+
+        return {
+            "total_users": total_user_count,
+            "active_users": active_user_count,
+            "inactive_users": inactive_user_count,
+            "deleted_users": deleted_user_count
+        }
+
 
 user_service = UserService()
