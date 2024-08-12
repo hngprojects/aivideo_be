@@ -5,16 +5,6 @@ services:
     image: ${COMPOSE_PROJECT_NAME}:latest
     ports:
       - 7103:7001  
-    depends_on:
-      db:
-        condition: service_healthy
-
-  db:
-    volumes:
-      - db:/var/lib/postgresql/data
-      - .env:/app/.env
 
 
-volumes:
-  db:
 
