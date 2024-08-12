@@ -4,13 +4,18 @@ services:
     ports:
       - 7102:7001  
     depends_on:
-      - aivideo_staging_db
+      aivideo_staging_db
+        condition: service_healthy
 
   aivideo_staging_db:
     volumes:
       - aivideo_staging_db:/var/lib/postgresql/data
       - .env:/app/.env
-
+    healthcheck:
+      test: pg_isready -U pythonteam -d python_staging_db
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   aivideo_staging_db:
