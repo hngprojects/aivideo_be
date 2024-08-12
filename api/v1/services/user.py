@@ -16,13 +16,9 @@ from api.core.dependencies.email_sender import send_email
 from api.db.database import get_db
 from api.utils.settings import settings
 from api.utils.db_validators import check_model_existence
-from api.v1.models.associations import user_organisation_association
 from api.v1.models.user import User
 from api.v1.models.data_privacy import DataPrivacySetting
-from api.v1.models.token_login import TokenLogin
 from api.v1.schemas import user
-from api.v1.schemas import token
-from api.v1.services.notification_settings import notification_setting_service
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -151,7 +147,7 @@ class UserService(Service):
         db.refresh(user)
 
         # # Create notification settings directly for the user
-        notification_setting_service.create(db=db, user=user)
+        # notification_setting_service.create(db=db, user=user)
 
         # create data privacy setting
 
@@ -223,7 +219,7 @@ class UserService(Service):
         db.refresh(user)
 
         # Set user to super admin
-        user.is_super_admin = True
+        user.is_superadmin = True
         db.commit()
 
         return user
@@ -236,7 +232,7 @@ class UserService(Service):
                 status_code=400,
                 detail="User with this email or username already exists",
             )
-        if current_user.is_super_admin and id is not None:
+        if current_user.is_superadmin and id is not None:
             user = self.fetch(db=db, id=id)
         else:
             user = self.fetch(db=db, id=current_user.id)
@@ -467,38 +463,11 @@ class UserService(Service):
     ):
         """Get the current super admin"""
         user = self.get_current_user(db=db, access_token=token)
-        if not user.is_super_admin:
+        if not user.is_superadmin:
             raise HTTPException(
                 status_code=403,
                 detail="You do not have permission to access this resource",
             )
-        return user
-
-    def save_login_token(
-        self, db: Session, user: User, token: str, expiration: datetime
-    ):
-        """Save the token and expiration in the user's record"""
-
-        db.query(TokenLogin).filter(TokenLogin.user_id == user.id).delete()
-
-        token = TokenLogin(user_id=user.id, token=token, expiry_time=expiration)
-        db.add(token)
-        db.commit()
-        db.refresh(token)
-
-    def verify_login_token(self, db: Session, schema: token.TokenRequest):
-        """Verify the token and email combination"""
-
-        user = db.query(User).filter(User.email == schema.email).first()
-
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid email or token")
-
-        token = db.query(TokenLogin).filter(TokenLogin.user_id == user.id).first()
-
-        if token.token != schema.token or token.expiry_time < datetime.utcnow():
-            raise HTTPException(status_code=401, detail="Invalid email or token")
-
         return user
 
     def generate_token(self):
@@ -507,31 +476,5 @@ class UserService(Service):
             random.choices(string.digits, k=6)
         ), datetime.utcnow() + timedelta(minutes=10)
 
-
-    def get_users_by_role(self, db: Session, role_id: str, current_user: User):
-        """Function to get all users by role"""
-        if role_id == "" or role_id is None:
-            raise HTTPException(
-                status_code=400, 
-                detail="Role ID is required"
-            )
-
-        user_roles = db.query(user_organisation_association).filter(user_organisation_association.c.user_id == current_user.id, user_organisation_association.c.role.in_(['admin', 'owner'])).all()
-
-        if len(user_roles) == 0:
-            raise HTTPException(
-                status_code=403, 
-                detail="Permission denied. Admin access required."
-            )
-
-        users = db.query(User).join(user_organisation_association).filter(user_organisation_association.c.role == role_id).all()
-
-        if len(users) == 0:
-            raise HTTPException(
-                status_code=404, 
-                detail="No users found for this role"
-            )
-
-        return users
 
 user_service = UserService()

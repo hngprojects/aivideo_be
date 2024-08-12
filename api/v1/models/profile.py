@@ -15,14 +15,9 @@ class Profile(BaseTableModel):
     username = Column(String, nullable=True)
     pronouns = Column(String, nullable=True)
     job_title = Column(String, nullable=True)
-    department = Column(String, nullable=True)
-    social = Column(Text, nullable=True)  # Assuming JSON or similar data type
+    social = Column(Text, nullable=True)
     bio = Column(Text, nullable=True)
     phone_number = Column(String, nullable=True)
-    avatar_url = Column(String, nullable=True)
-    recovery_email = Column(String, nullable=True)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     user = relationship("User", back_populates="profile")
 
@@ -31,12 +26,9 @@ class Profile(BaseTableModel):
             "id": self.id,
             "pronouns": self.pronouns,
             "job_title": self.job_title,
-            "department": self.department,
             "social": self.social,
             "bio": self.bio,
             "phone_number": self.phone_number,
-            "avatar_url": self.avatar_url,
-            "recovery_email": self.recovery_email,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "user": self.user.to_dict() if self.user else None,

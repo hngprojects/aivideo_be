@@ -7,3 +7,4 @@ class PrivacyPolicy(BaseTableModel):
     __tablename__ = "privacy_policies"
     
     content = Column(Text, nullable=False)
+    

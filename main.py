@@ -14,8 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware  # required by google oauth
 
-from api.utils.json_response import JsonResponseDict
 from api.utils.logger import logger
+from api.utils.success_response import success_response
 from api.v1.routes import api_version_one
 from api.utils.settings import settings
 
@@ -58,8 +58,10 @@ app.include_router(api_version_one)
 
 @app.get("/", tags=["Home"])
 async def get_root(request: Request) -> dict:
-    return JsonResponseDict(
-        message="Welcome to API", status_code=status.HTTP_200_OK, data={"URL": ""}
+    return success_response(
+        message="Welcome to API", 
+        status_code=status.HTTP_200_OK, 
+        data={"URL": ""}
     )
 
 
@@ -104,7 +106,7 @@ async def validation_exception(request: Request, exc: RequestValidationError):
 
 
 @app.exception_handler(IntegrityError)
-async def exception(request: Request, exc: IntegrityError):
+async def integrity_exception(request: Request, exc: IntegrityError):
     """Integrity error exception handlers"""
 
     logger.exception(f"Exception occured; {exc}")
@@ -133,11 +135,6 @@ async def exception(request: Request, exc: Exception):
             "message": f"An unexpected error occurred: {exc}",
         },
     )
-
-
-STATIC_DIR = "static/profile_images"
-os.makedirs(STATIC_DIR, exist_ok=True)
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", port=7001, reload=True)
