@@ -39,3 +39,46 @@ async def create_faq(
         message="Successfully created FAQ",
         status_code=status.HTTP_201_CREATED,
     )
+
+@faq.get("", response_model=success_response, status_code=200)
+async def get_all_faqs(db: Session = Depends(get_db),):
+    """Endpoint to get all FAQs
+
+    Args:
+        db (Session, optional): The db session object. Defaults to Depends(get_db).
+    """    
+    
+    faqs = faq_service.fetch_all(db=db)
+    faqs_filtered = list(
+        map(lambda x: FAQBase.model_validate(x), faqs)
+    )
+    if len(faqs_filtered) == 0:
+        faqs_filtered = None
+
+    return success_response(
+        status_code=200,
+        message="FAQs retrieved successfully",
+        data=jsonable_encoder(faqs_filtered),
+    )
+
+@faq.get("/{id}", response_model=success_response, status_code=200)
+async def get_single_faq(id: str, db: Session = Depends(get_db)):
+    """Endpoint to get a single FAQ
+
+    Args:
+        id (str): Faq ID
+        db (Session, optional): Defaults to Depends(get_db).
+
+    Raises:
+        HTTPException: 404 NOT FOUND (Faq to be retrieved cannot be found)
+    """
+    faq = faq_service.fetch(db, faq_id=id)
+
+    if faq == None:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+
+    return success_response(
+        data=jsonable_encoder(FAQBase.model_validate(faq)),
+        message="Successfully fetched FAQ",
+        status_code=status.HTTP_200_OK,
+    )
