@@ -1,5 +1,5 @@
 # Use an official Python runtime as the base image
-FROM python:3.10.13-alpine3.17
+FROM python:3.12.4-slim-bullseye
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -9,7 +9,7 @@ ENV PYTHONPATH=/app
 WORKDIR /app
 
 # Install system dependencies
-RUN apk add --no-cache curl
+# RUN apk add --no-cache curl
 
 #copy the requirements.txt file and install with pip
 COPY ./requirements.txt /app/requirements.txt
