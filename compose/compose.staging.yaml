@@ -1,0 +1,15 @@
+name: aivideo-staging
+
+services:
+  app:
+    image: ${COMPOSE_PROJECT_NAME}:latest
+    env_file:
+      - .env.staging
+    ports:
+      - 7102:7001
+
+  db:
+    volumes:
+      - staging_db:/var/lib/postgresql/data
+    env_file:
+      - .env.staging
