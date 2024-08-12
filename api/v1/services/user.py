@@ -486,15 +486,15 @@ class UserService(Service):
         query = db.query(User)
 
         total_user_count = query.count()
-        active_user_count = query.filter(User.is_active is True).count()
-        inactive_user_count = query.filter(User.is_active is False).count()
-        deleted_user_count = query.filter(User.is_deleted is True).count()
+        active_user_count = query.filter(User.is_active == True).count()
+        inactive_user_count = query.filter(User.is_active == False).count()
+        deleted_user_count = query.filter(User.is_deleted == True).count()
 
         return {
             "total_users": total_user_count,
             "active_users": active_user_count,
             "inactive_users": inactive_user_count,
-            "deleted_users": deleted_user_count
+            "deleted_users": deleted_user_count,
         }
 
 

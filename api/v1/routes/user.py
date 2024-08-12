@@ -11,7 +11,7 @@ from api.v1.schemas.user import (
     UserUpdate,
     AdminCreateUserResponse,
     AdminCreateUser,
-    UserStatResponse
+    UserStatResponse,
 )
 from api.db.database import get_db
 from api.v1.services.user import user_service
@@ -96,6 +96,22 @@ def update_current_user(
                 "is_active",
             ],
         ),
+    )
+
+
+@user_router.get(
+    "/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
+)
+def get_user_statistics(
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    stats_data = user_service.get_users_statistics(db=db)
+
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="User statistics retrieved successfully",
+        data=stats_data,
     )
 
 
@@ -248,15 +264,3 @@ def get_user_by_id(
             ],
         ),
     )
-
-
-@user_router.get(
-    "/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
-)
-def get_user_statistics(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(user_service.get_current_super_admin),
-):
-    stats_data = user_service.get_users_statistics(db)
-
-    return success_response(status.HTTP_200_OK, "User statistics retrieved successfully", data=stats_data)
