@@ -1,8 +1,8 @@
-"""initiali migration
+"""create tables
 
-Revision ID: 25f12e6e35be
+Revision ID: 3686a3d06c72
 Revises: 
-Create Date: 2024-08-11 18:20:14.985613
+Create Date: 2024-08-12 07:18:10.212654
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '25f12e6e35be'
+revision: str = '3686a3d06c72'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -107,7 +107,7 @@ def upgrade() -> None:
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('content', sa.String(), nullable=False, comment='has to be a markdown'),
     sa.Column('image_url', sa.String(), nullable=True),
-    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), server_default='false', nullable=True),
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
@@ -124,8 +124,8 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_terms_and_conditions_id'), 'terms_and_conditions', ['id'], unique=False)
     op.create_table('testimonials',
-    sa.Column('content', sa.Text(), nullable=False),
     sa.Column('client_name', sa.String(), nullable=False),
+    sa.Column('content', sa.Text(), nullable=False),
     sa.Column('rating', sa.Float(), nullable=False),
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
@@ -139,9 +139,9 @@ def upgrade() -> None:
     sa.Column('first_name', sa.String(), nullable=True),
     sa.Column('last_name', sa.String(), nullable=True),
     sa.Column('avatar_url', sa.String(), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=True),
-    sa.Column('is_superadmin', sa.Boolean(), nullable=True),
-    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), server_default='true', nullable=True),
+    sa.Column('is_superadmin', sa.Boolean(), server_default='false', nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), server_default='false', nullable=True),
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
@@ -249,11 +249,57 @@ def upgrade() -> None:
     sa.UniqueConstraint('user_id')
     )
     op.create_index(op.f('ix_profiles_id'), 'profiles', ['id'], unique=False)
+    op.create_table('projects',
+    sa.Column('user_id', sa.String(), nullable=True),
+    sa.Column('title', sa.String(), nullable=False),
+    sa.Column('description', sa.String(), nullable=True),
+    sa.Column('project_type', sa.String(), nullable=False),
+    sa.Column('file_url', sa.String(), nullable=False),
+    sa.Column('archived', sa.Boolean(), server_default='false', nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), server_default='false', nullable=True),
+    sa.Column('archived_at', sa.DateTime(), nullable=True),
+    sa.Column('id', sa.String(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_projects_id'), 'projects', ['id'], unique=False)
+    op.create_table('reviews',
+    sa.Column('user_id', sa.String(), nullable=True),
+    sa.Column('rating', sa.Float(), nullable=False, comment='1-5'),
+    sa.Column('remark', sa.String(), nullable=True),
+    sa.Column('id', sa.String(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_reviews_id'), 'reviews', ['id'], unique=False)
+    op.create_table('user_subscriptions',
+    sa.Column('billing_plan_id', sa.String(), nullable=True),
+    sa.Column('user_id', sa.String(), nullable=True),
+    sa.Column('start_date', sa.DateTime(), nullable=False),
+    sa.Column('end_date', sa.DateTime(), nullable=True),
+    sa.Column('id', sa.String(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.ForeignKeyConstraint(['billing_plan_id'], ['billing_plans.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_user_subscriptions_id'), 'user_subscriptions', ['id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_user_subscriptions_id'), table_name='user_subscriptions')
+    op.drop_table('user_subscriptions')
+    op.drop_index(op.f('ix_reviews_id'), table_name='reviews')
+    op.drop_table('reviews')
+    op.drop_index(op.f('ix_projects_id'), table_name='projects')
+    op.drop_table('projects')
     op.drop_index(op.f('ix_profiles_id'), table_name='profiles')
     op.drop_table('profiles')
     op.drop_index(op.f('ix_notifications_id'), table_name='notifications')

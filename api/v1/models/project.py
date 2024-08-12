@@ -11,8 +11,8 @@ class Project(BaseTableModel):
     description = Column(String, nullable=True)
     project_type = Column(String, nullable=False)
     file_url = Column(String, nullable=False)
-    archived = Column(Boolean, default=False)
-    is_deleted = Column(Boolean, default=False)
+    archived = Column(Boolean, server_default='false')
+    is_deleted = Column(Boolean, server_default='false')
     archived_at = Column(DateTime, nullable=True)
 
     user = relationship('User', back_populates='projects')

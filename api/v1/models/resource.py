@@ -12,4 +12,4 @@ class Resource(BaseTableModel):
     title = Column(String, nullable=False)
     content = Column(String, nullable=False, comment="has to be a markdown")
     image_url = Column(String)
-    is_deleted = Column(Boolean)
+    is_deleted = Column(Boolean, server_default='false')
