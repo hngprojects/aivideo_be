@@ -28,3 +28,11 @@ class BlogService:
 
         blogs = self.db.query(Blog).filter(Blog.is_deleted == False).all()
         return blogs
+    
+    def fetch(self, blog_id: str):
+        """Fetch a blog post by its ID"""
+
+        blog_post = self.db.query(Blog).filter(Blog.id == blog_id).first()
+        if not blog_post:
+            raise HTTPException(status_code=404, detail="Post not found")
+        return blog_post

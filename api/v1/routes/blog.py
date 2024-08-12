@@ -12,7 +12,8 @@ from api.utils.success_response import success_response
 from api.v1.models.user import User
 from api.v1.models.blog import Blog
 from api.v1.schemas.blog import (
-    BlogCreate
+    BlogCreate,
+    BlogPostResponse
 )
 from api.v1.services.blog import BlogService
 from api.v1.services.user import user_service
@@ -45,4 +46,29 @@ def get_all_blogs(db: Session = Depends(get_db), limit: int = 10, skip: int = 0)
         model=Blog,
         limit=limit,
         skip=skip,
+    )
+
+@blog.get("/{id}", response_model=BlogPostResponse)
+def get_blog_by_id(id: str, db: Session = Depends(get_db)):
+    """
+    Retrieve a blog post by its Id.
+
+    Args:
+        id (str): The ID of the blog post.
+        db (Session): The database session.
+
+    Returns:
+        BlogPostResponse: The blog post data.
+
+    Raises:
+        HTTPException: If the blog post is not found.
+    """
+    blog_service = BlogService(db)
+
+    blog_post = blog_service.fetch(id)
+
+    return success_response(
+        message="Blog post retrieved successfully!",
+        status_code=200,
+        data=jsonable_encoder(blog_post),
     )
