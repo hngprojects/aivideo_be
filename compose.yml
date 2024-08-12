@@ -1,8 +1,8 @@
-name: aivideo
+name: aivideo-dev
 
 services:
   app:
-    image: ${COMPOSE_PROJECT_NAME}-dev:latest
+    image: ${COMPOSE_PROJECT_NAME}:latest
     command: ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 7001 --reload"]
     networks:
       - hng-network
@@ -16,12 +16,11 @@ services:
       db:
         condition: service_healthy
         
-
   db:
     image: postgres:14.12
     restart: always
     volumes:
-      - ${COMPOSE_PROJECT_NAME}_db:/var/lib/postgresql/data
+      - db:/var/lib/postgresql/data
       - .env:/app/.env
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD?Variable not set}
