@@ -18,3 +18,4 @@ from api.v1.models.review import Review
 from api.v1.models.project import Project
 from api.v1.models.payment import Payment
 from api.v1.models.lang_reg_timezone_setting import LanguageRegionTimezoneSetting
+from api.v1.models.blog import Blog

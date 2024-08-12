@@ -1,0 +1,37 @@
+from fastapi import (
+    APIRouter, Depends, HTTPException, status, 
+    HTTPException, Response, Request
+)
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy.orm import Session
+from typing import Annotated
+
+from api.db.database import get_db
+from api.utils.pagination import paginated_response
+from api.utils.success_response import success_response
+from api.v1.models.user import User
+from api.v1.models.blog import Blog
+from api.v1.schemas.blog import (
+    BlogCreate
+)
+from api.v1.services.blog import BlogService
+from api.v1.services.user import user_service
+
+blog = APIRouter(prefix="/blogs", tags=["Blog"])
+
+
+@blog.post("/", response_model=success_response)
+def create_blog(
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    blog: BlogCreate,
+    db: Session = Depends(get_db),
+    
+):
+    blog_service = BlogService(db)
+    new_blogpost = blog_service.create(db=db, schema=blog, author_id=current_user.id)
+
+    return success_response(
+        message="Blog created successfully!",
+        status_code=201,
+        data=jsonable_encoder(new_blogpost),
+    )
