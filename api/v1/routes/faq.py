@@ -112,3 +112,26 @@ async def update_faq(
         message="FAQ updated successfully",
         status_code=status.HTTP_200_OK,
     )
+
+@faq.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_faq(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_super_admin),
+):
+    """Endpoint to delete an FAQ. Only accessible to superadmins
+
+    Args:
+        id (str)
+        db (Session, optional): Defaults to Depends(get_db).
+        current_user (User, optional): Defaults to Depends(user_service.get_current_super_admin).
+
+    Raises:
+        HTTPException: 404 NOT FOUND (Faq to be deleted cannot be found)
+    """
+    status = faq_service.delete(db, faq_id=id)
+
+    if status == False:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    
+    logging.info(f'Deleted FAQ. ID: {id}.')
