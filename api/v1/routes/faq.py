@@ -82,3 +82,33 @@ async def get_single_faq(id: str, db: Session = Depends(get_db)):
         message="Successfully fetched FAQ",
         status_code=status.HTTP_200_OK,
     )
+
+
+@faq.patch("/{id}", response_model=success_response, status_code=200)
+async def update_faq(
+    id: str,
+    schema: UpdateFAQ,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(user_service.get_current_super_admin),
+):
+    """Endpoint to update an FAQ. Only accessible to superadmins
+    Args:
+        id (str)
+        schema (UpdateFAQ)
+        db (Session, optional). Defaults to Depends(get_db).
+        current_admin (User, optional). Defaults to Depends(user_service.get_current_super_admin).
+
+    Raises:
+        HTTPException: 404 NOT FOUND (Faq to be retrieved cannot be found)
+    """
+    faq = faq_service.update(db, faq_id=id, schema=schema)
+
+    if faq == None:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+
+    logging.info(f'Updating FAQ. ID: {faq.id}')
+    return success_response(
+        data=jsonable_encoder(FAQBase.model_validate(faq)),
+        message="FAQ updated successfully",
+        status_code=status.HTTP_200_OK,
+    )
