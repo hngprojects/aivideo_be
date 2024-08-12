@@ -14,7 +14,7 @@ billing_plan = APIRouter(prefix="/billing_plans", tags=["Billing Plan"])
 
 
 @billing_plan.post("/", response_model=CreateBillingPlanResponse)
-async def create_new_billing_plan(
+async def create_billing_plan(
     billing_plan_schema: CreateBillingPlanSchema,
     current_user: User = Depends(user_service.get_current_super_admin),
     db: Session = Depends(get_db),

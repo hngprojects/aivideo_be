@@ -1,12 +1,14 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import List
 
 
 class CreateBillingPlanSchema(BaseModel):
-    user_id: str
-    billing_plan_id: str
-    start_date: datetime
-    end_date: datetime
+    plan_name: str
+    price: float
+    plan_interval: str
+    currency: str
+    features: List[str]
 
 
 class CreateBillingPlanResponse(CreateBillingPlanSchema):

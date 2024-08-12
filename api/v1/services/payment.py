@@ -1,10 +1,8 @@
-from rave_python import Rave, RaveExceptions
 from fastapi import HTTPException, status
 from api.v1.models.payment import Payment
 from sqlalchemy.orm import Session
 from typing import Any, Optional
 from decimal import Decimal
-from decouple import config
 
 from api.v1.models.payment import Payment
 from api.v1.models import User, BillingPlan
@@ -102,15 +100,12 @@ class PaymentGatewayService:
 
     PAYMENT_GATEWAYS = ["Stripe", "Flutterwave", "Lemonsqueezy"]
 
-    FLUTTERWAVE_ONE_OFF_PAY_URL = "https://checkout.flutterwave.com/v3/hosted/pay"
+    FLUTTERWAVE_CHECKOUT_URL = "https://checkout.flutterwave.com/v3/hosted/pay"
 
-    def confirm_flutterwave_payment(self, user_id: str, data: dict, billing_plan: BillingPlan):
+    FLUTTERWAVE_PAYMENTS_URL = "https://api.flutterwave.com/v3/payments"
+
+    def confirm_flutterwave_payment(self, data: dict, billing_plan: BillingPlan):
         """Handle checkout response from `flutterwave`"""
-        if not data.get('tx_ref') or not data['tx_ref'].startswith(user_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Transaction reference error."
-            )
 
         if data.get('status') not in ("successful", "completed"):
             raise HTTPException(
@@ -118,57 +113,16 @@ class PaymentGatewayService:
                 detail="Transaction not successful."
             )
 
-        if not data.get('transaction_id'):
+        if Decimal(data.get('amount')) != Decimal(f"{billing_plan.price}"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Transaction id not found."
-            )
-
-        if config("PYTHON_ENV") in ["production", "prod"]:
-            rave = Rave(
-                config("RAVE_PUBLIC_KEY_LIVE"),
-                config("RAVE_SECRET_KEY_LIVE"),
-                production=True
-            )
-        else:
-            rave = Rave(
-                config("RAVE_PUBLIC_KEY_TEST"),
-                config("RAVE_SECRET_KEY_TEST"),
-                usingEnv=False
-            )
-
-        try:
-            resp = rave.Account.verify(data['tx_ref'])
-        except RaveExceptions.TransactionVerificationError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Error: {e.err['errMsg']} [{e.err['flwRef']}]."
+                detail="Invalid payment amount."
             )
         
-        print(resp)
-
-        if resp.get('status') != "success":
+        if data.get('currency') != billing_plan.currency:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No success response. If you were debited, contact you bank."
-            )
-
-        if not resp.get('transactionComplete') is True:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Incomplete transaction. If you were debited, contact you bank."
-            )
-
-        if Decimal(resp.get('price')) != Decimal(f"{billing_plan.price}"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid payment amount. If you were debited, contact you bank."
-            )
-        
-        if resp.get('currency') != billing_plan.currency:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid currency. If you were debited, contact you bank."
+                detail="Invalid currency."
             )
         
         return True
