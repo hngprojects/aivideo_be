@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 class Settings(BaseSettings):
     """ Class to hold application's config values."""
-    
+
     SECRET_KEY: str = config("SECRET_KEY")
     ALGORITHM: str = config("ALGORITHM")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = config("ACCESS_TOKEN_EXPIRE_MINUTES")
@@ -36,6 +36,14 @@ class Settings(BaseSettings):
     TWILIO_PHONE_NUMBER: str = config("TWILIO_PHONE_NUMBER")
 
     OPENAI_API_KEY: str = config("OPENAI_API_KEY")
+
+    MEDIA_DIR: str = config("MEDIA_DIR")
+    MAX_FILE_SIZE: int = config("MAX_FILE_SIZE")
+
+    @property
+    def ALLOWED_EXTENSIONS(self) -> set[str]:
+        raw_extensions = config("ALLOWED_EXTENSIONS", default="")
+        return set(ext.strip() for ext in raw_extensions.split(",") if ext.strip())
 
 
 settings = Settings()
