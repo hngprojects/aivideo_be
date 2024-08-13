@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from main import app
 
 client = TestClient(app)
-endpoint = "/api/v1/contents/video"
+endpoint = "/api/v1/contents"
 
 
 # Mock the database dependency
@@ -15,29 +15,32 @@ def test_get_summarized_videos_success(
 
     assert response.status_code == 200
     assert response.json() == {
-        "status_code": 200,
-        "success": True,
-        "message": "Successfully fetched items",
-        "data": {
-            "pages": 1,
-            "total": 1,
-            "skip": 0,
-            "limit": 30,
-            "items": [
-                {
-                    "duration": "15:30",
-                    "title": "vid-one",
-                    "status": "pending",
-                    "created_at": "2024-08-12T19:37:52.759308+01:00",
-                    "size": "12.2kb",
-                    "user_id": "066ba546-9a61-7268-8000-fd722771734f",
-                    "id": "0ed24c1f-b92a-40e7-8877-1275b5108443",
-                    "updated_at": "2024-08-12T19:37:52.759308+01:00",
-                    "user": {
-                        "id": "066ba546-9a61-7268-8000-fd722771734f",
-                        "first_name": "Test",
-                    },
+        "pages": 1,
+        "total": 1,
+        "skip": 0,
+        "limit": 10,
+        "items": [
+            {
+                "id": "string",
+                "title": "string",
+                "description": "string",
+                "file_url": "string",
+                "size": "string",
+                "status": "string",
+                "duration": "string",
+                "project_type": "string",
+                "user": {
+                    "id": "string",
+                    "email": "string",
+                    "first_name": "string",
+                    "last_name": "string",
+                    "updated_at": "2024-08-13T09:48:59.916000Z",
                 },
-            ],
-        },
+                "created_at": "2024-08-13T09:48:59.916000Z",
+                "updated_at": "2024-08-13T09:48:59.916000Z",
+                "archived": False,
+                "archived_at": "2024-08-13T09:48:59.916000Z",
+                "is_deleted": False,
+            }
+        ],
     }

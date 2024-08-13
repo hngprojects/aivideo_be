@@ -25,7 +25,8 @@ class Project(BaseTableModel):
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
     project_type = Column(String, nullable=False)
-    file_url = Column(String, nullable=False)
+    file_url = Column(String, nullable=True)
+    result = Column(String, nullable=True)
     archived = Column(Boolean, server_default="false")
     is_deleted = Column(Boolean, server_default="false")
     archived_at = Column(DateTime, nullable=True)
@@ -34,6 +35,7 @@ class Project(BaseTableModel):
     status = Column(SQLAlchemyEnum(ProjectStatus), nullable=False, default="pending")
 
     user = relationship("User", back_populates="projects")
+    celery_tasks = relationship("CeleryTask", back_populates="project")
 
     def __str__(self) -> str:
         return self.title
