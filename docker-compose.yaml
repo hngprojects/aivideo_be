@@ -1,8 +1,6 @@
-name: aivideo-dev
-
 services:
   app:
-    image: ${COMPOSE_PROJECT_NAME}:latest
+    image: aivid:1.0
     command:
       [
         "sh",
@@ -16,21 +14,20 @@ services:
       - 7100:7001
     working_dir: /app
     depends_on:
-      db:
-        condition: service_healthy
+      - db
 
   db:
     image: postgres:14.12
     restart: always
-    # env_file:
-    #   - .env.dev
+    env_file:
+      - .env.dev
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD?Variable not set}
       - POSTGRES_USER=${DB_USER?Variable not set}
       - POSTGRES_DB=${DB_NAME?Variable not set}
     volumes:
       - db:/var/lib/postgresql/data
-      - ./env.dev:/.env
+#      - ./env.dev:/.env
     networks:
       - hng-network
     healthcheck:
@@ -44,4 +41,4 @@ volumes:
 
 networks:
   hng-network:
-    driver: bridge
+    external: true
