@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
+    avatar_url: Optional[str] = None
     created_at: datetime
 
 
