@@ -1,4 +1,4 @@
-name: aideo-dev
+name: aivideo-dev
 services:
   app:
     image: ${COMPOSE_PROJECT_NAME}:latest
