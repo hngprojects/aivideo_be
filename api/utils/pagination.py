@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from api.db.database import Base
 
 from api.utils.success_response import success_response
+from sqlalchemy.orm import subqueryload
 
 
 def paginated_response(
@@ -12,10 +13,11 @@ def paginated_response(
     skip: int,
     limit: int,
     join: Optional[Any] = None,
-    filters: Optional[Dict[str, Any]]=None
+    filters: Optional[Dict[str, Any]] = None,
+    related_models: Optional[List[Any]] = None,
+    related_model_excludes: Optional[Dict[str, List[str]]] = None
 ):
-
-    '''
+    """
     Custom response for pagination.\n
     This takes in four atguments:
         * db- this is the database session
@@ -59,13 +61,17 @@ def paginated_response(
             filters={'org_id': org_id}
         )
         ```
-    '''
+    """
 
     query = db.query(model)
 
+    if related_models:
+        for related_model in related_models:
+            query = query.options(subqueryload(related_model))
+
     if join is not None:
         query = query.join(join)
-        
+
     if filters and join is None:
         # Apply filters
         for attr, value in filters.items():
@@ -77,12 +83,21 @@ def paginated_response(
         for attr, value in filters.items():
             if value is not None:
                 query = query.filter(
-                    getattr(getattr(join, "columns"),
-                            attr).like(f"%{value}%"))
+                    getattr(getattr(join, "columns"), attr).like(f"%{value}%")
+                )
 
     total = query.count()
     results = jsonable_encoder(query.offset(skip).limit(limit).all())
     total_pages = int(total / limit) + (total % limit > 0)
+
+    items = jsonable_encoder(results)
+
+    if related_model_excludes:
+        for item in items:
+            for related_key, fields in related_model_excludes.items():
+                related_data = item.get(related_key, {})
+                for field in fields:
+                    related_data.pop(field, None)
 
     return success_response(
         status_code=200,
@@ -92,14 +107,6 @@ def paginated_response(
             "total": total,
             "skip": skip,
             "limit": limit,
-            "items": jsonable_encoder(
-                results,
-                exclude={
-                    'password',
-                    'is_superadmin',
-                    'is_deleted',
-                    'is_active'
-                }
-            )
-        }
+            "items": items
+        },
     )
