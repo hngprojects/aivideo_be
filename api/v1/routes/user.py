@@ -164,8 +164,6 @@ def delete_user(
         HTTPException: 404 NOT FOUND (User to be deleted cannot be found)
     """
 
-    user = user_service.fetch(db=db, id=user_id)
-
     # soft-delete the user
     user_service.delete(db=db, id=user_id)
 
