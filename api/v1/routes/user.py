@@ -12,6 +12,7 @@ from api.v1.schemas.user import (
     AdminCreateUserResponse,
     AdminCreateUser,
     UserStatResponse,
+    UserRestoreResponse
 )
 from api.db.database import get_db
 from api.v1.services.user import user_service
@@ -168,7 +169,7 @@ def delete_user(
     user_service.delete(db=db, id=user_id)
 
 
-@user_router.put("/{user_id}/restore", status_code=status.HTTP_200_OK)
+@user_router.put("/{user_id}/restore", status_code=status.HTTP_200_OK, response_model=UserRestoreResponse)
 def restore_deleted_user(
     user_id: str,
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
@@ -191,6 +192,8 @@ def restore_deleted_user(
 
     # restore the deleted user
     user_service.restore_deleted(db=db, id=user_id)
+
+    return success_response(status_code=status.HTTP_200_OK, message="User restored successfully!")
 
 
 @user_router.get("", status_code=status.HTTP_200_OK, response_model=AllUsersResponse)
