@@ -38,6 +38,28 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    container_name: rabbitmq
+    restart: always
+    image: rabbitmq:3.9-alpine
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST?Variable not set}
+      RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER?Variable not set}
+      RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS?Variable not set}
+
+  celery_worker:
+    image: ${COMPOSE_PROJECT_NAME}:latest
+    command: celery -A celery_app worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL?Variable not set}
+    depends_on:
+      - rabbitmq
+      - app
+
 volumes:
   db:
 
