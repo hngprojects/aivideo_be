@@ -1,4 +1,3 @@
-
 import uvicorn
 from fastapi.staticfiles import StaticFiles
 import uvicorn, os
@@ -25,7 +24,10 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    title='Convey API'
+)
 
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')
@@ -37,11 +39,11 @@ if not os.path.exists(MEDIA_DIR):
 
 # Load up media static files
 app.mount('/media', StaticFiles(directory=MEDIA_DIR), name='media')
+app.mount('/presets', StaticFiles(directory='./presets'), name='presets')
 
 origins = [
     "http://localhost:3000",
-    "http://localhost:3001",
-    'https://anchor-python.teams.hng.tech',
+    "http://localhost:3001"
 ]
 
 

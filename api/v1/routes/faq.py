@@ -111,4 +111,5 @@ async def update_faq(
         data=jsonable_encoder(FAQBase.model_validate(faq)),
         message="FAQ updated successfully",
         status_code=status.HTTP_200_OK,
+
     )
