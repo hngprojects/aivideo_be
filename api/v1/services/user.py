@@ -258,6 +258,15 @@ class UserService(Service):
 
         return super().delete()
 
+    def restore_deleted(self, db: Session, id=None):
+        """Function to restore a deleted user"""
+
+        # Get user from access token if provided, otherwise fetch user by id
+        user = check_model_existence(db, User, id)
+
+        user.is_deleted = False
+        db.commit()
+
     def authenticate_user(self, db: Session, email: str, password: str):
         """Function to authenticate a user"""
 
