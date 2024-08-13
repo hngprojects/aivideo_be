@@ -1,0 +1,5 @@
+services:
+  app:
+    ports:
+      - 7100:7001
+
