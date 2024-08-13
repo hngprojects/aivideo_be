@@ -1,3 +1,4 @@
+import json
 import pytest
 from fastapi import status
 from uuid_extensions import uuid7
@@ -94,6 +95,7 @@ def random_access_token():
     return user_service.create_access_token(user_id=str(uuid7()))
 
 
+@pytest.mark.asyncio
 async def test_initiate_payment_successful(
     mock_db_session,
     test_user,
@@ -104,29 +106,13 @@ async def test_initiate_payment_successful(
     mock_db_session.query().filter().first.return_value = test_user
     mock_db_session.get.return_value = test_bill_plan
 
-    # REQUIRES FLUTTERWAVE_SECRET IN SERVER env
-    # # Make request
-    # headers = {"Authorization": f"Bearer {access_token_user}"}
-    # post_url = "/api/v1/payments/initiate"
-    # data = {
-    #     'email': test_user.email,
-    #     'billing_plan_id': test_bill_plan.id,
-    #     'payment_gateway': "flutterwave",
-    #     'redirect_url': "example.com"
-    # }
-    # response = client.post(post_url, json=data, headers=headers)
+    response = await initiate_payment(mock_initiate_payment_schema, test_user, mock_db_session)
 
-    result = await initiate_payment(mock_initiate_payment_schema, test_user, mock_db_session)
-
-    # Assertions
-    assert result.status_code == status.HTTP_200_OK
-
-    # REQUIRES FLUTTERWAVE_SECRET IN SERVER env
-    # assert response.status_code == 200
-    # resp_d = response.json()
-    # assert resp_d['success'] == True
-    # assert resp_d["message"] == "Payment initialized successfully"
-    # assert "/v3/hosted/pay" in resp_d['data']['payment_url']
+    assert response.status_code == status.HTTP_200_OK
+    resp_d = json.loads(str(response.body, 'utf-8'))
+    assert resp_d['success'] == True
+    assert resp_d["message"] == "Payment initialized successfully"
+    assert resp_d['data']['payment_url'].startswith('https://')
 
 
 def test_initiate_payment_unsuccessful(
