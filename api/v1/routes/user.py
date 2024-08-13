@@ -168,6 +168,31 @@ def delete_user(
     user_service.delete(db=db, id=user_id)
 
 
+@user_router.put("/{user_id}/restore", status_code=status.HTTP_200_OK)
+def restore_deleted_user(
+    user_id: str,
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    db: Session = Depends(get_db),
+):
+    """Endpoint for user restoration"""
+
+    """
+
+    Args:
+        user_id (str): User ID
+        current_user (User): Current logged in user
+        db (Session, optional): Database Session. Defaults to Depends(get_db).
+
+    Raises:
+        HTTPException: 403 FORBIDDEN (Current user is not a super admin)
+        HTTPException: 404 NOT FOUND (User to be restored cannot be found)
+    """
+
+
+    # restore the deleted user
+    user_service.restore_deleted(db=db, id=user_id)
+
+
 @user_router.get("", status_code=status.HTTP_200_OK, response_model=AllUsersResponse)
 async def get_users(
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
