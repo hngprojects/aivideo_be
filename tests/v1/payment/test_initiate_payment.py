@@ -1,4 +1,3 @@
-import json
 import pytest
 from fastapi import status
 from uuid_extensions import uuid7
@@ -95,13 +94,26 @@ def random_access_token():
     return user_service.create_access_token(user_id=str(uuid7()))
 
 
+@pytest.mark.asyncio
+@patch("api.v1.routes.payment.settings")
+@patch("api.v1.routes.payment.requests.post")
+@patch("api.v1.routes.payment.uuid7")
 async def test_initiate_payment_successful(
+    mock_uuid7,
+    mock_post,
+    mock_settings,
     mock_db_session,
     test_user,
     test_bill_plan,
     access_token_user,
     mock_initiate_payment_schema
 ):
+    # Setup mocks
+    uuid_for_tx_ref = uuid7()
+    mock_settings.FLUTTERWAVE_SECRET = "test_secret_key"
+    mock_uuid7.return_value = uuid_for_tx_ref
+    mock_post.return_value.json.return_value = {"data": {"link": "http://payment.url"}}
+
     mock_db_session.query().filter().first.return_value = test_user
     mock_db_session.get.return_value = test_bill_plan
 

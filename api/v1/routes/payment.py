@@ -1,7 +1,6 @@
 from fastapi import Depends, APIRouter, status, HTTPException
 from sqlalchemy.orm import Session
 from uuid_extensions import uuid7
-from decouple import config
 import requests
 
 
@@ -10,14 +9,15 @@ from api.v1.schemas.payment import InitiatePaymentSchema, InitiatePaymentRespons
 from api.v1.services.billing_plan import billing_plan_service as bp_service
 from api.utils.success_response import success_response
 from api.v1.services.user import user_service
+from api.utils.settings import settings
 from api.db.database import get_db
 from api.v1.models import User
 
 
-payment = APIRouter(prefix="/payments", tags=["Payments"])
+payments = APIRouter(prefix="/payments", tags=["Payments"])
 
 
-@payment.post("/initiate", 
+@payments.post("/initiate", 
              response_model=InitiatePaymentResponse,
              status_code=status.HTTP_200_OK)
 async def initiate_payment(
@@ -51,7 +51,7 @@ async def initiate_payment(
         },
     }
 
-    header = {'Authorization': f"Bearer {config('FLUTTERWAVE_SECRET')}"}
+    header = {'Authorization': f"Bearer {settings.FLUTTERWAVE_SECRET}"}
 
     try:
         response = requests.post(
