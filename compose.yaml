@@ -1,40 +1,45 @@
+name: aideo-dev
 services:
-  aivideo_app_dev:
-    image: aivideo-dev:latest
-    command: ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 7001 --reload"]
+  app:
+    image: ${COMPOSE_PROJECT_NAME}:latest
+    env_file:
+      - .env
+    command:
+      [
+        "sh",
+        "-c",
+        "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 7001 --reload",
+      ]
     networks:
       - hng-network
     restart: unless-stopped
     ports:
       - 7100:7001
-    working_dir: /app 
-    volumes:
-      - .env:/app/.env    
+    working_dir: /app
     depends_on:
-      aivideo_dev_db
-        condition: service_healthy
-        
+      - db
 
-  aivideo_dev_db:
+  db:
     image: postgres:14.12
     restart: always
-    volumes:
-      - aivideo_dev_db:/var/lib/postgresql/data
-      - .env:/app/.env
+    env_file:
+      - .env
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD?Variable not set}
       - POSTGRES_USER=${DB_USER?Variable not set}
       - POSTGRES_DB=${DB_NAME?Variable not set}
+    volumes:
+      - db:/var/lib/postgresql/data
     networks:
       - hng-network
     healthcheck:
-      test: pg_isready -U pythonteam -d python_dev_db
+      test: pg_isready -U ${DB_USER} -d ${DB_NAME}
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  aivideo_dev_db:
+  db:
 
 networks:
   hng-network:
