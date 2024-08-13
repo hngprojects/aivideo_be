@@ -50,7 +50,7 @@ services:
 
   celery_worker:
     image: ${COMPOSE_PROJECT_NAME}:latest
-    command: celery -A celery_app worker --loglevel=info
+    command: celery -A api.core.dependencies.celery.celery_app worker --loglevel=info
     networks:
       - hng-network
     env_file:
