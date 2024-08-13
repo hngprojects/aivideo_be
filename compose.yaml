@@ -45,8 +45,8 @@ services:
     networks:
       - hng-network
     environment:
-      RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER?Variable not set}
-      RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS?Variable not set}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER?Variable not set}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS?Variable not set}
 
   celery_worker:
     image: ${COMPOSE_PROJECT_NAME}:latest
