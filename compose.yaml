@@ -1,6 +1,9 @@
+name: aideo-dev
 services:
   app:
-    image: aivid:1.0
+    image: ${COMPOSE_PROJECT_NAME}:latest
+    env_file:
+      - .env
     command:
       [
         "sh",
@@ -20,14 +23,13 @@ services:
     image: postgres:14.12
     restart: always
     env_file:
-      - .env.dev
+      - .env
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD?Variable not set}
       - POSTGRES_USER=${DB_USER?Variable not set}
       - POSTGRES_DB=${DB_NAME?Variable not set}
     volumes:
       - db:/var/lib/postgresql/data
-#      - ./env.dev:/.env
     networks:
       - hng-network
     healthcheck:
@@ -41,4 +43,4 @@ volumes:
 
 networks:
   hng-network:
-    external: true
+    driver: bridge
