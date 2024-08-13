@@ -1,0 +1,7 @@
+name: aivideo-prod
+
+services:
+  app:
+    ports:
+      - 7103:7001
+

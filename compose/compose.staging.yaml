@@ -1,0 +1,6 @@
+name: aivideo-staging
+
+services:
+  app:
+    ports:
+      - 7102:7001

@@ -81,4 +81,5 @@ async def get_single_faq(id: str, db: Session = Depends(get_db)):
         data=jsonable_encoder(FAQBase.model_validate(faq)),
         message="Successfully fetched FAQ",
         status_code=status.HTTP_200_OK,
+
     )
