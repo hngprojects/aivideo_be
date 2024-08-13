@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = config("DB_PASSWORD")
     DB_NAME: str = config("DB_NAME")
     DB_TYPE: str = config("DB_TYPE")
+    DB_URL: str = config("DB_URL")
 
     MAIL_USERNAME: str = config("MAIL_USERNAME")
     MAIL_PASSWORD: str = config("MAIL_PASSWORD")
@@ -36,6 +37,7 @@ class Settings(BaseSettings):
     TWILIO_PHONE_NUMBER: str = config("TWILIO_PHONE_NUMBER")
 
     OPENAI_API_KEY: str = config("OPENAI_API_KEY")
+    CELERY_BROKER_URL: str = config("CELERY_BROKER_URL")
 
 
 settings = Settings()

@@ -4,6 +4,7 @@ node_modules
 # Ignore Python virtual environment directories
 venv
 .venv
+.env.sample
 
 # Ignore MacOS system files
 .DS_Store
@@ -29,8 +30,10 @@ __pycache__/
 *.pyc
 
 # Ignore Docker-related files (uncomment if needed)
-# Dockerfile
-# docker-compose.yml
+Dockerfile
+compose.yml
+compose.prod.yml
+compose.staging.yml
 
 # Ignore coverage reports
 coverage/

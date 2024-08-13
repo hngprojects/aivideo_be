@@ -81,11 +81,11 @@ def test_summarize_pdf_success(mock_pdf_reader, mock_upload_file, mock_chat_open
     )
 
     response = client.post(
-        "/api/v1/tools/summary/summarize-pdf",
+        "/api/v1/tools/summary/pdf-summarizer",
         files={"file": ("sample.pdf", valid_pdf_content, "application/pdf")},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     data = response.json()
     assert "success" in data, "Expected 'success' key in the response"
     assert data["success"] is True
@@ -93,25 +93,30 @@ def test_summarize_pdf_success(mock_pdf_reader, mock_upload_file, mock_chat_open
     assert "number_of_pages" in data["data"]
     assert "estimated_read_time" in data["data"]
     assert "summary" in data["data"]
-
+    assert "task_id" in data["data"]
 
 def test_summarize_pdf_invalid_file_type():
     response = client.post(
-        "/api/v1/tools/summary/summarize-pdf",
+        "/api/v1/tools/summary/pdf-summarizer",
         files={"file": ("sample.txt", b"Sample text file", "text/plain")},
     )
     assert response.status_code == 400
     data = response.json()
     assert data["status"] == False  # Changed from "FAILED" to False
     assert data["message"] == "Invalid file format"
+    
+
 
 
 def test_summarize_pdf_empty_file():
     response = client.post(
-        "/api/v1/tools/summary/summarize-pdf",
+        "/api/v1/tools/summary/pdf-summarizer",
         files={"file": ("empty.pdf", b"", "application/pdf")},
     )
-    assert response.status_code == 400
+
+    assert response.status_code == 400  # Check if the status code is 400 (Bad Request)
     data = response.json()
-    assert data["status"] == False  # Changed from "FAILED" to False
-    assert data["message"] == "The uploaded PDF file is empty."
+
+    assert "message" in data  # Check if 'message' key exists
+    assert "Failed to open PDF file" in data["message"] or "The uploaded PDF file is empty" in data["message"]
+

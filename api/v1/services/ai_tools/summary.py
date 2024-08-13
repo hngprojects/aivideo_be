@@ -17,24 +17,14 @@ class SummaryService():
         super().__init__()
     
     def init_chain(self):
-        prompt_template = """Write a detailed summary of the following:
+        prompt_template = """Write a concise summary of the following:
         "{text}"
-        DETAILED SUMMARY:"""
+        CONCISE SUMMARY:"""
         prompt = PromptTemplate.from_template(prompt_template)
         llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k",
                          openai_api_key=settings.OPENAI_API_KEY)
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         return llm_chain
-  
-    def get_chat_completion_client(self):
-        return ChatCompletion(api_key=self.openai_api_key)
-
-    @retry(wait=wait_random_exponential(min=1, max=60),
-           stop=stop_after_attempt(6))
-    def completion_with_backoff(self, **kwargs):
-        client = self.get_chat_completion_client()
-        return client.create(**kwargs)
-
 
     def apply_ocr_to_images(self, doc):
         """Extract text from images in the PDF using OCR."""
@@ -68,7 +58,7 @@ class SummaryService():
             return "The PDF contains images but no text could be extracted."
 
         # Summarize Text
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         documents = text_splitter.create_documents([text])
 
         llm_chain = self.init_chain()
@@ -84,5 +74,6 @@ class SummaryService():
         final_summary = " ".join(summaries)
         final_summary = final_summary.replace('\n', ' ').replace('\r', ' ').strip()
         return final_summary
-    
+
+
 summary_service = SummaryService()
