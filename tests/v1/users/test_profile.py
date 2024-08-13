@@ -173,7 +173,7 @@ def test_update_profile_email_in_use(client, db_session_mock):
 
 
 def custom_service_function(*args, **kwargs):
-    raise HTTPException(status_code=500, detail="Custom server error")
+    raise HTTPException(status_code=500, detail="Database error occurred")
 
 def test_update_profile_custom_error(client, db_session_mock):
     '''Test for server error using a custom exception'''
