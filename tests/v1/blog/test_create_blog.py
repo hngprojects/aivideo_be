@@ -44,7 +44,7 @@ class TestCodeUnderTest:
                     "title": "string",
                     "subtitle": "string",
                     "content": "string",
-                    "thumbnail_url": "string",
+                    # "thumbnail_url": "string",
                     "tags": [
                         "string"
                     ],
