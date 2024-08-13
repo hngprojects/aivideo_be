@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -26,7 +26,7 @@ jobs:
           target: "/home/${{ secrets.USERNAME }}/aivideo_be/dev"
  
       - name: Deploy image on server
-        uses: appleboy/ssh-action@v0.1.8
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
@@ -34,6 +34,6 @@ jobs:
           script: |
             cd /home/${{ secrets.USERNAME }}/aivideo_be/dev
             git pull origin dev
-            docker load --input aivideo-dev.tar.gz
+            gunzip -c aivideo-dev.tar.gz | docker load
             docker compose up -d
             rm -f aivideo-dev.tar.gz
