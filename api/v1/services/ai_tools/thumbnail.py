@@ -19,6 +19,10 @@ async def upload_video_service(file: UploadFile, settings) -> str:
     file.file.seek(0)
 
     file_extension = file.filename.split('.')[-1].lower()
+    if file_extension not in settings.ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400, detail="Invalid file extension"
+        )
     new_filename = f'{file.filename.split(".")[0]}-{token_hex(5)}.{file_extension}'
     video_path = os.path.join(settings.MEDIA_DIR, 'uploads', new_filename)
 
@@ -39,3 +43,6 @@ async def upload_video_service(file: UploadFile, settings) -> str:
     )
 
     return os.path.basename(saved_path).split('.')[0]
+
+
+
