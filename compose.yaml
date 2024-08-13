@@ -42,10 +42,7 @@ services:
     container_name: rabbitmq
     restart: always
     image: rabbitmq:3.9-alpine
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     environment:
-      RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST?Variable not set}
       RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER?Variable not set}
       RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS?Variable not set}
 
