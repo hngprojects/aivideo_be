@@ -98,3 +98,19 @@ async def update_blog(
         status_code=200,
         data=jsonable_encoder(updated_blog_post),
     )
+
+@blog.delete("/{id}", status_code=204)
+async def delete_blog_post(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_super_admin),
+):
+    """Endpoint to delete a blog post"""
+
+    blog_service = BlogService(db=db)
+    blog_service.delete(blog_id=id)
+
+    return success_response(
+        message="Blog post deleted  successfully",
+        status_code=200
+    )

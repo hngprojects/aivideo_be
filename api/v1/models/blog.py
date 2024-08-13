@@ -15,7 +15,6 @@ class Blog(BaseTableModel):
     title = Column(String, index=True)
     subtitle = Column(String, index=True)
     content = Column(String, nullable=False, comment="has to be a markdown")
-    is_deleted = Column(Boolean, server_default=text("false"))
     thumbnail_url = Column(String) 
     excerpt = Column(Text, nullable=True)
     tags = Column(

@@ -2,6 +2,7 @@ from typing import Optional, List
 from pydantic import  HttpUrl
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 from api.v1.models.blog import Blog
 from api.v1.models.user import User
@@ -71,3 +72,23 @@ class BlogService:
             )
 
         return blog_post
+    
+    def delete(self, blog_id: str):
+        """Delete a blog post by its ID"""
+        post = self.fetch(blog_id=blog_id)
+
+        if not post:
+            raise HTTPException(
+                status_code=404,
+                detail="Blog post not found",
+            )
+
+        try:
+            self.db.delete(post)
+            self.db.commit()
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail="An error occurred while deleting the blog post",
+            )
