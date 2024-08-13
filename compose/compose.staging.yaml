@@ -2,11 +2,5 @@ name: aivideo-staging
 
 services:
   app:
-    env_file:
-      - ./.env.staging
     ports:
       - 7102:7001
-
-  db:
-    env_file:
-      - ./.env.staging

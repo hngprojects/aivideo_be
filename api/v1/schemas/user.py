@@ -61,7 +61,7 @@ class UserData(BaseModel):
     last_name: str
     is_active: bool
     is_deleted: bool
-    is_verified: bool
+    # is_verified: bool
     is_superadmin: bool
     created_at: datetime
     updated_at: datetime
@@ -135,82 +135,17 @@ class DeactivateUserSchema(BaseModel):
 class ChangePasswordSchema(BaseModel):
     """Schema for changing password of a user"""
 
-    old_password: Annotated[
-        Optional[str],
-        StringConstraints(min_length=8,
-                          max_length=64,
-                          strip_whitespace=True)
-    ] = None
+    old_password: str
+    new_password: str
 
-    new_password: Annotated[
-        str,
-        StringConstraints(min_length=8,
-                          max_length=64,
-                          strip_whitespace=True)
-    ]
+class UserStatData(BaseModel):
+    total_users: int
+    active_users: int
+    inactive_users: int
+    deleted: int
 
-    @model_validator(mode='before')
-    @classmethod
-    def validate_password(cls, values: dict):
-        """
-        Validates passwords
-        """
-        old_password = values.get('old_password')
-        new_password = values.get('new_password')
-
-        if (old_password and old_password.strip() == '') or old_password == '':
-            values['old_password'] = None
-        # constraints for old_password
-        if old_password and old_password.strip():
-            if not any(c.islower() for c in old_password):
-                raise ValueError("Old password must include at least one lowercase character")
-            if not any(c.isupper() for c in old_password):
-                raise ValueError("Old password must include at least one uppercase character")
-            if not any(c.isdigit() for c in old_password):
-                raise ValueError("Old password must include at least one digit")
-            if not any(c in ['!','@','#','$','%','&','*','?','_','-'] for c in old_password):
-                raise ValueError("Old password must include at least one special character")
-
-        # constraints for new_password
-        if not any(c.islower() for c in new_password):
-            raise ValueError("New password must include at least one lowercase character")
-        if not any(c.isupper() for c in new_password):
-            raise ValueError("New password must include at least one uppercase character")
-        if not any(c.isdigit() for c in new_password):
-            raise ValueError("New password must include at least one digit")
-        if not any(c in ['!','@','#','$','%','&','*','?','_','-'] for c in new_password):
-            raise ValueError("New password must include at least one special character")
-        
-        return values
-
-
-class ChangePwdRet(BaseModel):
-    """schema for returning change password response"""
-
+class UserStatResponse(BaseModel):
+    status: str
+    message: str
+    data: UserStatData
     status_code: int
-    message: str
-
-
-class MagicLinkRequest(BaseModel):
-    """Schema for magic link creation"""
-
-    email: EmailStr
-
-
-class MagicLinkResponse(BaseModel):
-    """Schema for magic link respone"""
-
-    message: str
-
-class UserRoleSchema(BaseModel):
-    """Schema for user role"""
-
-    role: str
-    user_id: str
-    org_id: str
-
-    @field_validator("role")
-    def role_validator(cls, value):
-        if value not in ["admin", "user", "guest", "owner"]:
-            raise ValueError("Role has to be one of admin, guest, user, or owner")
-        return value

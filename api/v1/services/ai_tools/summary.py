@@ -30,7 +30,7 @@ class SummaryService():
             str: Summary of uploaded PDF file
         """
         
-        loader = PyPDFLoader(pdf_file, extract_images=True)
+        loader = PyPDFLoader(pdf_file)
         documents = loader.load_and_split()
         
         # Initialize LLM chain
