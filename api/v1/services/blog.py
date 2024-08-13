@@ -1,5 +1,5 @@
-from typing import Optional
-
+from typing import Optional, List
+from pydantic import  HttpUrl
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -35,4 +35,39 @@ class BlogService:
         blog_post = self.db.query(Blog).filter(Blog.id == blog_id).first()
         if not blog_post:
             raise HTTPException(status_code=404, detail="Post not found")
+        return blog_post
+    
+    def update(
+        self,
+        blog_id: str,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        subtitle: Optional[str] = None,
+        # thumbnail_url: Optional[HttpUrl] = None
+    ):
+        """Updates a blog post"""
+
+        if not title or not content:
+            raise HTTPException(
+                status_code=400, detail="Title and content cannot be empty"
+            )
+
+        blog_post = self.fetch(blog_id)
+
+        # Update the fields with the provided data
+        blog_post.title = title
+        blog_post.content = content
+        blog_post.subtitle = subtitle
+        # blog_post.thumbnail_url = thumbnail_url
+
+
+        try:
+            self.db.commit()
+            self.db.refresh(blog_post)
+        except Exception as e:
+            self.db.rollback()
+            raise HTTPException(
+                status_code=500, detail="An error occurred while updating the blog post"
+            )
+
         return blog_post

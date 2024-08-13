@@ -26,3 +26,29 @@ class BlogPostResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class BlogUpdateResponseModel(BaseModel):
+    id: str
+    title: str
+    subtitle: Optional[str] = None
+    content: str
+    thumbnail_url: Optional[HttpUrl] = None
+    excerpt: Optional[str] = None
+    tags: Optional[List[str]] = None
+    author_id: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class BlogRequest(BaseModel):
+    title: str
+    subtitle: Optional[str] = None
+    content: str
+    thumbnail_url: Optional[HttpUrl] = None
+    excerpt: Optional[str] = None
+    tags: Optional[List[str]] = None
+
+    class Config:
+        orm_mode = True

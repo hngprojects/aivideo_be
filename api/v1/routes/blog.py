@@ -13,7 +13,9 @@ from api.v1.models.user import User
 from api.v1.models.blog import Blog
 from api.v1.schemas.blog import (
     BlogCreate,
-    BlogPostResponse
+    BlogPostResponse,
+    BlogUpdateResponseModel,
+    BlogRequest
 )
 from api.v1.services.blog import BlogService
 from api.v1.services.user import user_service
@@ -71,4 +73,28 @@ def get_blog_by_id(id: str, db: Session = Depends(get_db)):
         message="Blog post retrieved successfully!",
         status_code=200,
         data=jsonable_encoder(blog_post),
+    )
+
+@blog.put("/{id}", response_model=BlogUpdateResponseModel)
+async def update_blog(
+    id: str,
+    blogPost: BlogRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_super_admin),
+):
+    """Endpoint to update a blog post"""
+
+    blog_service = BlogService(db)
+    updated_blog_post = blog_service.update(
+        blog_id=id,
+        title=blogPost.title,
+        content=blogPost.content,
+        # thumbnail_url=blogPost.thumbnail_url,
+        subtitle=blogPost.subtitle
+    )
+
+    return success_response(
+        message="Blog post updated successfully",
+        status_code=200,
+        data=jsonable_encoder(updated_blog_post),
     )
