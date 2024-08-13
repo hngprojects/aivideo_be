@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, Extra
 from typing import Optional, Dict
 import re
 from datetime import datetime
@@ -19,6 +19,7 @@ class ProfileBase(BaseModel):
     
     class Config:
         orm_mode = True
+        extra = Extra.forbid
 
 
 class ProfileCreateUpdate(BaseModel):
@@ -34,3 +35,5 @@ class ProfileCreateUpdate(BaseModel):
     
     class Config:
         orm_mode = True
+        extra = Extra.forbid
+

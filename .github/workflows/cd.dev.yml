@@ -37,4 +37,3 @@ jobs:
             docker load --input aivideo-dev.tar.gz
             docker compose up -d
             rm -f aivideo-dev.tar.gz
-
