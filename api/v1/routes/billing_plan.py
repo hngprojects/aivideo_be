@@ -26,7 +26,7 @@ async def create_billing_plan(
     new_plan = bp_service.create(db=db, schema=billing_plan_schema)
 
     return success_response(
-        status_code=status.HTT,
-        message="Billing plan created successfully",
+        status_code=status.HTTP_201_CREATED,
+        message="Billing plan created successfully.",
         data=new_plan.to_dict(),
     )
