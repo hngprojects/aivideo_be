@@ -1,3 +1,4 @@
+version: '3.8'
 services:
   app:
     image: aivid:1.0
@@ -7,12 +8,23 @@ services:
         "-c",
         "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 7001 --reload",
       ]
-    networks:
-      - hng-network
-    restart: unless-stopped
     ports:
       - 7100:7001
     working_dir: /app
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+      mode: replicated
+      replicas: 2
+      rollback_config:
+        parallelism: 1
+      update_config:
+        parallelism: 1
+        failure_action: rollback
+        order: start-first
     depends_on:
       - db
 
@@ -27,18 +39,13 @@ services:
       - POSTGRES_DB=${DB_NAME?Variable not set}
     volumes:
       - db:/var/lib/postgresql/data
-#      - ./env.dev:/.env
     networks:
-      - hng-network
-    healthcheck:
-      test: pg_isready -U ${DB_USER} -d ${DB_NAME}
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      default:
+        aliases:
+          - db
 
 volumes:
   db:
 
 networks:
-  hng-network:
-    external: true
+  default:
