@@ -2,7 +2,7 @@ from datetime import timedelta
 from fastapi import BackgroundTasks, Depends, status, APIRouter, Response, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session 
 
 from api.core.dependencies.email_sender import send_email
 from api.utils.success_response import success_response
