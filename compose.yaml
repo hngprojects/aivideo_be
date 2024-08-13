@@ -42,6 +42,8 @@ services:
     container_name: rabbitmq
     restart: always
     image: rabbitmq:3.9-alpine
+    networks:
+      - hng-network
     environment:
       RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER?Variable not set}
       RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS?Variable not set}
@@ -49,6 +51,8 @@ services:
   celery_worker:
     image: ${COMPOSE_PROJECT_NAME}:latest
     command: celery -A celery_app worker --loglevel=info
+    networks:
+      - hng-network
     env_file:
       - .env
     environment:
