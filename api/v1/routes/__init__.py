@@ -13,6 +13,7 @@ from api.v1.routes.websocket import websocket_router
 from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
+from api.v1.routes.ai_tools.audio_transcriber import audio 
 from api.v1.routes.testimonial import testimonial
 from api.v1.routes.project import project
 from api.v1.routes.job import job
@@ -35,5 +36,6 @@ api_version_one.include_router(pwd_reset)
 api_version_one.include_router(preset_router)
 api_version_one.include_router(websocket_router)
 api_version_one.include_router(test_rout)
+api_version_one.include_router(audio)
 api_version_one.include_router(job)
 api_version_one.include_router(video_summary)
