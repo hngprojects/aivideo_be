@@ -11,7 +11,7 @@ from api.v1.routes.faq import faq
 from api.v1.routes.presets import preset_router
 from api.v1.routes.google_auth import google_auth
 from api.v1.routes.websocket import websocket_router
-from aivideo_be.tests.run_all_test import test_rout
+from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
 from api.v1.routes.testimonial import testimonial
