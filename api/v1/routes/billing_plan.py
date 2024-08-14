@@ -40,7 +40,7 @@ async def get_all_billing_plans(
     db: Session = Depends(get_db),
 ):
     """
-    Endpoint to get all billing plans
+    Endpoint to get all billing plans.
     """
 
     all_plans = bp_service.fetch_all(db=db)
