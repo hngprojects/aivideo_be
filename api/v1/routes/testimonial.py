@@ -31,10 +31,6 @@ async def create_testimonial(
     """
     testimonial = testimonial_service.create(db, schema=schema)
 
-    if schema.content.strip() == '' or schema.client_name.strip() == '':
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request body")
-    
-    logging.info(f'Created new Testimonial. ID: {testimonial.id}.')
     return success_response(
         data=jsonable_encoder(TestimonialBase.model_validate(testimonial)),
         message="Successfully created Testimonial",
