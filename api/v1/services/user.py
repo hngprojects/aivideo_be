@@ -75,7 +75,11 @@ class UserService(Service):
         # validate query_param
         # query_param must be a string
 
-        if not isinstance(query_param, str) or query_param is None or not query_param.strip():
+        if (
+            not isinstance(query_param, str)
+            or query_param is None
+            or not query_param.strip()
+        ):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Invalid value for search parameter. Must be a non empty string.",
@@ -532,16 +536,6 @@ class UserService(Service):
             "inactive_users": inactive_user_count,
             "deleted_users": deleted_user_count,
         }
-
-    def update_last_login(self, db:Session, user: User):
-        """
-        Update the user's last login field
-        Args:
-            db: database Session object
-        """
-        user.last_login = func.now()
-        db.commit()
-        db.refresh(user)
 
 
 user_service = UserService()
