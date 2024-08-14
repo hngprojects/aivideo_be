@@ -15,7 +15,7 @@ def load_avatars_in_db(request: Request):
 
     for root, dir, files in os.walk(AVATAR_FOLDER):
         for file_name in files:
-            file_url = f'http://{HOSTNAME}:{PORT}/{AVATAR_FOLDER}/{file_name}'
+            file_url = f'https://{HOSTNAME}/{AVATAR_FOLDER}/{file_name}'
 
             # Check if avatar already exists in the database
             if not db.query(Avatar).filter(Avatar.file_name==file_name).first():

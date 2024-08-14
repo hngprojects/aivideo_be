@@ -9,57 +9,71 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
-async def upload_file(
-    files,
-    allowed_extensions: Optional[list],
-    upload_folder: str,
-    save_extension: str = 'pdf'
-) -> Union[str, List[str]]:
-    '''Function to upload single or multiple files'''
-    if not isinstance(files, list):
-        files = [files]
+async def upload_file(file, allowed_extensions: Optional[list], upload_folder: str, save_extension: str = 'pdf'):
+    '''Function to upload a file'''
 
-    uploaded_files = []
+    # Check against invalid extensions
+    file_name = file.filename.lower()
+    file_extension = file_name.split('.')[-1]
+    name = file_name.split('.')[0]
 
-    for file in files:
-        # Check against invalid extensions
-        file_name = file.filename.lower()
-        file_extension = file_name.split('.')[-1]
-        name = file_name.split('.')[0]
+    if not file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail='File cannot be blank')
 
-        if not file:
+    if allowed_extensions:
+        if file_extension not in allowed_extensions:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='File cannot be blank'
-            )
+                status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid file format')
 
-        if allowed_extensions:
-            if file_extension not in allowed_extensions:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f'Invalid file format for {file_name}'
-                )
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'media', 'uploads')
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
 
-        UPLOAD_FOLDER = os.path.join(BASE_DIR, 'media', 'uploads')
-        if not os.path.exists(UPLOAD_FOLDER):
-            os.makedirs(UPLOAD_FOLDER)
+    # Create file storage path
+    DOWNLOAD_DIR = os.path.join(UPLOAD_FOLDER, upload_folder)
+    if not os.path.exists(DOWNLOAD_DIR):
+        os.makedirs(DOWNLOAD_DIR)
 
-        # Create file storage path
-        UPLOAD_DIR = os.path.join(UPLOAD_FOLDER, upload_folder)
-        if not os.path.exists(UPLOAD_DIR):
-            os.makedirs(UPLOAD_DIR)
+    # Generate a new file name
+    new_filename = f'{name}-{token_hex(5)}.{save_extension}'
+    SAVE_FILE_DIR = os.path.join(DOWNLOAD_DIR, new_filename)
+    with open(SAVE_FILE_DIR, 'wb') as f:
+        content = await file.read()
+        f.write(content)
 
-        # Generate a new file name
-        new_filename = f'{name}-{token_hex(5)}.{save_extension}'
-        SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+    return SAVE_FILE_DIR
 
-        with open(SAVE_FILE_DIR, 'wb') as f:
-            content = await file.read()
-            f.write(content)
 
-        uploaded_files.append(SAVE_FILE_DIR)
+async def download_file(file, download_folder: str, save_extension: str = 'pdf'):
+    '''Function to upload a file'''
 
-    return uploaded_files if len(uploaded_files) > 1 else uploaded_files[0]
+    # Check against invalid extensions
+    file_name = file.filename.lower()
+    file_extension = file_name.split('.')[-1]
+    name = file_name.split('.')[0]
+
+    if not file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail='File cannot be blank')
+
+    DOWNLOAD_ROLDER = os.path.join(BASE_DIR, 'media', 'downloads')
+    if not os.path.exists(DOWNLOAD_ROLDER):
+        os.makedirs(DOWNLOAD_ROLDER)
+
+    # Create file storage path
+    UPLOAD_DIR = os.path.join(DOWNLOAD_ROLDER, download_folder)
+    if not os.path.exists(UPLOAD_DIR):
+        os.makedirs(UPLOAD_DIR)
+
+    # Generate a new file name
+    new_filename = f'{name}-{token_hex(5)}.{save_extension}'
+    SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+    with open(SAVE_FILE_DIR, 'wb') as f:
+        content = await file.read()
+        f.write(content)
+
+    return SAVE_FILE_DIR
 
 
 def convert_video_to_audio(
@@ -111,3 +125,56 @@ def convert_video_to_audio(
     except ffmpeg.Error:
         logging.error("FFmpeg error occurred")
         raise
+
+
+async def upload_files(
+        files,
+        allowed_extensions: Optional[list],
+        upload_folder: str,
+        save_extension: str = 'pdf'
+):
+    '''Function to upload single or multiple files'''
+    if not isinstance(files, list):
+        files = [files]
+
+    uploaded_files = []
+
+    for file in files:
+        # Check against invalid extensions
+        file_name = file.filename.lower()
+        file_extension = file_name.split('.')[-1]
+        name = file_name.split('.')[0]
+
+        if not file:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='File cannot be blank'
+            )
+
+        if allowed_extensions:
+            if file_extension not in allowed_extensions:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f'Invalid file format for {file_name}'
+                )
+
+        UPLOAD_FOLDER = os.path.join(BASE_DIR, 'media', 'uploads')
+        if not os.path.exists(UPLOAD_FOLDER):
+            os.makedirs(UPLOAD_FOLDER)
+
+        # Create file storage path
+        UPLOAD_DIR = os.path.join(UPLOAD_FOLDER, upload_folder)
+        if not os.path.exists(UPLOAD_DIR):
+            os.makedirs(UPLOAD_DIR)
+
+        # Generate a new file name
+        new_filename = f'{name}-{token_hex(5)}.{save_extension}'
+        SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+
+        with open(SAVE_FILE_DIR, 'wb') as f:
+            content = await file.read()
+            f.write(content)
+
+        uploaded_files.append(SAVE_FILE_DIR)
+
+    return uploaded_files
