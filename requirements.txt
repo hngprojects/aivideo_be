@@ -162,9 +162,9 @@ moviepy
 imageio
 unrealspeech
 PyAudio
-playsound
 pydub
 simpleaudio
 setuptools
 wheel
 wave
+playsound==1.3.0
