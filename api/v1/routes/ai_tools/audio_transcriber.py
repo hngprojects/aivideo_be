@@ -5,8 +5,7 @@ from api.core.dependencies.celery.tasks.audio_task import  transcribe_audio_task
 from api.v1.services.job import job_service
 from api.utils.success_response import success_response
 import io
-
-AUDIOFILE = "audio.mp3"  
+ 
 audio = APIRouter(prefix="/tools/audio-transcribe", tags=["Tools"])
 
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
