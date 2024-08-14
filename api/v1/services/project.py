@@ -7,7 +7,7 @@ from api.utils.db_validators import check_model_existence
 
 
 class ProjectService(Service):
-    '''Project service functionality'''
+    """Project service functionality"""
 
     def create(self, db: Session, schema: CreateProject):
         """Create a new project"""
@@ -29,8 +29,8 @@ class ProjectService(Service):
             for column, value in query_params.items():
                 if hasattr(Project, column) and value:
                     query = query.filter(
-                        Project.is_active == True, 
-                        getattr(Project, column).ilike(f"%{value}%")
+                        Project.is_active == True,
+                        getattr(Project, column).ilike(f"%{value}%"),
                     )
 
         return query.all()
