@@ -26,7 +26,38 @@ async def upload_file(file, allowed_extensions: Optional[list], upload_folder: s
         os.makedirs(UPLOAD_FOLDER)
 
     # Create file storage path
-    UPLOAD_DIR = os.path.join(UPLOAD_FOLDER, upload_folder)
+    DOWNLOAD_DIR = os.path.join(UPLOAD_FOLDER, upload_folder)
+    if not os.path.exists(DOWNLOAD_DIR):
+        os.makedirs(DOWNLOAD_DIR)
+
+    # Generate a new file name
+    new_filename = f'{name}-{token_hex(5)}.{save_extension}'
+    SAVE_FILE_DIR = os.path.join(DOWNLOAD_DIR, new_filename)
+    with open(SAVE_FILE_DIR, 'wb') as f:
+        content = await file.read()
+        f.write(content)
+        
+    return SAVE_FILE_DIR
+
+
+
+async def download_file(file, download_folder: str, save_extension: str = 'pdf'):
+    '''Function to upload a file'''
+
+    # Check against invalid extensions
+    file_name = file.filename.lower()
+    file_extension = file_name.split('.')[-1]
+    name = file_name.split('.')[0]
+
+    if not file:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='File cannot be blank')
+        
+    DOWNLOAD_ROLDER = os.path.join(BASE_DIR, 'media', 'downloads')
+    if not os.path.exists(DOWNLOAD_ROLDER):
+        os.makedirs(DOWNLOAD_ROLDER)
+
+    # Create file storage path
+    UPLOAD_DIR = os.path.join(DOWNLOAD_ROLDER, download_folder)
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
 
