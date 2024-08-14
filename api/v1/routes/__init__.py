@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from api.v1.routes.ai_tools.youtube_summarizer import video_summary
 from api.v1.routes.auth import auth
 from api.v1.routes.user import user_router
 from api.v1.routes.payment import payments
@@ -12,6 +13,7 @@ from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
 from api.v1.routes.project import project
+from api.v1.routes.job import job
 
 api_version_one = APIRouter(prefix="/api/v1")
 
@@ -29,3 +31,5 @@ api_version_one.include_router(pwd_reset)
 api_version_one.include_router(preset_router)
 api_version_one.include_router(websocket_router)
 api_version_one.include_router(test_rout)
+api_version_one.include_router(job)
+api_version_one.include_router(video_summary)

@@ -17,8 +17,8 @@ class EmailService:
             MAIL_SERVER=os.getenv("MAIL_SERVER"),
             USE_CREDENTIALS=True,
             VALIDATE_CERTS=False,
-            MAIL_STARTTLS = True,
-            MAIL_SSL_TLS = False,
+            MAIL_STARTTLS = False,
+            MAIL_SSL_TLS = True,
             TEMPLATE_FOLDER='./api/v1/templates'
         )
         self.fast_mail = FastMail(self.conf)
