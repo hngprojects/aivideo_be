@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
+    avatar_url: Optional[str] = None
     created_at: datetime
 
 
@@ -140,4 +141,9 @@ class UserStatResponse(BaseModel):
     status: str
     message: str
     data: UserStatData
+    status_code: int
+
+class UserRestoreResponse(BaseModel):
+    status: str
+    message: str
     status_code: int

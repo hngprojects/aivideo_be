@@ -1,4 +1,4 @@
-name: aideo-dev
+name: aivideo-dev
 services:
   app:
     image: ${COMPOSE_PROJECT_NAME}:latest
@@ -37,6 +37,29 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  rabbitmq:
+    container_name: rabbitmq
+    restart: always
+    image: rabbitmq:3.9-alpine
+    networks:
+      - hng-network
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER?Variable not set}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS?Variable not set}
+
+  celery_worker:
+    image: ${COMPOSE_PROJECT_NAME}:latest
+    command: celery -A api.core.dependencies.celery.celery_app worker --loglevel=info
+    networks:
+      - hng-network
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL?Variable not set}
+    depends_on:
+      - rabbitmq
+      - app
 
 volumes:
   db:

@@ -4,7 +4,7 @@ from api.v1.models.contact_us import ContactUs
 from api.v1.models.profile import Profile
 from api.v1.models.notifications import Notification, NotificationSetting
 from api.v1.models.resource import Resource
-from api.v1.models.job import Job, JobApplication
+from api.v1.models.job import Job
 from api.v1.models.testimonial import Testimonial
 from api.v1.models.faq import FAQ
 from api.v1.models.newsletter import Newsletter, NewsletterSubscriber
@@ -17,7 +17,7 @@ from api.v1.models.user_subscription import UserSubscription
 from api.v1.models.review import Review
 from api.v1.models.project import Project
 from api.v1.models.payment import Payment
-from api.v1.models.celery import CeleryTask
+from api.v1.models.presets import Avatar, BackgroundMusic
 from api.v1.models.lang_reg_timezone_setting import LanguageRegionTimezoneSetting
 
 
