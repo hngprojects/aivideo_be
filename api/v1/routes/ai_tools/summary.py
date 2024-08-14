@@ -39,7 +39,7 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Endpoint to summarize PDF"""
 
-   # Read the file content to determine its size
+    # Read the file content to determine its size
     contents = await file.read()
     file_size = len(contents)
 
@@ -48,7 +48,9 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
 
     # Check if the uploaded file exceeds the maximum file size
     if file_size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=413, detail="File size exceeds the maximum limit of 10 MB")
+        raise HTTPException(
+            status_code=413, detail="File size exceeds the maximum limit of 10 MB"
+        )
 
     # Check if the uploaded file is empty
     if file_size == 0:
