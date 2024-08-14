@@ -93,8 +93,9 @@ class FAQService(Service):
         """
         faq = self.fetch(db=db, faq_id=faq_id)
 
-        if faq is None:
-            return False
+        if faq == None:
+            raise HTTPException(status_code=404, detail="FAQ not found")
+        
 
         db.delete(faq)
         db.commit()
