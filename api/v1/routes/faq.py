@@ -122,5 +122,3 @@ async def delete_faq(
         HTTPException: 404 NOT FOUND (Faq to be deleted cannot be found)
     """
     status = faq_service.delete(db, faq_id=id)
-    
-    logging.info(f'Deleted FAQ. ID: {id}.')
