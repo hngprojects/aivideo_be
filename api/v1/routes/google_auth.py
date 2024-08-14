@@ -63,9 +63,7 @@ async def google_login(background_tasks: BackgroundTasks, token_request: OAuthTo
         samesite="none",
     )
 
-<<<<<<< HEAD
-    return response
-=======
+
     return response
 
 
@@ -155,4 +153,5 @@ async def google_oauth2_callback(
         return response
     except Exception:
         return RedirectResponse(url=FRONTEND_URL, status_code=status.HTTP_302_FOUND)
->>>>>>> cfec116 (feat: implemented magic link, password reset and refactored google auth)
+
+    return response

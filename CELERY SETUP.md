@@ -39,3 +39,40 @@ sudo systemctl status rabbitmq-server
 
 ## Install Celery
 
+
+Celery can be installed using pip, which is the Python package manager.
+
+### 2.1 Install Celery and Required Dependencies
+Create a virtual environment and activate it (recommended):
+
+```bash
+python3 -m venv celery-env
+source celery-env/bin/activate
+```
+
+Install Celery and any additional required dependencies:
+
+```bash
+pip install celery
+If you're using Django, install Celery with Django support:
+```
+
+```bash
+pip install celery[django]
+```
+
+## Celery commands for this app
+Run the following commands in two separate terminsla:
+```bash
+celery -A api.core.dependencies.celery.celery_app worker --loglevel-info
+celery -A api.core.dependencies.celery.celery_app flower --loglevel-info
+```
+
+## Access RabbitMQ Management Syatem
+You can access the RabbitMQ Management System at :
+[http://localhost:15672](http://localhost:15672)
+
+
+## Access Flower Management Syatem for mMonitoring Background Tasks
+You can access the RabbitMQ Management System at :
+[http://localhost:5555](http://localhost:5555)
