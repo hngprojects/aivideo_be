@@ -1,6 +1,8 @@
 from typing import Optional
 from fastapi import HTTPException
+from celery.result import AsyncResult
 
+from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
 from api.v1.models.job import Job
 from api.v1.models.project import Project
@@ -12,6 +14,12 @@ db = next(get_db())
 
 class JobService:
     '''This is for job db operations'''
+
+    def get_job_status(self, job_id: str):
+        '''Returns the status of a partiular job'''
+
+        task_result = AsyncResult(job_id, app=worker)
+        task_result.state
 
     def create_project_with_job(self, job, project_title: str, project_type: str):
         '''FUnction to create a project alongside a task or job'''
@@ -48,7 +56,7 @@ class JobService:
 
         jobs = db.query(Job).all()
         return jobs
-
+    
     
     def fetch_by_job_id(self, job_id: str):
         '''Fetches the job details from the database'''
