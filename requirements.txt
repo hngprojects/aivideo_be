@@ -166,3 +166,5 @@ playsound
 pydub
 simpleaudio
 wave
+setuptools
+wheel
