@@ -3,6 +3,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, APIRouter
 from api.v1.schemas.audio_transcriber import TranslationRequest
 from api.core.dependencies.celery.tasks.summary_tasks import  transcribe_audio_task, translate_text_task
 from api.v1.services.job import job_service
+from api.utils.success_response import success_response
 
 AUDIOFILE = "audio.mp3"  
 audio = APIRouter(prefix="/tools/audio-transcribe", tags=["Tools"])
@@ -23,14 +24,14 @@ async def upload_audio(file: UploadFile = File(...)):
             project_type='Audio Transcription'
         )
 
-        return {
-            "status_code": 200,
-            "message": "Audio transcription job initiated successfully",
-            "data": {
+        return success_response(
+            status_code=200,
+            message="Audio transcription job initiated successfully",
+            data={
                 "job_id": task.id,
                 "project_id": project.id,
             }
-        }
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -47,13 +48,13 @@ async def translate_text_endpoint(request: TranslationRequest):
             project_type='Text Translation'
         )
 
-        return {
-            "status_code": 200,
-            "message": "Text translation job initiated successfully",
-            "data": {
+        return success_response(
+            status_code=  200,
+            message="Text translation job initiated successfully",
+            data= {
                 "job_id": task.id,
                 "project_id": project.id,
             }
-        }
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
