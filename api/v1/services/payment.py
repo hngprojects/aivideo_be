@@ -22,7 +22,7 @@ class PaymentService:
 
         return new_payment
 
-    def fetch_all(self, db: Session, **query_params: Optional[Any]):
+    def fetch_all(self, db: Session, offset: int = 0, limit: int = 0, **query_params: Optional[Any]):
         """Fetch all payments with option to search using query parameters"""
 
         query = db.query(Payment)
@@ -33,7 +33,19 @@ class PaymentService:
                 if hasattr(Payment, column) and value:
                     query = query.filter(getattr(Payment, column).ilike(f"%{value}%"))
 
-        return query.all()
+        if limit and offset:
+            payments = query.offset(offset).limit(limit).all()
+        else:
+            payments = query.all()
+
+        if len(payments) < 1:
+            # RETURN not found message
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Payments not found"
+            )
+        
+        return payments
 
     def fetch(self, db: Session, payment_id: str):
         """Fetches a payment by id"""

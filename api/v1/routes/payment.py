@@ -1,13 +1,17 @@
-from fastapi import Depends, APIRouter, status, HTTPException
+from fastapi import Depends, APIRouter, status, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid_extensions import uuid7
+from typing import Annotated
 import requests
 
 
-from api.v1.services.payment import payment_gateway_service as pg_service
-from api.v1.schemas.payment import InitiatePaymentSchema, InitiatePaymentResponse
 from api.v1.services.billing_plan import billing_plan_service as bp_service
+from api.v1.services.payment import payment_gateway_service as pg_service
+from api.v1.schemas.payment import (
+    InitiatePaymentSchema, InitiatePaymentResponse, PaymentListResponse
+)
 from api.utils.success_response import success_response
+from api.utils.pagination import get_pagination_details
 from api.v1.services.user import user_service
 from api.utils.settings import settings
 from api.db.database import get_db
@@ -122,4 +126,40 @@ async def verify_payment_status(
             "amount": response['data']['amount'],
             "currency": response['data']['currency'],
         },
+    )
+
+
+@payments.get("", status_code=status.HTTP_200_OK, response_model=PaymentListResponse
+)
+def get_all_payments(
+    _: User = Depends(user_service.get_current_super_admin),
+    limit: Annotated[int, Query(ge=1, description="Number of payments per page")] = 10,
+    page: Annotated[int, Query(ge=1, description="Page number (starts from 1)")] = 1,
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint to retrieve a paginated list of all payments by ``superadmin``.
+
+    Query parameter:
+        - limit: Number of payment per page (default: 10, minimum: 1)
+        - page: Page number (starts from 1)
+    """
+    # GET offset from page and limit
+    offset = (page - 1) * limit
+
+    # FETCH all payments
+    all_payments = payment_service.fetch_all(
+        db, offset=offset, limit=limit,
+    )
+
+    # GATHER all data in a dict
+    data = {
+        "payments": [p.to_dict() for p in all_payments],
+        "pagination": get_pagination_details(len(all_payments), limit, offset)
+    }
+
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Payments fetched successfully",
+        data=data
     )
