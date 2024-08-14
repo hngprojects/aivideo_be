@@ -1,0 +1,654 @@
+{
+	"info": {
+		"_postman_id": "2ea2371b-fb2a-475b-b5ae-b1267f92f2d8",
+		"name": "HNG Stage 7 -Team Anchor",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32444128",
+		"_collection_link": "https://stage-2-team.postman.co/workspace/HNG-Tech-Team~68d66956-4085-40c0-9f1d-a6b0dfb44d81/collection/32444128-2ea2371b-fb2a-475b-b5ae-b1267f92f2d8?action=share&source=collection_link&creator=32444128"
+	},
+	"item": [
+		{
+			"name": "Payments Flow - One off subscription",
+			"item": [
+				{
+					"name": "Register a Super Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 201\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response body contains the right terms\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include('data');\r",
+									"    pm.expect(pm.response.text()).to.include('status_code');\r",
+									"    pm.expect(pm.response.text()).to.include('access_token');\r",
+									"    // pm.expect(pm.response.text()).to.include('token_type');\r",
+									"    // pm.expect(pm.response.text()).to.include('success');\r",
+									"    pm.expect(pm.response.text()).to.include('message');\r",
+									"    pm.expect(pm.response.text()).to.include('user');\r",
+									"    pm.expect(pm.response.text()).to.include('last_name');\r",
+									"    pm.expect(pm.response.text()).to.include('is_active');\r",
+									"    pm.expect(pm.response.text()).to.include('email');\r",
+									"    // pm.expect(pm.response.text()).to.include('username');\r",
+									"    pm.expect(pm.response.text()).to.include('id');\r",
+									"    pm.expect(pm.response.text()).to.include('created_at');\r",
+									"    pm.expect(pm.response.text()).to.include('first_name');\r",
+									"    });\r",
+									"\r",
+									"pm.test(\"The response has correct properties\", function(){\r",
+									"    // pm.expect(responseJson.success).to.be.a('boolean');\r",
+									"    pm.expect(responseJson.message).to.be.a('string');\r",
+									"    pm.expect(responseJson.access_token).to.be.a('string');\r",
+									"    // pm.expect(responseJson.data.token_type).to.be.a('string');\r",
+									"    pm.expect(responseJson.data.user.last_name).to.be.a('string');\r",
+									"    pm.expect(responseJson.data.user.is_active).to.be.a('boolean');\r",
+									"    pm.expect(responseJson.data.user.email).to.be.a('string');\r",
+									"    // pm.expect(responseJson.data.user.username).to.be.a('string');\r",
+									"    pm.expect(responseJson.data.user.id).to.be.a('string');\r",
+									"    pm.expect(responseJson.data.user.created_at).to.be.a('string');\r",
+									"    pm.expect(responseJson.data.user.first_name).to.be.a('string');   \r",
+									"});\r",
+									"\r",
+									"pm.test(\"Parse access token and store in collectionVariables\", () => {\r",
+									"    const responseJson = pm.response.json();\r",
+									"    const token = responseJson.access_token; // Assuming the login response has a \"token\" property\r",
+									"\r",
+									"    pm.collectionVariables.set(\"superToken\", `${token}`);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"\r",
+									"pm.test('The content-Type is JSON', function () {\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"username\": \"{{$randomUserName}}\",\r\n  \"password\": \"Pa$$w0rd!\",\r\n  \"first_name\": \"{{$randomFirstName}}\",\r\n  \"last_name\": \"{{$randomLastName}}\",\r\n  \"email\": \"{{$randomEmail}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register-super-admin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register-super-admin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register a User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 201\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response body contains the right terms\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include('data');\r",
+									"    pm.expect(pm.response.text()).to.include('status_code');\r",
+									"    pm.expect(pm.response.text()).to.include('access_token');\r",
+									"    // pm.expect(pm.response.text()).to.include('token_type');\r",
+									"    // pm.expect(pm.response.text()).to.include('success');\r",
+									"    pm.expect(pm.response.text()).to.include('message');\r",
+									"    pm.expect(pm.response.text()).to.include('user');\r",
+									"    pm.expect(pm.response.text()).to.include('last_name');\r",
+									"    pm.expect(pm.response.text()).to.include('is_active');\r",
+									"    pm.expect(pm.response.text()).to.include('email');\r",
+									"    // pm.expect(pm.response.text()).to.include('username');\r",
+									"    pm.expect(pm.response.text()).to.include('id');\r",
+									"    pm.expect(pm.response.text()).to.include('created_at');\r",
+									"    pm.expect(pm.response.text()).to.include('first_name');\r",
+									"    });\r",
+									"\r",
+									"pm.test(\"The response has correct properties\", function(){\r",
+									"    // pm.expect(responseJson.success).to.be.a('boolean');\r",
+									"    pm.expect(responseJson.message).to.be.a('string');\r",
+									"    pm.expect(responseJson.access_token).to.be.a('string');\r",
+									"    // pm.expect(responseJson.data.token_type).to.be.a('string');\r",
+									"    pm.expect(responseJson.data.user.last_name).to.be.a('string');\r",
+									"    pm.expect(responseJson.data.user.is_active).to.be.a('boolean');\r",
+									"    pm.expect(responseJson.data.user.email).to.be.a('string');\r",
+									"    // pm.expect(responseJson.data.user.username).to.be.a('string');\r",
+									"    pm.expect(responseJson.data.user.id).to.be.a('string');\r",
+									"    pm.expect(responseJson.data.user.created_at).to.be.a('string');\r",
+									"    pm.expect(responseJson.data.user.first_name).to.be.a('string');   \r",
+									"});\r",
+									"\r",
+									"pm.test(\"Parse access token and store in collectionVariables\", () => {\r",
+									"    const responseJson = pm.response.json();\r",
+									"    const token = responseJson.access_token; // Assuming the login response has a \"token\" property\r",
+									"\r",
+									"    pm.collectionVariables.set(\"accessToken\", `${token}`);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"\r",
+									"pm.test('The content-Type is JSON', function () {\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Parse user id and store in collectionVariables\", () => {\r",
+									"    const responseJson = pm.response.json();\r",
+									"    const userId = responseJson.data.user.id;\r",
+									"\r",
+									"    pm.collectionVariables.set(\"userId\", `${userId}`);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Parse emil and store in collectionVariables\", () => {\r",
+									"    const responseJson = pm.response.json();\r",
+									"    const email = responseJson.data.user.email;\r",
+									"\r",
+									"    pm.collectionVariables.set(\"email\", `${email}`);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"username\": \"{{$randomUserName}}\",\r\n  \"password\": \"Pa$$w0rd!\",\r\n  \"first_name\": \"{{$randomFirstName}}\",\r\n  \"last_name\": \"{{$randomLastName}}\",\r\n  \"email\": \"{{$randomEmail}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a Billing plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Parse billing plan ID and store in collectionVariables\", () => {\r",
+									"    const responseJson = pm.response.json();\r",
+									"    const plan_id = responseJson.data.id; // Assuming the login response has a \"token\" property\r",
+									"\r",
+									"    pm.collectionVariables.set(\"billing_plan_id\", `${plan_id}`);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{superToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"plan_name\": \"Test plan\",\r\n  \"price\": 5,\r\n  \"plan_interval\": \"monthly\",\r\n  \"currency\": \"Nigerian Naira\",\r\n  \"features\": [\r\n    \"Features?\"\r\n  ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/billing-plans/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"billing-plans",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Initiate Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();\r",
+									"\r",
+									"if (pm.response.code >= 404) {\r",
+									"    console.log(`Error: ${pm.response.code}`);\r",
+									"    console.log(`Response Body: ${pm.response.text()}`);\r",
+									"}\r",
+									"\r",
+									"// Check that the status code is 200\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response body contains the right terms\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include('data');\r",
+									"    pm.expect(pm.response.text()).to.include('status_code');\r",
+									"    // pm.expect(pm.response.text()).to.include('access_token');\r",
+									"    pm.expect(pm.response.text()).to.include('payment_url');\r",
+									"    pm.expect(pm.response.text()).to.include('success');\r",
+									"    pm.expect(pm.response.text()).to.include('message');\r",
+									"});\r",
+									"\r",
+									"// Validate field types\r",
+									"pm.test(\"Status code is a number\", function () {\r",
+									"    pm.expect(responseJson.status_code).to.be.a('number');\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Success is a boolean\", function () {\r",
+									"    pm.expect(responseJson.success).to.be.a('boolean');\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Message is a string\", function () {\r",
+									"    pm.expect(responseJson.message).to.be.a('string');\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Payment_url is a string\", function () {\r",
+									"    pm.expect(responseJson.data.payment_url).to.be.a('string');\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user@example.com\",\r\n    \"billing_plan_id\": \"{{billing_plan_id}}\",\r\n    \"payment_gateway\": \"flutterwave\",\r\n    \"redirect_url\": \"https://staging.tifi.tv/pay\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/initiate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"payments",
+								"initiate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Initiate Payment - Error Check(400/422)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();\r",
+									"\r",
+									"if (pm.response.code >= 400) {\r",
+									"    console.log(`Error: ${pm.response.code}`);\r",
+									"    console.log(`Response Body: ${pm.response.text()}`);\r",
+									"}\r",
+									"\r",
+									"// Check that the status code is either 401 or 422\r",
+									"pm.test(\"Status code is 401 or 422\", function () {\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([401, 422]);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response body contains the right terms\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include('msg');\r",
+									"    pm.expect(pm.response.text()).to.include('status_code');\r",
+									"    pm.expect(pm.response.text()).to.include('errors');\r",
+									"    pm.expect(pm.response.text()).to.include('loc');\r",
+									"    pm.expect(pm.response.text()).to.include('type');\r",
+									"    pm.expect(pm.response.text()).to.include('message');\r",
+									"});\r",
+									"\r",
+									"// Validate field types\r",
+									"pm.test(\"Status code is a number\", function () {\r",
+									"    pm.expect(responseJson.status_code).to.be.a('number');\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error is an array\", function () {\r",
+									"    pm.expect(responseJson.errors).to.be.an('array');\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Message is a string\", function () {\r",
+									"    pm.expect(responseJson.message).to.be.a('string');\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "// {\r\n//     \"email\": \"user@example.com\",\r\n//     \"billing_plan_id\": \"{{billing_plan_id}}\",\r\n//     \"payment_gateway\": \"flutterwave\",\r\n//     \"redirect_url\": \"https://staging.tifi.tv/pay\"\r\n// }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/initiate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"payments",
+								"initiate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Initiate Payment - Error Check(401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();\r",
+									"\r",
+									"if (pm.response.code >= 400) {\r",
+									"    console.log(`Error: ${pm.response.code}`);\r",
+									"    console.log(`Response Body: ${pm.response.text()}`);\r",
+									"}\r",
+									"\r",
+									"// Check that the status code is 200\r",
+									"pm.test(\"Status code is 401\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response body contains the right terms\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include('status');\r",
+									"    pm.expect(pm.response.text()).to.include('status_code');\r",
+									"    pm.expect(pm.response.text()).to.include('message');\r",
+									"});\r",
+									"\r",
+									"// Validate field types\r",
+									"pm.test(\"Status code is a number\", function () {\r",
+									"    pm.expect(responseJson.status_code).to.be.a('number');\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Status is a boolean\", function () {\r",
+									"    pm.expect(responseJson.status).to.be.a('boolean');\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Message is a string\", function () {\r",
+									"    pm.expect(responseJson.message).to.be.a('string');\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user@example.com\",\r\n    \"billing_plan_id\": \"{{billing_plan_id}}\",\r\n    \"payment_gateway\": \"flutterwave\",\r\n    \"redirect_url\": \"https://staging.tifi.tv/pay\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/initiate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"payments",
+								"initiate"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Payments Flow - Subscription",
+			"item": [
+				{
+					"name": "Perform subscription",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();\r",
+									"\r",
+									"if (pm.response.code >= 404) {\r",
+									"    console.log(`Error: ${pm.response.code}`);\r",
+									"    console.log(`Response Body: ${pm.response.text()}`);\r",
+									"}\r",
+									"\r",
+									"// Check that the status code is 200\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// pm.test(\"Response body contains the right terms\", function () {\r",
+									"//     pm.expect(pm.response.text()).to.include('data');\r",
+									"//     pm.expect(pm.response.text()).to.include('status_code');\r",
+									"//     // pm.expect(pm.response.text()).to.include('access_token');\r",
+									"//     pm.expect(pm.response.text()).to.include('payment_url');\r",
+									"//     pm.expect(pm.response.text()).to.include('success');\r",
+									"//     pm.expect(pm.response.text()).to.include('message');\r",
+									"// });\r",
+									"\r",
+									"// // Validate field types\r",
+									"// pm.test(\"Status code is a number\", function () {\r",
+									"//     pm.expect(responseJson.status_code).to.be.a('number');\r",
+									"// });\r",
+									"\r",
+									"// pm.test(\"Success is a boolean\", function () {\r",
+									"//     pm.expect(responseJson.success).to.be.a('boolean');\r",
+									"// });\r",
+									"\r",
+									"// pm.test(\"Message is a string\", function () {\r",
+									"//     pm.expect(responseJson.message).to.be.a('string');\r",
+									"// });\r",
+									"\r",
+									"// pm.test(\"Payment_url is a string\", function () {\r",
+									"//     pm.expect(responseJson.data.payment_url).to.be.a('string');\r",
+									"// });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{superToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/verify/:transaction_id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"payments",
+								"verify",
+								":transaction_id"
+							],
+							"variable": [
+								{
+									"key": "transaction_id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://api.staging.tifi.tv"
+		},
+		{
+			"key": "accessToken",
+			"value": ""
+		},
+		{
+			"key": "userId",
+			"value": ""
+		},
+		{
+			"key": "email",
+			"value": ""
+		},
+		{
+			"key": "superToken",
+			"value": ""
+		},
+		{
+			"key": "billing_plan_id",
+			"value": ""
+		}
+	]
+}
