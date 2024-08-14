@@ -1,0 +1,36 @@
+name: Run Newman Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "README.md"
+      - ".github/workflows/**"
+
+jobs:
+  run-newman:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16" # Use the Node.js version that matches your environment
+
+      - name: Install Newman and HTML reporter
+        run: |
+          npm install -g newman newman-reporter-html
+
+      - name: Run Newman Tests
+        run: |
+          chmod +x test-newman.sh
+          ./test-newman.sh
+
+      - name: Archive HTML report
+        uses: actions/upload-artifact@v3
+        with:
+          name: newman-report
+          path: newman-reports/
