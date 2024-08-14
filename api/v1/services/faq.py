@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from api.core.base.services import Service
 from api.v1.models.faq import FAQ
 from api.v1.schemas.faq import CreateFAQ, UpdateFAQ
+from fastapi import HTTPException
 
 class FAQService(Service):
     '''FAQ service functionality'''
@@ -13,6 +14,9 @@ class FAQService(Service):
         Returns:
             (FAQ): FAQ object.
         """
+        if schema.answer.strip() == '' or schema.category.strip() == ''or schema.question.strip() == '':
+            raise HTTPException(status_code=400, detail="Invalid request body")
+        
         new_faq = FAQ(**schema.model_dump())
         db.add(new_faq)
         db.commit()
@@ -47,6 +51,10 @@ class FAQService(Service):
             FAQ
         """        
         faq = db.query(FAQ).filter_by(id=faq_id).first()
+
+        if faq == None:
+            raise HTTPException(status_code=404, detail="FAQ not found")
+        
         return faq
 
     def update(self, db: Session, faq_id: str, schema: UpdateFAQ) -> FAQ | None:
