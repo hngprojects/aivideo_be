@@ -52,6 +52,11 @@ async def initiate_payment(
         },
     }
 
+    if schema.payment_gateway == "flutterwave" and schema.auto_renew:
+        subscription_plan_id = pg_service.create_subscription_plan(bill_plan)
+        payment_data['payment_plan'] = subscription_plan_id
+
+
     header = {'Authorization': f"Bearer {settings.FLUTTERWAVE_SECRET}"}
 
     try:
