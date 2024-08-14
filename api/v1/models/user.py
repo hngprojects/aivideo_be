@@ -28,6 +28,7 @@ class User(BaseTableModel):
     notification_setting = relationship("NotificationSetting", back_populates="user")
     data_privacy_setting = relationship("DataPrivacySetting", back_populates="user")
     lang_reg_timezone_settings = relationship("LanguageRegionTimezoneSetting", back_populates="user")
+    jobs = relationship("Job", back_populates="user")
 
     def to_dict(self):
         obj_dict = super().to_dict()

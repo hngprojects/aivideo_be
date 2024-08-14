@@ -27,6 +27,9 @@ class WebsocketService:
                 websocket=websocket
             )
 
+            project.is_active = False
+            db.commit()
+
             if status == 'PENDING':
                 job_service.update_job(job_id, 'PENDING')
 
@@ -47,6 +50,7 @@ class WebsocketService:
 
                 # Save project result
                 project.result = result
+                project.is_active = True
                 db.commit()
 
                 # Send message
