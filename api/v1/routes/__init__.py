@@ -12,6 +12,7 @@ from tests.run_all_test import test_rout
 from api.v1.routes.google_auth import google_auth
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
+from api.v1.routes.ai_tools.summary_audio import summary_audio
 
 api_version_one = APIRouter(prefix="/api/v1")
 
@@ -28,3 +29,4 @@ api_version_one.include_router(pwd_reset)
 api_version_one.include_router(preset_router)
 api_version_one.include_router(websocket_router)
 api_version_one.include_router(test_rout)
+api_version_one.include_router(summary_audio)
