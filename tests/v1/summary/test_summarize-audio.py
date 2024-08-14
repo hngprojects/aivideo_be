@@ -25,3 +25,4 @@ def test_summarize_audio_no_file_uploaded(mock_celery_task):
     )
     
     assert response.status_code == 404  # Unprocessable Entity because file field is required
+
