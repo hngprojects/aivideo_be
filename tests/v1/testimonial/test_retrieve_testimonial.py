@@ -51,7 +51,7 @@ class TestCodeUnderTest:
         app.dependency_overrides = {}
 
     def test_get_all_testimonial(self, client):
-        """Test to verify response for getting all FAQs."""
+        """Test to verify response for getting all testimonials."""
 
         mock_data = [
             Testimonial(id=str(uuid7()), client_name="Zxenon", content="Very Useful Product",
@@ -72,3 +72,48 @@ class TestCodeUnderTest:
             assert response.status_code == 200
             assert response.json()['data'][0]['content'] == mock_data[0].content
             assert response.json()['data'][1]['client_name'] == mock_data[1].client_name
+
+    
+    def test_get_all_testimonials_empty(self, client):
+        """Test to verify response for getting empty list of testimonials."""
+
+        mock_data = []
+
+        app.dependency_overrides[testimonial_service.fetch_all] = mock_data
+
+        with patch("api.v1.services.testimonial.testimonial_service.fetch_all", return_value=mock_data):
+            response = client.get(ENDPOINT)
+
+            assert response.status_code == 200
+            assert response.json().get('data') == None
+        
+
+
+    def test_get_testimonial_single(self, client):
+        '''Test to successfully fetch a single testimonial'''
+
+        mock_data = mock_testimonial()
+
+        with patch("api.v1.services.testimonial.testimonial_service.fetch",
+                   return_value=mock_data) as mock_fetch:
+            
+            response = client.get(
+                f'{ENDPOINT}/{mock_data.id}',
+            )
+
+            assert response.status_code == 200
+            assert response.json()['data']['content'] == mock_data.content
+            assert response.json()['data']['client_name'] == mock_data.client_name
+
+    def test_get_testimonial_not_found(self, client):
+        """Test when the testimonial ID does not exist."""
+
+        nonexistent_id = str(uuid7())
+        with patch("api.v1.services.testimonial.testimonial_service.fetch", return_value=None):
+            response = client.get(
+                f'{ENDPOINT}/{nonexistent_id}',
+            )
+
+            # Assert that the response status code is 404 Not Found
+            assert response.status_code == 404
+            assert response.json()['message'] == 'Testimonial not found'
