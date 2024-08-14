@@ -24,7 +24,7 @@ async def upload_audio(file: UploadFile = File(...)):
         )
 
         return {
-            "status_code": 202,
+            "status_code": 200,
             "message": "Audio transcription job initiated successfully",
             "data": {
                 "job_id": task.id,
@@ -48,7 +48,7 @@ async def translate_text_endpoint(request: TranslationRequest):
         )
 
         return {
-            "status_code": 202,
+            "status_code": 200,
             "message": "Text translation job initiated successfully",
             "data": {
                 "job_id": task.id,
