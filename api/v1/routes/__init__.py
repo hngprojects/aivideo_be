@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from api.v1.routes.ai_tools.youtube_summarizer import video_summary
 from api.v1.routes.auth import auth
 from api.v1.routes.user import user_router
 from api.v1.routes.payment import payments
@@ -26,3 +27,5 @@ api_version_one.include_router(preset_router)
 # api_version_one.include_router(background_router)
 api_version_one.include_router(websocket_router)
 api_version_one.include_router(test_rout)
+
+api_version_one.include_router(video_summary)

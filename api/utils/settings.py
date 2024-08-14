@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 class Settings(BaseSettings):
     """ Class to hold application's config values."""
-    
+
     SECRET_KEY: str = config("SECRET_KEY")
     ALGORITHM: str = config("ALGORITHM")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = config("ACCESS_TOKEN_EXPIRE_MINUTES")
@@ -38,6 +38,8 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str = config("OPENAI_API_KEY")
     CELERY_BROKER_URL: str = config("CELERY_BROKER_URL")
+    ASEMBLYAI_API_KEY: str = config("ASEMBLYAI_API_KEY")
+    OPENROUTER_API_KEY: str = config("OPENROUTER_API_KEY")
 
 
 settings = Settings()
