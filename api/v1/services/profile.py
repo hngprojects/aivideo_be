@@ -87,11 +87,33 @@ class ProfileService(Service):
         try:
 
             profile = db.query(Profile).filter(Profile.user_id == user_id).first()
+            user = db.query(User).filter(User.id == user_id).first()
+
 
             if not profile:
                 raise HTTPException(status_code=404, detail="User profile not found")
+            
+            
+            response_data = {
+                "id": profile.id,
+                "username": profile.username,
+                "pronouns": profile.pronouns,
+                "job_title": profile.job_title,
+                "social": profile.social,
+                "bio": profile.bio,
+                "phone_number": profile.phone_number,
+                "created_at": profile.created_at,
+                "updated_at": profile.updated_at,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "avatar_url": user.avatar_url,
+                    "is_active": user.is_active
+                }
+            }
 
-            return profile
+            return response_data
+        
         except SQLAlchemyError as e:
             db.rollback()
             raise HTTPException(status_code=500, detail="Database error occurred: " + str(e))
