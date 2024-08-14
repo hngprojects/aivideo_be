@@ -113,6 +113,7 @@ async def update_testimonial(
         status_code=status.HTTP_200_OK,
     )
 
+
 @testimonial.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_testimonial(
     id: str,
