@@ -34,6 +34,7 @@ dataclasses-json==0.6.7
 dill==0.3.8
 distlib==0.3.8
 distro==1.9.0
+deep-translator==1.11.4
 dnspython==2.6.1
 ecdsa==0.19.0
 email_validator==2.2.0
@@ -85,6 +86,7 @@ nodeenv==1.9.1
 numpy==1.26.4
 onnxruntime==1.18.1
 openai==1.40.3
+openai-whisper==20231117
 opencv-python==4.10.0.84
 orjson==3.10.7
 packaging==24.1
@@ -141,6 +143,7 @@ tenacity==8.5.0
 tiktoken==0.7.0
 tomli==2.0.1
 tomlkit==0.13.0
+torch==2.3.1
 tornado==6.4.1
 tqdm==4.66.5
 twilio==9.2.3
