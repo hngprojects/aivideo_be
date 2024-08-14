@@ -4,6 +4,7 @@ class CreateProject(BaseModel):
 
     title : str
     project_type : str
+    
 
 
 class UpdateProject(BaseModel):
@@ -12,5 +13,3 @@ class UpdateProject(BaseModel):
     description: str
     
 
-class SummaryRequest(BaseModel):
-    summary: str

@@ -35,8 +35,8 @@ class ProjectService(Service):
     def fetch(self, db: Session, project_id: str):
         """Fetches a, project by id"""
 
-        prohect = check_model_existence(db, Project, project_id)
-        return prohect
+        project = check_model_existence(db, Project, project_id)
+        return project
 
     def update(self, db: Session, project_id: str, schema: UpdateProject):
         """Updates a project"""
