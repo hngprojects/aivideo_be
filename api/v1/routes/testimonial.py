@@ -40,3 +40,46 @@ async def create_testimonial(
         message="Successfully created Testimonial",
         status_code=status.HTTP_201_CREATED,
     )
+
+@testimonial.get("", response_model=success_response, status_code=200)
+async def get_all_testimonials(db: Session = Depends(get_db),):
+    """Endpoint to get all testimonials
+
+    Args:
+        db (Session, optional): The db session object. Defaults to Depends(get_db).
+    """    
+    
+    testimonials = testimonial_service.fetch_all(db=db)
+    testimonials_filtered = list(
+        map(lambda x: TestimonialBase.model_validate(x), testimonials)
+    )
+    if len(testimonials_filtered) == 0:
+        testimonials_filtered = None
+
+    return success_response(
+        status_code=200,
+        message="Testimonials retrieved successfully",
+        data=jsonable_encoder(testimonials_filtered),
+    )
+
+@testimonial.get("/{id}", response_model=success_response, status_code=200)
+async def get_single_testimonial(id: str, db: Session = Depends(get_db)):
+    """Endpoint to get a single Testimonial
+
+    Args:
+        id (str): Testimonial ID
+        db (Session, optional): Defaults to Depends(get_db).
+
+    Raises:
+        HTTPException: 404 NOT FOUND (Testimonial to be retrieved cannot be found)
+    """
+    testimonial = testimonial_service.fetch(db, testimonial_id=id)
+
+    if testimonial == None:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+
+    return success_response(
+        data=jsonable_encoder(TestimonialBase.model_validate(testimonial)),
+        message="Testimonial retrieved successfully",
+        status_code=status.HTTP_200_OK,
+    )
