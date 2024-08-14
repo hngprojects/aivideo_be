@@ -6,6 +6,7 @@ from api.v1.routes.billing_plan import billing_plan
 from api.v1.routes.ai_tools.summary import summary
 from api.v1.routes.faq import faq
 from api.v1.routes.ai_tools.background_task import background_router
+from api.v1.routes.ai_tools.audio_transcriber import audio 
 from tests.run_all_test import test_rout
 
 api_version_one = APIRouter(prefix="/api/v1")
@@ -18,3 +19,4 @@ api_version_one.include_router(payments)
 api_version_one.include_router(billing_plan)
 api_version_one.include_router(faq)
 api_version_one.include_router(background_router)
+api_version_one.include_router(audio)
