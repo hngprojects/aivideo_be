@@ -26,9 +26,6 @@ async def create_project(
     Returns:
         success_response
     """
-    if schema.title.strip() == '' or schema.project_type.strip() == '':
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request body")
-
     full_project = AddFullProjectSchema(user_id=current_user.id, **schema.model_dump())
     
     new_project = project_service.create(db, full_project)
