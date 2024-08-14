@@ -11,7 +11,9 @@ worker = Celery(
     ]
 )
 
-worker.conf.update(task_track_started=True)
+worker.conf.update(
+    task_track_started=True
+)
 
 
 if __name__ == "__main__":
