@@ -1,9 +1,13 @@
+import csv
+from io import StringIO
 from typing import Optional
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 from celery.result import AsyncResult
 
 from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
+from api.utils.pagination import paginated_response
 from api.v1.models.job import Job
 from api.v1.models.project import Project
 from api.v1.schemas.project import CreateProject
@@ -56,10 +60,9 @@ class JobService:
         jobs = db.query(Job).all()
         return jobs
 
-    def fetch_by_job_id(
-        self,
-        job_id: str,
-    ):
+
+        
+    def fetch_by_job_id(self, job_id: str):
         """Fetches the job details from the database"""
 
         job = db.query(Job).filter(Job.job_id == job_id).first()
@@ -97,6 +100,76 @@ class JobService:
             self.update_job(job_id=job_id, status=task_result.state, result=result)
         elif task_result.state in ["FAILURE", "REVOKED"]:
             self.update_job(job_id=job_id, status=task_result.state)
+    def fetch_job_activity(self, db: Session, skip: int, limit: int, filters: dict):
+        return paginated_response(
+            db=db,
+            model=Job,
+            skip=skip,
+            limit=limit,
+            filters=filters,
+            related_models=[Job.user, Job.project],
+            related_model_excludes={
+                "user": [
+                    "password",
+                    "is_superadmin",
+                    "is_deleted",
+                    "created_at",
+                    "update_at",
+                    "avatar_url",
+                    "is_active",
+                    "email",
+                    "created_at",
+                    "updated_at",
+                ],
+                "project": [
+                    "title",
+                    "description",
+                    "file_url",
+                    "archived",
+                    "result",
+                    "is_deleted",
+                ],
+            },
+        )
+
+    def export_jobs_as_csv(self, db: Session):
+        # get videos
+
+        data = db.query(Job).all()
+
+        csv_file = StringIO()
+        csv_writer = csv.writer(csv_file)
+
+        csv_writer.writerow(
+            [
+                "ID",
+                "Firstname",
+                "Lastname",
+                "Email",
+                "Task ID",
+                "Project Type",
+                "Date Created",
+                "Status",
+            ]
+        )
+
+        for datum in data:
+            csv_writer.writerow(
+                [
+                    datum.id,
+                    datum.user.first_name,
+                    datum.user.last_name,
+                    datum.user.email,
+                    datum.job_id,
+                    datum.project.project_type,
+                    datum.created_at,
+                    datum.status,
+                ]
+            )
+
+        csv_file.seek(0)
+
+        return csv_file
 
 
 job_service = JobService()
