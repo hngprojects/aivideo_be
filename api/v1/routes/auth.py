@@ -105,13 +105,18 @@ def register_as_super_admin(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @auth.post("/login", status_code=status.HTTP_200_OK, response_model=success_response)
-def login(login_request: LoginRequest, db: Session = Depends(get_db)):
+def login(login_request: LoginRequest, request=Request, db: Session = Depends(get_db)):
     """Endpoint to log in a user"""
 
     # Authenticate the user
     user = user_service.authenticate_user(
         db=db, email=login_request.email, password=login_request.password
     )
+    
+    
+    # Reset session usage count upon login
+    request.session.pop("pdf_summarizer_anon", None)
+    request.session[f"pdf_summarizer_{user.id}"] = 0
 
     # Generate access and refresh tokens
     access_token = user_service.create_access_token(user_id=user.id)

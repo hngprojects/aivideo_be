@@ -10,3 +10,7 @@ class UpdateProject(BaseModel):
     
     title : str
     description: str
+    
+
+class SummaryRequest(BaseModel):
+    summary: str
