@@ -65,7 +65,7 @@ class TestCodeUnderTest:
             assert response.json()['data']['client_name'] == mock_testimonial_obj.client_name
             assert response.json()['data']['content'] == mock_testimonial_obj.content
 
-    def test_create_faq_missing_field(self, client, db_session_mock):
+    def test_create_testimonial_missing_field(self, client, db_session_mock):
         '''Test for missing field when creating a new testimonial'''
 
         # Mock the user service to return the current admin
