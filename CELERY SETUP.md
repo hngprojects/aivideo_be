@@ -65,3 +65,12 @@ Run the following commands in two separate terminsla:
 celery -A api.core.dependencies.celery.celery_app worker --loglevel-info
 celery -A api.core.dependencies.celery.celery_app flower --loglevel-info
 ```
+
+## Access RabbitMQ Management Syatem
+You can access the RabbitMQ Management System at :
+[http://localhost:15672](http://localhost:15672)
+
+
+## Access Flower Management Syatem for mMonitoring Background Tasks
+You can access the RabbitMQ Management System at :
+[http://localhost:5555](http://localhost:5555)
