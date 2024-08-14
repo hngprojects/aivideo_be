@@ -43,11 +43,16 @@ async def enqueue_summarize_batch_job(
 
     for file in uploaded_files:
         job = generate_video_summary_task.delay(file)
-        job_ids.append(job.id)
 
-        job_service.create_project_with_job(
+        project = job_service.create_project_with_job(
             job=job, project_title="New project",
-            project_type="Youtube summarizer")
+            project_type="Youtube summarizer"
+        )
+
+        job_ids.append({
+            "job_id": job.id,
+            "project_id": project.id,
+        })
     return success_response(
         status_code=HTTP_202_ACCEPTED,
         message="Video summary generation task initiated successfully",
