@@ -5,8 +5,6 @@ from api.v1.routes.payment import payments
 from api.v1.routes.billing_plan import billing_plan
 from api.v1.routes.ai_tools.summary import summary
 from api.v1.routes.faq import faq
-from api.v1.routes.ai_tools.background_task import background_router
-from api.v1.routes.ai_tools.audio_transcriber import audio 
 # from api.v1.routes.ai_tools.background_task import background_router
 from api.v1.routes.presets import preset_router
 from api.v1.routes.google_auth import google_auth
@@ -24,8 +22,6 @@ api_version_one.include_router(profile)
 api_version_one.include_router(payments)
 api_version_one.include_router(billing_plan)
 api_version_one.include_router(faq)
-api_version_one.include_router(background_router)
-api_version_one.include_router(audio)
 api_version_one.include_router(preset_router)
 # api_version_one.include_router(background_router)
 api_version_one.include_router(websocket_router)
