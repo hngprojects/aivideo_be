@@ -1,16 +1,13 @@
 name: CI
-
 on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths-ignore:
       - "README.md"
-      - ".github/workflows/**"
-
+#      - ".github/workflows/**"
 jobs:
   build-and-test:
     runs-on: self-hosted
-
     services:
       postgres:
         image: postgres:latest
@@ -19,17 +16,14 @@ jobs:
           POSTGRES_PASSWORD: "password"
           POSTGRES_DB: "test"
         ports:
-          - 5432:5432
-
+          - 5432
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
@@ -37,14 +31,18 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-
       - name: Install dependencies
         run: |
+          sudo apt install -y libasound2-dev gcc python3-dev
+          python3 -m pip install --upgrade pip
+          pip install --upgrade wheel
           pip install -r requirements.txt
-
       - name: Copy env file
         run: cp .env.sample .env
-
+      - name: Update .env with dynamic port
+        run: |
+          echo "DB_PORT=${{ job.services.postgres.ports[5432] }}" >> .env
+          echo "DB_URL=postgresql://username:password@localhost:${{ job.services.postgres.ports[5432] }}/test" >> .env
       - name: Run app
         run: |
           python3 main.py &
@@ -57,11 +55,9 @@ jobs:
             echo "main.py failed to start"
             exit 1
           fi
-
       - name: Run migrations
         run: |
           alembic upgrade head
-
       - name: Run tests
         run: |
           PYTHONPATH=. pytest
