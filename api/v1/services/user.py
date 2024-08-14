@@ -309,6 +309,7 @@ class UserService(Service):
         if not self.verify_password(password, user.password):
             raise HTTPException(status_code=400, detail="Invalid user credentials")
 
+        user.update_last_login()
         return user
 
     def perform_user_check(self, user: User):
