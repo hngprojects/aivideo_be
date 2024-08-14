@@ -33,7 +33,8 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install dependencies
         run: |
-          apt install -y libasound2-dev gcc python3-dev
+          id -a
+          sudo apt install -y libasound2-dev gcc python3-dev
           python -m pip install --upgrade pip
           pip install --upgrade wheel
           pip install -r requirements.txt
