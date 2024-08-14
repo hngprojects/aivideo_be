@@ -1,9 +1,11 @@
 from typing import Optional
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 from celery.result import AsyncResult
 
 from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
+from api.utils.pagination import paginated_response
 from api.v1.models.job import Job
 from api.v1.models.project import Project
 from api.v1.schemas.project import CreateProject
@@ -91,6 +93,38 @@ class JobService:
         if not project:
             raise HTTPException(status_code=404, detail='Project not found')
         return project
+
+    def fetch_job_activity(self, db: Session, skip: int, limit: int, filters: dict):
+        return paginated_response(
+        db=db,
+        model=Job,
+        skip=skip,
+        limit=limit,
+        filters=filters,
+        related_models=[Job.user, Job.project],
+        related_model_excludes={
+            "user": [
+                "password",
+                "is_superadmin",
+                "is_deleted",
+                "created_at",
+                "update_at",
+                "avatar_url",
+                "is_active",
+                "email",
+                "created_at",
+                "updated_at",
+            ],
+            "project": [
+                "title",
+                "description",
+                "file_url",
+                "archived",
+                "result",
+                "is_deleted",
+            ],
+        },
+    )
     
 
 
