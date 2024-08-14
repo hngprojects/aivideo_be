@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from fastapi import HTTPException
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, mock_open
 from main import app
 from api.utils.settings import settings
 
@@ -17,16 +17,14 @@ class MockSettings:
 settings = MockSettings()
 
 
-@patch('api.utils.files.upload_file', return_value='./media/uploads/videos/video-mocked.mov')
+@patch('api.utils.files.upload_file')
 @patch('os.path.exists', return_value=False)
 @patch('os.makedirs')
-def test_upload_video_success(mock_makedirs, mock_exists, mock_upload_file):
+@patch('builtins.open', new_callable=mock_open)
+def test_upload_video_success(mock_open, mock_makedirs, mock_exists, mock_upload_file):
     mock_file = MagicMock()
     mock_file.filename = 'video.mov'
     mock_file.read.return_value = b'test video content'
-
-    with open('./media/uploads/videos/video-mocked.mov', 'wb') as f:
-        f.write(b'test video content')
 
     response = client.post(
         '/api/v1/thumbnails/upload',
