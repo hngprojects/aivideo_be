@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, or_
+from sqlalchemy import desc, or_, func
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
@@ -75,7 +75,11 @@ class UserService(Service):
         # validate query_param
         # query_param must be a string
 
-        if not isinstance(query_param, str) or query_param is None or not query_param.strip():
+        if (
+            not isinstance(query_param, str)
+            or query_param is None
+            or not query_param.strip()
+        ):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Invalid value for search parameter. Must be a non empty string.",
@@ -305,6 +309,7 @@ class UserService(Service):
         if not self.verify_password(password, user.password):
             raise HTTPException(status_code=400, detail="Invalid user credentials")
 
+        user.update_last_login()
         return user
 
     def perform_user_check(self, user: User):
@@ -419,6 +424,7 @@ class UserService(Service):
 
         token = self.verify_access_token(access_token, credentials_exception)
         user = db.query(User).filter(User.id == token.id).first()
+        user.update_last_login()
 
         return user
 
