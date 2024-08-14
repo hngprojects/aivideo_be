@@ -1,7 +1,7 @@
 """ User data model
 """
 
-from sqlalchemy import Column, String, Boolean
+from sqlalchemy import Column, String, Boolean, DateTime, func
 from sqlalchemy.orm import relationship
 from api.v1.models.base_model import BaseTableModel
 
@@ -17,6 +17,8 @@ class User(BaseTableModel):
     is_active = Column(Boolean, server_default='true')
     is_superadmin = Column(Boolean, server_default='false')
     is_deleted = Column(Boolean, server_default='false')
+
+    last_login = Column(DateTime(timezone=True), nullable=True)
 
     profile = relationship('Profile', back_populates='user', uselist=False)
     notifications = relationship('Notification', back_populates='user')
