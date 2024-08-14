@@ -1,30 +1,44 @@
 import os
 import wave
-from PIL import Image, ImageEnhance
-import imageio
-import numpy as np
+from PIL import Image
 from uuid import uuid4
 from api.utils.settings import settings
 import json
 import os
-from unrealspeech import UnrealSpeechAPI, save
+import random
+from openai import OpenAI
 import requests
 
 
 
 class TalkingAvatarService:
+	def download_large_file(self, url, save_path):
+		try:
+			with requests.get(url, stream=True) as response:
+				response.raise_for_status()
+				with open(save_path, "wb") as f:
+					for chunk in response.iter_content(chunk_size=8192):
+						f.write(chunk)
+			print(f"Large file downloaded successfully and saved as {save_path}")
+		except requests.RequestException as e:
+			print(f"Error downloading large file: {e}")
 	
-	def generate_audio(self, script, male=False):
-		file_path = os.path.join('media', 'output', f'{str(uuid4())}.mp4')
-		speech_api = UnrealSpeechAPI(settings.UNREAL_SPEECH_API_KEY)
-		text_to_speech = script
-		timestamp_type = "sentence"
-		voice_id = "Will" if male else "Scarlett"
-		bitrate = "192k"
-		speed = 0 
-		pitch = 1.0
-		audio_data = speech_api.speech(text=text_to_speech,voice_id=voice_id, bitrate=bitrate, timestamp_type=timestamp_type, speed=speed, pitch=pitch)
-		save(audio_data, file_path)
+	def generate_audio(self, script="Today is a wonderful day to build something people love!", male_voice=True):
+		file_path = os.path.join('media', 'output', f'{str(uuid4())}.wav')
+		female = ["nova", "shimmer"]
+		neutral = ["fable", "alloy"]
+		male = ["echo", "onyx"]
+		voice = male[random.randint(0, 1)]
+		if not male_voice:
+			voice = female[random.randint(0, 1)]
+		client = OpenAI(api_key=settings.OPENAI_API_KEY)
+		response = client.audio.speech.create(
+			model="tts-1",
+			voice=voice,
+			input=script,
+			response_format="wav"
+		)
+		response.stream_to_file(file_path)
 		return file_path
 		
 	def get_audio_duration(self, audio_path):
@@ -32,7 +46,7 @@ class TalkingAvatarService:
 			num_frames = audio_file.getnframes()
 			frame_rate = audio_file.getframerate()
 			duration_seconds = num_frames / frame_rate
-			return duration_seconds
+			return int(duration_seconds)
 
 	def open_and_resize_image(self, input, image_type):
 		img = Image.open(input)
@@ -49,31 +63,12 @@ class TalkingAvatarService:
 		img.thumbnail(max_size)
 		return img
 
-	def process_script(self, input, image_type, script="Hello i'm the real slim shady baby.",fps=3):
+	def process_script(self, image_file, image_type, script="Hello i'm the real slim shady baby.",fps=3):
 		audio = self.generate_audio(script)
-		seconds = self.get_audio_duration(audio)
-		total_frames = seconds * fps
-
-		im = self.open_and_resize_image(input, image_type)
-
-		color_percentage_for_each_frame = 1.0
-
-		write_to = os.path.join('media', 'output', 'video', f'{str(uuid4())}.mp4')
-
-		writer = imageio.get_writer(write_to, format='mp4', mode='I', fps=fps)
-
-		for i in range(total_frames):
-			processed = ImageEnhance.Color(im).enhance(color_percentage_for_each_frame)
-			writer.append_data(np.asarray(processed))
-
-
-		writer.close()		
-
 		files = [
-			("input_face", open(write_to, "rb")),
+			("input_face", open(image_file, "rb")),
 			("input_audio", open(audio, "rb")),
 		]
-
 		payload = {
 			"functions": None,
 			"variables": None,
@@ -84,7 +79,7 @@ class TalkingAvatarService:
 			"sadtalker_settings": None,
 			"selected_model": "Wav2Lip",
 		}
-
+		print("got here")
 		response = requests.post(
 			"https://api.gooey.ai/v2/Lipsync/form/",
 			headers={
@@ -95,7 +90,12 @@ class TalkingAvatarService:
 		)
 
 		result = response.json()
-		return result['output_video']
+		print(result)
+		url = result['output']['output_video']
+		save_path = os.path.join('media', 'output', 'video', f'{str(uuid4())}.mp4')
+		self.download_large_file(url, save_path)
+		return True
+
 
 
 talking_avatar_service = TalkingAvatarService()
