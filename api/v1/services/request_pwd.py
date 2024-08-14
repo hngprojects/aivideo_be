@@ -16,7 +16,10 @@ from passlib.context import CryptContext
 from typing import Optional
 from api.utils.settings import settings
 from fastapi.templating import Jinja2Templates
+<<<<<<< HEAD
 from api.v1.models.user import User
+=======
+>>>>>>> cfec116 (feat: implemented magic link, password reset and refactored google auth)
 
 templates = Jinja2Templates(directory="./api/v1/templates")
 
@@ -150,6 +153,7 @@ class RequestPasswordService:
                 message="Password has been reset successfully",
                 status_code=status.HTTP_200_OK,
             )
+<<<<<<< HEAD
         
         except SQLAlchemyError as e:
             session.rollback()  # Rollback the session in case of an error
@@ -179,6 +183,8 @@ class RequestPasswordService:
                 message="Password has been reset successfully",
                 status_code=status.HTTP_200_OK,
             )
+=======
+>>>>>>> cfec116 (feat: implemented magic link, password reset and refactored google auth)
 
         except SQLAlchemyError as e:
             session.rollback()  # Rollback the session in case of an error

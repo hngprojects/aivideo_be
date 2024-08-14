@@ -213,8 +213,12 @@ async def request_magic_link(
     link = data["data"]["reset_link"]
     data.update({
          "message": "Magic link sent sucessfully.",
+<<<<<<< HEAD
          "data": {"magic-link": link},
          "status_code": status.HTTP_200_OK
+=======
+         "data": {"magic-link": link}
+>>>>>>> cfec116 (feat: implemented magic link, password reset and refactored google auth)
     })
     return success_response(**data)
 

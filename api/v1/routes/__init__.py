@@ -20,7 +20,13 @@ api_version_one.include_router(google_auth)
 api_version_one.include_router(user_router)
 api_version_one.include_router(summary)
 api_version_one.include_router(faq)
+<<<<<<< HEAD
 # api_version_one.include_router(background_router)
 api_version_one.include_router(preset_router)
 api_version_one.include_router(websocket_router)
 api_version_one.include_router(test_rout)
+=======
+api_version_one.include_router(background_router)
+api_version_one.include_router(google_auth)
+api_version_one.include_router(pwd_reset)
+>>>>>>> cfec116 (feat: implemented magic link, password reset and refactored google auth)

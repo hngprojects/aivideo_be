@@ -17,8 +17,13 @@ class EmailService:
             MAIL_SERVER=os.getenv("MAIL_SERVER"),
             USE_CREDENTIALS=True,
             VALIDATE_CERTS=False,
+<<<<<<< HEAD
             MAIL_STARTTLS = False,
             MAIL_SSL_TLS = True,
+=======
+            MAIL_STARTTLS = True,
+            MAIL_SSL_TLS = False,
+>>>>>>> cfec116 (feat: implemented magic link, password reset and refactored google auth)
             TEMPLATE_FOLDER='./api/v1/templates'
         )
         self.fast_mail = FastMail(self.conf)
