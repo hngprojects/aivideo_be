@@ -67,7 +67,7 @@ def test_change_password_success(client, db_session_mock):
     # Mock the password change behavior
     with patch("api.v1.services.user.user_service.change_password", return_value={"message": "Password changed successfully"}) as mock_change_password:
         response = client.put(
-            "/api/v1/users/me/change-password",
+            "/api/v1/users/update/password",
             json={
                 "old_password": "TestaUser@123",
                 "new_password": "NewPass123!",
@@ -90,7 +90,7 @@ def test_change_google_auth_user_password_success(client, db_session_mock):
     # Mock the password change behavior
     with patch("api.v1.services.user.user_service.change_password", return_value={"message": "Password changed successfully"}) as mock_change_password:
         response = client.put(
-            "/api/v1/users/me/change-password",
+            "/api/v1/users/update/password",
             json={
                 "old_password": "",
                 "new_password": "NewPass123!",
@@ -113,7 +113,7 @@ def test_change_password_incorrect_old_password(client, db_session_mock):
     # Mock the password change behavior to simulate an incorrect old password
     with patch("api.v1.services.user.user_service.change_password", side_effect=HTTPException(status_code=400, detail="Incorrect old password")) as mock_change_password:
         response = client.put(
-            "/api/v1/users/me/change-password",
+            "/api/v1/users/update/password",
             json={
                 "old_password": "WrongOldPass123",
                 "new_password": "NewPass123!",
@@ -134,7 +134,7 @@ def test_change_password_invalid_new_password(client, db_session_mock):
     app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
 
     response = client.put(
-        "/api/v1/users/me/change-password",
+        "/api/v1/users/update/password",
         json={
             "old_password": "TestaUser@123",
             "new_password": "short",
@@ -152,7 +152,7 @@ def test_change_password_unauthorized(client):
     '''Test unauthorized access when no token is provided'''
 
     response = client.put(
-        "/api/v1/users/me/change-password",
+        "/api/v1/users/update/password",
         json={
             "old_password": "TestaUser@123",
             "new_password": "NewPass123!",
