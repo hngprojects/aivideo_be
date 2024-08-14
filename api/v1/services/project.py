@@ -28,7 +28,10 @@ class ProjectService(Service):
         if query_params:
             for column, value in query_params.items():
                 if hasattr(Project, column) and value:
-                    query = query.filter(getattr(Project, column).ilike(f"%{value}%"))
+                    query = query.filter(
+                        Project.is_active == True, 
+                        getattr(Project, column).ilike(f"%{value}%")
+                    )
 
         return query.all()
 

@@ -89,7 +89,7 @@ mock_users = [
 def test_unauthorised_access(mock_user_service: UserService, mock_db_session: Session):
     """Test for unauthorized access to endpoint."""
 
-    response = client.delete(ENDPOINT)
+    response = client.get(ENDPOINT)
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -114,7 +114,7 @@ def test_non_admin_access(
         updated_at=datetime.now(timezone.utc),
     )
 
-    response = client.delete(
+    response = client.get(
         ENDPOINT,
         headers={"Authorization": "Bearer dummy_token"},
     )

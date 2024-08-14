@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, status
 from fastapi.staticfiles import StaticFiles
@@ -50,7 +50,7 @@ origins = [
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=['*'],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -137,6 +137,47 @@ async def exception(request: Request, exc: Exception):
             "message": f"An unexpected error occurred: {exc}",
         },
     )
+
+
+html = """
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat</title>
+    </head>
+    <body>
+        <h1>WebSocket Chat</h1>
+        <form action="" onsubmit="sendMessage(event)">
+            <input type="text" id="messageText" autocomplete="off"/>
+            <button>Send</button>
+        </form>
+        <ul id='messages'>
+        </ul>
+        <script>
+            var ws = new WebSocket("ws://localhost:7001/api/v1/ws/job/progress?job_id=d29d3c3b-32b6-49a8-a937-d40ad90a199a");
+            ws.onmessage = function(event) {
+                var messages = document.getElementById('messages')
+                var message = document.createElement('li')
+                var content = document.createTextNode(event.data)
+                message.appendChild(content)
+                messages.appendChild(message)
+            };
+            function sendMessage(event) {
+                var input = document.getElementById("messageText")
+                ws.send(input.value)
+                input.value = ''
+                event.preventDefault()
+            }
+        </script>
+    </body>
+</html>
+"""
+
+
+@app.get("/websocket")
+async def get():
+    return HTMLResponse(html)
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", port=7003, reload=True)

@@ -10,7 +10,9 @@ worker = Celery(
         'api.core.dependencies.celery.tasks.video_tasks']
 )
 
-worker.conf.update(task_track_started=True)
+worker.conf.update(
+    task_track_started=True
+)
 
 
 if __name__ == "__main__":
