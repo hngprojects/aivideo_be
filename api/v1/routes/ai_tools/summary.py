@@ -43,6 +43,7 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
         job=task,
         project_title='New project',
         project_type='PDF Summarizer'
+        # user_id = pass in the current user id for authenticated users
     )
 
     return success_response(
