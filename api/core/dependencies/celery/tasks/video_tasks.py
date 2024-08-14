@@ -28,7 +28,6 @@ def generate_talking_avatar_task(img_file):
 
 
 @worker.task()
-@worker.task()
 def upload_video_task(video_id: str, base_url: str):
     loop = asyncio.get_event_loop()
 
