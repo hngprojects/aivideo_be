@@ -1,0 +1,4 @@
+fastapi==0.111.1
+fastapi-mail==1.4.1
+fastapi-users==13.0.0
+email_validator==2.1.0
