@@ -165,6 +165,6 @@ PyAudio
 playsound
 pydub
 simpleaudio
-wave
 setuptools
 wheel
+wave
