@@ -1,5 +1,5 @@
 """
-Test for GET user statistics endpoint
+Test for user search endpoint
 """
 
 import pytest
@@ -19,7 +19,7 @@ from api.v1.services.user import user_service, UserService
 client = TestClient(app)
 
 
-ENDPOINT = "/api/v1/users/statistics"
+ENDPOINT = "/api/v1/users/search"
 
 
 @pytest.fixture
@@ -72,20 +72,21 @@ def override_get_current_super_admin():
 
 
 mock_users = [
-    {"id": 1, "is_active": True, "is_deleted": False},
-    {"id": 2, "is_active": True, "is_deleted": False},
-    {"id": 3, "is_active": False, "is_deleted": False},
-    {"id": 4, "is_active": False, "is_deleted": False},
-    {"id": 5, "is_active": True, "is_deleted": True},
-    {"id": 6, "is_active": True, "is_deleted": False},
-    {"id": 7, "is_active": False, "is_deleted": True},
-    {"id": 8, "is_active": True, "is_deleted": False},
-    {"id": 9, "is_active": False, "is_deleted": False},
-    {"id": 10, "is_active": True, "is_deleted": True},
+    User(
+        id=str(uuid7()),
+        email="johndoeuser@gmail.com",
+        password=user_service.hash_password("Testpassword@123"),
+        first_name="John",
+        last_name="Doe",
+        is_active=True,
+        is_superadmin=False,
+        is_deleted=False,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
 ]
 
 
-@pytest.mark.usefixtures("mock_db_session", "mock_user_service")
 def test_unauthorised_access(mock_user_service: UserService, mock_db_session: Session):
     """Test for unauthorized access to endpoint."""
 
@@ -94,9 +95,6 @@ def test_unauthorised_access(mock_user_service: UserService, mock_db_session: Se
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-@pytest.mark.usefixtures(
-    "mock_db_session", "mock_user_service", "mock_get_current_user"
-)
 def test_non_admin_access(
     mock_get_current_user, mock_user_service: UserService, mock_db_session: Session
 ):
@@ -122,25 +120,51 @@ def test_non_admin_access(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-@pytest.mark.usefixtures(
-    "mock_db_session", "mock_user_service", "override_get_current_super_admin"
-)
-def test_stats_retrieval(
-    mock_user_service: UserService,
+def test_empty_query_param(
     mock_db_session: Session,
+    mock_user_service: UserService,
     override_get_current_super_admin: None,
 ):
-    mock_query = mock_db_session.query.return_value
-    mock_query.count.return_value = len(mock_users)
-    mock_query.filter.return_value.count.side_effect = [
-        len([user for user in mock_users if user["is_active"] == True]),
-        len([user for user in mock_users if user["is_active"] == False]),
-        len([user for user in mock_users if user["is_deleted"] == True]),
-    ]
+    response = client.get(ENDPOINT, params={"query": ""})
+    assert response.status_code == 422
 
-    response = client.get(ENDPOINT)
+
+def test_successful_search_correct_case(
+    mock_db_session: Session,
+    mock_user_service: UserService,
+    override_get_current_super_admin: None,
+):
+    # Mocking the query chain to return the mock users list
+    query_mock = MagicMock()
+    query_mock.filter.return_value = query_mock
+    query_mock.count.return_value = len(mock_users)
+    query_mock.limit.return_value = query_mock
+    query_mock.offset.return_value.all.return_value = mock_users
+
+    # Setting the mock session to use the mocked query
+    mock_db_session.query.return_value = query_mock
+
+    response = client.get(ENDPOINT, params={"query": "John"})
 
     print(response.json())
-
     assert response.status_code == 200
-    assert response.json()["data"]["total_users"] == len(mock_users)
+
+def test_successful_search_incorrect_case(
+    mock_db_session: Session,
+    mock_user_service: UserService,
+    override_get_current_super_admin: None,
+):
+    # Mocking the query chain to return the mock users list
+    query_mock = MagicMock()
+    query_mock.filter.return_value = query_mock
+    query_mock.count.return_value = len(mock_users)
+    query_mock.limit.return_value = query_mock
+    query_mock.offset.return_value.all.return_value = mock_users
+
+    # Setting the mock session to use the mocked query
+    mock_db_session.query.return_value = query_mock
+
+    response = client.get(ENDPOINT, params={"query": "doe"})
+
+    print(response.json())
+    assert response.status_code == 200
