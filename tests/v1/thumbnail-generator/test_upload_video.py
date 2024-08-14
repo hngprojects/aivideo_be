@@ -17,21 +17,13 @@ class MockSettings:
 settings = MockSettings()
 
 
-@patch('api.utils.files.upload_file', return_value='./media/uploads/videos/video-mocked.mov')
-@patch('os.path.exists', return_value=True)
-@patch('os.makedirs')
 @patch('api.core.dependencies.celery.tasks.video_tasks.upload_video_task.delay')
-def test_upload_video_success(mock_celery_task, mock_makedirs, mock_exists, mock_upload_file):
-
-    mock_celery_task.return_value.id = "mocked-task-id"
-
-    mock_file = MagicMock()
-    mock_file.filename = 'video.mov'
-    mock_file.read.return_value = b'test video content'
+def test_upload_video_success(mock_task):
+    mock_task.return_value.id = 'mock-task-id'
 
     response = client.post(
         '/api/v1/thumbnails/upload',
-        files={'file': ('video.mov', mock_file.read())}
+        files={'file': ('video.mov', b'test video content')}
     )
 
     assert response.status_code == 200
