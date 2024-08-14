@@ -1,8 +1,8 @@
 from datetime import timedelta
-from fastapi import BackgroundTasks, Depends, status, APIRouter, Response, Request
+from fastapi import BackgroundTasks, Depends, status, APIRouter, Response, Request, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session 
 
 from api.core.dependencies.email_sender import send_email
 from api.utils.success_response import success_response
@@ -11,6 +11,8 @@ from api.v1.schemas.user import Token
 from api.v1.schemas.user import LoginRequest, UserCreate
 from api.db.database import get_db
 from api.v1.services.user import user_service
+from api.v1.schemas.request_password_reset import RequestEmail
+from api.v1.services.request_pwd import reset_service as magic_link_service
 
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -113,10 +115,7 @@ def login(login_request: LoginRequest, request=Request, db: Session = Depends(ge
         db=db, email=login_request.email, password=login_request.password
     )
     
-    
-    # Reset session usage count upon login
-    request.session.pop("pdf_summarizer_anon", None)
-    request.session[f"pdf_summarizer_{user.id}"] = 0
+
 
     # Generate access and refresh tokens
     access_token = user_service.create_access_token(user_id=user.id)
@@ -187,6 +186,64 @@ def refresh_access_token(
             "access_token": access_token,
             "token_type": "bearer",
         },
+    )
+
+    # Add refresh token to cookies
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        expires=timedelta(days=30),
+        httponly=True,
+        secure=True,
+        samesite="none",
+    )
+
+    return response
+
+@auth.post("/magic-link", status_code=status.HTTP_200_OK)
+async def request_magic_link(
+    reset_schema: RequestEmail,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    subject = "Magic Link"
+    url = "api/v1/auth/magic-link/verify"
+    template_file = "magic_link.html"
+    data =  await magic_link_service.create(reset_schema, request, db, background_tasks,
+                                           subject=subject, template_file=template_file, url=url)
+    link = data["data"]["reset_link"]
+    data.update({
+         "message": "Magic link sent sucessfully.",
+         "data": {"magic-link": link},
+         "status_code": status.HTTP_200_OK
+    })
+    return success_response(**data)
+
+@auth.get("/magic-link/verify", status_code=status.HTTP_200_OK, response_model=success_response)
+def verify_magic_link(token: str = Query(...), db: Session = Depends(get_db)):
+    """Endpoint to verify a magic link"""
+
+    # verify user magic link
+    user = magic_link_service.verify_magic_link(token=token, session=db)
+
+    # Generate access and refresh tokens
+    access_token = user_service.create_access_token(user_id=user.id)
+    refresh_token = user_service.create_refresh_token(user_id=user.id)
+
+    response = JSONResponse(
+        status_code=200,
+        content={
+            'status_code': 200,
+            'message': 'Login successful',
+            'access_token': access_token,
+            'data': {
+                'user': jsonable_encoder(
+                    user,
+                    exclude=['password', 'is_superadmin', 'is_deleted', 'is_verified', 'updated_at']
+                )
+            }
+        }
     )
 
     # Add refresh token to cookies

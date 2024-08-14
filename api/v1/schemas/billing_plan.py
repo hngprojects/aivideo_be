@@ -11,10 +11,28 @@ class CreateBillingPlanSchema(BaseModel):
     features: List[str]
 
 
-class CreateBillingPlanResponse(CreateBillingPlanSchema):
+class CreateBillingPlanReturnData(CreateBillingPlanSchema):
     id: str
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class CreateBillingPlanResponse(BaseModel):
+    status_code: int = 200
+    success: bool
+    message: str
+    data: CreateBillingPlanReturnData
+
+
+class GetBillingPlanData(BaseModel):
+    billing_plans: List[CreateBillingPlanReturnData]
+
+
+class GetBillingPlanListResponse(BaseModel):
+    status_code: int = 200
+    success: bool
+    message: str
+    data: GetBillingPlanData

@@ -89,11 +89,10 @@ def test_summarize_pdf_success(mock_pdf_reader, mock_upload_file, mock_chat_open
     data = response.json()
     assert "success" in data, "Expected 'success' key in the response"
     assert data["success"] is True
+    assert "project_id" in data["data"]
+    assert "job_id" in data["data"]
     assert "file_name" in data["data"]
-    assert "number_of_pages" in data["data"]
-    assert "estimated_read_time" in data["data"]
-    assert "summary" in data["data"]
-    assert "task_id" in data["data"]
+
 
 def test_summarize_pdf_invalid_file_type():
     response = client.post(

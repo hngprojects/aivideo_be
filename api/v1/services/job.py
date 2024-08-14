@@ -25,19 +25,26 @@ class JobService:
     def create_project_with_job(self, job, project_title: str, project_type: str):
         """FUnction to create a project alongside a task or job"""
 
+    def create_project_with_job(
+        self, job, project_title: str, project_type: str, user_id: Optional[str] = None
+    ):
+        """FUnction to create a project alongside a task or job"""
+
         # Create project based on task run
         project_schema = CreateProject(title=project_title, project_type=project_type)
         project = project_service.create(db=db, schema=project_schema)
 
         # Create celery task
-        self.create_job(job_id=job.id, project_id=project.id)
+        self.create_job(job_id=job.id, project_id=project.id, user_id=user_id)
 
         return project
 
-    def create_job(self, job_id: str, project_id: str):
+    def create_job(self, job_id: str, project_id: str, user_id: Optional[str] = None):
         """Creates a new celery job"""
 
-        job = Job(job_id=job_id, project_id=project_id, status="RUNNING")
+        job = Job(
+            job_id=job_id, project_id=project_id, user_id=user_id, status="RUNNING"
+        )
         db.add(job)
         db.commit()
         db.refresh(job)
@@ -49,7 +56,10 @@ class JobService:
         jobs = db.query(Job).all()
         return jobs
 
-    def fetch_by_job_id(self, job_id: str, ):
+    def fetch_by_job_id(
+        self,
+        job_id: str,
+    ):
         """Fetches the job details from the database"""
 
         job = db.query(Job).filter(Job.job_id == job_id).first()
@@ -77,17 +87,16 @@ class JobService:
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
         return project
-    
+
     def update_job_result(self, job_id: str):
-        '''Fetches the result from celery and updates the job'''
+        """Fetches the result from celery and updates the job"""
         task_result = AsyncResult(job_id, app=worker)
-        
-        
+
         if task_result.state == "SUCCESS":
             result = task_result.get()
             self.update_job(job_id=job_id, status=task_result.state, result=result)
-        elif task_result.state in ['FAILURE', 'REVOKED']:
+        elif task_result.state in ["FAILURE", "REVOKED"]:
             self.update_job(job_id=job_id, status=task_result.state)
-            
+
 
 job_service = JobService()

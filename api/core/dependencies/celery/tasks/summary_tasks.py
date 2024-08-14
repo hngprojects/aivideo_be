@@ -1,8 +1,9 @@
+import json
 from celery import shared_task
 from pypdf import PdfReader
-import json
 from api.core.dependencies.celery.celery_app import worker
 from api.v1.services.ai_tools.summary import summary_service
+from api.v1.services.job import job_service  # Import job_service to update job status
 from api.db.database import get_db
 
 db = next(get_db())
@@ -31,7 +32,6 @@ def generate_pdf_summary_task(pdf_file_path):
 
         # Create the result dictionary
         result = {
-            
             "number_of_pages": number_of_pages,
             "number_of_words": number_of_words,
             "estimated_read_time": f"{estimated_read_time:.2f} minutes",
@@ -41,7 +41,14 @@ def generate_pdf_summary_task(pdf_file_path):
             "summary": summary
         }
 
-        return json.dumps(result)
+        result_json = json.dumps(result)
+    
+        # Update the job status and result in the database
+        job_service.update_job(job_id=job_id, status="SUCCESS", result=result_json)
+
+        return result_json
     
     except Exception as e:
+        # Update job status to FAILED in case of error
+        job_service.update_job(job_id=job_id, status="FAILED")
         raise Exception(f"Summarization failed: {str(e)}")
