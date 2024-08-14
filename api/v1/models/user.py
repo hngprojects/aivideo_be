@@ -32,6 +32,7 @@ class User(BaseTableModel):
     lang_reg_timezone_settings = relationship(
         "LanguageRegionTimezoneSetting", back_populates="user"
     )
+    jobs = relationship("Job", back_populates="user")
 
     def to_dict(self):
         obj_dict = super().to_dict()
