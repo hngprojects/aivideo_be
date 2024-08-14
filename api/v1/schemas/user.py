@@ -150,3 +150,8 @@ class UserStatResponse(BaseModel):
     message: str
     data: UserStatData
     status_code: int
+
+class UserRestoreResponse(BaseModel):
+    status: str
+    message: str
+    status_code: int
