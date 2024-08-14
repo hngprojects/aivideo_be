@@ -83,3 +83,32 @@ async def get_single_testimonial(id: str, db: Session = Depends(get_db)):
         message="Testimonial retrieved successfully",
         status_code=status.HTTP_200_OK,
     )
+
+@testimonial.patch("/{id}", response_model=success_response, status_code=200)
+async def update_testimonial(
+    id: str,
+    schema: UpdateTestimonialSchema,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(user_service.get_current_super_admin),
+):
+    """Endpoint to update a testimonial. Only accessible to superadmins
+    Args:
+        id (str)
+        schema (UpdateTestimonialSchema)
+        db (Session, optional). Defaults to Depends(get_db).
+        current_admin (User, optional). Defaults to Depends(user_service.get_current_super_admin).
+
+    Raises:
+        HTTPException: 404 NOT FOUND (Testimonial to be retrieved cannot be found)
+    """
+    testimonial = testimonial_service.update(db, testimonial_id=id, schema=schema)
+
+    if testimonial == None:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+
+    logging.info(f'Updating Testimonial. ID: {testimonial.id}')
+    return success_response(
+        data=jsonable_encoder(TestimonialBase.model_validate(testimonial)),
+        message="Testimonial updated successfully",
+        status_code=status.HTTP_200_OK,
+    )
