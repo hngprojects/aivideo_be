@@ -29,5 +29,4 @@ api_version_one.include_router(pwd_reset)
 api_version_one.include_router(preset_router)
 api_version_one.include_router(websocket_router)
 api_version_one.include_router(test_rout)
-
 api_version_one.include_router(video_summary)

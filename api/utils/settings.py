@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = config("CELERY_BROKER_URL")
     ASEMBLYAI_API_KEY: str = config("ASEMBLYAI_API_KEY")
     OPENROUTER_API_KEY: str = config("OPENROUTER_API_KEY")
+    GOOEY_API_KEY: str = config("GOOEY_API_KEY")
+    UNREAL_SPEECH_API_KEY: str = config("UNREAL_SPEECH_API_KEY")
 
 
 settings = Settings()
