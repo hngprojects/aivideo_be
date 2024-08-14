@@ -1,11 +1,6 @@
-from fastapi import BackgroundTasks, Depends, APIRouter, status, HTTPException, Response, Request
+from fastapi import BackgroundTasks, Depends, APIRouter, status, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from typing import Annotated
-from starlette.responses import RedirectResponse
-from authlib.integrations.base_client import OAuthError
-from authlib.oauth2.rfc6749 import OAuth2Token
-import secrets
 from decouple import config
 
 from api.db.database import get_db
@@ -64,91 +59,3 @@ async def google_login(background_tasks: BackgroundTasks, token_request: OAuthTo
     )
 
     return response
-
-
-@google_auth.get("/callback/google")
-async def google_oauth2_callback(
-    request: Request, db: Annotated[Session, Depends(get_db)]
-) -> Response:
-    """
-    Handles request from google after user has authenticated or
-    fails to authenticate with google account.
-
-    Args:
-        request: request object
-        db: database session object
-
-    Returns:
-        response: contains message, status code, tokens, and user data
-                    on success or HttpException if not authenticated,
-    """
-    
-    err_message: str = 'Authentication Failed'
-    try:
-        # For testing purposes
-        if config("TESTING") != "TEST":
-            state_in_session = request.session.get("state")
-            state_from_params = request.query_params.get("state")
-            # verify the state value to prevent CSRF
-            if state_from_params != state_in_session:
-                return RedirectResponse(
-                    url=f"{FRONTEND_URL}?error=true&message{err_message}",
-                    status_code=status.HTTP_302_FOUND,
-                )
-
-        # get the user access token and information from google authorization/resource server
-        google_response: OAuth2Token = await google_oauth.google.authorize_access_token(
-            request
-        )
-
-        # check if id_token is present
-        if "id_token" not in google_response:
-            RedirectResponse(
-                url=f"{FRONTEND_URL}?error=true&message{err_message}",
-                status_code=status.HTTP_302_FOUND,
-            )
-
-    except OAuthError:
-        RedirectResponse(
-            url=f"{FRONTEND_URL}?error=true&message{err_message}",
-            status_code=status.HTTP_302_FOUND,
-        )
-
-    try:
-        if not google_response.get("access_token"):
-            RedirectResponse(
-                url=f"{FRONTEND_URL}?error=true&message{err_message}",
-                status_code=status.HTTP_302_FOUND,
-            )
-
-        # if google has not verified the user email
-        if not google_response.get("userinfo").get("email_verified"):
-            RedirectResponse(
-                url=f"{FRONTEND_URL}?error=true&message{err_message}",
-                status_code=status.HTTP_302_FOUND,
-            )
-
-        google_oauth_service = GoogleOauthServices()
-
-        tokens: object = google_oauth_service.create(google_response, db)
-
-        if not tokens:
-            RedirectResponse(
-                url=f"{FRONTEND_URL}?error=true&message{err_message}",
-                status_code=status.HTTP_302_FOUND,
-            )
-
-        response = RedirectResponse(
-            url=f"{FRONTEND_URL}/dashboard/products", status_code=status.HTTP_302_FOUND
-        )
-
-        access_token = tokens.access_token
-
-        refresh_token = tokens.refresh_token
-
-        response.set_cookie(key="access_token", value=access_token)
-
-        response.set_cookie(key="refresh_token", value=refresh_token)
-        return response
-    except Exception:
-        return RedirectResponse(url=FRONTEND_URL, status_code=status.HTTP_302_FOUND)
