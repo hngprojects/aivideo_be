@@ -8,8 +8,8 @@ from api.v1.models.profile import Profile
 from api.core.base.services import Service
 from sqlalchemy.orm import Session
 from typing import Annotated, Union
-from api.v1.services.user import user_service
 from api.v1.schemas.google_oauth import Tokens
+from api.v1.services.user import user_service
 
 
 class GoogleOauthServices(Service): 
