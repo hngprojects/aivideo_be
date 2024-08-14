@@ -5,8 +5,24 @@ from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains.llm import LLMChain
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
+import io
+import os
+import uuid
+from api.utils.settings import settings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains.combine_documents.stuff import StuffDocumentsChain
+from langchain.chains.llm import LLMChain
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
+from langchain_community.document_loaders.parsers import OpenAIWhisperParser
+from pydub import AudioSegment
+from deep_translator import GoogleTranslator
 
 class SummaryService():
+    
+    def __init__(self):
+        super().__init__()
+        self.translator = GoogleTranslator()
     
     def __init__(self):
         super().__init__()
@@ -49,6 +65,76 @@ class SummaryService():
         # Combine all the chunk summaries into the final summary
         final_summary = " ".join(summaries)
         return final_summary
+
+
+    def transcribe_audio(self, file_path):
+        """Transcribes the audio file to text using OpenAI's Whisper API."""
+        with open(file_path, 'rb') as audio_file:
+            audio_segment = AudioSegment.from_file(io.BytesIO(audio_file.read()))
+            parser = OpenAIWhisperParser(api_key=settings.OPENAI_API_KEY, response_format="text")
+            transcribed_text = parser.parse(audio_segment)
+            return transcribed_text
+
+    def summarize_audio(self, audio_file_path):
+        """Summarizes an audio file by transcribing and then summarizing the transcript."""
+        transcribed_text = self.transcribe_audio(audio_file_path)
+        llm_chain = self.init_chain()
+        stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
+        
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        documents = text_splitter.create_documents([transcribed_text])
+
+        summaries = []
+        for doc in documents:
+            inputs = {"input_documents": [doc]}
+            result = stuff_chain.invoke(inputs)
+            summary = result.get("output_text", "")
+            summaries.append(summary)
+        
+        final_summary = " ".join(summaries)
+        
+        return {
+            "summary": final_summary,
+            "transcript": transcribed_text
+        }
+
+    def translate_summary(self, text, target_lang):
+        """Translates the summary to the target language using GoogleTranslator."""
+        translated_text = self.translator.translate(text, target_lang=target_lang)
+        return translated_text
+
+    def export_results(self, summary, transcript, translation, output_dir="exports"):
+        """Exports the summary, transcript, and translation to a text file."""
+        os.makedirs(output_dir, exist_ok=True)
+        export_file_path = os.path.join(output_dir, f"summary_export_{uuid.uuid4()}.txt")
+        
+        with open(export_file_path, 'w') as export_file:
+            export_file.write("TRANSCRIPT:\n")
+            export_file.write(transcript)
+            export_file.write("\n\nSUMMARY:\n")
+            export_file.write(summary)
+            export_file.write("\n\nTRANSLATION:\n")
+            export_file.write(translation)
+        
+        return export_file_path
+
+    def process_audio(self, audio_file_path, target_lang):
+        """Processes the audio file: transcribes, summarizes, translates, and exports."""
+        # Step 1: Summarize the audio
+        results = self.summarize_audio(audio_file_path)
+        
+        # Step 2: Translate the summary
+        translated_summary = self.translate_summary(results["summary"], target_lang)
+        
+        # Step 3: Export the results
+        export_path = self.export_results(results["summary"], results["transcript"], translated_summary)
+        
+        return {
+            "transcript": results["transcript"],
+            "summary": results["summary"],
+            "translation": translated_summary,
+            "export_path": export_path
+        }
 
 
 summary_service = SummaryService()

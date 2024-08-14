@@ -12,3 +12,12 @@ def generate_pdf_summary_task(pdf_file):
 
     summary = summary_service.summarize_pdf(pdf_file)
     return summary
+
+
+@worker.task()
+def generate_audio_summary_task(audio_file, target_lang):
+    '''Background task to summarize an audio file and save to the database'''
+
+    """Process the audio file: transcribe, summarize, translate, and export"""
+    result = summary_service.process_audio(audio_file, target_lang)
+    return result
