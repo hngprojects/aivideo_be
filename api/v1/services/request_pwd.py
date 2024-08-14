@@ -16,6 +16,7 @@ from passlib.context import CryptContext
 from typing import Optional
 from api.utils.settings import settings
 from fastapi.templating import Jinja2Templates
+from api.v1.models.user import User
 
 templates = Jinja2Templates(directory="./api/v1/templates")
 
@@ -138,6 +139,35 @@ class RequestPasswordService:
             user = session.query(User).filter_by(email=email).first()
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
+
+            if data.new_password != data.confirm_password:
+                raise HTTPException(status_code=400, detail="Passwords do not match")
+
+            user.password = get_password_hash(data.new_password)
+            session.commit()
+
+            return success_response(
+                message="Password has been reset successfully",
+                status_code=status.HTTP_200_OK,
+            )
+        
+        except SQLAlchemyError as e:
+            session.rollback()  # Rollback the session in case of an error
+            print(f"Database error: {e}")  # Log the error for debugging purposes
+            raise HTTPException(
+                status_code=500,
+                detail="An error occurred while processing your request.",
+            )
+        
+
+    @staticmethod
+    def reset_user_password(
+        data: request_password_reset.ResetPassword = Depends(),
+        session: Session = Depends(get_db),
+        user: User = None
+    ):
+        
+        try:
 
             if data.new_password != data.confirm_password:
                 raise HTTPException(status_code=400, detail="Passwords do not match")
