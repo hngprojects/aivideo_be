@@ -5,7 +5,8 @@ worker = Celery(
     "worker",
     broker=settings.CELERY_BROKER_URL,
     backend=f'db+{settings.DB_URL}',
-    include=['api.core.dependencies.celery.tasks.summary_tasks']
+    include=['api.core.dependencies.celery.tasks.summary_tasks',
+             'api.core.dependencies.celery.tasks.video_tasks',]
 )
 
 worker.conf.update(
