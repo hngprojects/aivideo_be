@@ -12,6 +12,7 @@ from api.v1.services.user import user_service
 from api.utils.settings import settings
 from api.db.database import get_db
 from api.v1.models import User
+from api.v1.services.payment import payment_service
 
 
 payments = APIRouter(prefix="/payments", tags=["Payments"])
@@ -62,7 +63,6 @@ async def initiate_payment(
         response=response.json()
 
     except Exception as e:
-        print(e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Error initializing payment"
@@ -73,4 +73,53 @@ async def initiate_payment(
         status_code=status.HTTP_200_OK,
         message="Payment initialized successfully",
         data={"payment_url": response['data']['link']},
+    )
+
+@payments.get("/verify/{transaction_id}")
+async def verify_payment_status(
+    transaction_id: int | str,
+    current_user: User = Depends(user_service.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Verify payment status
+    """
+
+    VERIFY_URL = f"https://api.flutterwave.com/v3/transactions/{transaction_id}/verify"
+    header = {'Authorization': f"Bearer {settings.FLUTTERWAVE_SECRET}"}
+
+    try:
+        response = requests.get(VERIFY_URL, headers=header)
+        response=response.json()
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Error verifying payment"
+        )
+
+    if response['status'] == "error":
+        return success_response(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            message="No transaction was found for this id"
+        )
+        
+    payload = {
+        "user_id": current_user.id,
+        "transaction_id": transaction_id,
+        "amount": response['data']['amount'],
+        "currency": response['data']['currency'],
+        "status": "completed",
+        "method": "flutterwave",
+    }
+
+    payment_service.create(db, payload)
+
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Payment success",
+        data={
+            "amount": response['data']['amount'],
+            "currency": response['data']['currency'],
+        },
     )
