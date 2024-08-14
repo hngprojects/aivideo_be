@@ -1,8 +1,8 @@
+# audio_transcriber.py
 from fastapi import FastAPI, UploadFile, File, HTTPException, APIRouter
 from api.v1.schemas.audio_transcriber import TranslationRequest
-import os
-from api.v1.services.audio_transcriber import transcribe_audio, translate_text
-
+from api.core.dependencies.celery.tasks.summary_tasks import  transcribe_audio_task, translate_text_task
+from api.v1.services.job import job_service
 
 AUDIOFILE = "audio.mp3"  
 audio = APIRouter(prefix="/tools/audio-transcribe", tags=["Tools"])
@@ -11,12 +11,26 @@ audio = APIRouter(prefix="/tools/audio-transcribe", tags=["Tools"])
 async def upload_audio(file: UploadFile = File(...)):
     """Upload and transcribe audio file."""
     try:
-        with open(AUDIOFILE, "wb") as buffer:
+        file_path = AUDIOFILE
+        with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
-        transcription = transcribe_audio(AUDIOFILE)
-        with open("transcription_with_timestamps.txt", "w", encoding="utf-8") as file:
-            file.write(transcription)
-        return {"message": "Audio transcribed successfully", "transcription": transcription}
+
+        task = transcribe_audio_task.delay(file_path)
+        
+        project = job_service.create_project_with_job(
+            job=task,
+            project_title='New Audio Transcription Project',
+            project_type='Audio Transcription'
+        )
+
+        return {
+            "status_code": 202,
+            "message": "Audio transcription job initiated successfully",
+            "data": {
+                "job_id": task.id,
+                "project_id": project.id,
+            }
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -24,9 +38,22 @@ async def upload_audio(file: UploadFile = File(...)):
 async def translate_text_endpoint(request: TranslationRequest):
     """Translate text to the specified language."""
     try:
-        translation = translate_text(request.text, request.target_language)
-        with open("translation.txt", "w", encoding="utf-8") as file:
-            file.write(translation)
-        return {"message": "Text translated successfully", "translation": translation}
+        task = translate_text_task.delay(request.text, request.target_language)
+
+        # Create project with job
+        project = job_service.create_project_with_job(
+            job=task,
+            project_title='New Translation Project',
+            project_type='Text Translation'
+        )
+
+        return {
+            "status_code": 202,
+            "message": "Text translation job initiated successfully",
+            "data": {
+                "job_id": task.id,
+                "project_id": project.id,
+            }
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
