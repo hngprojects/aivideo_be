@@ -157,8 +157,6 @@ class UserService(Service):
     def create(self, db: Session, schema: user.UserCreate):
         """Creates a new user"""
 
-        del schema.admin_secret
-
         if db.query(User).filter(User.email == schema.email).first():
             raise HTTPException(
                 status_code=400,
