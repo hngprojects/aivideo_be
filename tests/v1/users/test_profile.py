@@ -59,6 +59,50 @@ def client(db_session_mock):
     client = TestClient(app)
     yield client
     app.dependency_overrides = {}
+    
+    
+
+def test_get_user_profile(client, db_session_mock):
+    '''Test for fetching user profile successfully'''
+
+    # Mock the user service to return the current user
+    app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
+
+    # Mock the profile fetching behavior
+    mock_profile_instance = mock_profile()
+    with patch("api.v1.services.profile.profile_service.fetch_by_user_id", return_value=mock_profile_instance) as mock_fetch:
+        response = client.get(
+            "/api/v1/profile/me",
+            headers={'Authorization': 'Bearer token'}
+        )
+
+        # Assert that the response was successful
+        assert response.status_code == 200
+        response_data = response.json()
+        assert response_data['data'] 
+        assert response_data['status_code'] == 200   
+   
+    
+
+def test_get_profile_not_found(client, db_session_mock):
+    '''Test for fetching profile when the user does not exist'''
+    
+    # Mock the user service to return a current user
+    app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
+    
+    # Mock profile fetch behavior to return None, simulating a non-existing profile
+    with patch("api.v1.services.profile.profile_service.fetch_by_user_id", side_effect=HTTPException(status_code=404, detail="Profile not found")) as mock_fetch:
+        response = client.get(
+            "/api/v1/profile/me",
+            headers={'Authorization': 'Bearer token'}
+        )
+
+        # Assert that the response status code is 404
+        assert response.status_code == 404
+        response_data = response.json()
+        assert response_data['status_code'] == 404  
+        
+          
 
 def test_update_profile_success(client, db_session_mock):
     '''Test to successfully update a user profile'''
@@ -173,7 +217,7 @@ def test_update_profile_email_in_use(client, db_session_mock):
 
 
 def custom_service_function(*args, **kwargs):
-    raise HTTPException(status_code=500, detail="Custom server error")
+    raise HTTPException(status_code=500, detail="Database error occurred")
 
 def test_update_profile_custom_error(client, db_session_mock):
     '''Test for server error using a custom exception'''
@@ -203,3 +247,6 @@ def test_update_profile_custom_error(client, db_session_mock):
 
         # Assert that the response status code is 500
         assert response.status_code == 500
+        
+        
+        
