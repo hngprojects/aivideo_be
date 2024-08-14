@@ -18,8 +18,8 @@ from api.v1.services.user import user_service, UserService
 
 client = TestClient(app)
 
-
-ENDPOINT = "/api/v1/users/statistics"
+mock_id = str(uuid7())
+ENDPOINT = f"/api/v1/users/{mock_id}/restore"
 
 
 @pytest.fixture
@@ -89,7 +89,7 @@ mock_users = [
 def test_unauthorised_access(mock_user_service: UserService, mock_db_session: Session):
     """Test for unauthorized access to endpoint."""
 
-    response = client.get(ENDPOINT)
+    response = client.put(ENDPOINT)
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -114,7 +114,7 @@ def test_non_admin_access(
         updated_at=datetime.now(timezone.utc),
     )
 
-    response = client.get(
+    response = client.put(
         ENDPOINT,
         headers={"Authorization": "Bearer dummy_token"},
     )
@@ -125,22 +125,28 @@ def test_non_admin_access(
 @pytest.mark.usefixtures(
     "mock_db_session", "mock_user_service", "override_get_current_super_admin"
 )
-def test_stats_retrieval(
+def test_user_not_found(
     mock_user_service: UserService,
     mock_db_session: Session,
     override_get_current_super_admin: None,
 ):
-    mock_query = mock_db_session.query.return_value
-    mock_query.count.return_value = len(mock_users)
-    mock_query.filter.return_value.count.side_effect = [
-        len([user for user in mock_users if user["is_active"] == True]),
-        len([user for user in mock_users if user["is_active"] == False]),
-        len([user for user in mock_users if user["is_deleted"] == True]),
-    ]
+    mock_db_session.get.return_value = None
 
-    response = client.get(ENDPOINT)
+    response = client.put(ENDPOINT)
 
     print(response.json())
 
+    assert response.status_code == 404
+
+
+@pytest.mark.usefixtures(
+    "mock_db_session", "mock_user_service", "override_get_current_super_admin"
+)
+def test_successful_restore(
+    mock_user_service: UserService,
+    mock_db_session: Session,
+    override_get_current_super_admin: None,
+):
+    response = client.put(ENDPOINT)
+
     assert response.status_code == 200
-    assert response.json()["data"]["total_users"] == len(mock_users)
