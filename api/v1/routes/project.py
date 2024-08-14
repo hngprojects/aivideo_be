@@ -5,6 +5,7 @@ from api.v1.services.project import project_service
 
 project_router = APIRouter(prefix="/projects", tags=["Projects"])
 
+
 @project_router.get("/", status_code=200)
 async def get_all_projects(db: Session = Depends(get_db)):
     """Endpoint to fetch all projects"""
