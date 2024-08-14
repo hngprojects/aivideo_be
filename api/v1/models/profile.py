@@ -24,6 +24,7 @@ class Profile(BaseTableModel):
     def to_dict(self):
         return {
             "id": self.id,
+            "username": self.username,
             "pronouns": self.pronouns,
             "job_title": self.job_title,
             "social": self.social,
