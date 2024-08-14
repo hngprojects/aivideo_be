@@ -44,8 +44,16 @@ class BillingPlanService:
                     query = query.filter(
                         getattr(BillingPlan, column).ilike(f"%{value}%")
                     )
+        
+        all_plans = query.all()
+        
+        if len(all_plans) <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Blilling plans not found"
+            )
 
-        return query.all()
+        return all_plans
 
     def update(self, db: Session, plan_id: str, schema):
         """
