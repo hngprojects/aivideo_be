@@ -1,3 +1,4 @@
+import json
 from celery import shared_task
 
 from api.core.dependencies.celery.celery_app import worker
