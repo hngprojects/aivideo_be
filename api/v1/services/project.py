@@ -4,6 +4,7 @@ from api.core.base.services import Service
 from api.v1.models.project import Project
 from api.v1.schemas.project import CreateProject, UpdateProject
 from api.utils.db_validators import check_model_existence
+from api.v1.models.user import User
 
 
 class ProjectService(Service):
@@ -28,7 +29,10 @@ class ProjectService(Service):
         if query_params:
             for column, value in query_params.items():
                 if hasattr(Project, column) and value:
-                    query = query.filter(getattr(Project, column).ilike(f"%{value}%"))
+                    query = query.filter(
+                        Project.is_active == True, 
+                        getattr(Project, column).ilike(f"%{value}%")
+                    )
 
         return query.all()
 
@@ -66,5 +70,19 @@ class ProjectService(Service):
         project.archived = True
         db.commit()
 
+    def fetch_all_user_projects(self, user: User):
+        all_projects = user.projects
+
+        return all_projects
+    
+    def fetch_user_project(self, user: User, project_id: str):
+        all_user_projects = user.projects
+
+        for project in all_user_projects:
+            if str(project.id) == project_id:
+                return project
+        
+        return None
+    
 
 project_service = ProjectService()

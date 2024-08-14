@@ -1,20 +1,43 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException
-from fastapi.responses import FileResponse
-from api.v1.schemas.ai_tools.thumbnail import YouTubeVideoRequest, ManualCaptureThumbnailRequest, ThumbnailSelectionRequest
-from api.v1.services.ai_tools.thumbnail import upload_video_service, process_youtube_video_service, generate_thumbnails_service, manual_capture_thumbnail_service, select_and_download_thumbnail_service
+from fastapi import APIRouter, File, UploadFile, HTTPException, Request
+from api.core.dependencies.celery.tasks.video_tasks import upload_video_task
 from api.utils.settings import settings
 from api.utils.success_response import success_response
+from api.utils.files import upload_file
+import os
+from urllib.parse import urljoin
 
 thumbnail_router = APIRouter(prefix="/thumbnails", tags=["Thumbnails"])
 
 
 @thumbnail_router.post("/upload")
-async def upload_video(file: UploadFile = File(...)):
-    video_id = await upload_video_service(file, settings)
+async def upload_video(request: Request, file: UploadFile = File(...)):
+    base_url = str(request.base_url)
+
+    saved_path = await upload_file(
+        file,
+        allowed_extensions=settings.ALLOWED_EXTENSIONS,
+        upload_folder='videos',
+        save_extension=file.filename.split('.')[-1].lower(),
+        max_file_size=settings.MAX_FILE_SIZE
+    )
+
+    video_id = os.path.basename(saved_path).split('.')[0]
+    video_url = urljoin(
+        base_url, f"media/uploads/videos/{os.path.basename(saved_path)}")
+
+    task = upload_video_task.delay(
+        video_id,
+        base_url
+    )
+
     return success_response(
         status_code=200,
         message="Video uploaded successfully.",
-        data={"video_id": video_id}
+        data={
+            "task_id": task.id,
+            "video_id": video_id,
+            "video_url": video_url
+        }
     )
 
 

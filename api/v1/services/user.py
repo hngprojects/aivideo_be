@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, or_, func
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
@@ -69,6 +69,38 @@ class UserService(Service):
 
         return self.all_users_response(all_users, total_users, page, per_page)
 
+    def search(self, db: Session, page: int, per_page: int, query_param: str):
+        per_page = min(per_page, 10)
+
+        # validate query_param
+        # query_param must be a string
+
+        if (
+            not isinstance(query_param, str)
+            or query_param is None
+            or not query_param.strip()
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid value for search parameter. Must be a non empty string.",
+            )
+
+        query = db.query(User).filter(
+            or_(
+                User.first_name.icontains(query_param),
+                User.last_name.icontains(query_param),
+                User.email.icontains(query_param),
+            )
+        )
+
+        total = query.count()
+
+        users: list = query.limit(per_page).offset((page - 1) * per_page).all()
+
+        return self.all_users_response(
+            users=users, total_users=total, page=page, per_page=per_page
+        )
+
     def all_users_response(
         self, users: list, total_users: int, page: int, per_page: int
     ):
@@ -128,8 +160,6 @@ class UserService(Service):
 
     def create(self, db: Session, schema: user.UserCreate):
         """Creates a new user"""
-
-        del schema.admin_secret
 
         if db.query(User).filter(User.email == schema.email).first():
             raise HTTPException(
@@ -201,7 +231,8 @@ class UserService(Service):
     def create_admin(self, db: Session, schema: user.UserCreate):
         """Creates a new admin"""
 
-        del schema.admin_secret
+        if hasattr(schema, "admin_secret"):
+            del schema.admin_secret
 
         if db.query(User).filter(User.email == schema.email).first():
             raise HTTPException(
@@ -278,6 +309,7 @@ class UserService(Service):
         if not self.verify_password(password, user.password):
             raise HTTPException(status_code=400, detail="Invalid user credentials")
 
+        user.update_last_login()
         return user
 
     def perform_user_check(self, user: User):
@@ -392,6 +424,7 @@ class UserService(Service):
 
         token = self.verify_access_token(access_token, credentials_exception)
         user = db.query(User).filter(User.id == token.id).first()
+        user.update_last_login()
 
         return user
 
