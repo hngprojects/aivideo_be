@@ -17,11 +17,15 @@ async def get_managed_jobs(
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 30,
-    filters: dict = {},
+    query: str = "",
 ):
-    return job_service.fetch_job_activity(
-        db=db, skip=skip, limit=limit, filters=filters
-    )
+    search: dict = {
+        "job_id": query,
+        "first_name": query,
+        "last_name": query,
+    }
+
+    return job_service.fetch_job_activity(db=db, skip=skip, limit=limit, search=search)
 
 
 @job.get("/export")

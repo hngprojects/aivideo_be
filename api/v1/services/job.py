@@ -1,6 +1,6 @@
 import csv
 from io import StringIO
-from typing import Optional
+from typing import Optional, Any
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from celery.result import AsyncResult
@@ -9,6 +9,7 @@ from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
 from api.utils.pagination import paginated_response
 from api.v1.models.job import Job
+from api.v1.models.user import User
 from api.v1.models.project import Project
 from api.v1.schemas.project import CreateProject
 from api.v1.services.project import project_service
@@ -88,13 +89,14 @@ class JobService:
             raise HTTPException(status_code=404, detail="Project not found")
         return project
 
-    def fetch_job_activity(self, db: Session, skip: int, limit: int, filters: dict):
+    def fetch_job_activity(self, db: Session, skip: int, limit: int, search: dict,):
         return paginated_response(
             db=db,
             model=Job,
             skip=skip,
             limit=limit,
-            filters=filters,
+            search=search,
+            join=User,
             related_models=[Job.user, Job.project],
             related_model_excludes={
                 "user": [
@@ -118,6 +120,7 @@ class JobService:
                     "is_deleted",
                 ],
             },
+            # or_conditions=["first_name", "last_name"]
         )
 
     def export_jobs_as_csv(self, db: Session):

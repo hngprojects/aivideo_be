@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session, subqueryload
+from sqlalchemy import or_
 from api.db.database import Base
 
 from api.utils.success_response import success_response
@@ -15,6 +16,7 @@ def paginated_response(
     filters: Optional[Dict[str, Any]] = None,
     related_models: Optional[List[Any]] = None,
     related_model_excludes: Optional[Dict[str, List[str]]] = {},
+    search: Optional[Dict[str, Any]] = None,
 ):
     """
     Custom response for pagination.\n
@@ -84,6 +86,22 @@ def paginated_response(
                 query = query.filter(
                     getattr(getattr(join, "columns"), attr).like(f"%{value}%")
                 )
+
+    if search:
+        or_conditions = []
+        for attr, value in search.items():
+            if value is not None:
+                if join and hasattr(join, attr):
+                    or_conditions.append(getattr(join, attr).icontains(f"%{value}%"))
+                elif hasattr(model, attr):
+                    or_conditions.append(getattr(model, attr).icontains(f"%{value}%"))
+                else:
+                    raise AttributeError(
+                        f"'{model.__name__}' or joined model has no attribute '{attr}'"
+                    )
+
+        if or_conditions:
+            query = query.filter(or_(*or_conditions))
 
     total = query.count()
     results = jsonable_encoder(query.offset(skip).limit(limit).all())
