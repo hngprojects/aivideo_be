@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from api.db.database import get_db
 from api.v1.models.user import User
@@ -52,3 +53,19 @@ async def get_jobs(
     filters["project_type"] = project_type
 
     return job_management_service.fetch_all_summarized_videos(db, skip, limit, filters)
+
+
+@job_management.get("/export")
+async def export_jobs_as_csv(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(user_service.get_current_super_admin),
+):
+    csv_file = job_management_service.export_jobs_as_csv(db)
+
+    response = StreamingResponse(csv_file, media_type="text/csv")
+    response.headers["Content-Disposition"] = (
+        f"attachment; filename=summarized_videos.csv"
+    )
+    response.status_code = 200
+
+    return response

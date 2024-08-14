@@ -1,3 +1,5 @@
+import csv
+from io import StringIO
 from api.core.base.services import Service
 from sqlalchemy.orm import Session
 from api.v1.models.project import Project
@@ -40,6 +42,49 @@ class JobManagementService(Service):
                 ]
             },
         )
+
+    def export_jobs_as_csv(self, db: Session):
+        # get videos
+
+        videos = db.query(Project).all()
+
+        csv_file = StringIO()
+        csv_writer = csv.writer(csv_file)
+
+        csv_writer.writerow(
+            [
+                "ID",
+                "Firstname",
+                "Lastname",
+                "Email",
+                "Title",
+                "Description",
+                "Project Type",
+                "Duration",
+                "Size",
+                "Status",
+            ]
+        )
+
+        for video in videos:
+            csv_writer.writerow(
+                [
+                    video.id,
+                    video.user.first_name,
+                    video.user.last_name,
+                    video.user.email,
+                    video.title,
+                    video.description,
+                    video.project_type,
+                    video.duration,
+                    video.size,
+                    video.status.value,
+                ]
+            )
+
+        csv_file.seek(0)
+
+        return csv_file
 
 
 job_management_service = JobManagementService()

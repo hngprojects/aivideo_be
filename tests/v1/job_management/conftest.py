@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
@@ -6,6 +7,7 @@ from api.v1.models.user import User
 from api.v1.services.user import user_service
 from uuid_extensions import uuid7
 from api.db.database import get_db
+from io import StringIO
 
 client = TestClient(app)
 endpoint = "/api/v1/contents/video"
@@ -31,6 +33,13 @@ def override_get_db(db_session_mock):
 @pytest.fixture
 def test_admin_user():
     return User(id=str(uuid7()))
+
+@pytest.fixture
+def mock_non_superadmin():
+    with patch("api.v1.services.user.user_service.get_current_super_admin") as get_current_super_admin:
+        get_current_super_admin.side_effect = HTTPException(403, "Not authorized")
+
+        yield get_current_super_admin
 
 
 @pytest.fixture
