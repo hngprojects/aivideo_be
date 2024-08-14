@@ -227,7 +227,8 @@ class UserService(Service):
     def create_admin(self, db: Session, schema: user.UserCreate):
         """Creates a new admin"""
 
-        del schema.admin_secret
+        if hasattr(schema, "admin_secret"):
+            del schema.admin_secret
 
         if db.query(User).filter(User.email == schema.email).first():
             raise HTTPException(
