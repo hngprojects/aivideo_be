@@ -28,3 +28,4 @@ def load_avatars_in_db(request: Request):
                 db.add(avatar)
                 db.commit()
                 db.refresh(avatar)
+                
