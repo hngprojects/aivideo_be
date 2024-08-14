@@ -17,4 +17,8 @@ from api.v1.models.user_subscription import UserSubscription
 from api.v1.models.review import Review
 from api.v1.models.project import Project
 from api.v1.models.payment import Payment
+from api.v1.models.celery import CeleryTask
 from api.v1.models.lang_reg_timezone_setting import LanguageRegionTimezoneSetting
+
+
+from celery.backends.database.models import Task, TaskSet
