@@ -158,6 +158,18 @@ class JobService:
         csv_file.seek(0)
 
         return csv_file
+    
+    def get_job_statistics(self, db: Session):
+        stats = {}
+        query = db.query(Job)
+
+        stats["total_tasks"] = query.count()
+        stats["failed_tasks"] = query.filter(getattr(Job, "status").ilike(f"%failed%")).count()
+        stats["in_progress_tasks"] = query.filter(getattr(Job, "status").ilike(f"%inprogress%")).count()
+        stats["pending_tasks"] = query.filter(getattr(Job, "status").ilike(f"%pending%")).count()
+        stats["completed_tasks"] = query.filter(getattr(Job, "status").ilike(f"%completed%")).count()
+
+        return stats
 
 
 job_service = JobService()
