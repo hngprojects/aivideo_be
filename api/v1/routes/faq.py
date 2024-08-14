@@ -78,7 +78,6 @@ async def get_single_faq(id: str, db: Session = Depends(get_db)):
         status_code=status.HTTP_200_OK,
     )
 
-
 @faq.patch("/{id}", response_model=success_response, status_code=200)
 async def update_faq(
     id: str,
@@ -103,4 +102,5 @@ async def update_faq(
         data=jsonable_encoder(FAQBase.model_validate(faq)),
         message="FAQ updated successfully",
         status_code=status.HTTP_200_OK,
+
     )
