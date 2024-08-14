@@ -5,6 +5,7 @@ from api.v1.routes.payment import payments
 from api.v1.routes.billing_plan import billing_plan
 from api.v1.routes.ai_tools.summary import summary
 from api.v1.routes.faq import faq
+from api.v1.routes.ai_tools.background_task import background_router
 from api.v1.routes.presets import preset_router
 from api.v1.routes.google_auth import google_auth
 from api.v1.routes.websocket import websocket_router
@@ -20,3 +21,6 @@ api_version_one.include_router(user_router)
 api_version_one.include_router(summary)
 api_version_one.include_router(faq)
 api_version_one.include_router(background_router)
+api_version_one.include_router(preset_router)
+api_version_one.include_router(websocket_router)
+api_version_one.include_router(test_rout)
