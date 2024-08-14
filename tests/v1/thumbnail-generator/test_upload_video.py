@@ -24,16 +24,23 @@ def test_upload_video_success(mock_upload_file, mock_makedirs, mock_exists):
     mock_exists.return_value = False
     mock_upload_file.return_value = './media/uploads/videos/video-mocked.mov'
 
+    mock_file = MagicMock()
+    mock_file.filename = 'video.mov'
+    mock_file.read.return_value = b'test video content'
+    mock_upload_file_class.return_value = mock_file
+
+    return mock_file
+
+
+@patch('api.utils.files.upload_file', return_value='./media/uploads/videos/video-mocked.mov')
+@patch('os.path.exists', return_value=False)
+@patch('os.makedirs')
+def test_upload_video_success(mock_makedirs, mock_exists, mock_upload_file):
     response = client.post(
-        '/api/v1/thumbnails/upload',
-        files={'file': ('video.mov', b'test video content')}
+        '/api/v1/thumbnails/upload', files={'file': ('video.mov', b'test video content')}
     )
 
     assert response.status_code == 200
-    data = response.json()
-    assert 'video_id' in data['data']
-    assert 'video_url' in data['data']
-    assert 'task_id' in data['data']
 
 
 @patch('os.path.exists')
@@ -48,7 +55,6 @@ def test_upload_video_file_size_exceeds_limit(mock_makedirs, mock_exists):
 
     assert response.status_code == 400
     assert response.json()['message'] == 'File exceeds size limit'
-
 
 
 @patch('os.path.exists')

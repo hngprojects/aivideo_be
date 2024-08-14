@@ -3,8 +3,9 @@ from api.core.dependencies.celery.tasks.video_tasks import upload_video_task
 from api.utils.settings import settings
 from api.utils.success_response import success_response
 from api.utils.files import upload_file
-import os
+from api.v1.services.job import job_service  # Import job service
 from urllib.parse import urljoin
+import os
 
 thumbnail_router = APIRouter(prefix="/thumbnails", tags=["Thumbnails"])
 
@@ -30,11 +31,19 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
         base_url
     )
 
+    project = job_service.create_project_with_job(
+        job=task,
+        project_title='Video Upload Project',
+        project_type='Video Thumbnail Generator'
+
+    )
+
     return success_response(
         status_code=200,
         message="Video uploaded successfully.",
         data={
-            "task_id": task.id,
+            "job_id": task.id,
+            "project_id": project.id,
             "video_id": video_id,
             "video_url": video_url
         }
