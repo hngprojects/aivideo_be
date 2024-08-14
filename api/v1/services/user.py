@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, or_
+from sqlalchemy import desc, or_, func
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
@@ -532,6 +532,16 @@ class UserService(Service):
             "inactive_users": inactive_user_count,
             "deleted_users": deleted_user_count,
         }
+
+    def update_last_login(self, db:Session, user: User):
+        """
+        Update the user's last login field
+        Args:
+            db: database Session object
+        """
+        user.last_login = func.now()
+        db.commit()
+        db.refresh(user)
 
 
 user_service = UserService()
