@@ -16,3 +16,14 @@ async def upload_video(file: UploadFile = File(...)):
         message="Video uploaded successfully.",
         data={"video_id": video_id}
     )
+
+
+@thumbnail_router.post("/generate-thumbnails")
+async def generate_thumbnails(new_filename):
+
+    thumbnails = await generate_thumbnails_service(new_filename)
+    return success_response(
+        status_code=200,
+        message="Thumbnails generated successfully.",
+        data={"thumbnail_ids": thumbnails}
+    )
