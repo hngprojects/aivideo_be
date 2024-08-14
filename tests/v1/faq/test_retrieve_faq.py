@@ -65,8 +65,9 @@ class TestCodeUnderTest:
             assert response.json()['data'][0]['question'] == mock_faq_data[0].question
             assert response.json()['data'][1]['answer'] == mock_faq_data[1].answer
 
-    def test_get_all_faqs(self, client):
-        """Test to verify response for getting all FAQs."""
+    def test_get_all_faqs_empty(self, client):
+        """Test to verify response for getting all FAQs, even when there are
+        none."""
 
         mock_faq_data = []
 
