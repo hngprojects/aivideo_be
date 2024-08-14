@@ -75,7 +75,7 @@ class UserService(Service):
         # validate query_param
         # query_param must be a string
 
-        if not query_param.strip() or not isinstance(query_param, str):
+        if not isinstance(query_param, str) or query_param is None or not query_param.strip():
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Invalid value for search parameter. Must be a non empty string.",
@@ -83,9 +83,9 @@ class UserService(Service):
 
         query = db.query(User).filter(
             or_(
-                User.first_name.contains(query_param),
-                User.last_name.contains(query_param),
-                User.email.contains(query_param),
+                User.first_name.icontains(query_param),
+                User.last_name.icontains(query_param),
+                User.email.icontains(query_param),
             )
         )
 
