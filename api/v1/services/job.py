@@ -21,7 +21,7 @@ class JobService:
         task_result = AsyncResult(job_id, app=worker)
         task_result.state
 
-    def create_project_with_job(self, job, project_title: str, project_type: str):
+    def create_project_with_job(self, job, project_title: str, project_type: str, user_id: Optional[str] = None):
         '''FUnction to create a project alongside a task or job'''
 
         # Create project based on task run
@@ -32,17 +32,22 @@ class JobService:
         project = project_service.create(db=db, schema=project_schema)
 
         # Create celery task
-        self.create_job(job_id=job.id, project_id=project.id)
+        self.create_job(
+            job_id=job.id, 
+            project_id=project.id,
+            user_id=user_id
+        )
 
         return project
 
 
-    def create_job(self, job_id: str, project_id: str):
+    def create_job(self, job_id: str, project_id: str, user_id: Optional[str] = None):
         '''Creates a new celery job'''
 
         job = Job(
             job_id=job_id, 
             project_id=project_id, 
+            user_id=user_id, 
             status='RUNNING'
         )
         db.add(job)
