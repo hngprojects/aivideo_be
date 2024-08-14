@@ -161,7 +161,6 @@ yarl==1.9.4
 moviepy
 imageio
 unrealspeech
-playsound
 pydub
 simpleaudio
 wave
