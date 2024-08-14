@@ -18,7 +18,7 @@ class ProfileBase(BaseModel):
     phone_number: Optional[str] = Field(None, pattern=r'^\+?[1-9]\d{1,14}$')
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = Extra.forbid
 
 
@@ -34,6 +34,6 @@ class ProfileCreateUpdate(BaseModel):
     avatar_url: Optional[str] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = Extra.forbid
 
