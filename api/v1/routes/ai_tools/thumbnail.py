@@ -13,28 +13,29 @@ thumbnail_router = APIRouter(prefix="/thumbnails", tags=["Thumbnails"])
 async def upload_video(request: Request, file: UploadFile = File(...)):
     base_url = str(request.base_url)
 
-    # Read the file content asynchronously
-    file_content = await file.read()
+    saved_path = await upload_file(
+        file,
+        allowed_extensions=settings.ALLOWED_EXTENSIONS,
+        upload_folder='videos',
+        save_extension=file.filename.split('.')[-1].lower(),
+        max_file_size=settings.MAX_FILE_SIZE
+    )
 
-    # Create a dictionary to pass to the Celery task
-    file_data = {
-        "filename": file.filename,
-        "file_content": file_content
-    }
+    video_id = os.path.basename(saved_path).split('.')[0]
+    video_url = urljoin(
+        base_url, f"media/uploads/videos/{os.path.basename(saved_path)}")
 
-   
-    task = upload_video_task.delay(file_data, base_url)
-
-    # Get the task result
-    result = task.get(timeout=None)
+    task = upload_video_task.delay(
+        video_id,
+        base_url
+    )
 
     return success_response(
         status_code=200,
-        message="Video upload task initiated.",
+        message="Video uploaded successfully.",
         data={
             "task_id": task.id,
-            "video_id": result["video_id"],
-            "video_url": result["video_url"]
+            "video_id": video_id,
+            "video_url": video_url
         }
     )
-
