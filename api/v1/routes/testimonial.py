@@ -112,3 +112,26 @@ async def update_testimonial(
         message="Testimonial updated successfully",
         status_code=status.HTTP_200_OK,
     )
+
+@testimonial.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_testimonial(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_super_admin),
+):
+    """Endpoint to delete a testimonial. Only accessible to superadmins
+
+    Args:
+        id (str)
+        db (Session, optional): Defaults to Depends(get_db).
+        current_user (User, optional): Defaults to Depends(user_service.get_current_super_admin).
+
+    Raises:
+        HTTPException: 404 NOT FOUND (Testimonial to be deleted cannot be found)
+    """
+    status = testimonial_service.delete(db, testimonial_id=id)
+
+    if status == False:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+    
+    logging.info(f'Deleted testimonial. ID: {id}.')
