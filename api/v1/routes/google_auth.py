@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from decouple import config
 
 from api.db.database import get_db
+from api.core.dependencies.google_oauth_config import google_oauth
 from api.v1.services.google_oauth import GoogleOauthServices
 from api.utils.success_response import success_response
 from api.v1.schemas.google_oauth import OAuthToken

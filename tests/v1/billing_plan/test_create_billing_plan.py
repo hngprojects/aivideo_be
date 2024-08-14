@@ -80,7 +80,7 @@ def make_request(token):
         ]
     }
     return client.post(
-        f"/api/v1/billing_plans", json=data,
+        f"/api/v1/billing-plans", json=data,
         headers={"Authorization": f"Bearer {token}"}
     )
 
