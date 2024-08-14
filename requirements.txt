@@ -83,7 +83,6 @@ kombu==5.4.0
 langchain==0.2.12
 langchain-community==0.2.11
 langchain-core==0.2.29
-langchain-google-community==1.0.7
 langchain-openai==0.1.21
 langchain-text-splitters==0.2.2
 langsmith==0.1.99
@@ -175,7 +174,10 @@ starlette==0.37.2
 sympy==1.13.2
 tenacity==8.5.0
 threadpoolctl==3.5.0
-tiktoken==0.7.0
+langchain-community==0.2.11
+langchain-core==0.2.29
+langchain-openai==0.1.21
+langchain-text-splitters==0.2.2
 tomli==2.0.1
 tomlkit==0.13.0
 tornado==6.4.1
