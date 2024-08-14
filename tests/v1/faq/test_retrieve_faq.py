@@ -35,11 +35,13 @@ def client():
     client = TestClient(app)
     return client
 
+mock_db_sess_inst = mock_db_session()
+
 class TestCodeUnderTest:
     @classmethod 
     def setup_class(cls):
         app.dependency_overrides[user_service.get_current_super_admin] = lambda: MagicMock()
-        app.dependency_overrides[get_db] = mock_db_session
+        app.dependency_overrides[get_db] = lambda: mock_db_sess_inst
 
         
     @classmethod
@@ -101,11 +103,18 @@ class TestCodeUnderTest:
         """Test when the FAQ ID does not exist."""
 
         nonexistent_id = str(uuid7())
-        with patch("api.v1.services.faq.faq_service.fetch", return_value=None):
-            response = client.get(
+
+        mock_query = MagicMock()
+        mock_filter = MagicMock()
+
+        mock_db_sess_inst.query.return_value = mock_query
+        mock_query.filter_by.return_value = mock_filter
+        mock_filter.first.return_value = None
+        
+        response = client.get(
                 f'/api/v1/faqs/{nonexistent_id}',
             )
 
             # Assert that the response status code is 404 Not Found
-            assert response.status_code == 404
-            assert response.json()['message'] == 'FAQ not found'
+        assert response.status_code == 404
+        assert response.json()['message'] == 'FAQ not found'

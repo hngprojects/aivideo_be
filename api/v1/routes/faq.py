@@ -29,9 +29,7 @@ async def create_faq(
         success_response
     """
     faq = faq_service.create(db, schema=schema)
-
-    if schema.answer.strip() == '' or schema.category.strip() == '' or schema.question.strip() == '':
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request body")
+    
     
     logging.info(f'Creating new FAQ. ID: {faq.id}.')
     return success_response(
@@ -73,9 +71,6 @@ async def get_single_faq(id: str, db: Session = Depends(get_db)):
         HTTPException: 404 NOT FOUND (Faq to be retrieved cannot be found)
     """
     faq = faq_service.fetch(db, faq_id=id)
-
-    if faq == None:
-        raise HTTPException(status_code=404, detail="FAQ not found")
 
     return success_response(
         data=jsonable_encoder(FAQBase.model_validate(faq)),
