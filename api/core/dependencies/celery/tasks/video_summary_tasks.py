@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""Tasks that handle video transcription and summarization"""
+from api.utils.files import convert_video_to_audio
+from api.v1.services.ai_tools.youtube_summarizer import transcription_service
+from api.core.dependencies.celery.celery_app import worker
+from api.db.database import get_db
+import json
+
+
+db = next(get_db())
+
+
+@worker.task()
+def generate_video_summary_task(video_file):
+    """Background task to summarize a video and save to database"""
+
+    audio_file_path = convert_video_to_audio(
+        video_file)
+
+    transcription = transcription_service.transcribe_audio(
+        audio_file_path
+    )
+    return json.dumps(transcription)
