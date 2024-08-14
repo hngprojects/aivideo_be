@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Text
 from sqlalchemy.orm import relationship
 from api.v1.models.base_model import BaseTableModel
 
@@ -11,10 +11,10 @@ class Project(BaseTableModel):
     description = Column(String, nullable=True)
     project_type = Column(String, nullable=False)
     file_url = Column(String, nullable=True)
-    result = Column(String, nullable=True)
+    result = Column(Text, nullable=True)
     archived = Column(Boolean, server_default='false')
     is_deleted = Column(Boolean, server_default='false')
     archived_at = Column(DateTime, nullable=True)
 
     user = relationship('User', back_populates='projects')
-    celery_tasks = relationship("CeleryTask", back_populates="project")
+    jobs = relationship("Job", back_populates="project")
