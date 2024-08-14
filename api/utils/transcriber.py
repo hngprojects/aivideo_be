@@ -1,5 +1,7 @@
 import assemblyai as aai
 from decouple import config
+import os
+from fastapi import HTTPException, status
 
 
 async def transcribe(filepth: str) -> str:
@@ -11,6 +13,12 @@ async def transcribe(filepth: str) -> str:
 
         transcript = transcriber.transcribe(filepth)
 
-        return transcript.text
+        # Delete the file after transcription
+        os.remove(filepth)
+
+        return f"NOTE THIS IS A VIDEO: {transcript.text}"
     except:
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
+            detail="Failed to transcribe video",
+        )

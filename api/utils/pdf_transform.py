@@ -17,7 +17,7 @@ async def pdf_transform(yttext: str):
     file_location = video_dir / pdf_filename
 
     # Create a SimpleDocTemplate for the PDF
-    pdf = SimpleDocTemplate(file_location, pagesize=letter)
+    pdf = SimpleDocTemplate(str(file_location), pagesize=letter)
 
     # Get the default stylesheet
     styles = getSampleStyleSheet()
@@ -27,7 +27,7 @@ async def pdf_transform(yttext: str):
 
     # Add the full transcription to the elements list with proper wrapping
     text = yttext
-    paragraphs = text.split(
+    paragraphs = yttext.split(
         "\n\n"
     )  # Assuming paragraphs are separated by double newlines
 
