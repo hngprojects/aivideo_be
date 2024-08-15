@@ -162,10 +162,10 @@ def convert_video_to_audio(
 
 
 async def upload_files(
-        files,
-        allowed_extensions: Optional[list],
-        upload_folder: str,
-        save_extension: str = 'pdf'
+    files,
+    allowed_extensions: Optional[list],
+    upload_folder: str,
+    save_extension: str = 'pdf'
 ):
     '''Function to upload single or multiple files'''
     if not isinstance(files, list):
