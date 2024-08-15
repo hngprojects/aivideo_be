@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Enum
 from api.v1.models.base_model import BaseTableModel
 
 
@@ -7,11 +7,18 @@ class Avatar(BaseTableModel):
 
     file_url = Column(String, nullable=False)
     file_name = Column(String, nullable=True)
-
+    file_path = Column(String, nullable=True)
+    # type = Column(
+    #     Enum('male', 'female', 'neutral', name='avatar_type'), 
+    #     nullable=False,
+    #     server_default='neutral'
+    # )
+    # voice = Column(String, nullable=False)
 
 class BackgroundMusic(BaseTableModel):
     __tablename__ = "background_music"
 
     file_url = Column(String, nullable=False)
     file_name = Column(String, nullable=True)
+    file_path = Column(String, nullable=True)
 
