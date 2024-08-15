@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 media/
-
+bbb.b/myvenv/
 # C extensions
 *.so
 test_cases.py
@@ -137,6 +137,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+venv/
 
 
 # Spyder project settings

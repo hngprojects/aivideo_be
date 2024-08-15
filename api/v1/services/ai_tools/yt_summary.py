@@ -4,11 +4,11 @@ from api.v1.services.ai_tools.summary import summary_service
 
 
 class YoutubeSummary:
-    async def summarize_video(self, video_pth):
+    def summarize_video(self, video_pth):
         """Summarize a youtube video"""
         
-        transcript = await transcribe(video_pth)
-        pdf_file = await pdf_transform(transcript)
+        transcript = transcribe(video_pth)
+        pdf_file = pdf_transform(transcript)
         full_summary = summary_service.summarize_pdf(pdf_file)
         return full_summary
 
