@@ -12,7 +12,8 @@ from api.v1.schemas.user import (
     AdminCreateUserResponse,
     AdminCreateUser,
     UserStatResponse,
-    UserRestoreResponse
+    UserRestoreResponse,
+    UserActivityResponse,
 )
 from api.db.database import get_db
 from api.v1.services.user import user_service
@@ -107,12 +108,36 @@ def get_user_statistics(
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
+    """Endpoint to fetch all user statistics"""
     stats_data = user_service.get_users_statistics(db=db)
 
     return success_response(
         status_code=status.HTTP_200_OK,
         message="User statistics retrieved successfully",
         data=stats_data,
+    )
+
+
+@user_router.get(
+    "/{user_id}/activity", status_code=status.HTTP_200_OK, response_model=UserActivityResponse
+)
+def get_user_activity(
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    db: Annotated[Session, Depends(get_db)],
+    user_id: str,
+    job: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    page: int = 1,
+    per_page: int = 10,
+):
+    """Endpoint to fetch user activity"""
+    return user_service.fetch_user_activity(
+        db=db,
+        user_id=user_id,
+        page=page,
+        per_page=per_page,
+        job=job,
+        status=status,
     )
 
 
@@ -169,7 +194,11 @@ def delete_user(
     user_service.delete(db=db, id=user_id)
 
 
-@user_router.put("/{user_id}/restore", status_code=status.HTTP_200_OK, response_model=UserRestoreResponse)
+@user_router.put(
+    "/{user_id}/restore",
+    status_code=status.HTTP_200_OK,
+    response_model=UserRestoreResponse,
+)
 def restore_deleted_user(
     user_id: str,
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
@@ -189,11 +218,12 @@ def restore_deleted_user(
         HTTPException: 404 NOT FOUND (User to be restored cannot be found)
     """
 
-
     # restore the deleted user
     user_service.restore_deleted(db=db, id=user_id)
 
-    return success_response(status_code=status.HTTP_200_OK, message="User restored successfully!")
+    return success_response(
+        status_code=status.HTTP_200_OK, message="User restored successfully!"
+    )
 
 
 @user_router.get("", status_code=status.HTTP_200_OK, response_model=AllUsersResponse)
@@ -229,7 +259,10 @@ async def get_users(
     }
     return user_service.fetch_all(db, page, per_page, **query_params)
 
-@user_router.get("/search", status_code=status.HTTP_200_OK, response_model=AllUsersResponse)
+
+@user_router.get(
+    "/search", status_code=status.HTTP_200_OK, response_model=AllUsersResponse
+)
 async def search_users(
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
     db: Annotated[Session, Depends(get_db)],
