@@ -41,6 +41,25 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
         save_extension='pdf'
     )
 
+    task = generate_pdf_summary_task.delay(pdf_file)
+
+    # Create project with job
+    project = job_service.create_project_with_job(
+        job=task,
+        project_title='New project',
+        project_type='Talking Head',
+        # user_id = pass in the current user id for authenticated users
+    )
+
+    return success_response(
+        status_code=202,
+        message="Summary generation job initiated successfully",
+        data={
+            "job_id": task.id,
+            "project_id": project.id,
+        },
+    )
+
 
 @summary.post(
     "/pdf-summarizer",

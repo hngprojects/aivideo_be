@@ -43,7 +43,6 @@ class TestCodeUnderTest:
     def setup_class(cls):
         app.dependency_overrides[user_service.get_current_user] = lambda: MagicMock(id='user_id')
         app.dependency_overrides[get_db] = mock_db_session
-        app.dependency_overrides[project_service.fetch_all_user_projects] = lambda: mock_data
 
 
     @classmethod
