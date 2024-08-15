@@ -13,7 +13,6 @@ from api.v1.routes.payment import initiate_payment
 from api.v1.models import User, BillingPlan, Payment
 from api.v1.schemas.payment import InitiatePaymentSchema
 
-
 client = TestClient(app)
 
 
