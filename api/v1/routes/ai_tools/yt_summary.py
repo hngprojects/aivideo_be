@@ -1,10 +1,4 @@
-from fastapi import (
-    Depends,
-    status,
-    APIRouter,
-    File,
-    UploadFile,
-)
+from fastapi import Depends, status, APIRouter, File, UploadFile
 from sqlalchemy.orm import Session
 
 from api.utils.transcriber import transcribe
@@ -14,6 +8,7 @@ from api.utils.success_response import success_response
 from api.utils.videos import upload_video
 from api.v1.services.job import job_service
 from api.core.dependencies.celery.tasks.summary_tasks import generate_yt_transcript
+from api.utils.ytdownload import download_video
 
 yt_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
@@ -41,5 +36,23 @@ async def summarize_yt_vid(file: UploadFile = File(...), db: Session = Depends(g
         data={
             "job_id": task.id,
             "project_id": project.id,
+        },
+    )
+
+
+@yt_summary.post(
+    "/youtube",
+    status_code=status.HTTP_200_OK,
+    response_model=success_response,
+)
+async def summarize_yt_vid(link: str, db: Session = Depends(get_db)):
+    """Endpoint to download and summarize a single youtube video"""
+    download_video(link)
+    return success_response(
+        status_code=202,
+        message="Summary generation job initiated successfully",
+        data={
+            "job_id": "task.id",
+            "project_id": " project.id",
         },
     )
