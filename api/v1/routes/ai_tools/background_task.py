@@ -11,6 +11,7 @@ from api.db.database import get_db
 
 background_router = APIRouter(prefix="/background", tags=["Background"])
 
+
 @background_router.get("/job/{job_id}/status")
 async def job_status(job_id: str):
     task_result = AsyncResult(job_id, app=worker)
@@ -18,11 +19,8 @@ async def job_status(job_id: str):
 
 
 @background_router.get("/job/{job_id}/status")
-async def send_job_status_updates(
-    job_id: str, 
-    db: Session = Depends(get_db)
-):
-    '''Function to send job status over websockets'''
+async def send_job_status_updates(job_id: str, db: Session = Depends(get_db)):
+    """Function to send job status over websockets"""
 
     task_result = AsyncResult(job_id, app=worker)
     project = job_service.get_project_from_job(job_id=job_id)
@@ -33,16 +31,16 @@ async def send_job_status_updates(
     project.is_active = False
     db.commit()
 
-    if status == 'PENDING':
-        job_service.update_job(job_id, 'Pending')
+    if status == "PENDING":
+        job_service.update_job(job_id, "Pending")
 
-    elif status == 'FAILURE':
+    elif status == "FAILURE":
         result = str(task_result.info)
-        job_service.update_job(job_id, 'Failed', result)
-    
-    elif status == 'SUCCESS':
+        job_service.update_job(job_id, "Failed", result)
+
+    elif status == "SUCCESS":
         result = task_result.result
-        job_service.update_job(job_id, 'Success', result)
+        job_service.update_job(job_id, "Success", result)
 
         # Save project result
         project.result = result
@@ -53,9 +51,9 @@ async def send_job_status_updates(
 
     return success_response(
         status_code=200,
-        message='Job progress retrieved',
+        message="Job progress retrieved",
         data={
-            'job_id': job_id,
-            'status': status,
-        }
+            "job_id": job_id,
+            "status": status,
+        },
     )
