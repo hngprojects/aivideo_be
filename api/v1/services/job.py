@@ -85,7 +85,8 @@ class JobService:
         """Returns the project from the job details"""
 
         job = self.fetch_by_job_id(job_id=job_id)
-        project = db.query(Project).filter(Project.id == job.project_id).first()
+        project = db.query(Project).filter(
+            Project.id == job.project_id).first()
 
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
@@ -157,11 +158,11 @@ class JobService:
             csv_writer.writerow(
                 [
                     datum.id,
-                    datum.user.first_name,
-                    datum.user.last_name,
-                    datum.user.email,
+                    datum.user.first_name if datum.user else None,
+                    datum.user.last_name if datum.user else None,
+                    datum.user.email if datum.user else None,
                     datum.job_id,
-                    datum.project.project_type,
+                    datum.project.project_type if datum.project else None,
                     datum.created_at,
                     datum.status,
                 ]

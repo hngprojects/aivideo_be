@@ -51,5 +51,13 @@ class Settings(BaseSettings):
     GOOEY_API_KEY: str = config("GOOEY_API_KEY")
     UNREAL_SPEECH_API_KEY: str = config("UNREAL_SPEECH_API_KEY")
 
+    MEDIA_DIR: str = config("MEDIA_DIR")
+    MAX_FILE_SIZE: int = config("MAX_FILE_SIZE")
+
+    @property
+    def ALLOWED_EXTENSIONS(self) -> set[str]:
+        raw_extensions = config("ALLOWED_EXTENSIONS", default="")
+        return set(ext.strip() for ext in raw_extensions.split(",") if ext.strip())
+
 
 settings = Settings()
