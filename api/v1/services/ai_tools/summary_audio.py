@@ -1,17 +1,11 @@
-import io
 import os
 import uuid
 from api.utils.settings import settings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains.llm import LLMChain
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
-from langchain_community.document_loaders.parsers import OpenAIWhisperParser
-from pydub import AudioSegment
 from deep_translator import GoogleTranslator
 from langchain_openai import OpenAI as OI
-from langchain_community.llms import OpenAI as OI
 from langchain import OpenAI
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
