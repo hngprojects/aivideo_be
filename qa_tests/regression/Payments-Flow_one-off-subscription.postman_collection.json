@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "2ea2371b-fb2a-475b-b5ae-b1267f92f2d8",
-		"name": "HNG Stage 7 -Team Anchor",
+		"name": "Payments-Flow_one-off-subscription",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "32444128",
 		"_collection_link": "https://stage-2-team.postman.co/workspace/HNG-Tech-Team~68d66956-4085-40c0-9f1d-a6b0dfb44d81/collection/32444128-2ea2371b-fb2a-475b-b5ae-b1267f92f2d8?action=share&source=collection_link&creator=32444128"
@@ -208,7 +208,7 @@
 					"response": []
 				},
 				{
-					"name": "Create a Billing plan",
+					"name": "Fetch all Billing plans",
 					"event": [
 						{
 							"listen": "test",
@@ -216,7 +216,7 @@
 								"exec": [
 									"pm.test(\"Parse billing plan ID and store in collectionVariables\", () => {\r",
 									"    const responseJson = pm.response.json();\r",
-									"    const plan_id = responseJson.data.id; // Assuming the login response has a \"token\" property\r",
+									"    const plan_id = responseJson.data.billing_plans[0].id; // Assuming the login response has a \"token\" property\r",
 									"\r",
 									"    pm.collectionVariables.set(\"billing_plan_id\", `${plan_id}`);\r",
 									"});"
@@ -226,6 +226,9 @@
 							}
 						}
 					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -237,11 +240,11 @@
 								}
 							]
 						},
-						"method": "POST",
+						"method": "GET",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"plan_name\": \"Test plan\",\r\n  \"price\": 5,\r\n  \"plan_interval\": \"monthly\",\r\n  \"currency\": \"Nigerian Naira\",\r\n  \"features\": [\r\n    \"Features?\"\r\n  ]\r\n}",
+							"raw": "// {\r\n//   \"plan_name\": \"Test plan\",\r\n//   \"price\": 5,\r\n//   \"plan_interval\": \"monthly\",\r\n//   \"currency\": \"Nigerian Naira\",\r\n//   \"features\": [\r\n//     \"Features?\"\r\n//   ]\r\n// }",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -249,15 +252,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/billing-plans/",
+							"raw": "{{baseUrl}}/api/v1/billing-plans",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"billing-plans",
-								""
+								"billing-plans"
 							]
 						}
 					},
@@ -504,97 +506,6 @@
 								"v1",
 								"payments",
 								"initiate"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Payments Flow - Subscription",
-			"item": [
-				{
-					"name": "Perform subscription",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const responseJson = pm.response.json();\r",
-									"\r",
-									"if (pm.response.code >= 404) {\r",
-									"    console.log(`Error: ${pm.response.code}`);\r",
-									"    console.log(`Response Body: ${pm.response.text()}`);\r",
-									"}\r",
-									"\r",
-									"// Check that the status code is 200\r",
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"// pm.test(\"Response body contains the right terms\", function () {\r",
-									"//     pm.expect(pm.response.text()).to.include('data');\r",
-									"//     pm.expect(pm.response.text()).to.include('status_code');\r",
-									"//     // pm.expect(pm.response.text()).to.include('access_token');\r",
-									"//     pm.expect(pm.response.text()).to.include('payment_url');\r",
-									"//     pm.expect(pm.response.text()).to.include('success');\r",
-									"//     pm.expect(pm.response.text()).to.include('message');\r",
-									"// });\r",
-									"\r",
-									"// // Validate field types\r",
-									"// pm.test(\"Status code is a number\", function () {\r",
-									"//     pm.expect(responseJson.status_code).to.be.a('number');\r",
-									"// });\r",
-									"\r",
-									"// pm.test(\"Success is a boolean\", function () {\r",
-									"//     pm.expect(responseJson.success).to.be.a('boolean');\r",
-									"// });\r",
-									"\r",
-									"// pm.test(\"Message is a string\", function () {\r",
-									"//     pm.expect(responseJson.message).to.be.a('string');\r",
-									"// });\r",
-									"\r",
-									"// pm.test(\"Payment_url is a string\", function () {\r",
-									"//     pm.expect(responseJson.data.payment_url).to.be.a('string');\r",
-									"// });\r",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{superToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/payments/verify/:transaction_id",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"payments",
-								"verify",
-								":transaction_id"
-							],
-							"variable": [
-								{
-									"key": "transaction_id",
-									"value": ""
-								}
 							]
 						}
 					},

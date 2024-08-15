@@ -137,6 +137,7 @@ class ChangePasswordSchema(BaseModel):
 
     old_password: str
     new_password: str
+    confirm_new_password: str
 
 
 class UserStatData(BaseModel):
@@ -156,4 +157,26 @@ class UserStatResponse(BaseModel):
 class UserRestoreResponse(BaseModel):
     status: str
     message: str
+    status_code: int
+
+
+class UserActivityData(BaseModel):
+    id: str
+    created_at: datetime
+    tool_used: str
+    status: str
+
+
+class UserActivityResponse(BaseModel):
+    status: str
+    message: str
+    page: int
+    per_page: int
+    total_jobs_created: int
+    total_jobs_retrieved: int
+    total_jobs_completed: int
+    total_jobs_pending: int
+    total_jobs_in_progress: int
+    total_pages: int
+    data: Union[List[UserActivityData], List[None]]
     status_code: int
