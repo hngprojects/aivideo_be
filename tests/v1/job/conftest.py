@@ -107,3 +107,25 @@ def mock_paginated_response():
 
         fetch_all_summarized_videos.return_value = response
         yield fetch_all_summarized_videos
+
+
+@pytest.fixture
+def mock_get_job_statistics():
+    with patch(
+        "api.v1.services.job.job_service.get_job_statistics"
+    ) as get_job_statistics:
+        response = {
+            "status_code": 200,
+            "success": True,
+            "message": "Job statistics retrieved successfully",
+            "data": {
+                "total_tasks": 2,
+                "failed_tasks": 1,
+                "in_progress_tasks": 0,
+                "pending_tasks": 0,
+                "completed_tasks": 1,
+            },
+        }
+
+        get_job_statistics.return_value = response
+        yield get_job_statistics
