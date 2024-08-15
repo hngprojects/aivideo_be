@@ -499,7 +499,7 @@ class UserService(Service):
         """Endpoint to change the user's password"""
         
         # Check if the user has an existing password
-        if user.password == "":
+        if not user.password:
             # user signed up via social authentication (Google/Facebook)
             if old_password:
                 raise HTTPException(
