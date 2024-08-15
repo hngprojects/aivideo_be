@@ -1,7 +1,9 @@
+import os
+
 import assemblyai as aai
 from decouple import config
-import os
 from fastapi import HTTPException, status
+
 from api.utils.logger import logging
 
 
@@ -9,7 +11,7 @@ def transcribe(filepth: str) -> str:
     """utilise the assembly assemblyai transcribe video files"""
 
     try:
-        aai.settings.api_key = config("ASSEMBLY_AI_API_KEY")
+        aai.settings.api_key = config("ASEMBLYAI_API_KEY")
         transcriber = aai.Transcriber()
         transcript = transcriber.transcribe(filepth)
 
