@@ -18,6 +18,8 @@ from api.v1.routes.ai_tools.summary_audio import summary_audio
 from api.v1.routes.testimonial import testimonial
 from api.v1.routes.project import project
 from api.v1.routes.job import job
+from api.v1.routes.ai_tools.audio_transcriber import audio 
+
 
 
 api_version_one = APIRouter(prefix="/api/v1")
@@ -42,3 +44,4 @@ api_version_one.include_router(test_rout)
 api_version_one.include_router(summary_audio)
 api_version_one.include_router(job)
 api_version_one.include_router(video_summary)
+api_version_one.include_router(audio)
