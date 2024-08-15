@@ -8,14 +8,16 @@ from api.v1.models.profile import Profile
 from api.core.base.services import Service
 from sqlalchemy.orm import Session
 from typing import Annotated, Union
+from api.v1.schemas.google_oauth import Tokens
 from api.v1.services.user import user_service
-from api.v1.services.google_oauth import Tokens
 
 
-class GoogleOauthServices(Service): 
+class GoogleOauthServices(Service):
     """Handles database operations for google oauth"""
 
-    def create(self, background_tasks: BackgroundTasks, google_response: dict, db: Session):
+    def create(
+        self, background_tasks: BackgroundTasks, google_response: dict, db: Session
+    ):
         """
         Creates a user using information from google.
 
@@ -28,29 +30,28 @@ class GoogleOauthServices(Service):
             False: for when Authentication fails
         """
 
-        try:            
+        try:
             new_user = self.create_new_user(google_response, db)
             background_tasks.add_task(
-                send_email, 
+                send_email,
                 recipient=new_user.email,
-                template_name='welcome.html',
-                subject='Welcome to HNG Boilerplate',
+                template_name="welcome.html",
+                subject="Welcome to HNG Boilerplate",
                 context={
-                    'first_name': new_user.first_name,
-                    'last_name': new_user.last_name
-                }
+                    "first_name": new_user.first_name,
+                    "last_name": new_user.last_name,
+                },
             )
             return new_user
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=500, detail=f'Error {e}')
+            raise HTTPException(status_code=500, detail=f"Error {e}")
 
     def fetch(self):
         return super().fetch()
 
     def fetch_all(self, db: Annotated[Session, Depends(get_db)]):
         return super().fetch_all()
-            
 
     def delete(self):
         """
@@ -83,9 +84,11 @@ class GoogleOauthServices(Service):
             )
             return tokens
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f'Error {e}')
-    
-    def create_new_user(self, google_response: dict, db: Annotated[Session, Depends(get_db)]):
+            raise HTTPException(status_code=500, detail=f"Error {e}")
+
+    def create_new_user(
+        self, google_response: dict, db: Annotated[Session, Depends(get_db)]
+    ):
         """
         Creates a new user and their associated profile and OAuth data.
 
@@ -103,12 +106,13 @@ class GoogleOauthServices(Service):
                 first_name=google_response.get("given_name"),
                 last_name=google_response.get("family_name"),
                 email=google_response.get("email"),
-                avatar_url=google_response.get("picture")
+                avatar_url=google_response.get("picture"),
             )
+            new_user.update_last_login()
             profile = Profile(user_id=new_user.id)
             db.add_all([new_user, profile])
             db.commit()
 
             return new_user
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f'Error {e}')
+            raise HTTPException(status_code=500, detail=f"Error {e}")

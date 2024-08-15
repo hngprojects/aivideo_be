@@ -219,6 +219,26 @@ async def get_users(
     }
     return user_service.fetch_all(db, page, per_page, **query_params)
 
+@user_router.get("/search", status_code=status.HTTP_200_OK, response_model=AllUsersResponse)
+async def search_users(
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    db: Annotated[Session, Depends(get_db)],
+    page: int = 1,
+    per_page: int = 10,
+    query: Optional[str] = Query(None),
+):
+    """
+    user search functionality.
+    Args:
+        current_user: The current user(admin) making the request
+        db: database Session object
+        page: the page number
+        per_page: the maximum size of users for each page
+    Returns:
+        UserData
+    """
+    return user_service.search(db, page, per_page, query)
+
 
 @user_router.post(
     "", status_code=status.HTTP_201_CREATED, response_model=AdminCreateUserResponse
