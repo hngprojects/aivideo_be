@@ -64,9 +64,8 @@ def generate_pdf_summary_task(pdf_file):
 
     # Delete file from file system
     delete_file(pdf_file)
-
+    
     return summary
-
 
 @worker.task()
 def generate_yt_transcript(video_pth):
