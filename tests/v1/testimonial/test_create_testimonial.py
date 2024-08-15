@@ -17,6 +17,7 @@ def mock_testimonial():
         client_name="Zxenon",
         content="Very Useful Product",
         rating=4.5,
+        client_position="Mentor",
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc)
     )
@@ -36,7 +37,8 @@ def client():
 test_testimonial_req_body = {
     "client_name": "Zxenon",
     "content": "Very Useful Product",
-    "rating": 4.5
+    "rating": 4.5,
+    "client_position": "Mentor"
     }
 
 ENDPOINT = '/api/v1/testimonials'

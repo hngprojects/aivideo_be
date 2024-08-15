@@ -426,6 +426,8 @@ class UserService(Service):
 
         token = self.verify_access_token(access_token, credentials_exception)
         user = db.query(User).filter(User.id == token.id).first()
+        if not user:
+            raise credentials_exception
         user.update_last_login()
 
         return user

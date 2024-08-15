@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = config("ACCESS_TOKEN_EXPIRE_MINUTES")
     JWT_REFRESH_EXPIRY: int = config("JWT_REFRESH_EXPIRY")
 
+    APP_URL: str = config("APP_URL")
+
+    MAIL_USERNAME: str = config("MAIL_USERNAME")
+    MAIL_PASSWORD: str = config("MAIL_PASSWORD")
+    MAIL_FROM: str = config("MAIL_FROM")
+    MAIL_PORT: int = config("MAIL_PORT")
+    MAIL_SERVER: str = config("MAIL_SERVER")
+
     # Database configurations
     DB_HOST: str = config("DB_HOST")
     DB_PORT: int = config("DB_PORT", cast=int)

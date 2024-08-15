@@ -125,7 +125,6 @@ numba==0.60.0
 numpy==1.26.4
 onnxruntime==1.18.1
 openai==1.40.3
-openai-whisper==20231117
 opencv-python==4.10.0.84
 orjson==3.10.7
 packaging==24.1
