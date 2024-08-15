@@ -48,3 +48,14 @@ def upload_video_task(video_id: str, base_url: str):
     video_url = urljoin(base_url, f"media/uploads/videos/{video_filename}")
 
     return {"video_id": video_id, "video_url": video_url}
+
+
+@worker.task()
+def generate_thumbnails_task(video_id: str, base_url: str, manual_capture: bool = False, timestamp: float = None):
+    '''Background task to generate thumbnails'''
+
+    thumbnails = asyncio.run(
+        generate_thumbnails_service(
+            video_id, base_url, manual_capture, timestamp)
+    )
+    return thumbnails
