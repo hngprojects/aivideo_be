@@ -451,6 +451,9 @@ class UserService(Service):
         user.is_active = True
 
         db.commit()
+        
+        
+        
 
     def change_password(
         self,
@@ -464,7 +467,7 @@ class UserService(Service):
         
         # Check if the user has an existing password
         if not user.password:
-            # This could happen if the user signed up via social authentication (Google/Facebook)
+            # user signed up via social authentication (Google/Facebook)
             if old_password:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -501,6 +504,8 @@ class UserService(Service):
             "newPassword": user.password,
             "confirmNewPassword": confirm_new_password
         }
+        
+        
 
 
     def get_current_super_admin(
