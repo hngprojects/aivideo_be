@@ -10,7 +10,7 @@ on:
 
 jobs:
   on-success:
-    runs-on: self-hosted
+    runs-on: pydeploy
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
