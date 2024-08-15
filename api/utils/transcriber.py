@@ -21,6 +21,7 @@ def transcribe(filepth: str) -> str:
         logging.info("video transcript completed")
         return f"NOTE THIS IS A VIDEO: {transcript.text}"
     except Exception as e:
+        os.remove(filepth)
         logging.error("Error processing assemblyai transcript")
         raise HTTPException(
             status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
