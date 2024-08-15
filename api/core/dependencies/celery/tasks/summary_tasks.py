@@ -2,6 +2,7 @@ import json
 from celery import shared_task
 from pypdf import PdfReader
 from api.core.dependencies.celery.celery_app import worker
+from api.utils.files import delete_file
 from api.v1.services.ai_tools.summary import summary_service
 from api.v1.services.job import job_service  # Import job_service to update job status
 from api.v1.services.ai_tools.yt_summary import yts_service
@@ -61,6 +62,9 @@ def generate_pdf_summary_task(pdf_file):
 
     summary = summary_service.summarize_pdf(pdf_file)
 
+    # Delete file from file system
+    delete_file(pdf_file)
+    
     return summary
 
 @worker.task()
