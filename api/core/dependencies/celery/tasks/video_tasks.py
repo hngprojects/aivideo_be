@@ -1,4 +1,5 @@
 from api.core.dependencies.celery.celery_app import worker
+from api.utils.files import delete_file
 from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
 from api.v1.services.ai_tools.thumbnail import generate_thumbnails_service
 from api.utils.settings import settings as app_settings
@@ -13,16 +14,17 @@ db = next(get_db())
 
 
 @worker.task()
-def generate_talking_avatar_task(img_file):
+def generate_talking_avatar_task(img_file, aspect_ratio, script, voice_over):
     '''Background task to generate talking avatar and save to database'''
-    image_type = "square"  # Choose from 'square', 'vertical', or 'horizontal'
-    script_text = "Hello, this is your talking avatar! JO and Bami have been working so hard to build me. THanks  Guys!!"
 
     video = talking_avatar_service.process_script(
-        img_file,
-        image_type,
-        script_text
+        image_file=img_file,
+        aspect_ratio=aspect_ratio,
+        script=script,
+        voice_over=voice_over
     )
+
+    delete_file(img_file)
 
     return video
 
