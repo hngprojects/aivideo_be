@@ -61,17 +61,7 @@ async def delete_account(
     )
 
 
-# @user_router.patch("/me/password", status_code=200)
-# async def change_password(
-#     schema: ChangePasswordSchema,
-#     db: Session = Depends(get_db),
-#     user: User = Depends(user_service.get_current_user),
-# ):
-#     """Endpoint to change the user's password"""
 
-#     user_service.change_password(schema.old_password, schema.new_password, user, db)
-
-#     return success_response(status_code=200, message="Password changed successfully")
 
 
 @user_router.patch("", status_code=status.HTTP_200_OK)
