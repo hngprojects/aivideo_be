@@ -1,57 +1,70 @@
 
 from deep_translator import GoogleTranslator
+from io import BytesIO
+import logging
+from typing import Dict
+import numpy as np
+import soundfile as sf
+import librosa
 import speech_recognition as sr
 from pydub import AudioSegment
-from io import BytesIO
-from typing import Dict
 from pydub.exceptions import CouldntDecodeError
+from fastapi.responses import JSONResponse
 
 
-def format_time(ms):
-    """Convert milliseconds to mm:ss format."""
-    seconds = ms / 1000
-    minutes = int(seconds // 60)
-    seconds = int(seconds % 60)
-    return f"{minutes}:{seconds:02d}"
+logger = logging.getLogger(__name__)
+
+def format_time(milliseconds):
+    seconds = (milliseconds / 1000) % 60
+    minutes = (milliseconds / (1000 * 60)) % 60
+    hours = (milliseconds / (1000 * 60 * 60)) % 24
+    return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+
+
 
 def transcribe_audio_file_with_timestamps(audio_data: bytes) -> Dict[str, str]:
+
     recognizer = sr.Recognizer()
-    audio_file = BytesIO(audio_data)
-    
     try:
+
+        audio_file = BytesIO(audio_data)
         audio_segment = AudioSegment.from_file(audio_file)
-    except CouldntDecodeError as e:
-        raise ValueError(f"Error decoding audio file: {str(e)}")
-    
-    audio_segment = audio_segment.set_channels(1).set_frame_rate(16000)  # Convert to mono and 16kHz
+        audio_segment = audio_segment.set_channels(1).set_frame_rate(16000)  # Convert to mono and 16kHz
 
-    chunk_length_ms = 10000  # 10 seconds
-    chunks = [audio_segment[i:i + chunk_length_ms] for i in range(0, len(audio_segment), chunk_length_ms)]
+        chunk_length_ms = 10000  # 10 seconds
+        chunks = [audio_segment[i:i + chunk_length_ms] for i in range(0, len(audio_segment), chunk_length_ms)]
 
-    transcriptions = {}
-    start_time = 0
+        transcriptions = {}
+        start_time = 0
 
-    for chunk in chunks:
-        wav_audio = BytesIO()
-        chunk.export(wav_audio, format="wav")
-        wav_audio.seek(0)
+        for i, chunk in enumerate(chunks):
+            wav_audio = BytesIO()
+            chunk.export(wav_audio, format="wav")
+            wav_audio.seek(0)
 
-        try:
             with sr.AudioFile(wav_audio) as source:
                 audio = recognizer.record(source)
                 text = recognizer.recognize_google(audio)
-        except sr.UnknownValueError:
-            text = "Could not understand audio."
-        except sr.RequestError as e:
-            text = f"Error with Google API: {str(e)}"
 
-        end_time = start_time + chunk_length_ms
-        formatted_start_time = format_time(start_time)
-        transcriptions[formatted_start_time] = text
+            # Add timestamp information
+            end_time = start_time + chunk_length_ms
+            formatted_start_time = format_time(start_time)
+            transcriptions[formatted_start_time] = text
 
-        start_time = end_time
+            # Update start time for next chunk
+            start_time = end_time
 
-    return transcriptions
+        return transcriptions
+
+    except sr.RequestError:
+        return JSONResponse(content={"error": "Could not request results from Google API."}, status_code=500)
+    except sr.UnknownValueError:
+        return JSONResponse(content={"error": "Google API could not understand the audio."}, status_code=400)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+
 
 def translate_text(text: str, target_language: str) -> str:
     """Translate text using Deep Translator with Google Translator."""
