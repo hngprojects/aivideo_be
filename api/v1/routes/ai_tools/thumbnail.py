@@ -10,8 +10,6 @@ import os
 
 thumbnail_router = APIRouter(
     prefix="/tools/thumbnail-generator", tags=["Tools"])
-
-
 max_file_size = 100 * 1024 * 1024  # 100 MB
 
 
