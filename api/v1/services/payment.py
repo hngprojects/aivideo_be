@@ -100,11 +100,38 @@ class PaymentService:
 class PaymentGatewayService:
     """Payment gateway service functionality"""
 
-    PAYMENT_GATEWAYS = ["Stripe", "Flutterwave", "Lemonsqueezy"]
+    PAYMENT_GATEWAYS = ["stripe", "flutterwave"]
 
     FLUTTERWAVE_CHECKOUT_URL = "https://checkout.flutterwave.com/v3/hosted/pay"
 
     FLUTTERWAVE_PAYMENTS_URL = "https://api.flutterwave.com/v3/payments"
+
+    def validate_gateway(self, gateway):
+        """Confirm that the gateway passed in part 
+        of the accepted payment gateways, then return 
+        the lower case in case it's in another case"""
+        if not isinstance(gateway, str) \
+            or gateway.lower() not in self.PAYMENT_GATEWAYS:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, 
+                detail=f"Only {self.PAYMENT_GATEWAYS} supported for now"
+            )
+        return gateway.lower()
+    
+    def get_payment_data_for_flutterwave(self, user, bill_plan, redirect_url):
+        data = {
+            "tx_ref": bill_plan.id,
+            "redirect_url": redirect_url,
+            "currency": bill_plan.currency,
+            "amount": float(bill_plan.price),
+            "payment_title": "Convey AI Video Suites",
+            "payment_description": "User subscription payment",
+            "customer": {
+                "email": user.email,
+                "name": f"{user.first_name} {user.last_name}",
+            },
+        }
+        return data
 
     def confirm_flutterwave_payment(self, data: dict, billing_plan: BillingPlan):
         """Handle checkout response from `flutterwave`"""
