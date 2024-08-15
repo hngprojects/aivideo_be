@@ -31,7 +31,7 @@ async def create_project(
 async def get_all_projects(db: Session = Depends(get_db)):
     """Endpoint to get all projects"""
     
-    projects = project_service.fetch_all_projects()
+    projects = project_service.fetch_all_projects(db=db)
     projects_filtered = list(
         map(lambda x: ProjectCreateResponseSchema.model_validate(x), projects)
     )
