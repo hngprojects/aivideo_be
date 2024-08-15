@@ -486,21 +486,62 @@ class UserService(Service):
         user.is_active = True
 
         db.commit()
+        
+        
+        
 
     def change_password(
         self,
         old_password: str,
         new_password: str,
+        confirm_new_password: str,
         user: User,
         db: Session,
     ):
         """Endpoint to change the user's password"""
+        
+        # Check if the user has an existing password
+        if not user.password:
+            # user signed up via social authentication (Google/Facebook)
+            if old_password:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="You do not have an existing password. Please set up a new password instead."
+                )
+            # Allow setting up a new password directly if old password is not provided
+            if new_password != confirm_new_password:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="New password and confirmation do not match."
+                )
+            user.password = self.hash_password(new_password)
+            db.commit()
 
+        # If the user has a password, proceed with the normal password change process
         if not self.verify_password(old_password, user.password):
-            raise HTTPException(status_code=400, detail="Incorrect old password")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Incorrect old password."
+            )
+        
+        if new_password != confirm_new_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New password and confirmation do not match."
+            )
 
         user.password = self.hash_password(new_password)
         db.commit()
+        
+        # Return the passwords in the specified format
+        return {
+            "oldPassword": old_password,
+            "newPassword": user.password,
+            "confirmNewPassword": confirm_new_password
+        }
+        
+        
+
 
     def get_current_super_admin(
         self, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)

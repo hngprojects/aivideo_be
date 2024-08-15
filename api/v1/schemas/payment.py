@@ -12,6 +12,7 @@ class InitiatePaymentSchema(BaseModel):
     billing_plan_id: str
     payment_gateway: str
     redirect_url: str
+    auto_renew: bool = False
 
 
 class InitiatePaymentData(BaseModel):

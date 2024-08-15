@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/path/to/your/project/root')
 import uvicorn
 from fastapi.staticfiles import StaticFiles
 import uvicorn, os

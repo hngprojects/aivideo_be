@@ -16,7 +16,7 @@ from api.v1.schemas.user import (
     UserActivityResponse,
 )
 from api.db.database import get_db
-from api.v1.services.user import user_service
+from api.v1.services.user import user_service, UserService
 
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
@@ -62,17 +62,7 @@ async def delete_account(
     )
 
 
-@user_router.patch("/me/password", status_code=200)
-async def change_password(
-    schema: ChangePasswordSchema,
-    db: Session = Depends(get_db),
-    user: User = Depends(user_service.get_current_user),
-):
-    """Endpoint to change the user's password"""
 
-    user_service.change_password(schema.old_password, schema.new_password, user, db)
-
-    return success_response(status_code=200, message="Password changed successfully")
 
 
 @user_router.patch("", status_code=status.HTTP_200_OK)
@@ -342,4 +332,32 @@ def get_user_by_id(
                 "is_active",
             ],
         ),
+    )
+
+
+
+@user_router.put("/update/password", status_code=status.HTTP_200_OK, response_model=success_response)
+def change_password(
+    request: ChangePasswordSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user),
+):
+    """Route to change the user's password"""
+    
+    user_service = UserService()
+
+    # Call the service method directly
+    result = user_service.change_password(
+        old_password=request.old_password,
+        new_password=request.new_password,
+        confirm_new_password=request.confirm_new_password,
+        user=current_user,
+        db=db
+    )
+    
+
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Password changed successfully!!",
+        data=result
     )

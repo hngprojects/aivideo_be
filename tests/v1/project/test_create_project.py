@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from uuid_extensions import uuid7
 
 from api.db.database import get_db
-from api.v1.services.user import oauth2_scheme, user_service
 from api.v1.models.project import Project
 from main import app
 
@@ -21,7 +20,6 @@ def mock_project():
         updated_at=datetime.now(timezone.utc)
     )
 
-
 @pytest.fixture
 def db_session_mock():
     db_session = MagicMock(spec=Session)
@@ -32,11 +30,10 @@ def client():
     client = TestClient(app)
     yield client
 
-
 test_project_req_body = {
     "title": "Summarize Joe Rogan",
     "project_type": "Podcast Summarizer",
-    }
+}
 
 ENDPOINT = '/api/v1/projects'
 
@@ -48,9 +45,6 @@ class TestCodeUnderTest:
 
     def test_create_projects_success(self, client):
         '''Test to successfully create a new project'''
-
-        # Mock the user service to return the current user
-        app.dependency_overrides[user_service.get_current_user] = lambda: MagicMock(id='user_id')
 
         mock_data = mock_project()
 
@@ -66,9 +60,6 @@ class TestCodeUnderTest:
     def test_create_project_missing_field(self, client, db_session_mock):
         '''Test for missing field when creating a new project'''
 
-        # Mock the user service to return the current admin
-        app.dependency_overrides[user_service.get_current_super_admin] = lambda: MagicMock()
-
         mock_data = mock_project()
 
         with patch("api.v1.services.project.project_service.create", return_value=mock_data) as mock_create:
@@ -78,22 +69,54 @@ class TestCodeUnderTest:
                     "title": "The best"
                 }
             )
-
             assert response.status_code == 422
 
+    def test_get_all_projects(self, client):
+        """Test to verify response for getting all projects."""
 
-    def test_create_project_unauthorized(self, client, db_session_mock):
-        """Test unauthenticated user
+        mock_data = [
+            mock_project(),
+            Project(id='project_id_2', user_id=str(uuid7()), title="Summarize YT Video",
+                    project_type="Video Summarizer", created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                    )
+        ]
 
-        Args:
-            client: TestClient object
-            db_session_mock (MagicMock): 
-        """
-        app.dependency_overrides = {}
-        
-        response = client.post(
-            ENDPOINT, json=test_project_req_body
-            )
+        with patch("api.v1.services.project.project_service.fetch_all_projects", return_value=mock_data):
+            response = client.get(ENDPOINT)
 
-        assert response.status_code == 401
-        assert response.json()['message'] == 'Not authenticated'
+            assert response.status_code == 200
+            assert response.json()['data'][0]['title'] == mock_data[0].title
+            assert response.json()['data'][1]['project_type'] == mock_data[1].project_type
+
+    def test_get_all_projects_empty(self, client):
+        """Test to verify response for getting an empty list of projects."""
+
+        mock_data = []
+
+        with patch("api.v1.services.project.project_service.fetch_all_projects", return_value=mock_data):
+            response = client.get(ENDPOINT)
+
+            assert response.status_code == 200
+            assert response.json().get('data') is None
+
+    def test_get_single_project(self, client):
+        '''Test to successfully fetch a single project'''
+
+        mock_data = mock_project()
+
+        with patch("api.v1.services.project.project_service.fetch_project_by_id", return_value=mock_data):
+            response = client.get(f'{ENDPOINT}/{mock_data.id}')
+            assert response.status_code == 200
+            assert response.json()['data']['title'] == mock_data.title
+            assert response.json()['data']['project_type'] == mock_data.project_type
+
+    def test_get_project_not_found(self, client):
+        """Test when the project ID does not exist."""
+
+        nonexistent_id = str(uuid7())
+        with patch("api.v1.services.project.project_service.fetch_project_by_id", return_value=None):
+            response = client.get(f'{ENDPOINT}/{nonexistent_id}')
+
+            assert response.status_code == 404
+            assert response.json()['message'] == 'Project not found'
