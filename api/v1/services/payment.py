@@ -3,10 +3,12 @@ from api.v1.models.payment import Payment
 from sqlalchemy.orm import Session
 from typing import Any, Optional
 from decimal import Decimal
+import requests
 
 from api.v1.models.payment import Payment
 from api.v1.models import User, BillingPlan
 from api.utils.db_validators import check_model_existence
+from api.utils.settings import settings
 
 
 class PaymentService:
@@ -127,6 +129,38 @@ class PaymentGatewayService:
         
         return True
 
+    def create_subscription_plan(self, plan: BillingPlan):
+        """
+        Set up flutterwave subscription plan with plan name and interval
+        """
 
+        payload = {
+            "amount": float(plan.price),
+            "name": plan.plan_name,
+            "interval": plan.plan_interval,
+        }
+
+        API_URL = 'https://api.flutterwave.com/v3/payment-plans'
+        header = {'Authorization': f"Bearer {settings.FLUTTERWAVE_SECRET}"}
+
+        try:
+            response = requests.post(
+                API_URL,
+                json=payload,
+                headers=header
+            )
+        except Exception as e:
+            print(e)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Error enabling auto-renewal"
+            )
+
+        if response.status_code == 200:
+            response = response.json()
+            subscription_plan_id = response['data']['id']
+
+            return subscription_plan_id
+            
 payment_service = PaymentService()
 payment_gateway_service = PaymentGatewayService()
