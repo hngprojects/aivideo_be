@@ -309,11 +309,7 @@ def get_user_by_id(
             exclude=[
                 "password",
                 "is_superadmin",
-                "is_deleted",
-                # "is_verified",
                 "updated_at",
-                "created_at",
-                "is_active",
             ],
         ),
     )
