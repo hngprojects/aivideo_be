@@ -42,9 +42,8 @@ jobs:
         run: cp .env.sample .env
       - name: Update .env with dynamic port
         run: |
-          echo "DB_PORT=${{ job.services.postgres.ports[5432] }}" >> .env
-          echo "DB_URL=postgresql://username:password@localhost:${{ job.services.postgres.ports[5432] }}/test" >> .env
-          echo "$DB_URL"
+          sed -i "s/DB_PORT=.*/DB_PORT=${{ job.services.postgres.ports[5432] }}/" .env
+          sed -i "s|DB_URL=.*|DB_URL=postgresql://username:password@localhost:${{ job.services.postgres.ports[5432] }}/test|" .env
       - name: Run app
         run: |
           python3 main.py &
