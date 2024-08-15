@@ -1,5 +1,6 @@
-import sys
-sys.path.append('/path/to/your/project/root')
+# import eventlet
+# eventlet.monkey_patch()
+
 import uvicorn
 from fastapi.staticfiles import StaticFiles
 import uvicorn, os
@@ -189,5 +190,5 @@ if __name__ == "__main__":
         "main:app", 
         port=7001, 
         reload=True,
-        workers=4,
+        # workers=4,
     )

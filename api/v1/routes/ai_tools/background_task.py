@@ -9,15 +9,10 @@ from api.utils.websocket import manager
 from api.db.database import get_db
 
 
-background_router = APIRouter(prefix="/background", tags=["Background"])
-
-@background_router.get("/job/{job_id}/status")
-async def job_status(job_id: str):
-    task_result = AsyncResult(job_id, app=worker)
-    return {"status": task_result.state}
+background_router = APIRouter(prefix="/job", tags=["Background"])
 
 
-@background_router.get("/job/{job_id}/status")
+@background_router.get("/{job_id}/status")
 async def send_job_status_updates(
     job_id: str, 
     db: Session = Depends(get_db)
@@ -27,7 +22,7 @@ async def send_job_status_updates(
     task_result = AsyncResult(job_id, app=worker)
     project = job_service.get_project_from_job(job_id=job_id)
 
-    status = task_result.state
+    status = task_result.state.capitalize()
     result = None
 
     project.is_active = False
