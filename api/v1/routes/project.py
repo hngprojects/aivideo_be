@@ -1,33 +1,25 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from fastapi.encoders import jsonable_encoder
-
 from api.db.database import get_db
-from api.utils.success_response import success_response
 from api.v1.services.project import project_service
+from fastapi import status, HTTPException
+from fastapi.encoders import jsonable_encoder
+from api.utils.success_response import success_response
 from api.v1.schemas.project import CreateFullProjectSchema, AddFullProjectSchema, ProjectCreateResponseSchema
 import logging
 
 project = APIRouter(prefix="/projects", tags=["Projects"])
 
-
 @project.post("", response_model=success_response, status_code=201)
 async def create_project(
     schema: CreateFullProjectSchema,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """Endpoint to create a new project. Accessible without authentication.
-    Args:
-        schema (CreateFullProjectSchema): Request Body for creating projects
-        db (Session, optional): The db session object. Defaults to Depends(get_db).
-    Returns:
-        success_response
-    """
-    # Assuming the user ID is hardcoded or passed through the schema in a real-world scenario
-    full_project = AddFullProjectSchema(user_id=1, **schema.model_dump())  # Replace with appropriate logic
+    """Endpoint to create a new project"""
+    full_project = AddFullProjectSchema(user_id="default_user_id", **schema.model_dump())
     
     new_project = project_service.create(db, full_project)
-    
+
     logging.info(f'Creating new Project. ID: {new_project.id}.')
     return success_response(
         data=jsonable_encoder(ProjectCreateResponseSchema.model_validate(new_project)),
@@ -37,13 +29,9 @@ async def create_project(
 
 @project.get("", response_model=success_response, status_code=200)
 async def get_all_projects(db: Session = Depends(get_db)):
-    """Endpoint to get all projects. Accessible without authentication.
-
-    Args:
-        db (Session, optional): The db session object. Defaults to Depends(get_db).
-    """    
+    """Endpoint to get all projects"""
     
-    projects = project_service.fetch_all_projects()  # Fetch all projects (no user filter)
+    projects = project_service.fetch_all_projects()
     projects_filtered = list(
         map(lambda x: ProjectCreateResponseSchema.model_validate(x), projects)
     )
@@ -58,18 +46,11 @@ async def get_all_projects(db: Session = Depends(get_db)):
 
 @project.get("/{id}", response_model=success_response, status_code=200)
 async def get_single_project(id: str, db: Session = Depends(get_db)):
-    """Endpoint to get a single project. Accessible without authentication.
+    """Endpoint to get a single project"""
 
-    Args:
-        id (str): project ID
-        db (Session, optional): Defaults to Depends(get_db).
+    project = project_service.fetch_project_by_id(project_id=id)
 
-    Raises:
-        HTTPException: 404 NOT FOUND (project to be retrieved cannot be found)
-    """
-    project = project_service.fetch_project_by_id(project_id=id)  # Fetch without user filter
-
-    if project is None:
+    if project == None:
         raise HTTPException(status_code=404, detail="Project not found")
 
     return success_response(
