@@ -21,9 +21,9 @@ from api.v1.services.user import user_service, UserService
 client = TestClient(app)
 
 
-ENDPOINT = "/api/v1/users/activity"
 
 user_id = str(uuid7())
+ENDPOINT = f"/api/v1/users/{user_id}/activity"
 
 
 @pytest.fixture
@@ -154,7 +154,7 @@ def test_activity_retrieval(
     response = client.get(ENDPOINT)
 
     assert response.status_code == 200
-    assert response.json()["total"] == 1
+    assert response.json()["total_jobs_retrieved"] == 1
 
 
 @pytest.mark.usefixtures(
@@ -172,6 +172,6 @@ def test_no_activity_retrieval(
     response = client.get(ENDPOINT)
 
     assert response.status_code == 200
-    assert response.json()["total"] == 0
+    assert response.json()["total_jobs_retrieved"] == 0
     assert response.json()["data"] == []
 
