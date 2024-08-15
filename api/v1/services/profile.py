@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 import json
 from typing import Any, Optional
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from api.core.base.services import Service
 from api.utils.db_validators import check_model_existence
@@ -46,13 +46,36 @@ class ProfileService(Service):
             db.commit()
             db.refresh(profile)
             db.refresh(user)
-
-            return profile
+            
+            
+            # response data
+            response_data = {
+                "id": profile.id,
+                "username": profile.username,
+                "pronouns": profile.pronouns,
+                "job_title": profile.job_title,
+                "social": profile.social,
+                "bio": profile.bio,
+                "phone_number": profile.phone_number,
+                "created_at": profile.created_at,
+                "updated_at": profile.updated_at,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "avatar_url": user.avatar_url
+                }
+            }
+            
+            return response_data
+        
+        except IntegrityError as e:
+            db.rollback()
+            raise HTTPException(status_code=409, detail="Email address already in use")
         except SQLAlchemyError as e:
             db.rollback()
             raise HTTPException(status_code=500, detail="Database error occurred: " + str(e))
         except Exception as e:
-            raise HTTPException(status_code=500, detail="Unexpected error occurred: " + str(e))
+            raise HTTPException(status_code=500, detail="Internal server error: " + str(e))
 
 
     def fetch_by_user_id(
@@ -64,16 +87,38 @@ class ProfileService(Service):
         try:
 
             profile = db.query(Profile).filter(Profile.user_id == user_id).first()
+            user = db.query(User).filter(User.id == user_id).first()
+
 
             if not profile:
                 raise HTTPException(status_code=404, detail="User profile not found")
+            
+            
+            response_data = {
+                "id": profile.id,
+                "username": profile.username,
+                "pronouns": profile.pronouns,
+                "job_title": profile.job_title,
+                "social": profile.social,
+                "bio": profile.bio,
+                "phone_number": profile.phone_number,
+                "created_at": profile.created_at,
+                "updated_at": profile.updated_at,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "avatar_url": user.avatar_url,
+                    "is_active": user.is_active
+                }
+            }
 
-            return profile
+            return response_data
+        
         except SQLAlchemyError as e:
             db.rollback()
             raise HTTPException(status_code=500, detail="Database error occurred: " + str(e))
         except Exception as e:
-            raise HTTPException(status_code=500, detail="Unexpected error occurred: " + str(e))
+            raise HTTPException(status_code=500, detail="Internal server error: " + str(e))
           
 
 
@@ -99,7 +144,10 @@ class ProfileService(Service):
             db.rollback()
             raise HTTPException(status_code=500, detail="Database error occurred: " + str(e))
         except Exception as e:
-            raise HTTPException(status_code=500, detail="Unexpected error occurred: " + str(e))
+            raise HTTPException(status_code=500, detail="Internal server error: " + str(e))
+        
+        
+        
 
     def fetch(
         self, db: Session, 
@@ -114,7 +162,9 @@ class ProfileService(Service):
             db.rollback()
             raise HTTPException(status_code=500, detail="Database error occurred: " + str(e))
         except Exception as e:
-            raise HTTPException(status_code=500, detail="Unexpected error occurred: " + str(e))
+            raise HTTPException(status_code=500, detail="Internal server error: " + str(e))
+
+
 
     def delete(
         self, db: Session, 
@@ -131,6 +181,6 @@ class ProfileService(Service):
             db.rollback()
             raise HTTPException(status_code=500, detail="Database error occurred: " + str(e))
         except Exception as e:
-            raise HTTPException(status_code=500, detail="Unexpected error occurred: " + str(e))
+            raise HTTPException(status_code=500, detail="Internal server error: " + str(e))
 
 profile_service = ProfileService()
