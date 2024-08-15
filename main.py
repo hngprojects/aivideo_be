@@ -190,5 +190,5 @@ if __name__ == "__main__":
         "main:app", 
         port=7001, 
         reload=True,
-        # workers=4,
+        workers=4,
     )
