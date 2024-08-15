@@ -48,7 +48,7 @@ async def get_all_projects(db: Session = Depends(get_db)):
 async def get_single_project(id: str, db: Session = Depends(get_db)):
     """Endpoint to get a single project"""
 
-    project = project_service.fetch_project_by_id(project_id=id)
+    project = project_service.fetch_project_by_id(project_id=id, db=db)
 
     if project == None:
         raise HTTPException(status_code=404, detail="Project not found")
