@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = config("ACCESS_TOKEN_EXPIRE_MINUTES")
     JWT_REFRESH_EXPIRY: int = config("JWT_REFRESH_EXPIRY")
 
+    APP_URL: str = config("APP_URL")
+
+    MAIL_USERNAME: str = config("MAIL_USERNAME")
+    MAIL_PASSWORD: str = config("MAIL_PASSWORD")
+    MAIL_FROM: str = config("MAIL_FROM")
+    MAIL_PORT: int = config("MAIL_PORT")
+    MAIL_SERVER: str = config("MAIL_SERVER")
+
     # Database configurations
     DB_HOST: str = config("DB_HOST")
     DB_PORT: int = config("DB_PORT", cast=int)
@@ -42,6 +50,14 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = config("OPENROUTER_API_KEY")
     GOOEY_API_KEY: str = config("GOOEY_API_KEY")
     UNREAL_SPEECH_API_KEY: str = config("UNREAL_SPEECH_API_KEY")
+
+    MEDIA_DIR: str = config("MEDIA_DIR")
+    MAX_FILE_SIZE: int = config("MAX_FILE_SIZE")
+
+    @property
+    def ALLOWED_EXTENSIONS(self) -> set[str]:
+        raw_extensions = config("ALLOWED_EXTENSIONS", default="")
+        return set(ext.strip() for ext in raw_extensions.split(",") if ext.strip())
 
 
 settings = Settings()
