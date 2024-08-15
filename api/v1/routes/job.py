@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status, BackgroundTasks
 from typing import List
 from api.v1.schemas.job import JobResponse
 from fastapi import APIRouter, Depends
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from api.db.database import get_db
@@ -41,10 +42,42 @@ async def get_managed_jobs(
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 30,
-    filters: dict = {},
+    search: str = "",
+    status: str = "",
+    project_type: str = "",
 ):
+    """
+    Retrieve a list of jobs with related project and user data, filtered by various criteria and paginated.
+
+    Args:
+        :oaram current_admin (User): The currently logged in admin user
+        :param db (Session): The SQLAlchemy database session used for querying the database.
+        :param skip (int): The number of records to skip (used for pagination).
+        :param limit (int): The maximum number of records to return (used for pagination).
+        :param search (str, optional): A string used to search for jobs based on job ID, user's first name, or user's last name. Defaults to an empty string.
+        :param status (Optional[List[str]], optional): A list of job statuses to filter the results. Jobs will be included if their status matches any item in this list. Defaults to None, which means no status filter is applied.
+        :param project_type (Optional[List[str]], optional): A list of project types to filter the results. Jobs will be included if their associated project's type matches any item in this list. Defaults to None, which means no project type filter is applied.
+
+    Returns:
+        dict: A dictionary containing the paginated list of jobs and related data, along with pagination metadata.
+            - status_code (int): The HTTP status code for the operation (always 200 for successful fetch).
+            - message (str): A message indicating the success of the operation.
+            - data (dict): A dictionary containing the returned data.
+
+    Raises:
+        None: This function does not raise any exceptions directly but may propagate exceptions from the database query or data processing if errors occur.
+    """
+    
+    status = [value.strip() for value in status.split(",")]
+    project_type = [value.strip() for value in project_type.split(",")]
+
     return job_service.fetch_job_activity(
-        db=db, skip=skip, limit=limit, filters=filters
+        db=db,
+        skip=skip,
+        limit=limit,
+        search=search,
+        status=status,
+        project_type=project_type,
     )
 
 
@@ -60,36 +93,3 @@ async def export_jobs_as_csv(
     response.status_code = 200
 
     return response
-
-
-@job.get(
-    "/statistics",
-    summary="Get job statistics",
-    description="Get stats to be rendered on the admin dashboard for job management",
-)
-async def get_job_statistics(
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(user_service.get_current_super_admin),
-):
-    """
-    :param db: Session database session object
-    :param current_admin: Super admin user
-    :returns success_response {
-      "status_code": 200,
-      "success": true,
-      "message": "Job statistics retrieved successfully",
-      "data": {
-        "total_tasks": 2,
-        "failed_tasks": 1,
-        "in_progress_tasks": 0,
-        "pending_tasks": 0,
-        "completed_tasks": 1
-      }
-    }
-    """
-
-    stats = job_service.get_job_statistics(db)
-
-    return success_response(
-        message="Job statistics retrieved successfully", data=stats, status_code=200
-    )
