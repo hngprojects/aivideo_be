@@ -129,8 +129,7 @@ async def verify_payment_status(
     )
 
 
-@payments.get("", status_code=status.HTTP_200_OK, response_model=PaymentListResponse
-)
+@payments.get("", status_code=status.HTTP_200_OK, response_model=PaymentListResponse)
 def get_all_payments(
     _: User = Depends(user_service.get_current_super_admin),
     limit: Annotated[int, Query(ge=1, description="Number of payments per page")] = 10,
@@ -148,18 +147,45 @@ def get_all_payments(
     offset = (page - 1) * limit
 
     # FETCH all payments
-    all_payments = payment_service.fetch_all(
+    payments_l = payment_service.fetch_all(
         db, offset=offset, limit=limit,
     )
 
-    # GATHER all data in a dict
-    data = {
-        "payments": [p.to_dict() for p in all_payments],
-        "pagination": get_pagination_details(len(all_payments), limit, offset)
-    }
-
+    # RETURN success and data
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Payments fetched successfully",
-        data=data
+        data=payment_service.dictize_payments_and_pagination(payments_l, offset, limit)
+    )
+
+
+@payments.get("current-user", 
+              status_code=status.HTTP_200_OK, response_model=PaymentListResponse
+)
+def get_all_payments_for_current_user(
+    current_user: User = Depends(user_service.get_current_user),
+    limit: Annotated[int, Query(ge=1, description="Number of payments per page")] = 10,
+    page: Annotated[int, Query(ge=1, description="Page number (starts from 1)")] = 1,
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint to retrieve a paginated list of all payments for/by ``current-user``.
+
+    Query parameter:
+        - limit: Number of payment per page (default: 10, minimum: 1)
+        - page: Page number (starts from 1)
+    """
+    # GET offset from page and limit
+    offset = (page - 1) * limit
+
+    # FETCH all payments for current user
+    payments_l = payment_service.fetch_all_for_user(
+        db, current_user, offset, limit,
+    )
+
+    # RETURN success and data
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Current user payments fetched successfully",
+        data=payment_service.dictize_payments_and_pagination(payments_l, offset, limit)
     )

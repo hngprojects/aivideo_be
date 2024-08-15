@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from api.v1.models.payment import Payment
 from api.v1.models import User, BillingPlan
+from api.utils.pagination import get_pagination_details
 from api.utils.db_validators import check_model_existence
 
 
@@ -54,36 +55,24 @@ class PaymentService:
         return payment
 
     def fetch_all_for_user(
-            self, db: Session, user_id, limit: int = 0, page: int = 0):
-        """Fetches all payments for a user"""
+            self, db: Session, user: User, offset: int = 0, limit: int = 0):
+        """Fetches all payments for/by a user"""
 
-        # check if user exists
-        _ = check_model_existence(db, User, user_id)
-
-        if limit and page:
-            # calculating offset value
-            # from page and limit given
-            offset_value = (page - 1) * limit
-
-            # Filter to return only 
-            # payments of the user_id
-            payments = (
-                db.query(Payment)
-                .filter(Payment.user_id == user_id)
-                .offset(offset_value)
-                .limit(limit)
-                .all()
-            )
-        else:
-            # Filter to return only 
-            # payments of the user_id
-            payments = (
-                db.query(Payment)
-                .filter(Payment.user_id == user_id)
-                .all()
-            )
+        payments = self.fetch_all(
+            db, offset=offset, limit=limit, 
+            query_params={"user_id": user.id}
+        )
 
         return payments
+    
+    def dictize_payments_and_pagination(self, payments: list, offset: 0, limit: 0):
+        """Return a list of dicts of all Payment objs in `payments`
+        and details of pagination for the payment list"""
+        data = {
+            "payments": [p.to_dict() for p in payments],
+            "pagination": get_pagination_details(len(payments), offset, limit)
+        }
+        return data
 
     def update(self, db: Session, payment_id: str, schema):
         """Updates a payment"""
