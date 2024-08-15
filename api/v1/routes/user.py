@@ -108,6 +108,7 @@ def get_user_statistics(
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
+    """Endpoint to fetch all user statistics"""
     stats_data = user_service.get_users_statistics(db=db)
 
     return success_response(
@@ -121,11 +122,12 @@ def get_user_statistics(
     "/activity", status_code=status.HTTP_200_OK, response_model=UserActivityResponse
 )
 def get_user_activity(
-    page: int,
-    per_page: int,
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
     db: Annotated[Session, Depends(get_db)],
+    page: int = 1,
+    per_page: int = 10,
 ):
+    """Endpoint to fetch user activity"""
     return user_service.fetch_user_activity(db=db, current_user=current_user, page=page, per_page=per_page)
 
 
