@@ -38,6 +38,7 @@ cssselect==1.2.0
 cssutils==2.11.1
 dataclasses-json==0.6.7
 decorator==5.1.1
+deep-translator==1.11.4
 dill==0.3.8
 distlib==0.3.8
 distro==1.9.0
@@ -111,6 +112,7 @@ numba==0.60.0
 numpy==1.26.4
 onnxruntime==1.18.1
 openai==1.40.3
+openai-whisper==20231117
 opencv-python==4.10.0.84
 orjson==3.10.7
 packaging==24.1
@@ -184,6 +186,7 @@ langchain-text-splitters==0.2.2
 tomli==2.0.1
 tomlkit==0.13.0
 tornado==6.4.1
+torch==2.3.1
 tqdm==4.66.5
 twilio==9.2.3
 typer==0.12.3

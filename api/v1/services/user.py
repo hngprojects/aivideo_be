@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, or_, func
+from sqlalchemy import desc, or_, select, func
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
@@ -17,6 +17,8 @@ from api.db.database import get_db
 from api.utils.settings import settings
 from api.utils.db_validators import check_model_existence
 from api.v1.models.user import User
+from api.v1.models.project import Project
+from api.v1.models.job import Job
 from api.v1.models.data_privacy import DataPrivacySetting
 from api.v1.schemas import user
 
@@ -484,21 +486,62 @@ class UserService(Service):
         user.is_active = True
 
         db.commit()
+        
+        
+        
 
     def change_password(
         self,
         old_password: str,
         new_password: str,
+        confirm_new_password: str,
         user: User,
         db: Session,
     ):
         """Endpoint to change the user's password"""
+        
+        # Check if the user has an existing password
+        if not user.password:
+            # user signed up via social authentication (Google/Facebook)
+            if old_password:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="You do not have an existing password. Please set up a new password instead."
+                )
+            # Allow setting up a new password directly if old password is not provided
+            if new_password != confirm_new_password:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="New password and confirmation do not match."
+                )
+            user.password = self.hash_password(new_password)
+            db.commit()
 
+        # If the user has a password, proceed with the normal password change process
         if not self.verify_password(old_password, user.password):
-            raise HTTPException(status_code=400, detail="Incorrect old password")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Incorrect old password."
+            )
+        
+        if new_password != confirm_new_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New password and confirmation do not match."
+            )
 
         user.password = self.hash_password(new_password)
         db.commit()
+        
+        # Return the passwords in the specified format
+        return {
+            "oldPassword": old_password,
+            "newPassword": user.password,
+            "confirmNewPassword": confirm_new_password
+        }
+        
+        
+
 
     def get_current_super_admin(
         self, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
@@ -538,6 +581,79 @@ class UserService(Service):
             "inactive_users": inactive_user_count,
             "deleted_users": deleted_user_count,
         }
+
+    def fetch_user_activity(
+        self,
+        db: Session,
+        user_id: str,
+        page: int,
+        per_page: int,
+        job: str,
+        status: str,
+    ):
+        user_check = check_model_existence(db, User, user_id)
+        query = (
+            db.query(Project, Job)
+            .outerjoin(Job, Project.id == Job.project_id)
+            .filter(Project.user_id == user_id)
+        )
+
+        total_jobs_created = query.count()
+        total_jobs_completed = query.filter(Job.status.contains("SUCCESS")).count()
+        total_jobs_pending = query.filter(Job.status.contains("PENDING")).count()
+        total_jobs_in_progress = query.filter(Job.status.contains("STARTED")).count()
+
+        if job:
+            query = query.filter(Project.project_type.icontains(job))
+
+        if status:
+            query = query.filter(Job.status == status)
+
+        total_count = query.count()
+        total_pages = int(total_count / per_page) + (total_count % per_page > 0)
+
+        query_result = query.limit(per_page).offset((page - 1) * per_page).all()
+
+        all_tasks = [
+            user.UserActivityData(
+                id=project.id,
+                created_at=project.created_at,
+                status=job.status,
+                tool_used=project.project_type,
+            )
+            for project, job in query_result
+        ]
+
+        if len(all_tasks) == 0:
+            return user.UserActivityResponse(
+                status="success",
+                message="No User activity found for this query",
+                page=page,
+                per_page=per_page,
+                total_jobs_created=total_jobs_created,
+                total_jobs_retrieved=total_count,
+                total_jobs_completed=total_jobs_completed,
+                total_jobs_pending=total_jobs_pending,
+                total_jobs_in_progress=total_jobs_in_progress,
+                total_pages=total_pages,
+                data=[],
+                status_code=200,
+            )
+
+        return user.UserActivityResponse(
+            status="success",
+            message="User activity data retrieved successfully!",
+            page=page,
+            per_page=per_page,
+            total_jobs_created=total_jobs_created,
+            total_jobs_retrieved=total_count,
+            total_jobs_completed=total_jobs_completed,
+            total_jobs_pending=total_jobs_pending,
+            total_jobs_in_progress=total_jobs_in_progress,
+            total_pages=total_pages,
+            data=all_tasks,
+            status_code=200,
+        )
 
 
 user_service = UserService()
