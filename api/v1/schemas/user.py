@@ -1,12 +1,15 @@
-
 import re
 from datetime import datetime
 from typing import Optional, Union, List, Annotated
 
-from pydantic import (BaseModel, EmailStr,
-                      field_validator, ConfigDict,
-                      StringConstraints,
-                      model_validator)
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    field_validator,
+    ConfigDict,
+    StringConstraints,
+    model_validator,
+)
 
 
 class UserBase(BaseModel):
@@ -25,37 +28,27 @@ class UserCreate(BaseModel):
 
     email: EmailStr
     password: Annotated[
-        str, StringConstraints(
-            min_length=3,
-            max_length=64,
-            strip_whitespace=True
-        )
+        str, StringConstraints(min_length=3, max_length=64, strip_whitespace=True)
     ]
     first_name: Annotated[
-        str, StringConstraints(
-            min_length=2,
-            max_length=30,
-            strip_whitespace=True
-        )
+        str, StringConstraints(min_length=2, max_length=30, strip_whitespace=True)
     ]
     last_name: Annotated[
-        str, StringConstraints(
-            min_length=2,
-            max_length=30,
-            strip_whitespace=True
-        )
+        str, StringConstraints(min_length=2, max_length=30, strip_whitespace=True)
     ]
 
+
 class UserUpdate(BaseModel):
-    
-    first_name : Optional[str] = None
-    last_name : Optional[str] = None
-    email : Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+
 
 class UserData(BaseModel):
     """
     Schema for users to be returned to superadmin
     """
+
     id: str
     email: EmailStr
     first_name: str
@@ -65,29 +58,34 @@ class UserData(BaseModel):
     is_superadmin: bool
     created_at: datetime
     updated_at: datetime
+    last_login: Union[datetime, None]
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class AllUsersResponse(BaseModel):
     """
     Schema for all users
     """
+
     message: str
     status_code: int
     status: str
     page: int
     per_page: int
     total: int
-    data: Union[List[UserData], List[None]]    
+    data: Union[List[UserData], List[None]]
+
 
 class AdminCreateUser(BaseModel):
     """
     Schema for admin to create a users
     """
+
     email: EmailStr
     first_name: str
     last_name: str
-    password: str = ''
+    password: str = ""
     is_active: bool = False
     is_deleted: bool = False
     is_verified: bool = False
@@ -100,10 +98,12 @@ class AdminCreateUserResponse(BaseModel):
     """
     Schema response for user created by admin
     """
+
     message: str
     status_code: int
     status: str
     data: UserData
+
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -137,6 +137,8 @@ class ChangePasswordSchema(BaseModel):
 
     old_password: str
     new_password: str
+    confirm_new_password: str
+
 
 class UserStatData(BaseModel):
     total_users: int
@@ -144,13 +146,37 @@ class UserStatData(BaseModel):
     inactive_users: int
     deleted: int
 
+
 class UserStatResponse(BaseModel):
     status: str
     message: str
     data: UserStatData
     status_code: int
 
+
 class UserRestoreResponse(BaseModel):
     status: str
     message: str
+    status_code: int
+
+
+class UserActivityData(BaseModel):
+    id: str
+    created_at: datetime
+    tool_used: str
+    status: str
+
+
+class UserActivityResponse(BaseModel):
+    status: str
+    message: str
+    page: int
+    per_page: int
+    total_jobs_created: int
+    total_jobs_retrieved: int
+    total_jobs_completed: int
+    total_jobs_pending: int
+    total_jobs_in_progress: int
+    total_pages: int
+    data: Union[List[UserActivityData], List[None]]
     status_code: int

@@ -14,7 +14,11 @@ class UserSubscriptionService:
         """
         Create and return a new user subscription
         """
-        user_sub = UserSubscription(**schema.dict())
+        if isinstance(schema, dict):
+            user_sub = UserSubscription(**schema)
+        else:
+            user_sub = UserSubscription(**schema.dict())
+
         db.add(user_sub)
         db.commit()
         db.refresh(user_sub)

@@ -1,39 +1,29 @@
-name: Prod cd pipeline
+name: Prod Branch Deployment
+
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "README.md"
+      - ".github/workflows/**"
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    runs-on: self-hosted
+  on-success:
+    runs-on: pydeploy
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build image
-        run: docker build -t aivideo-prod:latest -f Dockerfile .
-
-      - name: Save image 
-        run: docker save aivideo-prod:latest | gzip > aivideo-prod.tar.gz
-
-      - name: Copy image to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          source: "aivideo-prod.tar.gz"
-          target: "/home/${{ secrets.USERNAME }}/aivideo_be/prod"
- 
-      - name: Deploy image on server
-        uses: appleboy/ssh-action@v0.1.8
+      - name: Use SSH Action
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd /home/${{ secrets.USERNAME }}/aivideo_be/prod
+            cd aivideo-python-be/prod/
             git pull origin main
-            docker load --input aivideo-prod.tar.gz
-            docker compose -f compose.yml -f compose/compose.prod.yml up -d
-            rm -f aivideo-prod.tar.gz
+            source .venv/bin/activate
+            pip install -r requirements.txt
+            alembic upgrade head
