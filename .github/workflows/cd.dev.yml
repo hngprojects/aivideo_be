@@ -23,8 +23,12 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd aivideo-python-be/dev/
+            cd aivideo_be
+            git add .
+            git stash
+            git checkout dev
             git pull origin dev
-            source .venv/bin/activate
+            source venv-dev/bin/activate
             pip install -r requirements.txt
             alembic upgrade head
+            echo "${{ secrets.PASSWORD }}" | sudo -S systemctl restart aivideo-python-dev.service
