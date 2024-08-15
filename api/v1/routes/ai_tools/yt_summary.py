@@ -21,12 +21,12 @@ yt_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
 
 @yt_summary.post(
-    "/youtube-summarizer",
+    "/video",
     status_code=status.HTTP_200_OK,
     response_model=success_response,
 )
 async def summarize_yt_vid(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Endpoint to summarize a single youtube video"""
+    """Endpoint to summarize a single video"""
 
     video = await upload_video(file)
     # Run task
