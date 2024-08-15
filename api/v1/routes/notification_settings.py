@@ -25,7 +25,7 @@ def get_user_notification_settings(
     return success_response(
         status_code=200,
         message="Notification preferences retrieved successfully",
-        data=jsonable_encoder(settings)
+        data=settings
     )
 
 @notification_setting.post('', response_model=success_response, status_code=200)
@@ -45,7 +45,7 @@ def create_user_notification_settings(
     return success_response(
         status_code=201,
         message="Notification settings created successfully",
-        data=jsonable_encoder(settings)
+        data=settings
     )
 
 
