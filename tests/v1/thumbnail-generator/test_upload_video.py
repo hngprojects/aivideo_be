@@ -17,25 +17,22 @@ class MockSettings:
 settings = MockSettings()
 
 
-@patch('api.utils.files.upload_file', return_value='./media/uploads/videos/video.mov')
-@patch('os.path.exists', return_value=False)
+@patch('api.utils.files.upload_file', return_value='./media/uploads/videos/video-mocked.mov')
+@patch('os.path.exists', return_value=True)
 @patch('os.makedirs')
-def test_upload_video_success(mock_makedirs, mock_exists, mock_upload_file):
-   
+@patch('builtins.open', new_callable=mock_open)
+def test_upload_video_success(mock_open, mock_makedirs, mock_exists, mock_upload_file):
+
     mock_file = MagicMock()
     mock_file.filename = 'video.mov'
-    mock_file.read.return_value = b'test video content'  
-    
- 
+    mock_file.read.return_value = b'test video content'
+
     response = client.post(
         '/api/v1/thumbnails/upload',
-        files={'file': ('video.mov', mock_file.read())}  
+        files={'file': ('video.mov', mock_file.read())}
     )
 
- 
     assert response.status_code == 200
-  
-    
 
 
 @patch('os.path.exists')
