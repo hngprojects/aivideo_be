@@ -6,7 +6,7 @@ from fastapi import (
     UploadFile,
 )
 from sqlalchemy.orm import Session
-
+from api.utils.logger import logging
 from api.utils.transcriber import transcribe
 from api.utils.pdf_transform import pdf_transform
 from api.db.database import get_db
@@ -28,8 +28,9 @@ async def summarize_yt_vid(file: UploadFile = File(...), db: Session = Depends(g
 
     video = await upload_video(file)
     # Run task
-    task = generate_yt_transcript.delay(video)
 
+    task = generate_yt_transcript.delay(video)
+    logging.info(f"Background task started {task.id}")
     # Create project with job
     project = job_service.create_project_with_job(
         job=task, project_title="New project", project_type="YT video Summarizer"
