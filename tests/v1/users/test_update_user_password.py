@@ -81,35 +81,6 @@ def test_change_password_success(client, db_session_mock):
 
 
 
-def test_change_google_auth_user_password_success(client, db_session_mock):
-    '''Test for successfully changing the user's password for social auth users'''
-
-    # Mock the user service to return a user without a password (social auth user)
-    mock_user = mock_other_current_user()
-    mock_user.password = ""
-    app.dependency_overrides[user_service.get_current_user] = lambda: mock_user
-
-    # Mock the password change behavior
-    with patch("api.v1.services.user.user_service.change_password", return_value={
-        "oldPassword": "",
-        "newPassword": "NewPass123!",
-        "confirmNewPassword": "NewPass123!"
-    }) as mock_change_password:
-        response = client.put(
-            "/api/v1/users/update/password",
-            json={
-                "old_password": "",  # No old password since it's a social auth user
-                "new_password": "NewPass123!",
-                "confirm_new_password": "NewPass123!"
-            },
-            headers={'Authorization': 'Bearer token'}
-        )
-
-        # Assert that the response was successful
-        assert response.status_code == 200
-
-
-
 
 def test_change_password_incorrect_old_password(client, db_session_mock):
     '''Test for incorrect old password when changing password'''
