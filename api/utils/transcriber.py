@@ -4,7 +4,7 @@ import os
 from fastapi import HTTPException, status
 
 
-async def transcribe(filepth: str) -> str:
+def transcribe(filepth: str) -> str:
     """utilise the assembly assemblyai transcribe video files"""
 
     try:
