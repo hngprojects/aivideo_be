@@ -171,7 +171,11 @@ class UserActivityResponse(BaseModel):
     message: str
     page: int
     per_page: int
-    total: int
+    total_jobs_created: int
+    total_jobs_retrieved: int
+    total_jobs_completed: int
+    total_jobs_pending: int
+    total_jobs_in_progress: int
     total_pages: int
     data: Union[List[UserActivityData], List[None]]
     status_code: int

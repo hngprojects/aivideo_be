@@ -544,7 +544,7 @@ class UserService(Service):
     def fetch_user_activity(
         self,
         db: Session,
-        current_user: User,
+        user_id: str,
         page: int,
         per_page: int,
         job: str,
@@ -553,8 +553,13 @@ class UserService(Service):
         query = (
             db.query(Project, Job)
             .outerjoin(Job, Project.id == Job.project_id)
-            .filter(Project.user_id == current_user.id)
+            .filter(Project.user_id == user_id)
         )
+
+        total_jobs_created = query.count()
+        total_jobs_completed = query.filter(Job.status.contains("SUCCESS")).count()
+        total_jobs_pending = query.filter(Job.status.contains("PENDING")).count()
+        total_jobs_in_progress = query.filter(Job.status.contains("STARTED")).count()
 
         if job:
             query = query.filter(Project.project_type.icontains(job))
@@ -583,7 +588,11 @@ class UserService(Service):
                 message="No User activity found for this query",
                 page=page,
                 per_page=per_page,
-                total=total_count,
+                total_jobs_created=total_jobs_created,
+                total_jobs_retrieved=total_count,
+                total_jobs_completed=total_jobs_completed,
+                total_jobs_pending=total_jobs_pending,
+                total_jobs_in_progress=total_jobs_in_progress,
                 total_pages=total_pages,
                 data=[],
                 status_code=200,
@@ -594,7 +603,11 @@ class UserService(Service):
             message="User activity data retrieved successfully!",
             page=page,
             per_page=per_page,
-            total=total_count,
+            total_jobs_created=total_jobs_created,
+            total_jobs_retrieved=total_count,
+            total_jobs_completed=total_jobs_completed,
+            total_jobs_pending=total_jobs_pending,
+            total_jobs_in_progress=total_jobs_in_progress,
             total_pages=total_pages,
             data=all_tasks,
             status_code=200,
