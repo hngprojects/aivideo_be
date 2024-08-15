@@ -78,10 +78,11 @@ def downgrade() -> None:
     op.drop_column('users', 'last_login')
     op.drop_column('testimonials', 'avatar_url')
     op.drop_column('testimonials', 'client_position')
-    op.alter_column('projects', 'result',
-               existing_type=sa.Text(),
-               type_=sa.VARCHAR(),
-               existing_nullable=True)
+    op.alter_column(
+        'projects', 'result',
+        existing_type=sa.Text(),
+        type_=sa.VARCHAR(),
+        existing_nullable=True)
     op.drop_column('projects', 'is_active')
     op.add_column('jobs', sa.Column('salary', sa.VARCHAR(), autoincrement=False, nullable=True))
     op.add_column('jobs', sa.Column('company_name', sa.VARCHAR(), autoincrement=False, nullable=True))
