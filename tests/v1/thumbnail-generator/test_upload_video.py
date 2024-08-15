@@ -42,7 +42,7 @@ def test_upload_video_success(mock_open, mock_makedirs, mock_exists, mock_upload
     mock_file.read.return_value = b'test video content'
 
     response = client.post(
-        '/api/v1/thumbnails/upload',
+        '/api/v1/tools/thumbnail-generator/upload',
         files={'file': ('video.mov', mock_file.read())}
     )
 
@@ -55,12 +55,11 @@ def test_upload_video_file_size_exceeds_limit(mock_makedirs, mock_exists):
     mock_exists.return_value = False
 
     response = client.post(
-        '/api/v1/thumbnails/upload',
+        '/api/v1/tools/thumbnail-generator/upload',
         files={'file': ('video.mov', b'x' * (settings.MAX_FILE_SIZE + 1))}
     )
 
     assert response.status_code == 400
-    
 
 
 @patch('os.path.exists')
@@ -69,7 +68,7 @@ def test_upload_video_invalid_file_extension(mock_makedirs, mock_exists):
     mock_exists.return_value = False
 
     response = client.post(
-        '/api/v1/thumbnails/upload',
+        '/api/v1/tools/thumbnail-generator/upload',
         files={'file': ('video.txt', b'test video content')}
     )
 

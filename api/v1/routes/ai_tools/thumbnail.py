@@ -7,7 +7,8 @@ from api.v1.services.job import job_service  # Import job service
 from urllib.parse import urljoin
 import os
 
-thumbnail_router = APIRouter(prefix="/thumbnails", tags=["Thumbnails"])
+thumbnail_router = APIRouter(
+    prefix="/tools/thumbnail-generator", tags=["Tools"])
 max_file_size = 100 * 1024 * 1024  # 100 MB
 
 
