@@ -24,6 +24,8 @@ class Settings(BaseSettings):
 	DB_TYPE: str = config("DB_TYPE")
 	DB_URL: str = config("DB_URL")
 
+	APP_URL: str = config("APP_URL")
+
 	MAIL_USERNAME: str = config("MAIL_USERNAME")
 	MAIL_PASSWORD: str = config("MAIL_PASSWORD")
 	MAIL_FROM: str = config("MAIL_FROM")

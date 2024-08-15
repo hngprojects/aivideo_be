@@ -62,7 +62,6 @@ class UserData(BaseModel):
     last_name: str
     is_active: bool
     is_deleted: bool
-    # is_verified: bool
     is_superadmin: bool
     created_at: datetime
     updated_at: datetime

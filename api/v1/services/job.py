@@ -40,7 +40,6 @@ class JobService:
 
         return project
 
-
     def create_job(self, job_id: str, project_id: str, user_id: Optional[str] = None):
         '''Creates a new celery job'''
 

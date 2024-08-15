@@ -1,12 +1,9 @@
-from datetime import timedelta
-from fastapi import BackgroundTasks, Depends, status, APIRouter, File, UploadFile
+from fastapi import Depends, status, APIRouter, File, UploadFile
 from sqlalchemy.orm import Session
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.utils.files import upload_file
-from api.v1.schemas.project import CreateProject
-from api.v1.services.project import project_service
+from api.utils.files import upload_file_to_current_dir, delete_file
 from api.v1.services.job import job_service
 from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summary_task
 
@@ -16,10 +13,9 @@ summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
     '''Endpoint to summarize PDF'''
     
-    pdf_file = await upload_file(
+    pdf_file = await upload_file_to_current_dir(
         file, 
         allowed_extensions=['pdf'], 
-        upload_folder='pdf', 
         save_extension='pdf'
     )
 
@@ -30,7 +26,7 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
     project = job_service.create_project_with_job(
         job=task,
         project_title='New project',
-        project_type='PDF Summarizer'
+        project_type='PDF Summarizer',
         # user_id = pass in the current user id for authenticated users
     )
 
