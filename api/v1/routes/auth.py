@@ -107,7 +107,7 @@ def register_as_super_admin(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @auth.post("/login", status_code=status.HTTP_200_OK, response_model=success_response)
-def login(login_request: LoginRequest, request=Request, db: Session = Depends(get_db)):
+def login(login_request: LoginRequest, db: Session = Depends(get_db)):
     """Endpoint to log in a user"""
 
     # Authenticate the user
