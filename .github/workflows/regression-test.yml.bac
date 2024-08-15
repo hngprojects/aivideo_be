@@ -9,7 +9,7 @@ on:
 
 jobs:
   run-newman:
-    runs-on: ubuntu-latest
+    runs-on: pyrunner
 
     steps:
       - name: Checkout repository
