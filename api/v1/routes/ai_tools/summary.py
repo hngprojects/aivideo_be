@@ -14,6 +14,7 @@ import os
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
+from api.utils.files import upload_file_to_current_dir, delete_file
 from api.utils.files import upload_file
 from api.v1.schemas.project import CreateProject
 from api.utils.language_code import LANGUAGE_CODES
@@ -28,7 +29,17 @@ from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summar
 summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
 # Set a maximum file size (e.g., 10 MB)
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE = 15 * 1024 * 1024  # 10 MB
+
+@summary.post('/pdf-summarizer-test', status_code=status.HTTP_200_OK, response_model=success_response)
+async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    '''Endpoint to summarize PDF'''
+    
+    pdf_file = await upload_file_to_current_dir(
+        file, 
+        allowed_extensions=['pdf'], 
+        save_extension='pdf'
+    )
 
 
 @summary.post(
