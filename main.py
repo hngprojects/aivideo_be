@@ -1,5 +1,6 @@
-import sys
-sys.path.append('/path/to/your/project/root')
+# import eventlet
+# eventlet.monkey_patch()
+
 import uvicorn
 from fastapi.staticfiles import StaticFiles
 import uvicorn, os
@@ -19,10 +20,13 @@ from api.utils.logger import logger
 from api.utils.success_response import success_response
 from api.v1.routes import api_version_one
 from api.utils.settings import settings
+from scripts.presets import load_avatars_in_db, load_audio_in_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    load_avatars_in_db()
+    load_audio_in_db()
     yield
 
 
@@ -182,4 +186,9 @@ async def get():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", port=7003, reload=True)
+    uvicorn.run(
+        "main:app", 
+        port=7001, 
+        reload=True,
+        # workers=4,
+    )
