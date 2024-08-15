@@ -127,7 +127,7 @@ async def verify_payment_status(
     if not payment_exist:    
         payload = {
             "user_id": current_user.id,
-            "transaction_id": transaction_id,
+            "transaction_id": str(transaction_id),
             "amount": amount,
             "currency": response['data']['currency'],
             "status": "completed",
