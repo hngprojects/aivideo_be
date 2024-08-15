@@ -157,3 +157,8 @@ class UserRestoreResponse(BaseModel):
     status: str
     message: str
     status_code: int
+
+class UserActivityData(BaseModel):
+    created_at: datetime
+    tool_used: str
+    status: str
