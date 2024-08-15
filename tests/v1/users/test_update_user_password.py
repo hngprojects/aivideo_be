@@ -92,7 +92,7 @@ def test_change_google_auth_user_password_success(client, db_session_mock):
     # Mock the password change behavior
     with patch("api.v1.services.user.user_service.change_password", return_value={
         "oldPassword": "",
-        "newPassword": "hashed_NewPass123!",
+        "newPassword": "NewPass123!",
         "confirmNewPassword": "NewPass123!"
     }) as mock_change_password:
         response = client.put(
