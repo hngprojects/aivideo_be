@@ -15,6 +15,9 @@ from api.v1.routes.websocket import websocket_router
 from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
+from api.v1.routes.ai_tools.summary_audio import summary_audio
+from api.v1.routes.ai_tools.talking_avatar import video_router
+from api.v1.routes.ai_tools.background_task import background_router
 from api.v1.routes.testimonial import testimonial
 from api.v1.routes.project import project
 from api.v1.routes.job import job
@@ -27,20 +30,24 @@ api_version_one.include_router(auth)
 api_version_one.include_router(google_auth)
 api_version_one.include_router(user_router)
 api_version_one.include_router(summary)
+api_version_one.include_router(video_router)
 api_version_one.include_router(yt_summary)
-api_version_one.include_router(notification_setting)
+api_version_one.include_router(video_summary)
+api_version_one.include_router(audio)
 api_version_one.include_router(profile)
 api_version_one.include_router(payments)
 api_version_one.include_router(billing_plan)
+api_version_one.include_router(notification_setting)
 api_version_one.include_router(faq)
 api_version_one.include_router(testimonial)
 api_version_one.include_router(project)
 api_version_one.include_router(google_auth)
 api_version_one.include_router(pwd_reset)
+api_version_one.include_router(job)
 api_version_one.include_router(preset_router)
 api_version_one.include_router(websocket_router)
 api_version_one.include_router(test_rout)
+api_version_one.include_router(summary_audio)
+api_version_one.include_router(background_router)
 api_version_one.include_router(save_summary)
-api_version_one.include_router(job)
-api_version_one.include_router(video_summary)
-api_version_one.include_router(audio)
+api_version_one.include_router(test_rout)

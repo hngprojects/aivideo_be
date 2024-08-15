@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 
 from api.utils.websocket import manager
@@ -23,3 +24,8 @@ async def send_progress_report(websocket: WebSocket, job_id: str = Query(...)):
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+    except Exception as e:
+        logging.error(f"WebSocket error: {str(e)}")
+        await websocket.close()
+    finally:
+        websocket.close()
