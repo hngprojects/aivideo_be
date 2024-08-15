@@ -102,7 +102,7 @@ def test_change_google_auth_user_password_success(client, db_session_mock):
                 "new_password": "NewPass123!",
                 "confirm_new_password": "NewPass123!"
             },
-            headers={'Authorization': '***'}
+            headers={'Authorization': 'Bearer token'}
         )
 
         # Assert that the response was successful
