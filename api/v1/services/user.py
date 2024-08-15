@@ -71,7 +71,9 @@ class UserService(Service):
 
         return self.all_users_response(all_users, total_users, page, per_page)
 
-    def search(self, db: Session, page: int, per_page: int, query_param: str):
+    def search(
+        self, db: Session, page: int, per_page: int, query_param: str, is_deleted: bool
+    ):
         per_page = min(per_page, 10)
 
         # validate query_param
@@ -87,6 +89,12 @@ class UserService(Service):
                 detail="Invalid value for search parameter. Must be a non empty string.",
             )
 
+        if not isinstance(is_deleted, bool) and is_deleted is not None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid value for is_deleted parameter. Must be a boolean",
+            )
+
         query = db.query(User).filter(
             or_(
                 User.first_name.icontains(query_param),
@@ -94,6 +102,9 @@ class UserService(Service):
                 User.email.icontains(query_param),
             )
         )
+
+        if is_deleted is not None:
+            query = query.filter(User.is_deleted == is_deleted)
 
         total = query.count()
 

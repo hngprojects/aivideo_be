@@ -62,9 +62,6 @@ async def delete_account(
     )
 
 
-
-
-
 @user_router.patch("", status_code=status.HTTP_200_OK)
 def update_current_user(
     current_user: Annotated[User, Depends(user_service.get_current_user)],
@@ -92,6 +89,30 @@ def update_current_user(
 
 
 @user_router.get(
+    "/search", status_code=status.HTTP_200_OK, response_model=AllUsersResponse
+)
+async def search_users(
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    db: Annotated[Session, Depends(get_db)],
+    page: int = 1,
+    per_page: int = 10,
+    query: Optional[str] = Query(None),
+    is_deleted: Optional[bool] = Query(None)
+):
+    """
+    user search functionality.
+    Args:
+        current_user: The current user(admin) making the request
+        db: database Session object
+        page: the page number
+        per_page: the maximum size of users for each page
+    Returns:
+        UserData
+    """
+    return user_service.search(db, page, per_page, query, is_deleted)
+
+
+@user_router.get(
     "/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
 )
 def get_user_statistics(
@@ -109,7 +130,9 @@ def get_user_statistics(
 
 
 @user_router.get(
-    "/{user_id}/activity", status_code=status.HTTP_200_OK, response_model=UserActivityResponse
+    "/{user_id}/activity",
+    status_code=status.HTTP_200_OK,
+    response_model=UserActivityResponse,
 )
 def get_user_activity(
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
@@ -250,29 +273,6 @@ async def get_users(
     return user_service.fetch_all(db, page, per_page, **query_params)
 
 
-@user_router.get(
-    "/search", status_code=status.HTTP_200_OK, response_model=AllUsersResponse
-)
-async def search_users(
-    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
-    db: Annotated[Session, Depends(get_db)],
-    page: int = 1,
-    per_page: int = 10,
-    query: Optional[str] = Query(None),
-):
-    """
-    user search functionality.
-    Args:
-        current_user: The current user(admin) making the request
-        db: database Session object
-        page: the page number
-        per_page: the maximum size of users for each page
-    Returns:
-        UserData
-    """
-    return user_service.search(db, page, per_page, query)
-
-
 @user_router.post(
     "", status_code=status.HTTP_201_CREATED, response_model=AdminCreateUserResponse
 )
@@ -315,15 +315,16 @@ def get_user_by_id(
     )
 
 
-
-@user_router.put("/update/password", status_code=status.HTTP_200_OK, response_model=success_response)
+@user_router.put(
+    "/update/password", status_code=status.HTTP_200_OK, response_model=success_response
+)
 def change_password(
     request: ChangePasswordSchema,
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user),
 ):
     """Route to change the user's password"""
-    
+
     user_service = UserService()
 
     # Call the service method directly
@@ -332,12 +333,11 @@ def change_password(
         new_password=request.new_password,
         confirm_new_password=request.confirm_new_password,
         user=current_user,
-        db=db
+        db=db,
     )
-    
 
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Password changed successfully!!",
-        data=result
+        data=result,
     )
