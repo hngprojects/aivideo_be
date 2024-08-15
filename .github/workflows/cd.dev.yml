@@ -6,6 +6,7 @@ on:
     paths-ignore:
       - "README.md"
       - ".github/workflows/**"
+      - ".gitignore"
   workflow_dispatch:
 
 jobs:
