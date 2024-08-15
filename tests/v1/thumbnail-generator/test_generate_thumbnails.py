@@ -41,7 +41,7 @@ def test_generate_thumbnails_success(
     mock_makedirs
 ):
     response = client.post(
-        '/api/v1/thumbnails/generate-thumbnails',
+        '/api/v1/tools/thumbnail-generator/generate-thumbnails',
         json={
             'video_id': mock_video_id,
             'manual_capture': False,
@@ -58,7 +58,7 @@ def test_generate_thumbnails_manual_capture(
     mock_makedirs
 ):
     response = client.post(
-        '/api/v1/thumbnails/generate-thumbnails',
+        '/api/v1/tools/thumbnail-generator/generate-thumbnails',
         json={
             'video_id': mock_video_id,
             'manual_capture': True,
