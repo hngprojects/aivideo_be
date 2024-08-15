@@ -1,7 +1,7 @@
 from api.core.dependencies.celery.celery_app import worker
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
-from api.v1.services.ai_tools.thumbnail import generate_thumbnails_service
+from api.v1.services.ai_tools.thumbnail import generate_thumbnails_service, select_and_download_thumbnail_service
 from api.utils.settings import settings as app_settings
 from api.utils.files import upload_file
 from api.db.database import get_db
@@ -50,3 +50,25 @@ def upload_video_task(video_id: str, base_url: str):
     video_url = urljoin(base_url, f"media/uploads/videos/{video_filename}")
 
     return {"video_id": video_id, "video_url": video_url}
+
+
+@worker.task()
+def generate_thumbnails_task(video_id: str, base_url: str, manual_capture: bool = False, timestamp: float = None):
+    '''Background task to generate thumbnails'''
+
+    thumbnails = asyncio.run(
+        generate_thumbnails_service(
+            video_id, base_url, manual_capture, timestamp)
+    )
+    return thumbnails
+
+
+@worker.task()
+def select_and_download_thumbnail_task(video_id: str, thumbnail_id: str, resolution: str, base_url: str):
+    '''Background task to select and download a thumbnail'''
+
+    thumbnail = asyncio.run(
+        select_and_download_thumbnail_service(
+            video_id, thumbnail_id, resolution, base_url)
+    )
+    return thumbnail
