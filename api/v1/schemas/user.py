@@ -137,6 +137,7 @@ class ChangePasswordSchema(BaseModel):
 
     old_password: str
     new_password: str
+    confirm_new_password: str
 
 
 class UserStatData(BaseModel):
