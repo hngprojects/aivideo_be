@@ -158,7 +158,20 @@ class UserRestoreResponse(BaseModel):
     message: str
     status_code: int
 
+
 class UserActivityData(BaseModel):
+    id: str
     created_at: datetime
     tool_used: str
     status: str
+
+
+class UserActivityResponse(BaseModel):
+    status: str
+    message: str
+    page: int
+    per_page: int
+    total: int
+    total_pages: int
+    data: Union[List[UserActivityData], List[None]]
+    status_code: int
