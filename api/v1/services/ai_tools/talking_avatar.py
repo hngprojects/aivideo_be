@@ -90,10 +90,10 @@ class TalkingAvatarService:
 			print(f"An error occurred: {e.stderr.decode()}")
 
 	# TODO: Fix up
-	def add_background_audio(video_path: str, audio_path: str, output_path: str, audio_volume: float = 0.7):
+	def add_background_audio(video_path: str, audio_path: str, output_path: str):
 
 		# Adjust the volume of the background audio
-		background_audio = ffmpeg.input(audio_path).filter('volume', audio_volume)
+		background_audio = ffmpeg.input(audio_path).filter('volume', 0.2)
 
 		# Combine the original video with the background audio
 		video = ffmpeg.input(video_path)
@@ -110,7 +110,8 @@ class TalkingAvatarService:
 		ffmpeg.run(video_with_audio)
 
 
-	def process_script(self, image_file, aspect_ratio, script, voice_over):
+	def process_script(self, image_file, audio_file, aspect_ratio, script, voice_over):
+	# def process_script(self, image_file, aspect_ratio, script, voice_over):
 		"""_summary_
 
 		Args:

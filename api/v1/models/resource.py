@@ -13,3 +13,4 @@ class Resource(BaseTableModel):
     content = Column(String, nullable=False, comment="has to be a markdown")
     image_url = Column(String)
     is_deleted = Column(Boolean, server_default='false')
+    is_published = Column(Boolean, server_default='false')
