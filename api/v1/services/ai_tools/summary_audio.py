@@ -6,7 +6,6 @@ from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from deep_translator import GoogleTranslator
 from langchain_openai import OpenAI as OI
-from langchain import OpenAI
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.summarize import load_summarize_chain
@@ -16,8 +15,6 @@ class SummaryService():
     def __init__(self):
         super().__init__()
         self.translator = GoogleTranslator()
-        self.client = OI(api_key=settings.OPENAI_API_KEY)
-        self.llm = OpenAI(temperature=0, openai_api_key=settings.OPENAI_API_KEY)
 
     def init_chain(self):
         """Initializes the LLM chain with a prompt for summarization."""
