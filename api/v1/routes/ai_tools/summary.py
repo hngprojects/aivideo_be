@@ -76,5 +76,41 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
         data={
             "job_id": task.id,
             "project_id": project.id,
-        }
+            "file_name": file.filename,
+        },
     )
+
+
+@summary.post(
+    "/translate-summary",
+    status_code=status.HTTP_200_OK,
+    response_model=success_response,
+)
+async def translate_summary(translation_request: TranslationRequest):
+    """Endpoint to translate summary into different languages"""
+    target_language = translation_request.target_language.lower().replace(" ", "_")
+
+    if target_language not in LANGUAGE_CODES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported language. Supported languages are: {', '.join(LANGUAGE_CODES.keys())}",
+        )
+
+    try:
+        translated_text = translate_text(
+            translation_request.summary, LANGUAGE_CODES[target_language]
+        )
+
+        return success_response(
+            status_code=200,
+            message="Translation successful",
+            data={
+                "original_summary": translation_request.summary,
+                "translated_summary": translated_text,
+                "target_language": target_language,
+            },
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"An error occurred during translation: {str(e)}"
+        )
