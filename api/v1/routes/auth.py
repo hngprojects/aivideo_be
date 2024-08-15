@@ -114,6 +114,8 @@ def login(login_request: LoginRequest, db: Session = Depends(get_db)):
     user = user_service.authenticate_user(
         db=db, email=login_request.email, password=login_request.password
     )
+    
+
 
     # Generate access and refresh tokens
     access_token = user_service.create_access_token(user_id=user.id)
