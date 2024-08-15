@@ -9,12 +9,13 @@ class CreateTestimonialSchema(BaseModel):
     content: str
     rating: float
     client_name: str
+    client_position: str
+    avatar_url: Optional[str] = None
 
 class TestimonialBase(CreateTestimonialSchema):
     """Base schema for Testimonials"""
 
     id: str
-    created_at: datetime
     updated_at: datetime
     
     class Config:
@@ -25,3 +26,5 @@ class UpdateTestimonialSchema(BaseModel):
     content: Optional[str] = None
     rating:  Optional[float] = None
     client_name: Optional[str] = None
+    client_position: Optional[str] = None
+    avatar_url: Optional[str] = None
