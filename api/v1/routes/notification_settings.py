@@ -66,5 +66,5 @@ def update_user_notification_settings(
     return success_response(
         status_code=200,
         message="Notification preferences updated successfully",
-        data=jsonable_encoder(settings)
+        data=settings
     )

@@ -25,7 +25,7 @@ class ProfileBase(BaseModel):
 
 class ProfileCreateUpdate(BaseModel):
     '''Schema to create or update a profile'''
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
+    username: Optional[str] = Field(None, max_length=50)
     pronouns: Optional[str] = Field(None, max_length=50)
     job_title: Optional[str] = Field(None, max_length=100)
     social: Optional[str] = None
@@ -49,14 +49,23 @@ class ProfileCreateUpdate(BaseModel):
         
         return value
 
-
+    @validator('job_title', pre=True, always=True)
+    def job_title_validator(cls, value):
+        if value is None:
+            return value  
+        if not isinstance(value, str):
+            raise ValueError("Job title must be a string.")
+        if not value.replace(" ", "").isalpha():
+            raise ValueError("Job title must contain only alphabetic characters.")
+        return value
+        
     
     class Config:
         extra = 'allow'
         
         
 class ProfileUpdateForm(BaseModel):
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
+    username: Optional[str] = Field(None, max_length=50)
     pronouns: Optional[str] = Field(None, max_length=50)
     job_title: Optional[str] = Field(None, max_length=100)
     social: Optional[str] = None
