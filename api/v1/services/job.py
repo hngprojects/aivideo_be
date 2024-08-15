@@ -133,7 +133,6 @@ class JobService:
                     "is_deleted",
                 ],
             },
-            # or_conditions=["first_name", "last_name"]
         )
 
     def export_jobs_as_csv(self, db: Session):
