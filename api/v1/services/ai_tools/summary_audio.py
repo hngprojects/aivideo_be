@@ -10,7 +10,8 @@ from langchain_openai import ChatOpenAI
 from langchain_community.document_loaders.parsers import OpenAIWhisperParser
 from pydub import AudioSegment
 from deep_translator import GoogleTranslator
-from openai import OpenAI as OI
+from langchain_openai import OpenAI as OI
+from langchain_community.llms import OpenAI as OI
 from langchain import OpenAI
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter

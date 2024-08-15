@@ -7,12 +7,7 @@ worker = Celery(
     backend=f"db+{settings.DB_URL}",
     include=[
         'api.core.dependencies.celery.tasks.summary_tasks',
-        'api.core.dependencies.celery.tasks.video_tasks',
         'api.core.dependencies.celery.tasks.audio_tasks',
-        'api.core.dependencies.celery.tasks.video_summary_tasks',
-        "api.core.dependencies.celery.tasks.summary_tasks",
-        "api.core.dependencies.celery.tasks.video_summary_tasks",
-        "api.core.dependencies.celery.tasks.video_tasks",
         'api.core.dependencies.celery.tasks.video_summary_tasks',
         'api.core.dependencies.celery.tasks.audio_task',
         'api.core.dependencies.celery.tasks.video_tasks']
