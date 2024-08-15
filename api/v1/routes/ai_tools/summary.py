@@ -56,19 +56,22 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
     if file_size == 0:
         raise HTTPException(status_code=400, detail="The uploaded PDF file is empty")
 
+    # Upload the file and get its path
     pdf_file_path = await upload_file(
         file, allowed_extensions=["pdf"], upload_folder="pdf", save_extension="pdf"
     )
+    
     # Run task
     task = generate_pdf_summary_task.delay(pdf_file_path)
 
     # Create project with job
     project = job_service.create_project_with_job(
         job=task,
-        project_title="New project",
-        project_type="PDF Summarizer",
+        project_title='New project',
+        project_type='PDF Summarizer',
         # user_id = pass in the current user id for authenticated users
     )
+
 
     return success_response(
         status_code=202,
@@ -79,6 +82,7 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
             "file_name": file.filename,
         },
     )
+
 
 
 @summary.post(
