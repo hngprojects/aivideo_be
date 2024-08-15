@@ -1,9 +1,10 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException, Request
-from api.core.dependencies.celery.tasks.video_tasks import upload_video_task
+from api.core.dependencies.celery.tasks.video_tasks import upload_video_task, generate_thumbnails_task
 from api.utils.settings import settings
 from api.utils.success_response import success_response
 from api.utils.files import upload_file
-from api.v1.services.job import job_service  # Import job service
+from api.v1.services.job import job_service
+from api.v1.schemas.ai_tools.thumbnail import ThumbnailRequest
 from urllib.parse import urljoin
 import os
 
@@ -51,11 +52,26 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
 
 
 @thumbnail_router.post("/generate-thumbnails")
-async def generate_thumbnails(new_filename):
+async def generate_thumbnails(request: Request, body: ThumbnailRequest):
+    task = generate_thumbnails_task.delay(
+        body.video_id, str(request.url), body.manual_capture, body.timestamp
+    )
 
-    thumbnails = await generate_thumbnails_service(new_filename)
+    thumbnails = task.get()
+
+    project = job_service.create_project_with_job(
+        job=task,
+        project_title='Thumbnail Generation',
+        project_type='Video Thumbnail Generator'
+    )
+
     return success_response(
         status_code=200,
         message="Thumbnails generated successfully.",
-        data={"thumbnail_ids": thumbnails}
+        data={
+            "job_id": task.id,
+            "project_id": project.id,
+            "video_id": body.video_id,
+            "thumbnail_urls": thumbnails
+        }
     )
