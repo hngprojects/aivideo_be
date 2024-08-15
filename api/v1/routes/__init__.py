@@ -23,6 +23,7 @@ from api.v1.routes.project import project
 from api.v1.routes.job import job
 from api.v1.routes.ai_tools.audio_transcriber import audio 
 
+from api.v1.routes.ai_tools.thumbnail import thumbnail_router
 
 api_version_one = APIRouter(prefix="/api/v1")
 
@@ -50,4 +51,7 @@ api_version_one.include_router(test_rout)
 api_version_one.include_router(summary_audio)
 api_version_one.include_router(background_router)
 api_version_one.include_router(save_summary)
-api_version_one.include_router(test_rout)
+api_version_one.include_router(job)
+api_version_one.include_router(video_summary)
+api_version_one.include_router(audio)
+api_version_one.include_router(thumbnail_router)
