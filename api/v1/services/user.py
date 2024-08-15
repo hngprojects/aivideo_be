@@ -547,12 +547,20 @@ class UserService(Service):
         current_user: User,
         page: int,
         per_page: int,
+        job: str,
+        status: str,
     ):
         query = (
             db.query(Project, Job)
             .outerjoin(Job, Project.id == Job.project_id)
             .filter(Project.user_id == current_user.id)
         )
+
+        if job:
+            query = query.filter(Project.project_type.icontains(job))
+
+        if status:
+            query = query.filter(Job.status == status)
 
         total_count = query.count()
         total_pages = int(total_count / per_page) + (total_count % per_page > 0)

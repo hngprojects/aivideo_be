@@ -124,11 +124,20 @@ def get_user_statistics(
 def get_user_activity(
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
     db: Annotated[Session, Depends(get_db)],
+    job: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     page: int = 1,
     per_page: int = 10,
 ):
     """Endpoint to fetch user activity"""
-    return user_service.fetch_user_activity(db=db, current_user=current_user, page=page, per_page=per_page)
+    return user_service.fetch_user_activity(
+        db=db,
+        current_user=current_user,
+        page=page,
+        per_page=per_page,
+        job=job,
+        status=status,
+    )
 
 
 @user_router.patch("/{user_id}", status_code=status.HTTP_200_OK)
