@@ -40,7 +40,7 @@ def test_select_thumbnail_success(mock_celery_task, mock_create_project_with_job
     mock_celery_task.get.return_value = mock_thumbnail_url
 
     response = client.post(
-        f'/api/v1/thumbnails/select-thumbnail/{mock_video_id}',
+        f'/api/v1/tools/thumbnail-generator/select-thumbnail/{mock_video_id}',
         json={
             'thumbnail_id': mock_thumbnail_id,
             'resolution': mock_resolution
@@ -54,7 +54,7 @@ def test_select_thumbnail_failure(mock_celery_task, mock_create_project_with_job
     mock_celery_task.get.return_value = None
 
     response = client.post(
-        f'/api/v1/thumbnails/select-thumbnail/{mock_video_id}',
+        f'/api/v1/tools/thumbnail-generator/select-thumbnail/{mock_video_id}',
         json={
             'thumbnail_id': mock_thumbnail_id,
             'resolution': mock_resolution
