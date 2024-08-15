@@ -76,13 +76,15 @@ class JobService:
         job.status = status
         job.result = result if result is not None else None
         db.commit()
+        db.refresh(job)
         return job
 
     def get_project_from_job(self, job_id: str):
         """Returns the project from the job details"""
 
         job = self.fetch_by_job_id(job_id=job_id)
-        project = db.query(Project).filter(Project.id == job.project_id).first()
+        project = db.query(Project).filter(
+            Project.id == job.project_id).first()
 
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
