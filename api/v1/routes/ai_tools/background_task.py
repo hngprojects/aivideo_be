@@ -56,6 +56,6 @@ async def send_job_status_updates(
         message='Job progress retrieved',
         data={
             'job_id': job_id,
-            'status': status,
+            'status': status
         }
     )

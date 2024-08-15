@@ -9,8 +9,9 @@ worker = Celery(
         'api.core.dependencies.celery.tasks.summary_tasks',
         'api.core.dependencies.celery.tasks.video_summary_tasks',
         'api.core.dependencies.celery.tasks.audio_task',
-        'api.core.dependencies.celery.tasks.video_tasks']
-
+        'api.core.dependencies.celery.tasks.video_tasks'
+    ],
+    # task_cls='eventlet'
 )
 
 worker.conf.update(task_track_started=True)

@@ -48,6 +48,7 @@ class WebsocketService:
                     message=f"Job failed with error: {result}",
                     websocket=websocket
                 )
+                websocket.close()
                 break
             
             elif status == 'SUCCESS':
@@ -64,6 +65,7 @@ class WebsocketService:
                     message=f"Job completed successfully.",
                     websocket=websocket
                 )
+                websocket.close()
                 break
                 
             else:
