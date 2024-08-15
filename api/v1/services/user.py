@@ -62,6 +62,8 @@ class UserService(Service):
             query = query.filter(*filters)
             total_users = query.count()
 
+        total_pages = int(total_users / per_page) + (total_users % per_page > 0)
+
         all_users: list = (
             query.order_by(desc(User.created_at))
             .limit(per_page)
@@ -69,7 +71,13 @@ class UserService(Service):
             .all()
         )
 
-        return self.all_users_response(all_users, total_users, page, per_page)
+        return self.all_users_response(
+            users=all_users,
+            total_users=total_users,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+        )
 
     def search(self, db: Session, page: int, per_page: int, query_param: str):
         per_page = min(per_page, 10)
@@ -96,15 +104,20 @@ class UserService(Service):
         )
 
         total = query.count()
+        total_pages = int(total / per_page) + (total % per_page > 0)
 
         users: list = query.limit(per_page).offset((page - 1) * per_page).all()
 
         return self.all_users_response(
-            users=users, total_users=total, page=page, per_page=per_page
+            users=users,
+            total_users=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
         )
 
     def all_users_response(
-        self, users: list, total_users: int, page: int, per_page: int
+        self, users: list, total_users: int, page: int, per_page: int, total_pages: int
     ):
         """
         Generates a response for all users
@@ -119,6 +132,7 @@ class UserService(Service):
                 status_code=200,
                 page=page,
                 per_page=per_page,
+                total_pages=total_pages,
                 total=0,
                 data=[],
             )
@@ -131,6 +145,7 @@ class UserService(Service):
             status_code=200,
             page=page,
             per_page=per_page,
+            total_pages=total_pages,
             total=total_users,
             data=all_users,
         )
