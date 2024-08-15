@@ -1,39 +1,30 @@
-name: Staging cd pipeline
+name: Staging Branch Deployment
+
 on:
   push:
     branches: [staging]
+    paths-ignore:
+      - "README.md"
+      - ".github/workflows/**"
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  on-success:
     runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build image
-        run: docker build -t aivideo-staging:latest -f Dockerfile .
-
-      - name: Save image 
-        run: docker save aivideo-staging:latest | gzip > aivideo-staging.tar.gz
-
-      - name: Copy image to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          source: "aivideo-staging.tar.gz"
-          target: "/home/${{ secrets.USERNAME }}/aivideo_be/staging"
- 
-      - name: Deploy image on server
-        uses: appleboy/ssh-action@v0.1.8
+      - name: Use SSH Action
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd /home/${{ secrets.USERNAME }}/aivideo_be/staging
+            cd aivideo-python-be/staging/
             git pull origin staging
-            docker load --input aivideo-staging.tar.gz
-            docker compose -f compose.yml -f compose/compose.staging.yml up -d
-            rm -f aivideo-staging.tar.gz
+            source .venv/bin/activate
+            pip install -r requirements.txt
+            alembic upgrade head
