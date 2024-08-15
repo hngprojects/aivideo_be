@@ -73,3 +73,50 @@ async def generate_thumbnails_service(video_id: str, base_url: str, manual_captu
             thumbnail_urls.append(thumbnail_url)
 
     return thumbnail_urls
+
+
+async def select_and_download_thumbnail_service(video_id: str, thumbnail_id: str, resolution: str, base_url: str) -> str:
+    try:
+        base_name = video_id
+        thumbnail_dir = os.path.join(
+            settings.MEDIA_DIR, 'downloads', 'thumbnails')
+        input_path = os.path.join(
+            thumbnail_dir, f'{base_name}_thumbnail_{thumbnail_id}.jpg'
+        )
+        output_path = os.path.join(
+            thumbnail_dir, f"{base_name}_thumbnail_{thumbnail_id}_{resolution}.jpg"
+        )
+
+        resolution_map = {
+            "1080": "1920:1080",
+            "720": "1280:720",
+            "480": "854:480",
+            "360": "640:360"
+        }
+
+        size = resolution_map.get(resolution)
+        if not size:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resolution"
+            )
+
+        result = subprocess.run(
+            ['ffmpeg', '-i', input_path, '-vf', f'scale={size}', output_path],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+
+        if result.returncode != 0:
+
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error resizing thumbnail to resolution {resolution}. {result.stderr.decode()}"
+            )
+
+        return os.path.join(base_url, f"/media/downloads/thumbnails/{os.path.basename(output_path)}")
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to select and download thumbnail: {str(e)}"
+        )
