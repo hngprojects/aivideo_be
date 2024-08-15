@@ -158,11 +158,11 @@ class JobService:
             csv_writer.writerow(
                 [
                     datum.id,
-                    datum.user.first_name,
-                    datum.user.last_name,
-                    datum.user.email,
+                    datum.user.first_name if datum.user else None,
+                    datum.user.last_name if datum.user else None,
+                    datum.user.email if datum.user else None,
                     datum.job_id,
-                    datum.project.project_type,
+                    datum.project.project_type if datum.project else None,
                     datum.created_at,
                     datum.status,
                 ]
