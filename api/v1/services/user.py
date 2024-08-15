@@ -550,6 +550,7 @@ class UserService(Service):
         job: str,
         status: str,
     ):
+        user_check = check_model_existence(db, User, user_id)
         query = (
             db.query(Project, Job)
             .outerjoin(Job, Project.id == Job.project_id)
