@@ -7,7 +7,7 @@ from secrets import token_hex
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
-async def pdf_transform(yttext: str):
+def pdf_transform(yttext: str):
     # Save file using BASE_DIR
     pdf_filename = f"{token_hex()}.pdf"
     video_dir = BASE_DIR / "yt_pdf"
