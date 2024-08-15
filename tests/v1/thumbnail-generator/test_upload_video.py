@@ -8,22 +8,35 @@ from api.utils.settings import settings
 client = TestClient(app)
 
 
+class MockTask:
+    def __init__(self, task_id):
+        self.id = task_id
+
+
 class MockSettings:
     MEDIA_DIR = './media'
-    MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
+    MAX_FILE_SIZE = 100 * 1024 * 1024  # 500MB
     ALLOWED_EXTENSIONS = {'mp4', 'mov', 'avi'}
 
 
 settings = MockSettings()
 
 
-@patch('api.core.dependencies.celery.tasks.video_tasks.upload_video_task.delay')
+@pytest.fixture
+def mock_upload_video_task(mocker):
+    return mocker.patch("api.core.dependencies.celery.tasks.video_tasks.upload_video_task.delay", return_value=MockTask(task_id='mock-task-id'))
+
+
+@pytest.fixture
+def mock_create_project_with_job(mocker):
+    return mocker.patch("api.v1.services.job.job_service.create_project_with_job", return_value=MagicMock(id='project-id'))
+
+
 @patch('api.utils.files.upload_file', return_value='./media/uploads/videos/video-mocked.mov')
 @patch('os.path.exists', return_value=True)
 @patch('os.makedirs')
 @patch('builtins.open', new_callable=mock_open)
-def test_upload_video_success(mock_open, mock_makedirs, mock_exists, mock_upload_file, mock_task):
-    mock_task.return_value.id = 'mock-task-id'
+def test_upload_video_success(mock_open, mock_makedirs, mock_exists, mock_upload_file, mock_upload_video_task, mock_create_project_with_job):
     mock_file = MagicMock()
     mock_file.filename = 'video.mov'
     mock_file.read.return_value = b'test video content'
@@ -34,7 +47,6 @@ def test_upload_video_success(mock_open, mock_makedirs, mock_exists, mock_upload
     )
 
     assert response.status_code == 200
-
 
 
 @patch('os.path.exists')
