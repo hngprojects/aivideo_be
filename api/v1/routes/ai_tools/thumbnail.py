@@ -8,18 +8,28 @@ from urllib.parse import urljoin
 import os
 
 thumbnail_router = APIRouter(prefix="/thumbnails", tags=["Thumbnails"])
+max_file_size = 100 * 1024 * 1024  # 100 MB
 
 
 @thumbnail_router.post("/upload")
 async def upload_video(request: Request, file: UploadFile = File(...)):
     base_url = str(request.base_url)
 
+    file_content = await file.read()
+    file_size = len(file_content)
+
+    print(f"Uploaded file size: {file_size} bytes")
+
+    if file_size > max_file_size:
+        raise HTTPException(
+            status_code=400, detail="File exceeds the maximum allowed size of 100MB."
+        )
+
     saved_path = await upload_file(
         file,
         allowed_extensions=settings.ALLOWED_EXTENSIONS,
         upload_folder='videos',
         save_extension=file.filename.split('.')[-1].lower(),
-        max_file_size=settings.MAX_FILE_SIZE
     )
 
     video_id = os.path.basename(saved_path).split('.')[0]
