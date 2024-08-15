@@ -486,9 +486,6 @@ class UserService(Service):
         user.is_active = True
 
         db.commit()
-        
-        
-        
 
     def change_password(
         self,
@@ -499,20 +496,20 @@ class UserService(Service):
         db: Session,
     ):
         """Endpoint to change the user's password"""
-        
+
         # Check if the user has an existing password
         if not user.password:
             # user signed up via social authentication (Google/Facebook)
             if old_password:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="You do not have an existing password. Please set up a new password instead."
+                    detail="You do not have an existing password. Please set up a new password instead.",
                 )
             # Allow setting up a new password directly if old password is not provided
             if new_password != confirm_new_password:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="New password and confirmation do not match."
+                    detail="New password and confirmation do not match.",
                 )
             user.password = self.hash_password(new_password)
             db.commit()
@@ -521,27 +518,24 @@ class UserService(Service):
         if not self.verify_password(old_password, user.password):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Incorrect old password."
+                detail="Incorrect old password.",
             )
-        
+
         if new_password != confirm_new_password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="New password and confirmation do not match."
+                detail="New password and confirmation do not match.",
             )
 
         user.password = self.hash_password(new_password)
         db.commit()
-        
+
         # Return the passwords in the specified format
         return {
             "oldPassword": old_password,
             "newPassword": user.password,
-            "confirmNewPassword": confirm_new_password
+            "confirmNewPassword": confirm_new_password,
         }
-        
-        
-
 
     def get_current_super_admin(
         self, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
@@ -601,7 +595,9 @@ class UserService(Service):
         total_jobs_created = query.count()
         total_jobs_completed = query.filter(Job.status.contains("SUCCESS")).count()
         total_jobs_pending = query.filter(Job.status.contains("PENDING")).count()
-        total_jobs_in_progress = query.filter(Job.status.contains("STARTED")).count()
+        total_jobs_in_progress = query.filter(
+            or_(Job.status.contains("STARTED"), Job.status.contains("RUNNING"))
+        ).count()
 
         if job:
             query = query.filter(Project.project_type.icontains(job))
