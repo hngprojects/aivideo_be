@@ -3,6 +3,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak
 from reportlab.lib.pagesizes import letter
 from pathlib import Path
 from secrets import token_hex
+from api.utils.logger import logging
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -40,6 +41,6 @@ def pdf_transform(yttext: str):
     # Build the PDF
     pdf.build(elements)
 
-    print(f"PDF saved as {pdf_filename}")
+    logging.info(f"PDF saved as {pdf_filename}")
 
     return str(file_location)

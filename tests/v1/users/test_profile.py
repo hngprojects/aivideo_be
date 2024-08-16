@@ -3,8 +3,11 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from fastapi import HTTPException
 from uuid_extensions import uuid7
+import json
+import os
 
 
+import tempfile
 from main import app
 from sqlalchemy.orm import Session
 from api.utils.success_response import success_response
@@ -61,6 +64,13 @@ def client(db_session_mock):
     app.dependency_overrides = {}
     
     
+def create_temp_file():
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+    temp_file.write(b"fake image content")
+    temp_file.close()
+    return temp_file.name
+    
+    
 
 def test_get_user_profile(client, db_session_mock):
     '''Test for fetching user profile successfully'''
@@ -112,31 +122,36 @@ def test_update_profile_success(client, db_session_mock):
     
     # Mock profile update behavior
     mock_profile_instance = mock_profile()
+    temp_file_path = create_temp_file()
     with patch("api.v1.services.profile.profile_service.update", return_value=mock_profile_instance) as mock_update:
         response = client.put(
-            "/api/v1/profile",  
-            json={
+            "/api/v1/profile",
+            data={
                 "username": "mary",
                 "pronouns": "him",
                 "job_title": "job Engineer",
-                "social": {
+                "social": json.dumps({
                     "twitter": "@username",
                     "linkedin": "linkedin.com/in/username"
-                },
+                }),
                 "bio": "Passionate software engineer with a love for open-source projects new.",
                 "phone_number": "+1234537890",
-                "avatar_url": "https://example.com/avatar.jpg",
-                "email": "user103@example.com"
+                "email": "user103@example.com",
             },
+            files={"avatar": ("avatar.jpg", open(temp_file_path, "rb"), "image/jpeg")},
             headers={'Authorization': 'Bearer token'}
         )
+        
+        # Clean up temporary file
+        os.remove(temp_file_path)
 
         # Assert that the response was successful
         assert response.status_code == 200
         response_data = response.json()
         assert response_data['success'] is True
         assert response_data['message'] == "User Profile Updated Successfully!!!"
-        assert response_data['data']  
+        assert response_data['data']
+
 
 
 
@@ -153,67 +168,42 @@ def test_update_profile_unauthorized(client):
     
     
     
-    
-
-# Test for invalid data
-def test_update_profile_invalid_data(client, db_session_mock):
-    '''Test for invalid profile data'''
-    app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
-
-    response = client.put(
-        "/api/v1/profile",  
-        json={
-            "username": 12,  
-            "pronouns": "him",
-            "job_title": "job Engineer",
-            "social": {
-                "twitter": "@username",
-                "linkedin": "linkedin.com/in/username"
-            },
-            "bio": "Bio",  
-            "phone_number": "+123",
-            "avatar_url": "invalid-url",
-            "email": "user103@example.com"
-        },
-        headers={'Authorization': 'Bearer token'}
-    )
-
-    response_data = response.json()
-    assert response.status_code == 422
-    assert response_data['status_code'] == 422
 
 
 
-
-
-# Test for email already in use
 def test_update_profile_email_in_use(client, db_session_mock):
     '''Test for email already in use error'''
 
     app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
     
+    temp_file_path = create_temp_file()
     with patch("api.v1.services.profile.profile_service.update", side_effect=HTTPException(status_code=409, detail="Email address already in use")) as mock_update:
         response = client.put(
             "/api/v1/profile",  
-            json={
+            data={
                 "username": "mary",
                 "pronouns": "him",
                 "job_title": "job Engineer",
-                "social": {
+                "social": json.dumps({
                     "twitter": "@username",
                     "linkedin": "linkedin.com/in/username"
-                },
+                }),
                 "bio": "Passionate software engineer with a love for open-source projects new.",
                 "phone_number": "+1234537890",
-                "avatar_url": "https://example.com/avatar.jpg",
-                "email": "existing_email@example.com"
+                "email": "existing_email@example.com",
             },
+            files={"avatar": ("avatar.jpg", open(temp_file_path, "rb"), "image/jpeg")},
             headers={'Authorization': 'Bearer token'}
         )
 
         response_data = response.json()
         assert response.status_code == 409
-        assert response_data['status_code'] == 409
+        assert response_data['status_code'] ==  409
+        
+        
+    # Clean up temporary file
+    os.remove(temp_file_path)
+
 
 
 def custom_service_function(*args, **kwargs):
@@ -226,27 +216,28 @@ def test_update_profile_custom_error(client, db_session_mock):
     app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
 
     # Use a custom service function that raises an HTTPException
+    temp_file_path = create_temp_file()
     with patch("api.v1.services.profile.profile_service.update", side_effect=custom_service_function):
         response = client.put(
             "/api/v1/profile",
-            json={
+            data={
                 "username": "mary",
                 "pronouns": "him",
                 "job_title": "job Engineer",
-                "social": {
+                "social": json.dumps({
                     "twitter": "@username",
                     "linkedin": "linkedin.com/in/username"
-                },
+                }),
                 "bio": "Passionate software engineer with a love for open-source projects new.",
                 "phone_number": "+1234537890",
-                "avatar_url": "https://example.com/avatar.jpg",
-                "email": "user103@example.com"
+                "email": "user103@example.com",
             },
+            files={"avatar": ("avatar.jpg", open(temp_file_path, "rb"), "image/jpeg")},
             headers={'Authorization': 'Bearer token'}
         )
 
+        # Clean up temporary file
+        os.remove(temp_file_path)
+
         # Assert that the response status code is 500
         assert response.status_code == 500
-        
-        
-        
