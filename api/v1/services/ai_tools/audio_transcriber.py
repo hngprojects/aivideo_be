@@ -2,7 +2,7 @@
 from deep_translator import GoogleTranslator
 from io import BytesIO
 import logging
-from typing import Dict
+from typing import Dict, Union
 import numpy as np
 import soundfile as sf
 import librosa
@@ -20,13 +20,9 @@ def format_time(milliseconds):
     hours = (milliseconds / (1000 * 60 * 60)) % 24
     return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
 
-
-
-def transcribe_audio_file_with_timestamps(audio_data: bytes) -> Dict[str, str]:
-
+def transcribe_audio_file_with_timestamps(audio_data: bytes) -> Dict[str, Union[str, Dict[str, str]]]:
     recognizer = sr.Recognizer()
     try:
-
         audio_file = BytesIO(audio_data)
         audio_segment = AudioSegment.from_file(audio_file)
         audio_segment = audio_segment.set_channels(1).set_frame_rate(16000)  # Convert to mono and 16kHz
@@ -54,15 +50,14 @@ def transcribe_audio_file_with_timestamps(audio_data: bytes) -> Dict[str, str]:
             # Update start time for next chunk
             start_time = end_time
 
-        return transcriptions
+        return {"transcriptions": transcriptions}
 
     except sr.RequestError:
-        return JSONResponse(content={"error": "Could not request results from Google API."}, status_code=500)
+        return {"error": "Could not request results from Google API."}
     except sr.UnknownValueError:
-        return JSONResponse(content={"error": "Google API could not understand the audio."}, status_code=400)
+        return {"error": "Google API could not understand the audio."}
     except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-
+        return {"error": str(e)}
 
 
 
