@@ -13,6 +13,7 @@ from api.v1.routes.resource import resource
 from api.v1.routes.presets import preset_router
 from api.v1.routes.google_auth import google_auth
 from api.v1.routes.lang_region_settings import regions
+from api.v1.routes.data_privacy import privacy
 from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
@@ -53,6 +54,7 @@ api_version_one.include_router(pwd_reset)
 api_version_one.include_router(job)
 api_version_one.include_router(preset_router)
 api_version_one.include_router(regions)
+api_version_one.include_router(privacy)
 api_version_one.include_router(test_rout)
 api_version_one.include_router(summary_audio)
 api_version_one.include_router(background_router)

@@ -28,7 +28,7 @@ class User(BaseTableModel):
     projects = relationship("Project", back_populates="user")
     reviews = relationship("Review", back_populates="user")
     notification_setting = relationship("NotificationSetting", back_populates="user")
-    data_privacy_setting = relationship("DataPrivacySetting", back_populates="user")
+    data_privacy_setting = relationship("DataPrivacySetting", back_populates="user", uselist=False)
     lang_reg_timezone_settings = relationship(
         "LanguageRegionTimezoneSetting", back_populates="user"
     )
