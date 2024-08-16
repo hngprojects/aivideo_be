@@ -28,6 +28,8 @@ async def event_generator(job_id: str, db: Session):
         except Exception as e:
             db.rollback()
             raise HTTPException(status_code=500, detail="Failed to update project status")
+        finally:
+            db.close()
         
         job_service.update_job(job_id, status.capitalize())
 
@@ -59,6 +61,8 @@ async def event_generator(job_id: str, db: Session):
             except Exception as e:
                 db.rollback()
                 raise HTTPException(status_code=500, detail="Failed to update project status")
+            finally:
+                db.close()
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
             break
@@ -100,6 +104,8 @@ async def send_job_status_updates(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
 
     if status == "PENDING":
         job_service.update_job(job_id, "Pending")
@@ -125,6 +131,8 @@ async def send_job_status_updates(
         except Exception as e:
             db.rollback()
             raise HTTPException(status_code=500, detail=str(e))
+        finally:
+            db.close()
         
     else:
         job_service.update_job(job_id, status)
