@@ -10,11 +10,24 @@ from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains.llm import LLMChain
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
+from openai import OpenAI as OI
+from langchain import OpenAI
+from langchain.docstore.document import Document
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.chains.summarize import load_summarize_chain
+import requests
+from bs4 import BeautifulSoup
+from api.utils.files import delete_file
+from io import BytesIO
+from fastapi import HTTPException
+import json
 import fitz  # PyMuPDF for handling PDFs with images
 
 class SummaryService():  
     def __init__(self):
         super().__init__()
+        self.client = OI(api_key=settings.OPENAI_API_KEY)
+        self.llm = OpenAI(temperature=0, openai_api_key=settings.OPENAI_API_KEY)
     
     def init_chain(self):
         prompt_template = """Write a concise summary of the following:
@@ -74,6 +87,71 @@ class SummaryService():
         final_summary = " ".join(summaries)
         final_summary = final_summary.replace('\n', ' ').replace('\r', ' ').strip()
         return final_summary
+    
+    def transcribe_audio(self, file_path):
+           transcript = self.client.audio.transcriptions.create(
+            model="whisper-1",
+            response_format="text",
+            file=open(file_path, "rb"),
+        )
+           return transcript
+       
+    def summarize_audio(self, audio_file_path):
+        """Summarize podcast audio file.
 
+        Args:
+            audio_file_path (str): Path to the audio file.
+
+        Returns:
+            tuple: Summary and Transcript of the podcast episode.
+        """
+        # Transcribe audio
+        transcribed_text = self.transcribe_audio(audio_file_path)
+        delete_file(audio_file_path)
+        # Initialize LLM chain
+        text_splitter = CharacterTextSplitter()
+        texts = text_splitter.split_text(transcribed_text)
+        docs = [Document(page_content=t) for t in texts]
+        chain = load_summarize_chain(self.llm, chain_type='map_reduce')
+        summary = chain.run(docs)
+       
+        return summary, transcribed_text
+   
+    def fetch_page(self, url):
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.text
+
+
+    def string_to_dict(self, input_string):
+        try:
+            # Parse the input string as a JSON object
+            parsed_dict = json.loads(input_string)
+            return parsed_dict
+        except json.JSONDecodeError:
+            return None
+
+
+    def extract_scripts_with_asseturl(self, url):
+        try:
+            content = self.fetch_page(url)
+            soup = BeautifulSoup(content, 'html.parser')
+            script_tags = soup.find_all('script')
+
+            for tag in script_tags:
+                script_content = tag.get_text()
+                if "assetUrl" in script_content:
+                    script_content = self.string_to_dict(script_content)
+                    return script_content
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to extract audio URL: {str(e)}")
+
+    def get_audio_url(self, podcast_url: str):
+        script_content = self.extract_scripts_with_asseturl(podcast_url)
+        keys_to_search = [i for i in script_content if "podcast-episodes" in i][0]
+        data = self.string_to_dict(script_content[keys_to_search])
+        audio_url = data['d'][0]["attributes"]['assetUrl']
+        return audio_url
+   
 
 summary_service = SummaryService()

@@ -71,3 +71,10 @@ def generate_yt_transcript(video_pth):
 
     summary = yts_service.summarize_video(video_pth)
     return summary
+
+@worker.task()
+def generate_audio_summary_task(audio_file):
+    '''BAckground task to summarize a pdf and save to database'''
+
+    summary, transcription = summary_service.summarize_audio(audio_file)
+    return summary, transcription
