@@ -210,7 +210,6 @@ threadpoolctl==3.5.0
 tiktoken==0.7.0
 tomli==2.0.1
 tomlkit==0.13.0
-torch
 tornado==6.4.1
 tqdm==4.66.5
 twilio==9.2.3
