@@ -1,0 +1,919 @@
+{
+	"info": {
+		"_postman_id": "a944a101-171a-4dbb-b1d3-9bfc5af44a35",
+		"name": "Stage7-Regression-Admin-portal User flow",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23968045",
+		"_collection_link": "https://crimson-star-498952.postman.co/workspace/HNG-Internship~4ced83f4-98e1-4fdc-9aaf-2ea4e3bf860b/collection/23968045-a944a101-171a-4dbb-b1d3-9bfc5af44a35?action=share&source=collection_link&creator=23968045"
+	},
+	"item": [
+		{
+			"name": "Negative",
+			"item": [
+				{
+					"name": "Admin valid Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// check for error 400 \r",
+									"//if >=400 PASS\r",
+									"// else FAIL\r",
+									"    let status=pm.response.json().status_code\r",
+									"    let code=null\r",
+									"    if( status >=400 && status <=499){\r",
+									"        \r",
+									"        code= status \r",
+									"\r",
+									"\r",
+									"                        pm.test(\"Status code is equals or greater than 400\", function () {\r",
+									"                    pm.response.to.have.status(code);\r",
+									"                });            \r",
+									"    }\r",
+									"    if(status <400 || status >499){\r",
+									"        pm.test(\"Status code is not equals 400\", function () {\r",
+									"                    pm.response.to.not.have.status(status);\r",
+									"                    \r",
+									"                });\r",
+									"    }\r",
+									"\r",
+									"\r",
+									"\r",
+									"     \r",
+									"\r",
+									"//check response body for key match\r",
+									"\r",
+									"pm.test(\"Body matches string\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include(\"message\");\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"admina001@gmail.com\",\r\n  \"password\": \"pa@Sword\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://api.staging.tifi.tv/api/v1/auth/login",
+							"protocol": "https",
+							"host": [
+								"api",
+								"staging",
+								"tifi",
+								"tv"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user with invalid Id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// check for error 400 \r",
+									"//if >=400 PASS\r",
+									"// else FAIL\r",
+									"    let status=pm.response.json().status_code\r",
+									"    let code=null\r",
+									"    if( status >=400 && status <=499){\r",
+									"        \r",
+									"        code= status \r",
+									"\r",
+									"\r",
+									"                        pm.test(\"Status code is equals or greater than 400\", function () {\r",
+									"                    pm.response.to.have.status(code);\r",
+									"                });            \r",
+									"    }\r",
+									"    if(status <400 || status >499){\r",
+									"        pm.test(\"Status code is not equals 400\", function () {\r",
+									"                    pm.response.to.not.have.status(status);\r",
+									"                    \r",
+									"                });\r",
+									"    }\r",
+									"\r",
+									"\r",
+									"\r",
+									"     \r",
+									"\r",
+									"//check response body for key match\r",
+									"\r",
+									"pm.test(\"Body matches string\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include(\"message\");\r",
+									"});\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.staging.tifi.tv/api/v1/users/066bb587-09ed-7dc4-8000-596cd256830s",
+							"protocol": "https",
+							"host": [
+								"api",
+								"staging",
+								"tifi",
+								"tv"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"066bb587-09ed-7dc4-8000-596cd256830s"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user with invalid access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// check for error 400 \r",
+									"//if >=400 PASS\r",
+									"// else FAIL\r",
+									"    let status=pm.response.json().status_code\r",
+									"    let code=null\r",
+									"    if( status >=400 && status <=499){\r",
+									"        \r",
+									"        code= status \r",
+									"\r",
+									"\r",
+									"                        pm.test(\"Status code is equals or greater than 400\", function () {\r",
+									"                    pm.response.to.have.status(code);\r",
+									"                });            \r",
+									"    }\r",
+									"    if(status <400 || status >499){\r",
+									"        pm.test(\"Status code is not equals 400\", function () {\r",
+									"                    pm.response.to.not.have.status(status);\r",
+									"                    \r",
+									"                });\r",
+									"    }\r",
+									"\r",
+									"\r",
+									"\r",
+									"     \r",
+									"\r",
+									"//check response body for key match\r",
+									"\r",
+									"pm.test(\"Body matches string\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include(\"message\");\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDY2YmI1M2UtYWYzZS03YjhhLTgwMAtY2Q4N2YzMTU3NDE1IiwiZXhwIjoxNzIzNjkwMzQxLCJ0eXBlIjoiYWNjZXNzIn0.2lJ-D_scywr8drVGDrM8ywN7D9hZsdfeOSyHu-vxMrk",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.staging.tifi.tv/api/v1/users/066bce3c-b29c-72f3-8000-8db5cf138c4b",
+							"protocol": "https",
+							"host": [
+								"api",
+								"staging",
+								"tifi",
+								"tv"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"066bce3c-b29c-72f3-8000-8db5cf138c4b"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Body matches string\", function () {\r",
+							"    pm.expect(pm.response.text()).to.include(\"data\");\r",
+							"});\r",
+							"\r",
+							"\r",
+							"let res= pm.response.json().access_token\r",
+							"\r",
+							"\r",
+							"pm.collectionVariables.set('adminToken',res)"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\": \"admina@gmail.com\",\r\n  \"password\": \"pa@Sword1\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/auth/login",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get User Statistics invalid token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// check for error 400 \r",
+							"//if >=400 pass\r",
+							"    let code=null\r",
+							"    if(pm.response.json().status_code >=400){\r",
+							"\r",
+							"        code= pm.response.json().status_code             \r",
+							"    }\r",
+							"\r",
+							"\r",
+							"pm.test(\"Status code is equals or greater than 400\", function () {\r",
+							"    pm.response.to.have.status(code);\r",
+							"});\r",
+							"     \r",
+							"\r",
+							"//check response body for key match\r",
+							"\r",
+							"pm.test(\"Body matches string\", function () {\r",
+							"    pm.expect(pm.response.text()).to.include(\"message\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1iIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDY2YmI1M2UtYWYzZS03YjhhLTgwMDAtY2Q4N2YzMTU3NDE1IiwiZXhwIjoxNzIzNjkwMzQxLCJ0eXBlIjoiYWNjZXNzIn0.2lJ-D_scywr8drVGDrM8ywN7D9hZsdfeOSyHu-vxMrk",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/users/statistics",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"statistics"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Register user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Body matches string\", function () {\r",
+							"    pm.expect(pm.response.text()).to.include(\"data\");\r",
+							"});\r",
+							"\r",
+							"pm.collectionVariables.set('userId',pm.response.json().data.user.id)"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							" let randomEmail=function makeEmail() { \r",
+							"        var strValues=\"abcd\"; \r",
+							"        let name='utest'\r",
+							"        var strEmail = \"@gmail.com\"; \r",
+							"        var strTmp; \r",
+							"        for (var i=0;i<10;i++) { \r",
+							"        strTmp = strValues.charAt(Math.round(strValues.length*Math.random())); \r",
+							"        strEmail =strTmp +strEmail; \r",
+							"        }\r",
+							"        return strEmail\r",
+							" }\r",
+							"\r",
+							" console.log(randomEmail())\r",
+							"\r",
+							" pm.collectionVariables.set('randomEmail',randomEmail())"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\": \"{{randomEmail}}\",\r\n  \"password\": \"pa$Sword1\",\r\n  \"first_name\": \"lo\",\r\n  \"last_name\": \"lo\",\r\n  \"admin_secret\": \"lo\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/auth/register",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get User Statistics",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{adminToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/users/statistics",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"statistics"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get User Activity",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{adminToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/users/{{userId}}/activity",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"{{userId}}",
+						"activity"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all users",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{adminToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/users/me",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"me"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get users",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Body matches string\", function () {\r",
+							"    pm.expect(pm.response.text()).to.include(\"data\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{adminToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/users",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Body matches string\", function () {\r",
+							"    pm.expect(pm.response.text()).to.include(\"data\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{adminToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/users/search?page=1&per_page=10&query=user",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"search"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "per_page",
+							"value": "10"
+						},
+						{
+							"key": "query",
+							"value": "user"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get user with Id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Body matches string\", function () {\r",
+							"    pm.expect(pm.response.text()).to.include(\"data\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{adminToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/users/{{userId}}",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"{{userId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 204\", function () {\r",
+							"    pm.response.to.have.status(204);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{adminToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/users/{{userId}}",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"{{userId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Restore Deleted User",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{adminToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/users/{{userId}}/restore",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"{{userId}}",
+						"restore"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin Logout",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Body matches string\", function () {\r",
+							"    pm.expect(pm.response.text()).to.include(\"success\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{adminToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "https://api.staging.tifi.tv/api/v1/auth/logout",
+					"protocol": "https",
+					"host": [
+						"api",
+						"staging",
+						"tifi",
+						"tv"
+					],
+					"path": [
+						"api",
+						"v1",
+						"auth",
+						"logout"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"pm.test(\"Content-Type is present\", function () {\r",
+					"    pm.response.to.have.header(\"Content-Type\");\r",
+					"});\r",
+					"\r",
+					"pm.test(\"Response time is less than 3000ms\", function () {\r",
+					"    pm.expect(pm.response.responseTime).to.be.below(8000);\r",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrlConvey",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminToken",
+			"value": ""
+		},
+		{
+			"key": "userId",
+			"value": ""
+		},
+		{
+			"key": "randomEmail",
+			"value": ""
+		}
+	]
+}
