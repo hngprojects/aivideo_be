@@ -12,10 +12,12 @@ from api.v1.routes.faq import faq
 from api.v1.routes.resource import resource
 from api.v1.routes.presets import preset_router
 from api.v1.routes.google_auth import google_auth
+from api.v1.routes.lang_region_settings import regions
 from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
 from api.v1.routes.ai_tools.summary_audio import summary_audio
+
 from api.v1.routes.ai_tools.talking_avatar import video_router
 from api.v1.routes.ai_tools.background_task import background_router
 from api.v1.routes.testimonial import testimonial
@@ -48,6 +50,7 @@ api_version_one.include_router(google_auth)
 api_version_one.include_router(pwd_reset)
 api_version_one.include_router(job)
 api_version_one.include_router(preset_router)
+api_version_one.include_router(regions)
 api_version_one.include_router(test_rout)
 api_version_one.include_router(summary_audio)
 api_version_one.include_router(background_router)
