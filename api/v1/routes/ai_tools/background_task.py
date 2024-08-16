@@ -108,6 +108,6 @@ async def send_job_status_updates(
 
             'job_id': job_id,
             'status': status.capitalize(),
-            'result': project.result
+            'result': result
         }
     )
