@@ -53,6 +53,9 @@ class Settings(BaseSettings):
 
     MEDIA_DIR: str = config("MEDIA_DIR")
     MAX_FILE_SIZE: int = config("MAX_FILE_SIZE")
+    
+    X_RAPIDAPI_KEY: str = config("X_RAPIDAPI_KEY")
+    X_RAPIDAPI_HOST: str = config("X_RAPIDAPI_HOST")
 
     @property
     def ALLOWED_EXTENSIONS(self) -> set[str]:
