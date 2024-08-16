@@ -1,6 +1,7 @@
 from fastapi import File, UploadFile, HTTPException
 import os
 from pathlib import Path
+from api.utils.logger import logging
 
 ALLOWED_EXTENSIONS = {".mp4", ".mp3"}
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
@@ -33,4 +34,5 @@ async def upload_video(file: UploadFile = File(...)) -> str:
     file_location = video_dir / file.filename
     with open(file_location, "wb+") as file_object:
         file_object.write(file.file.read())
+    logging.info("video processed successfully")
     return str(file_location)

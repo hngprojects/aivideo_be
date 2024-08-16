@@ -96,9 +96,9 @@ joblib==1.4.2
 jsonpatch==1.33
 jsonpointer==3.0.0
 kombu==5.4.0
-langchain==0.2.12
-langchain-community==0.2.11
-langchain-core==0.2.29
+langchain==0.2.14
+langchain-community==0.2.12
+langchain-core==0.2.32
 langchain-openai==0.1.21
 langchain-text-splitters==0.2.2
 langsmith==0.1.99
