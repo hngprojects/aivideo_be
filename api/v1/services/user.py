@@ -604,6 +604,9 @@ class UserService(Service):
             "deleted_users": deleted_user_count,
         }
 
+    def export_to_csv(self, db: Session):
+        pass
+
     def fetch_user_activity(
         self,
         db: Session,
