@@ -12,4 +12,4 @@ newman run aivideo_be/qa_tests/regression/Payments-Flow_one-off-subscription.pos
 
 # newman run your-collection.json -r htmlextra --reporter-htmlextra-export newman-reports/report.html
 
-
+newman run aivideo_be/qa_tests/regression/Job_Management_User_Flow.postman_collection.json -r htmlextra
