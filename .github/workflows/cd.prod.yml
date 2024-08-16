@@ -1,4 +1,4 @@
-name: Prod Branch Deployment
+name: Production Deployment
 
 on:
   push:
@@ -15,19 +15,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Use SSH Action
+      - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd aivideo_be
+            cd aivideo_be/prod
             git add .
             git stash
-            git checkout main
             git pull origin main
-            source venv-prod/bin/activate
+            source venv/bin/activate
             pip install -r requirements.txt
+            alembic version --autogenerate
             alembic upgrade head
-            echo "${{ secrets.PASSWORD }}" | sudo -S systemctl restart aivideo-python-prod.service
