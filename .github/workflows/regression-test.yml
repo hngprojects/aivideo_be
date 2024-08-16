@@ -12,10 +12,6 @@ jobs:
   run-newman:
     runs-on: pyrunner
 
-    permissions:
-      pull-requests: write
-      actions: read
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
