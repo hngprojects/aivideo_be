@@ -64,4 +64,4 @@ def test_enqueue_summarize_batch_job(
     # Assertions
     assert response.status_code == 202
     assert response.json()["message"] == "Summary generation job initiated successfully"
-    assert "job_ids" in response.json()["data"]
+    assert "job_id" in response.json()["data"]
