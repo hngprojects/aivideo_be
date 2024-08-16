@@ -1,8 +1,16 @@
 from typing import Any, Optional
+from sqlalchemy import desc, or_, select, func
+from fastapi import status
+
 from sqlalchemy.orm import Session
 from api.core.base.services import Service
 from api.v1.models.resource import Resource
-from api.v1.schemas.resource import CreateResource, UpdateResource
+from api.v1.schemas.resource import (
+    CreateResource,
+    UpdateResource,
+    AllResourcesResponse,
+    ResourceData,
+)
 from api.utils.db_validators import check_model_existence
 from fastapi import HTTPException
 
@@ -30,21 +38,94 @@ class ResourceService(Service):
 
         return new_resource
 
-    def fetch_all(self, db: Session, **query_params: Optional[Any]) -> list:
-        """Fetch all Resources with option to search using query parameters
-
-        Returns:
-            (list): A list of all Resource objects present in the database
+    def fetch_all(
+        self, db: Session, page: int, per_page: int, **query_params: Optional[Any]
+    ):
         """
-        query = db.query(Resource)
+        Fetch all resources
+        Args:
+            db: database Session object
+            page: page number
+            per_page: max number of resources in a page
+            query_params: params to filter by
+        """
+        per_page = min(per_page, 10)
 
         # Enable filter by query parameter
-        if query_params:
-            for column, value in query_params.items():
-                if hasattr(Resource, column) and value:
-                    query = query.filter(getattr(Resource, column).ilike(f"%{value}%"))
+        filters = []
+        if all(query_params):
+            # Validate boolean query parameters
+            for param, value in query_params.items():
+                if value is not None and not isinstance(value, bool):
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=f"Invalid value for '{param}'. Must be a boolean.",
+                    )
+                if value is None:
+                    continue
+                if hasattr(Resource, param):
+                    filters.append(getattr(Resource, param) == value)
+        query = db.query(Resource)
+        total_resources = query.count()
+        if filters:
+            query = query.filter(*filters)
+            total_resources = query.count()
 
-        return query.all()
+        total_pages = int(total_resources / per_page) + (total_resources % per_page > 0)
+
+        all_resources: list = (
+            query.order_by(desc(Resource.created_at))
+            .limit(per_page)
+            .offset((page - 1) * per_page)
+            .all()
+        )
+
+        return self.all_resources_response(
+            resources=all_resources,
+            total_resources=total_resources,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+        )
+
+    def all_resources_response(
+        self,
+        resources: list,
+        total_resources: int,
+        page: int,
+        per_page: int,
+        total_pages: int,
+    ):
+        """
+        Generates a response for all resources
+        Args:
+            resources: a list containing resource objects
+            total_resources: total number of resources
+        """
+        if not resources or len(resources) == 0:
+            return AllResourcesResponse(
+                message="No Resource(s) for this query",
+                status="success",
+                status_code=200,
+                page=page,
+                per_page=per_page,
+                total_pages=total_pages,
+                total=0,
+                data=[],
+            )
+        all_resources = [
+            ResourceData.model_validate(usr, from_attributes=True) for usr in resources
+        ]
+        return AllResourcesResponse(
+            message="Resources successfully retrieved",
+            status="success",
+            status_code=200,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            total=total_resources,
+            data=all_resources,
+        )
 
     def fetch(self, db: Session, id):
         """Fetches a resource by their id"""
