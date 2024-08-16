@@ -12,8 +12,6 @@ from api.v1.routes.faq import faq
 from api.v1.routes.resource import resource
 from api.v1.routes.presets import preset_router
 from api.v1.routes.google_auth import google_auth
-
-# from api.v1.routes.websocket import websocket_router
 from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
@@ -25,7 +23,6 @@ from api.v1.routes.project import project
 from api.v1.routes.job import job
 from api.v1.routes.ai_tools.audio_transcriber import audio
 from api.v1.routes.dashboard import dashboard
-
 from api.v1.routes.ai_tools.thumbnail import thumbnail_router
 
 api_version_one = APIRouter(prefix="/api/v1")
@@ -50,7 +47,6 @@ api_version_one.include_router(google_auth)
 api_version_one.include_router(pwd_reset)
 api_version_one.include_router(job)
 api_version_one.include_router(preset_router)
-# api_version_one.include_router(websocket_router)
 api_version_one.include_router(test_rout)
 api_version_one.include_router(summary_audio)
 api_version_one.include_router(background_router)
