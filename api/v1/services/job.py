@@ -16,7 +16,7 @@ from api.v1.models.user import User
 from api.v1.schemas.project import CreateProject
 from api.v1.services.project import project_service
 from sqlalchemy.orm import joinedload
-from sqlalchemy import or_
+from sqlalchemy import or_, desc
 
 
 db = next(get_db())
@@ -86,8 +86,7 @@ class JobService:
         except Exception as e:
             db.rollback()
             raise HTTPException(
-                status_code=400,
-                detail=f"{type(e).__name__} occurred. {repr(e)}"
+                status_code=400, detail=f"{type(e).__name__} occurred. {repr(e)}"
             )
         finally:
             db.close()
@@ -182,7 +181,7 @@ class JobService:
 
         # paginate response
 
-        jobs = query.offset(skip).limit(limit).all()
+        jobs = query.order_by(desc(Job.created_at)).offset(skip).limit(limit).all()
 
         jobs = jsonable_encoder(jobs)
 
