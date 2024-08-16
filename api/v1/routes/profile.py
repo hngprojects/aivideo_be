@@ -42,7 +42,13 @@ def get_current_user_profile(
 
 @profile.put('', status_code=status.HTTP_200_OK, response_model=ProfileBase)
 def update_user_profile(
-    profile_data: ProfileUpdateForm = Depends(ProfileUpdateForm.as_form),
+    username: Optional[str] = Form(None),
+    job_title: Optional[str] = Form(None),
+    pronouns: Optional[str] = Form(None),
+    social: Optional[str] = Form(None),
+    phone_number: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
+    bio: Optional[str] = Form(None),
     avatar: Optional[UploadFile] = File(None),    
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user)
@@ -51,13 +57,13 @@ def update_user_profile(
     
     # Construct the schema manually using the validated data
     schema = ProfileCreateUpdate(
-        username=profile_data.username,
-        job_title=profile_data.job_title,
-        pronouns=profile_data.pronouns,
-        social=profile_data.social,
-        phone_number=profile_data.phone_number,
-        email=profile_data.email,
-        bio=profile_data.bio,
+        username=username,
+        job_title=job_title,
+        pronouns=pronouns,
+        social=social,
+        phone_number=phone_number,
+        email=email,
+        bio=bio,
     )
     
     
