@@ -10,7 +10,7 @@ on:
 
 jobs:
   run-newman:
-    runs-on: pyrunner
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
