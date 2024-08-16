@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from api.core.dependencies.celery.tasks.video_summary_tasks import (
     generate_video_summary_task,
+    download_and_generate_video_summmary_task,
 )
 from api.db.database import get_db
 from api.utils.logger import logging
@@ -21,7 +22,7 @@ yt_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
     status_code=status.HTTP_200_OK,
     response_model=success_response,
 )
-async def summarize_yt_vid(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Endpoint to summarize a single video"""
 
     video = await upload_video(file)
@@ -51,12 +52,19 @@ async def summarize_yt_vid(file: UploadFile = File(...), db: Session = Depends(g
 )
 async def summarize_yt_vid(link: str, db: Session = Depends(get_db)):
     """Endpoint to download and summarize a single youtube video"""
-    download_video(link)
+
+    task = download_and_generate_video_summmary_task.delay(link)
+    logging.info(f"Background task started {task.id}")
+    # Create project with job
+    project = job_service.create_project_with_job(
+        job=task, project_title="New project", project_type="YT video Summarizer"
+    )
+
     return success_response(
         status_code=202,
         message="Summary generation job initiated successfully",
         data={
-            "job_id": "task.id",
-            "project_id": " project.id",
+            "job_id": task.id,
+            "project_id": project.id,
         },
     )
