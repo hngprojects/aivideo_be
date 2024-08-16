@@ -3,6 +3,7 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from celery.result import AsyncResult
 
 from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
