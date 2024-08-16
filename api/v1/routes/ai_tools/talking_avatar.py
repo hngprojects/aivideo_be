@@ -36,15 +36,14 @@ async def talking_head_image_upload(
 
     audio_file = audio.file_path
 
-    # Run task
-    task = generate_talking_avatar_task.delay(
-        image_file,
-        audio_file,
-        aspect_ratio,
-        script,
-        voice_over.lower(),
-        False  # set to false to prevent deleting of avatar file
-    )
+    task = generate_talking_avatar_task.apply_async(kwargs={
+        'img_file': image_file,
+        'audio_file': audio_file,
+        'aspect_ratio': aspect_ratio,
+        'script': script,
+        'voice_over': voice_over.lower(),
+        'default': False
+    })
 
     # Create project with job
     project = job_service.create_project_with_job(
@@ -86,15 +85,14 @@ async def talking_head_avatar_selection(
     image_file = avatar.file_path
     audio_file = audio.file_path
 
-    # Run task
-    task = generate_talking_avatar_task.delay(
-        image_file,
-        audio_file,
-        aspect_ratio,
-        script,
-        voice_over.lower(),
-        True
-    )
+    task = generate_talking_avatar_task.apply_async(kwargs={
+        'img_file': image_file,
+        'audio_file': audio_file,
+        'aspect_ratio': aspect_ratio,
+        'script': script,
+        'voice_over': voice_over.lower(),
+        'default': True
+    })
 
     # Create project with job
     project = job_service.create_project_with_job(
