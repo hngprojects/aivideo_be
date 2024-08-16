@@ -28,7 +28,11 @@ async def event_generator(job_id: str, db: Session):
         event_name = 'other'
         
         if status == 'FAILURE':
-            result = str(task_result.info)
+            # try:
+            result = f'{task_result.info}'
+            # except Exception as e:
+            #     result = f"Failed with error: {str(e)}"
+
             event_name = 'failure'
             job_service.update_job(job_id, 'Failed', result)
 
@@ -86,7 +90,13 @@ async def send_job_status_updates(
         job_service.update_job(job_id, "Pending")
 
     elif status == "FAILURE":
-        result = str(task_result.info)
+        # try:
+            # result = str(task_result.info)
+        result = f'{task_result.info}'
+        
+        # except Exception as e:
+        #     result = f"Failed with error: {str(e)}"
+
         job_service.update_job(job_id, "Failed", result)
 
     elif status == "SUCCESS":
@@ -104,7 +114,6 @@ async def send_job_status_updates(
         status_code=200,
         message="Job progress retrieved",
         data={
-
             'job_id': job_id,
             'status': status.capitalize(),
             'result': result

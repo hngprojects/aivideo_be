@@ -153,7 +153,7 @@ async def translate_summary(translation_request: TranslationRequest):
         )
 
 
-@summary.post("/summarize_podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)
+@summary.post("/summarize-podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)
 async def summarize_podcast(podcast_url: str):
 
     audio_url = summary_service.get_audio_url(podcast_url)
