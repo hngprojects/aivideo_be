@@ -20,6 +20,6 @@ def generate_audio_summary_task(audio_file, target_lang):
 
     
 @worker.task()
-def transcribe_audio_task(audio_data: str) -> Dict[str, str]:
+def transcribe_audio_task(audio_data):
     result = transcribe_audio_file_with_timestamps(audio_data)
     return result
