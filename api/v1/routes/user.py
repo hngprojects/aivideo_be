@@ -36,9 +36,7 @@ def get_current_user_details(
             current_user,
             exclude=[
                 "password",
-                "is_superadmin",
                 "is_deleted",
-                # "is_verified",
                 "updated_at",
             ],
         ),
@@ -79,7 +77,6 @@ def update_current_user(
                 "password",
                 "is_superadmin",
                 "is_deleted",
-                # "is_verified",
                 "updated_at",
                 "created_at",
                 "is_active",
@@ -182,7 +179,6 @@ def update_user(
                 "password",
                 "is_superadmin",
                 "is_deleted",
-                # "is_verified",
                 "updated_at",
                 "created_at",
                 "is_active",
@@ -267,7 +263,6 @@ async def get_users(
         per_page: the maximum size of users for each page
         is_active: boolean to filter active users
         is_deleted: boolean to filter deleted users
-        is_verified: boolean to filter verified users
         is_superadmin: boolean to filter users that are super admin
     Returns:
         UserData
@@ -275,7 +270,6 @@ async def get_users(
     query_params = {
         "is_active": is_active,
         "is_deleted": is_deleted,
-        # "is_verified": is_verified,
         "is_superadmin": is_superadmin,
     }
     return user_service.fetch_all(db, page, per_page, **query_params)
@@ -316,7 +310,6 @@ def get_user_by_id(
             user,
             exclude=[
                 "password",
-                "is_superadmin",
                 "updated_at",
             ],
         ),
