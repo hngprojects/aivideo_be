@@ -73,6 +73,7 @@ class AllUsersResponse(BaseModel):
     status: str
     page: int
     per_page: int
+    total_pages: int
     total: int
     data: Union[List[UserData], List[None]]
 

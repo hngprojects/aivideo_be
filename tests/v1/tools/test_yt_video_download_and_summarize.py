@@ -20,19 +20,15 @@ client = TestClient(app)
 def mock_db():
     yield AsyncMock()
 
+
 # Mock the upload_files function and the Celery task
 
 
 @pytest.fixture
-def mock_upload_files():
-    with patch("api.utils.files.upload_files") as mock:
-        mock.return_value = ["test_video.mp4"]
-        yield mock
-
-
-@pytest.fixture
-def mock_generate_video_summary_task():
-    with patch("api.core.dependencies.celery.tasks.video_summary_tasks.generate_video_summary_task.delay") as mock:
+def moch_download_and_generate_video_summmary_task():
+    with patch(
+        "api.core.dependencies.celery.tasks.video_summary_tasks.download_and_generate_video_summmary_task.delay"
+    ) as mock:
         mock.return_value.id = "mock_job_id"
         yield mock
 
@@ -40,9 +36,7 @@ def mock_generate_video_summary_task():
 @pytest.fixture
 def mock_create_project_with_job():
     with patch("api.v1.services.job.job_service.create_project_with_job") as mock:
-        mock.return_value = AsyncMock(
-            id="mock_project_id"
-        )
+        mock.return_value = AsyncMock(id="mock_project_id")
         yield mock
 
 
@@ -52,21 +46,22 @@ def override_get_db(mock_db):
     yield
     app.dependency_overrides = {}
 
+
 # Test the endpoint
 
 
-def test_enqueue_summarize_batch_job(mock_upload_files, mock_generate_video_summary_task, mock_create_project_with_job, override_get_db):
+def test_enqueue_summarize_batch_job(
+    moch_download_and_generate_video_summmary_task,
+    mock_create_project_with_job,
+    override_get_db,
+):
     # Prepare test files
-    files = {
-        "files": ("video.mp4", b"dummy video data", "video/mp4")
-    }
+    link = {"link": "https://www.youtube.com/watch?v=testvideo"}
 
     # Send a POST request to the summarize_batch endpoint
-    response = client.post(
-        "/api/v1/tools/youtube_summarizer/summarize_batch", files=files)
+    response = client.post("/api/v1/tools/summary/youtube", json=link)
 
     # Assertions
     assert response.status_code == 202
-    assert response.json()[
-        "message"] == "Video summary generation task initiated successfully"
-    assert "job_ids" in response.json()["data"]
+    assert response.json()["message"] == "Summary generation job initiated successfully"
+    assert "job_id" in response.json()["data"]
