@@ -25,13 +25,6 @@ def mock_db():
 
 
 @pytest.fixture
-def mock_ytdownload():
-    with patch("api.utils.ytdownload.download_video") as mock:
-        mock.return_value = ["test_video.mp4"]
-        yield mock
-
-
-@pytest.fixture
 def moch_download_and_generate_video_summmary_task():
     with patch(
         "api.core.dependencies.celery.tasks.video_summary_tasks.download_and_generate_video_summmary_task.delay"
@@ -58,16 +51,15 @@ def override_get_db(mock_db):
 
 
 def test_enqueue_summarize_batch_job(
-    mock_ytdownload,
     moch_download_and_generate_video_summmary_task,
     mock_create_project_with_job,
     override_get_db,
 ):
     # Prepare test files
-    link = "http://localhost:localhost"
+    link = {"link": "http://localhost:localhost"}
 
     # Send a POST request to the summarize_batch endpoint
-    response = client.post("/api/v1/tools/summary/youtube", link=link)
+    response = client.post("/api/v1/tools/summary/youtube", data=link)
 
     # Assertions
     assert response.status_code == 202
