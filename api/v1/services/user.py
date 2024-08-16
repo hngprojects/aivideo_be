@@ -466,63 +466,6 @@ class UserService(Service):
 
         return user
 
-    # def deactivate_user(
-    #     self,
-    #     request: Request,
-    #     db: Session,
-    #     schema: user.DeactivateUserSchema,
-    #     user: User,
-    # ):
-    #     """Function to deactivate a user"""
-    #
-    #     if not schema.confirmation:
-    #         raise HTTPException(
-    #             detail="Confirmation required to deactivate account", status_code=400
-    #         )
-    #
-    #     self.perform_user_check(user)
-    #
-    #     user.is_active = False
-    #
-    #     # Create reactivation token
-    #     token = self.create_access_token(user_id=user.id)
-    #     reactivation_link = f"https://{request.url.hostname}/api/v1/users/accounts/reactivate?token={token}"
-    #
-    #     # mail_service.send_mail(
-    #     #     to=user.email,
-    #     #     subject='Account deactivation',
-    #     #     body=f'Hello, {user.first_name},\n\nYour account has been deactivated successfully.\nTo reactivate your account if this was a mistake, please click the link below:\n{request.url.hostname}/api/users/accounts/reactivate?token={token}\n\nThis link expires after 15 minutes.'
-    #     # )
-    #
-    #     db.commit()
-    #
-    #     return reactivation_link
-
-    # def reactivate_user(self, db: Session, token: str):
-    #     """This function reactivates a user account"""
-    #
-    #     # Validate the token
-    #     try:
-    #         payload = jwt.decode(
-    #             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-    #         )
-    #         user_id = payload.get("user_id")
-    #
-    #         if user_id is None:
-    #             raise HTTPException(400, "Invalid token")
-    #
-    #     except JWTError:
-    #         raise HTTPException(400, "Invalid token")
-    #
-    #     user = db.query(User).filter(User.id == user_id).first()
-    #
-    #     if user.is_active:
-    #         raise HTTPException(400, "User is already active")
-    #
-    #     user.is_active = True
-    #
-    #     db.commit()
-
     def change_password(
         self,
         old_password: str,
