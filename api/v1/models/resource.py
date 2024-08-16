@@ -7,10 +7,10 @@ from api.v1.models.base_model import BaseTableModel
 
 
 class Resource(BaseTableModel):
-    __tablename__ = 'resources'
+    __tablename__ = "resources"
 
     title = Column(String, nullable=False)
     content = Column(String, nullable=False, comment="has to be a markdown")
     image_url = Column(String)
-    is_deleted = Column(Boolean, server_default='false')
-    is_published = Column(Boolean, server_default='false')
+    is_deleted = Column(Boolean, server_default="false")
+    is_published = Column(Boolean, server_default="false")

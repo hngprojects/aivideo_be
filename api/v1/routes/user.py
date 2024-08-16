@@ -97,7 +97,7 @@ async def search_users(
     page: int = 1,
     per_page: int = 10,
     query: Optional[str] = Query(None),
-    is_deleted: Optional[bool] = Query(None)
+    is_deleted: Optional[bool] = Query(None),
 ):
     """
     user search functionality.
@@ -127,6 +127,14 @@ def get_user_statistics(
         message="User statistics retrieved successfully",
         data=stats_data,
     )
+
+
+@user_router.get("/export/csv", status_code=status.HTTP_200_OK)
+def export_csv(
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    return user_service.export_to_csv(db)
 
 
 @user_router.get(
