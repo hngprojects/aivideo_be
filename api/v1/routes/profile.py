@@ -1,16 +1,26 @@
-from fastapi import Depends, APIRouter, status
+from fastapi import Depends, APIRouter, status, Form, HTTPException
 from sqlalchemy.orm import Session
+import json
+import os
+import shutil
+from typing import Optional, Dict
+from pydantic import ValidationError
+
 
 from api.v1.models.user import User
-from api.v1.schemas.profile import ProfileBase, ProfileCreateUpdate
+from api.v1.schemas.profile import ProfileBase, ProfileCreateUpdate, ProfileUpdateForm
 from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.v1.services.profile import profile_service
+from fastapi import UploadFile, File
 from api.utils.success_response import success_response
 
 
 profile = APIRouter(prefix='/profile', tags=['Profiles'])
 
+
+UPLOAD_DIR = "presets/avatars"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @profile.get("/me", response_model=success_response)
 def get_current_user_profile(
@@ -29,13 +39,51 @@ def get_current_user_profile(
     )
 
 
+
 @profile.put('', status_code=status.HTTP_200_OK, response_model=ProfileBase)
 def update_user_profile(
-    schema: ProfileCreateUpdate,
+    profile_data: ProfileUpdateForm = Depends(ProfileUpdateForm.as_form),
+    avatar: Optional[UploadFile] = File(None),    
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user)
 ):
     '''Endpoint to update user profile'''
+    
+    # Construct the schema manually using the validated data
+    schema = ProfileCreateUpdate(
+        username=profile_data.username,
+        job_title=profile_data.job_title,
+        pronouns=profile_data.pronouns,
+        social=profile_data.social,
+        phone_number=profile_data.phone_number,
+        email=profile_data.email,
+        bio=profile_data.bio,
+    )
+    
+    
+    if avatar:
+        filename = f"{current_user.id}_{avatar.filename}"
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        
+        # Check if there is an existing avatar URL and remove the old file
+        if current_user.avatar_url:
+            old_filename = os.path.basename(current_user.avatar_url)
+            old_file_path = os.path.join(UPLOAD_DIR, old_filename)
+            
+            # Delete the old avatar file if it exists and is different from the new one
+            if os.path.exists(old_file_path) and old_filename != filename:
+                os.remove(old_file_path)
+        
+        # Save the new avatar file to the server
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(avatar.file, buffer)
+        
+        # Generate the URL or path for the saved file
+        avatar_url = f"/presets/avatars/{filename}"
+        
+        current_user.avatar_url = avatar_url
+        db.commit()
+        db.refresh(current_user)
     
     # Update the user profile and related user data
     updated_profile = profile_service.update(db, schema=schema, user_id=current_user.id)
