@@ -58,7 +58,7 @@ jobs:
           fi
       - name: Run migrations
         run: |
-          alembic version --autogenerate
+          alembic revision --autogenerate
           alembic upgrade head
       - name: Run tests
         run: |
