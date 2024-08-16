@@ -75,27 +75,4 @@ class ProfileUpdateForm(BaseModel):
     email: Optional[EmailStr] = None
     avatar_url: Optional[str] = None
     
-    
-    @classmethod
-    def as_form(
-        cls,
-        username: Optional[str] = Form(None),
-        pronouns: Optional[str] = Form(None),
-        job_title: Optional[str] = Form(None),
-        social: Optional[str] = Form(None),
-        bio: Optional[str] = Form(None),
-        phone_number: Optional[str] = Form(None),
-        email: Optional[str] = Form(None),
-        avatar_url: Optional[str] = Form(None),
-    ) -> "ProfileUpdateForm":
-        return cls(
-            username=username,
-            pronouns=pronouns,
-            job_title=job_title,
-            social=social,
-            bio=bio,
-            phone_number=phone_number,
-            email=email,
-            avatar_url=avatar_url,
-        )
 
