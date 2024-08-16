@@ -11,7 +11,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, or_, select, func
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from api.core.base.services import Service
 from api.core.dependencies.email_sender import send_email
@@ -599,11 +599,34 @@ class UserService(Service):
         inactive_user_count = query.filter(User.is_active == False).count()
         deleted_user_count = query.filter(User.is_deleted == True).count()
 
+        one_hour_ago = datetime.now(timezone(timedelta(hours=1))) - timedelta(hours=1)
+
+        created_in_last_hour = query.filter(User.created_at >= one_hour_ago).count()
+        active_in_last_hour = (
+            query.filter(User.is_active == True)
+            .filter(User.updated_at >= one_hour_ago)
+            .count()
+        )
+        inactive_in_last_hour = (
+            query.filter(User.is_active == False)
+            .filter(User.updated_at >= one_hour_ago)
+            .count()
+        )
+        deleted_in_last_hour = (
+            query.filter(User.is_deleted == True)
+            .filter(User.updated_at >= one_hour_ago)
+            .count()
+        )
+
         return {
             "total_users": total_user_count,
             "active_users": active_user_count,
             "inactive_users": inactive_user_count,
             "deleted_users": deleted_user_count,
+            "created_in_last_hour": created_in_last_hour,
+            "active_in_last_hour": active_in_last_hour,
+            "inactive_in_last_hour": inactive_in_last_hour,
+            "deleted_in_last_hour": deleted_in_last_hour,
         }
 
     def export_to_csv(self, db: Session):
