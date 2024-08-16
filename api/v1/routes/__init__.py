@@ -17,6 +17,7 @@ from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
 from api.v1.routes.ai_tools.summary_audio import summary_audio
+
 from api.v1.routes.ai_tools.talking_avatar import video_router
 from api.v1.routes.ai_tools.background_task import background_router
 from api.v1.routes.testimonial import testimonial
