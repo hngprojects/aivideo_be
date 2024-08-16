@@ -18,6 +18,7 @@ from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
 from api.v1.routes.ai_tools.summary_audio import summary_audio
+
 from api.v1.routes.ai_tools.talking_avatar import video_router
 from api.v1.routes.ai_tools.background_task import background_router
 from api.v1.routes.testimonial import testimonial
@@ -26,6 +27,7 @@ from api.v1.routes.job import job
 from api.v1.routes.ai_tools.audio_transcriber import audio
 from api.v1.routes.dashboard import dashboard
 from api.v1.routes.ai_tools.thumbnail import thumbnail_router
+from api.v1.routes.text_to_video import text_to_videos
 
 api_version_one = APIRouter(prefix="/api/v1")
 
@@ -60,3 +62,4 @@ api_version_one.include_router(video_summary)
 api_version_one.include_router(audio)
 api_version_one.include_router(dashboard)
 api_version_one.include_router(thumbnail_router)
+api_version_one.include_router(text_to_videos)
