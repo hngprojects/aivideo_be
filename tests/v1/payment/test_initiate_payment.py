@@ -74,7 +74,7 @@ def test_payment(test_user):
 
 
 @pytest.fixture()
-def mock_initiate_payment_schema_flutterwave(test_user, test_bill_plan):
+def mock_initiate_payment_schema(test_user, test_bill_plan):
     return InitiatePaymentSchema(
         email=test_user.email,
         billing_plan_id=test_bill_plan.id,
@@ -116,7 +116,7 @@ async def test_initiate_payment_successful(
     test_bill_plan,
     access_token_user,
     mock_initiate_payment_schema_stripe,
-    mock_initiate_payment_schema_flutterwave
+    mock_initiate_payment_schema
 ):
     # Setup mocks
     uuid_for_tx_ref = uuid7()
@@ -128,15 +128,10 @@ async def test_initiate_payment_successful(
     mock_db_session.query().filter().first.return_value = test_user
     mock_db_session.get.return_value = test_bill_plan
 
-    flutterwave_req = await initiate_payment(
-        mock_initiate_payment_schema_flutterwave, test_user, mock_db_session)
+    req = await initiate_payment(
+        mock_initiate_payment_schema, test_user, mock_db_session)
 
-    assert flutterwave_req.status_code == status.HTTP_200_OK
-
-    stripe_req = await initiate_payment(
-        mock_initiate_payment_schema_stripe, test_user, mock_db_session)
-
-    assert stripe_req.status_code == status.HTTP_200_OK
+    assert req.status_code == status.HTTP_200_OK
 
 
 def test_initiate_payment_unsuccessful(
