@@ -1,20 +1,26 @@
+import json
 import os
 import uuid
 from api.utils.settings import settings
 from langchain.chains.llm import LLMChain
 from langchain_core.prompts import PromptTemplate
+from langchain.chains.combine_documents.stuff import StuffDocumentsChain
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders.parsers import OpenAIWhisperParser
 from langchain_openai import ChatOpenAI
 from deep_translator import GoogleTranslator
-from langchain_openai import OpenAI as OI
+from openai import OpenAI as OI
+from langchain_openai import OpenAI
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.summarize import load_summarize_chain
 
 class SummaryService():
-    
+
     def __init__(self):
-        super().__init__()
         self.translator = GoogleTranslator()
+        self.client = OI(api_key=settings.OPENAI_API_KEY)
+        self.llm = OpenAI(temperature=0, openai_api_key=settings.OPENAI_API_KEY)
 
     def init_chain(self):
         """Initializes the LLM chain with a prompt for summarization."""
@@ -35,29 +41,28 @@ class SummaryService():
            return transcript
 
     def summarize_audio(self, audio_file_path):
-        """Summarize podcast audio file.
-
-        Args:
-            audio_file_path (str): Path to the audio file.
-
-        Returns:
-            tuple: Summary and Transcript of the podcast episode.
-        """
-        # Transcribe audio
+        """Summarizes an audio file by transcribing and then summarizing the transcript."""
         transcribed_text = self.transcribe_audio(audio_file_path)
+        llm_chain = self.init_chain()
+        stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
         
-        # Initialize LLM chain
-        text_splitter = CharacterTextSplitter()
-        texts = text_splitter.split_text(transcribed_text)
-        docs = [Document(page_content=t) for t in texts]
-        chain = load_summarize_chain(self.llm, chain_type='map_reduce')
-        summary = chain.run(docs)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        documents = text_splitter.create_documents([transcribed_text])
+
+        summaries = []
+        for doc in documents:
+            inputs = {"input_documents": [doc]}
+            result = stuff_chain.invoke(inputs)
+            summary = result.get("output_text", "")
+            summaries.append(summary)
+        
+        final_summary = " ".join(summaries)
         
         return {
-            "summary": summary,
+            "summary": final_summary,
             "transcript": transcribed_text
         }
-
+        
     def translate_summary(self, text, target_lang):
         """Translates the summary to the target language using GoogleTranslator."""
         translated_text = self.translator.translate(text, target_lang=target_lang)

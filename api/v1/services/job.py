@@ -76,13 +76,21 @@ class JobService:
     def update_job(self, job_id: str, status: str, result: Optional[str] = None):
         """Updates the job details"""
 
-        job = self.fetch_by_job_id(job_id=job_id)
-
-        job.status = status
-        job.result = result if result is not None else None
-        db.commit()
-        db.refresh(job)
-        return job
+        try:
+            job = self.fetch_by_job_id(job_id=job_id)
+            job.status = status
+            job.result = result if result is not None else None
+            db.commit()
+            db.refresh(job)
+            return job
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail=f"{type(e).__name__} occurred. {repr(e)}"
+            )
+        finally:
+            db.close()
 
     def get_project_from_job(self, job_id: str):
         """Returns the project from the job details"""

@@ -3,7 +3,7 @@
 from sqlalchemy import Column, String, Boolean, DateTime, func
 from sqlalchemy.orm import relationship
 from api.v1.models.base_model import BaseTableModel
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 
 class User(BaseTableModel):
@@ -28,11 +28,17 @@ class User(BaseTableModel):
     projects = relationship("Project", back_populates="user")
     reviews = relationship("Review", back_populates="user")
     notification_setting = relationship("NotificationSetting", back_populates="user")
-    data_privacy_setting = relationship("DataPrivacySetting", back_populates="user")
+    data_privacy_setting = relationship(
+        "DataPrivacySetting", back_populates="user", uselist=False
+    )
     lang_reg_timezone_settings = relationship(
         "LanguageRegionTimezoneSetting", back_populates="user"
     )
     jobs = relationship("Job", back_populates="user")
+
+    text_to_vdeos = relationship(
+        "TextToVideo", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def to_dict(self):
         obj_dict = super().to_dict()
@@ -45,7 +51,22 @@ class User(BaseTableModel):
         """
         Update the user's last login field
         """
-        self.last_login = datetime.now()
+        self.last_login = datetime.now(timezone(timedelta(hours=1)))
+
+    def update_active_status(self):
+        """update active based on last_login"""
+
+        # check if last_login is not None or null
+        if self.last_login and isinstance(self.last_login, datetime):
+            current_time = datetime.now(timezone(timedelta(hours=1)))
+            one_hour_ago = current_time - timedelta(hours=1)
+
+            if self.last_login.tzinfo is None:
+                self.last_login = self.last_login.replace(
+                    tzinfo=timezone(timedelta(hours=1))
+                )
+
+            self.is_active = self.last_login >= one_hour_ago
 
     def __str__(self):
         return self.email

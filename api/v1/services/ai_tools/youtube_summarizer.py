@@ -40,7 +40,7 @@ class ChatOpenRouter(ChatOpenAI):
 
 class TranscriptionService:
     def __init__(self):
-        self.assemblyai_api_key = settings.ASEMBLYAI_API_KEY
+        self.assemblyai_api_key = settings.ASSEMBLYAI_API_KEY
 
     def init_chain(self):
         prompt_template = """Write a concise summary of the following:
