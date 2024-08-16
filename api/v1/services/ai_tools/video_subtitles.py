@@ -10,18 +10,6 @@ from api.utils.video_subtitles import save_subtitles_to_file, delete_file
 from api.utils.files import convert_video_to_audio
 from api.v1.services.ai_tools.summary_audio import summary_service
 
-# whisper_model = load_model("base")
-
-# def transcribe_audio(audio_file_path: str) -> dict:
-#     """Transcribe audio using OpenAI Whisper"""
-#     try:
-#         audio = whisper.load_audio(audio_file_path)
-#         result = whisper_model.transcribe(audio)
-#         transcription = result['text']
-#         return {"transcription": transcription}
-#     except Exception as e:
-#         raise Exception(f"Error during audio transcription: {str(e)}")
-
 def translate_text(text: str, target_language: str) -> str:
     """Translate text using Deep Translator with Google Translator"""
     try:
