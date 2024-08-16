@@ -150,7 +150,7 @@ async def stripe_webhook(
     except ValueError as e:
         return success_response(
         status_code=status.HTTP_400_BAD_REQUEST,
-        message="Payment success"
+        message="Payment failed"
     )
 
     # Handle the event
