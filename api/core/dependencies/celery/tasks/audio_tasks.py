@@ -5,6 +5,7 @@ from api.v1.services.ai_tools.summary_audio import summary_service
 from api.db.database import get_db
 import base64
 from typing import Dict
+import json
 from api.v1.services.ai_tools.audio_transcriber import transcribe_audio_file_with_timestamps
 
 # Initialize the database session
@@ -20,6 +21,6 @@ def generate_audio_summary_task(audio_file, target_lang):
 
     
 @worker.task()
-def transcribe_audio_task(audio_data: str) -> Dict[str, str]:
+def transcribe_audio_task(audio_data):
     result = transcribe_audio_file_with_timestamps(audio_data)
     return json.dumps(result)
