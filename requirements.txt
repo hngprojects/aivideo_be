@@ -202,6 +202,7 @@ soupsieve==2.6
 soxr==0.4.0
 SQLAlchemy==2.0.31
 starlette==0.37.2
+stripe==10.7.0
 sympy==1.13.2
 tenacity==8.5.0
 threadpoolctl==3.5.0
