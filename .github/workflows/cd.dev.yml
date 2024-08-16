@@ -1,12 +1,12 @@
-name: Dev Branch Deployment
+name: Dev Deployment
 
 on:
-  push:
-    branches: [dev]
-    paths-ignore:
-      - "README.md"
-      - ".github/workflows/**"
-      - ".gitignore"
+  # push:
+  #   branches: [dev]
+  #   paths-ignore:
+  #     - "README.md"
+  #     - ".github/workflows/**"
+  #     - ".gitignore"
   workflow_dispatch:
 
 jobs:
@@ -16,19 +16,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Use SSH Action
+      - name: Deploy to Server
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd aivideo_be
+            cd aivideo_be/dev
             git add .
             git stash
-            git checkout dev
             git pull origin dev
-            source venv-dev/bin/activate
+            source venv/bin/activate
             pip install -r requirements.txt
+            alembic version --autogenerate
             alembic upgrade head
-            echo "${{ secrets.PASSWORD }}" | sudo -S systemctl restart aivideo-python-dev.service
