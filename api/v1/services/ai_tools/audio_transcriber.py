@@ -1,60 +1,80 @@
 
 from deep_translator import GoogleTranslator
-from io import BytesIO
-import logging
-from typing import Dict, Union
+import subprocess
 import speech_recognition as sr
+from io import BytesIO
 from pydub import AudioSegment
 
+def format_time(ms):
+    """Convert milliseconds to mm:ss format."""
+    seconds = ms / 1000
+    minutes = int(seconds // 60)
+    seconds = int(seconds % 60)
+    return f"{minutes}:{seconds:02d}"
 
-
-logger = logging.getLogger(__name__)
-
-def format_time(milliseconds):
-    seconds = (milliseconds / 1000) % 60
-    minutes = (milliseconds / (1000 * 60)) % 60
-    hours = (milliseconds / (1000 * 60 * 60)) % 24
-    return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
-
-def transcribe_audio_file_with_timestamps(audio_data: bytes) -> Dict[str, Union[str, Dict[str, str]]]:
-    recognizer = sr.Recognizer()
+def preprocess_audio_with_ffmpeg(audio_file_path):
     try:
-        audio_file = BytesIO(audio_data)
-        audio_segment = AudioSegment.from_file(audio_file)
-        audio_segment = audio_segment.set_channels(1).set_frame_rate(16000)  # Convert to mono and 16kHz
+        process = subprocess.Popen(
+            ['ffmpeg', '-i', audio_file_path, '-f', 'wav', 'pipe:1'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        wav_audio, error = process.communicate()
 
-        chunk_length_ms = 10000  # 10 seconds
+        if process.returncode != 0:
+            raise Exception(f"ffmpeg failed with error code {process.returncode}: {error.decode()}")
+
+        return wav_audio
+    except Exception as e:
+        print(f"Error in preprocess_audio_with_ffmpeg: {e}")
+        raise
+
+def transcribe_audio_file_with_timestamps(audio_file_path):
+    recognizer = sr.Recognizer()
+    transcriptions = {}
+    
+    try:
+        wav_audio = preprocess_audio_with_ffmpeg(audio_file_path)
+        
+        audio_file = BytesIO(wav_audio)
+        audio_segment = AudioSegment.from_file(audio_file)
+        audio_segment = audio_segment.set_channels(1).set_frame_rate(16000)
+
+        chunk_length_ms = 10000
         chunks = [audio_segment[i:i + chunk_length_ms] for i in range(0, len(audio_segment), chunk_length_ms)]
 
-        transcriptions = {}
         start_time = 0
 
-        for i, chunk in enumerate(chunks):
-            wav_audio = BytesIO()
-            chunk.export(wav_audio, format="wav")
-            wav_audio.seek(0)
+        for chunk in chunks:
+            wav_chunk_audio = BytesIO()
+            try:
+                chunk.export(wav_chunk_audio, format="wav")
+            except Exception as e:
+                continue
 
-            with sr.AudioFile(wav_audio) as source:
-                audio = recognizer.record(source)
-                text = recognizer.recognize_google(audio)
+            wav_chunk_audio.seek(0)
 
-            # Add timestamp information
-            end_time = start_time + chunk_length_ms
+            try:
+                with sr.AudioFile(wav_chunk_audio) as source:
+                    audio = recognizer.record(source)
+                    try:
+                        text = recognizer.recognize_google(audio)
+                    except sr.UnknownValueError:
+                        text = "[Unintelligible]"
+                    except sr.RequestError as e:
+                        text = f"[Error: {str(e)}]"
+            except Exception as e:
+                text = f"[Error: {str(e)}]"
+
             formatted_start_time = format_time(start_time)
             transcriptions[formatted_start_time] = text
 
-            # Update start time for next chunk
-            start_time = end_time
+            start_time += chunk_length_ms
 
-        return {"transcriptions": transcriptions}
-
-    except sr.RequestError:
-        return {"error": "Could not request results from Google API."}
-    except sr.UnknownValueError:
-        return {"error": "Google API could not understand the audio."}
     except Exception as e:
-        return {"error": str(e)}
+        raise Exception(f"An error occurred while processing the audio: {e}")
 
+    return transcriptions
 
 
 def translate_text(text: str, target_language: str) -> str:

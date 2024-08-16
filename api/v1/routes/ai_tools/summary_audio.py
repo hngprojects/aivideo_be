@@ -26,8 +26,7 @@ async def summarize_audio(
         upload_folder='audio', 
         save_extension='mp3' 
     )
-    audio_data = await file.read()
-    task_transcribe = transcribe_audio_task.delay(audio_data)
+    task_transcribe = transcribe_audio_task.delay(audio_file)
 
 
     task = generate_audio_summary_task.delay(audio_file, target_lang)
