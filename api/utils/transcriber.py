@@ -11,7 +11,7 @@ def transcribe(filepth: str) -> str:
     """utilise the assembly assemblyai transcribe video files"""
 
     try:
-        aai.settings.api_key = config("ASEMBLYAI_API_KEY")
+        aai.settings.api_key = config("ASSEMBLYAI_API_KEY")
         transcriber = aai.Transcriber()
         transcript = transcriber.transcribe(filepth)
 

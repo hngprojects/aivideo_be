@@ -1,8 +1,10 @@
 import random
 import string
+import pandas as pd
 from typing import Any, Optional, Annotated
 import datetime as dt
 from fastapi import status
+from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, Request
@@ -603,6 +605,44 @@ class UserService(Service):
             "inactive_users": inactive_user_count,
             "deleted_users": deleted_user_count,
         }
+
+    def export_to_csv(self, db: Session):
+        all_users: list = db.query(User).order_by(desc(User.created_at)).all()
+
+        all_users = [
+            [
+                user.id,
+                user.created_at,
+                user.email,
+                user.first_name,
+                user.last_name,
+                user.last_login,
+                user.is_active,
+                user.is_superadmin,
+                user.is_deleted,
+            ]
+            for user in all_users
+        ]
+
+        df = pd.DataFrame(
+            all_users,
+            columns=[
+                "ID",
+                "Date Created",
+                "Email",
+                "First Name",
+                "Last Name",
+                "Last Login",
+                "Is active",
+                "Is admin",
+                "Is deleted",
+            ],
+        )
+        return StreamingResponse(
+            iter([df.to_csv(index=False)]),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=all_user_data.csv"},
+        )
 
     def fetch_user_activity(
         self,

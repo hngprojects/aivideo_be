@@ -43,7 +43,7 @@ async def talking_head_image_upload(
         aspect_ratio,
         script,
         voice_over.lower(),
-        default=False  # set to false to prevent deleting of avatar file
+        False  # set to false to prevent deleting of avatar file
     )
 
     # Create project with job
@@ -93,7 +93,7 @@ async def talking_head_avatar_selection(
         aspect_ratio,
         script,
         voice_over.lower(),
-        default=True
+        True
     )
 
     # Create project with job

@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  on-success:
+  deploy:
     runs-on: pydeploy
     steps:
       - name: Checkout code
