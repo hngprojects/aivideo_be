@@ -3,14 +3,12 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from celery.result import AsyncResult
 
-from api.utils.success_response import success_response
 from api.core.dependencies.celery.celery_app import worker
-from api.v1.services.job import job_service
-from api.utils.websocket import manager
 from api.db.database import get_db
-
+from api.utils.success_response import success_response
+from api.utils.websocket import manager
+from api.v1.services.job import job_service
 
 background_router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -85,16 +83,16 @@ async def send_job_status_updates(
     project.is_active = False
     db.commit()
 
-    if status == 'PENDING':
-        job_service.update_job(job_id, 'Pending')
+    if status == "PENDING":
+        job_service.update_job(job_id, "Pending")
 
-    elif status == 'FAILURE':
+    elif status == "FAILURE":
         result = str(task_result.info)
-        job_service.update_job(job_id, 'Failed', result)
-    
-    elif status == 'SUCCESS':
+        job_service.update_job(job_id, "Failed", result)
+
+    elif status == "SUCCESS":
         result = task_result.result
-        job_service.update_job(job_id, 'Success', result)
+        job_service.update_job(job_id, "Success", result)
 
         # Save project result
         project.result = result
@@ -105,8 +103,9 @@ async def send_job_status_updates(
 
     return success_response(
         status_code=200,
-        message='Job progress retrieved',
+        message="Job progress retrieved",
         data={
+
             'job_id': job_id,
             'status': status.capitalize(),
             'result': project.result
