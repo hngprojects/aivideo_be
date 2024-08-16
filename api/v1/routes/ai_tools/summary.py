@@ -22,6 +22,7 @@ from api.v1.schemas.project import CreateProject
 from api.utils.language_code import LANGUAGE_CODES
 from api.core.dependencies.translator_service import translate_text
 from api.v1.schemas.translation import TranslationRequest
+from api.v1.schemas.audio_transcriber import PodcastRequest
 from api.v1.models.project import Project
 from api.v1.services.project import project_service
 from api.v1.services.ai_tools.summary import summary_service
@@ -154,9 +155,9 @@ async def translate_summary(translation_request: TranslationRequest):
 
 
 @summary.post("/summarize-podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)
-async def summarize_podcast(podcast_url: str):
+async def summarize_podcast(request: PodcastRequest):
 
-    audio_url = summary_service.get_audio_url(podcast_url)
+    audio_url = summary_service.get_audio_url(request.podcast_url)
 
     audio_response = requests.get(audio_url)
     if audio_response.status_code == 200:
