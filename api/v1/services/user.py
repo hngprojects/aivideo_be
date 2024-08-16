@@ -11,7 +11,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, or_, select, func
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from api.core.base.services import Service
 from api.core.dependencies.email_sender import send_email
@@ -541,18 +541,45 @@ class UserService(Service):
             db: database Session object
         """
 
-        query = db.query(User)
+        users = db.query(User).all()
 
-        total_user_count = query.count()
-        active_user_count = query.filter(User.is_active == True).count()
-        inactive_user_count = query.filter(User.is_active == False).count()
-        deleted_user_count = query.filter(User.is_deleted == True).count()
+        for user in users:
+            user.update_active_status()
+
+        total_user_count = len(users)
+        active_user_count = sum(1 for user in users if user.is_active)
+        inactive_user_count = sum(1 for user in users if not user.is_active)
+        deleted_user_count = sum(1 for user in users if user.is_deleted)
+
+        one_hour_ago = datetime.now(timezone(timedelta(hours=1))) - timedelta(hours=1)
+
+        created_in_last_hour = sum(
+            1 for user in users if user.created_at >= one_hour_ago
+        )
+
+        active_in_last_hour = sum(
+            1 for user in users if user.is_active and user.updated_at >= one_hour_ago
+        )
+
+        inactive_in_last_hour = sum(
+            1
+            for user in users
+            if not user.is_active and user.updated_at >= one_hour_ago
+        )
+
+        deleted_in_last_hour = sum(
+            1 for user in users if user.is_deleted and user.updated_at >= one_hour_ago
+        )
 
         return {
             "total_users": total_user_count,
             "active_users": active_user_count,
             "inactive_users": inactive_user_count,
             "deleted_users": deleted_user_count,
+            "created_in_last_hour": created_in_last_hour,
+            "active_in_last_hour": active_in_last_hour,
+            "inactive_in_last_hour": inactive_in_last_hour,
+            "deleted_in_last_hour": deleted_in_last_hour,
         }
 
     def export_to_csv(self, db: Session):
@@ -667,5 +694,6 @@ class UserService(Service):
             data=all_tasks,
             status_code=200,
         )
+
 
 user_service = UserService()
