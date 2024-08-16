@@ -25,7 +25,6 @@ import fitz  # PyMuPDF for handling PDFs with images
 
 class SummaryService():  
     def __init__(self):
-        super().__init__()
         self.client = OI(api_key=settings.OPENAI_API_KEY)
         self.llm = OpenAI(temperature=0, openai_api_key=settings.OPENAI_API_KEY)
     
@@ -35,7 +34,7 @@ class SummaryService():
         CONCISE SUMMARY:"""
         prompt = PromptTemplate.from_template(prompt_template)
         llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k",
-                         openai_api_key=settings.OPENAI_API_KEY)
+                         api_key=settings.OPENAI_API_KEY)
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         return llm_chain
 
