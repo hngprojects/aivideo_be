@@ -1,4 +1,5 @@
 from typing import Any, Optional
+
 from sqlalchemy.orm import Session
 from api.core.base.services import Service
 from api.v1.models.project import Project
@@ -34,6 +35,12 @@ class ProjectService(Service):
                     )
 
         return query.all()
+    
+    
+    def fetch_user_project(self, user: User, project_id: str):
+        """Fetch a project by user and project ID."""
+        project = next((p for p in user.projects if p.id == project_id and not p.is_deleted), None)
+        return project
 
     def fetch(self, db: Session, project_id: str):
         """Fetches a, project by id"""

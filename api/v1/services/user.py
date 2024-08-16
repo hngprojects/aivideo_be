@@ -1,8 +1,10 @@
 import random
 import string
+import pandas as pd
 from typing import Any, Optional, Annotated
 import datetime as dt
 from fastapi import status
+from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, Request
@@ -62,6 +64,8 @@ class UserService(Service):
             query = query.filter(*filters)
             total_users = query.count()
 
+        total_pages = int(total_users / per_page) + (total_users % per_page > 0)
+
         all_users: list = (
             query.order_by(desc(User.created_at))
             .limit(per_page)
@@ -69,9 +73,17 @@ class UserService(Service):
             .all()
         )
 
-        return self.all_users_response(all_users, total_users, page, per_page)
+        return self.all_users_response(
+            users=all_users,
+            total_users=total_users,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+        )
 
-    def search(self, db: Session, page: int, per_page: int, query_param: str):
+    def search(
+        self, db: Session, page: int, per_page: int, query_param: str, is_deleted: bool
+    ):
         per_page = min(per_page, 10)
 
         # validate query_param
@@ -87,6 +99,12 @@ class UserService(Service):
                 detail="Invalid value for search parameter. Must be a non empty string.",
             )
 
+        if not isinstance(is_deleted, bool) and is_deleted is not None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid value for is_deleted parameter. Must be a boolean",
+            )
+
         query = db.query(User).filter(
             or_(
                 User.first_name.icontains(query_param),
@@ -95,16 +113,24 @@ class UserService(Service):
             )
         )
 
+        if is_deleted is not None:
+            query = query.filter(User.is_deleted == is_deleted)
+
         total = query.count()
+        total_pages = int(total / per_page) + (total % per_page > 0)
 
         users: list = query.limit(per_page).offset((page - 1) * per_page).all()
 
         return self.all_users_response(
-            users=users, total_users=total, page=page, per_page=per_page
+            users=users,
+            total_users=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
         )
 
     def all_users_response(
-        self, users: list, total_users: int, page: int, per_page: int
+        self, users: list, total_users: int, page: int, per_page: int, total_pages: int
     ):
         """
         Generates a response for all users
@@ -119,6 +145,7 @@ class UserService(Service):
                 status_code=200,
                 page=page,
                 per_page=per_page,
+                total_pages=total_pages,
                 total=0,
                 data=[],
             )
@@ -131,6 +158,7 @@ class UserService(Service):
             status_code=200,
             page=page,
             per_page=per_page,
+            total_pages=total_pages,
             total=total_users,
             data=all_users,
         )
@@ -426,6 +454,8 @@ class UserService(Service):
 
         token = self.verify_access_token(access_token, credentials_exception)
         user = db.query(User).filter(User.id == token.id).first()
+        if not user:
+            raise credentials_exception
         user.update_last_login()
 
         return user
@@ -486,9 +516,6 @@ class UserService(Service):
         user.is_active = True
 
         db.commit()
-        
-        
-        
 
     def change_password(
         self,
@@ -499,20 +526,20 @@ class UserService(Service):
         db: Session,
     ):
         """Endpoint to change the user's password"""
-        
+
         # Check if the user has an existing password
         if not user.password:
             # user signed up via social authentication (Google/Facebook)
             if old_password:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="You do not have an existing password. Please set up a new password instead."
+                    detail="You do not have an existing password. Please set up a new password instead.",
                 )
             # Allow setting up a new password directly if old password is not provided
             if new_password != confirm_new_password:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="New password and confirmation do not match."
+                    detail="New password and confirmation do not match.",
                 )
             user.password = self.hash_password(new_password)
             db.commit()
@@ -521,27 +548,24 @@ class UserService(Service):
         if not self.verify_password(old_password, user.password):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Incorrect old password."
+                detail="Incorrect old password.",
             )
-        
+
         if new_password != confirm_new_password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="New password and confirmation do not match."
+                detail="New password and confirmation do not match.",
             )
 
         user.password = self.hash_password(new_password)
         db.commit()
-        
+
         # Return the passwords in the specified format
         return {
             "oldPassword": old_password,
             "newPassword": user.password,
-            "confirmNewPassword": confirm_new_password
+            "confirmNewPassword": confirm_new_password,
         }
-        
-        
-
 
     def get_current_super_admin(
         self, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
@@ -582,6 +606,44 @@ class UserService(Service):
             "deleted_users": deleted_user_count,
         }
 
+    def export_to_csv(self, db: Session):
+        all_users: list = db.query(User).order_by(desc(User.created_at)).all()
+
+        all_users = [
+            [
+                user.id,
+                user.created_at,
+                user.email,
+                user.first_name,
+                user.last_name,
+                user.last_login,
+                user.is_active,
+                user.is_superadmin,
+                user.is_deleted,
+            ]
+            for user in all_users
+        ]
+
+        df = pd.DataFrame(
+            all_users,
+            columns=[
+                "ID",
+                "Date Created",
+                "Email",
+                "First Name",
+                "Last Name",
+                "Last Login",
+                "Is active",
+                "Is admin",
+                "Is deleted",
+            ],
+        )
+        return StreamingResponse(
+            iter([df.to_csv(index=False)]),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=all_user_data.csv"},
+        )
+
     def fetch_user_activity(
         self,
         db: Session,
@@ -601,7 +663,9 @@ class UserService(Service):
         total_jobs_created = query.count()
         total_jobs_completed = query.filter(Job.status.contains("SUCCESS")).count()
         total_jobs_pending = query.filter(Job.status.contains("PENDING")).count()
-        total_jobs_in_progress = query.filter(Job.status.contains("STARTED")).count()
+        total_jobs_in_progress = query.filter(
+            or_(Job.status.contains("STARTED"), Job.status.contains("RUNNING"))
+        ).count()
 
         if job:
             query = query.filter(Project.project_type.icontains(job))

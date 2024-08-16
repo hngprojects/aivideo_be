@@ -8,3 +8,5 @@ class Testimonial(BaseTableModel):
     client_name = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     rating = Column(Float, default=1, nullable=False)
+    client_position = Column(String, nullable=False)
+    avatar_url = Column(String)

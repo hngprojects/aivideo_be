@@ -9,8 +9,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  on-success:
-    runs-on: self-hosted
+  deploy:
+    runs-on: pydeploy
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,8 +22,12 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd aivideo-python-be/prod/
+            cd aivideo_be
+            git add .
+            git stash
+            git checkout main
             git pull origin main
-            source .venv/bin/activate
+            source venv-prod/bin/activate
             pip install -r requirements.txt
             alembic upgrade head
+            echo "${{ secrets.PASSWORD }}" | sudo -S systemctl restart aivideo-python-prod.service

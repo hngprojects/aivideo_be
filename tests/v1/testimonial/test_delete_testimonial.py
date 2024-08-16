@@ -15,6 +15,7 @@ def mock_testimonial():
         client_name="Zxenon",
         content="Very Useful Product",
         rating=4.5,
+        client_position="Mentor",
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc)
     )
