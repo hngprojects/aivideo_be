@@ -6,6 +6,7 @@ from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
 import json
 from api.utils.ytdownload import download_video
+from fastapi import HTTPException
 
 db = next(get_db())
 
@@ -20,7 +21,7 @@ def generate_video_summary_task(video_file):
         transcription = transcription_service.transcribe_audio(audio_file_path)
         return json.dumps(transcription)
     except Exception as e:
-        print(e)
+        return json.dumps({"error": str(e)})
     finally:
         delete_file(video_file)
 
@@ -35,6 +36,6 @@ def download_and_generate_video_summmary_task(link):
         transcription = transcription_service.transcribe_audio(audio_file_path)
         return json.dumps(transcription)
     except Exception as e:
-        print(e)
+        return json.dumps({"error": str(e)})
     finally:
         delete_file(video_file)
