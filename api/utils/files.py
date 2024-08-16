@@ -6,6 +6,7 @@ from typing import List, Optional, Union
 from secrets import token_hex
 from fastapi import HTTPException, status
 from pathlib import Path
+import asyncio
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -83,7 +84,13 @@ async def upload_file_to_current_dir(file: str, allowed_extensions: Optional[lis
     BASE_DIR = Path(__file__).resolve().parent
 
     # Check against invalid extensions
-    file_name = file.filename.lower()
+
+    if hasattr(file, 'filename'):
+        file_name = file.filename.lower()
+    else:
+        # If it's a file-like object created from bytes
+        file_name = getattr(file, 'filename', 'unnamed_file')
+
     file_extension = file_name.split('.')[-1]
     name = file_name.split('.')[0]
 
@@ -103,7 +110,17 @@ async def upload_file_to_current_dir(file: str, allowed_extensions: Optional[lis
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
     SAVE_FILE_DIR = os.path.join(BASE_DIR, new_filename)
     with open(SAVE_FILE_DIR, 'wb') as f:
-        content = await file.read()
+        if hasattr(file, 'read'):
+            # If it's a file-like object (e.g., BytesIO)
+            if asyncio.iscoroutinefunction(file.read):
+                # If it's an async file
+                content = await file.read()
+            else:
+                # If it's a sync file
+                content = file.read()
+        else:
+            # If it's already bytes content
+            content = file
         f.write(content)
 
     return SAVE_FILE_DIR
