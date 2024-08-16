@@ -2,7 +2,6 @@ from api.utils.settings import settings
 import pytesseract
 from PIL import Image
 from io import BytesIO
-from openai import ChatCompletion
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 from langchain_community.document_loaders.pdf import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -11,7 +10,8 @@ from langchain.chains.llm import LLMChain
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from openai import OpenAI as OI
-from langchain import OpenAI
+from langchain_community.llms.openai import OpenAI
+# from langchain.llms.openai import OpenAI
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.summarize import load_summarize_chain

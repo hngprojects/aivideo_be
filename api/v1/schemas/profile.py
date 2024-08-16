@@ -74,5 +74,3 @@ class ProfileUpdateForm(BaseModel):
     phone_number: Optional[str] = Field(None, pattern=r'^\+?[1-9]\d{1,14}$')
     email: Optional[EmailStr] = None
     avatar_url: Optional[str] = None
-    
-
