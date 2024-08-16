@@ -1,5 +1,4 @@
 import asyncio
-import json
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -8,7 +7,6 @@ from celery.result import AsyncResult
 from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.utils.websocket import manager
 from api.v1.services.job import job_service
 
 background_router = APIRouter(prefix="/jobs", tags=["Jobs"])
