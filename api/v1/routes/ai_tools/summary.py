@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from pypdf import PdfReader
 from datetime import timedelta
 import os
+import requests
+import io
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
@@ -25,6 +27,7 @@ from api.v1.services.project import project_service
 from api.v1.services.ai_tools.summary import summary_service
 from api.v1.services.job import job_service
 from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summary_task
+from api.core.dependencies.celery.tasks.summary_tasks import generate_audio_summary_task
 
 summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
@@ -39,6 +42,25 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
         file, 
         allowed_extensions=['pdf'], 
         save_extension='pdf'
+    )
+
+    task = generate_pdf_summary_task.delay(pdf_file)
+
+    # Create project with job
+    project = job_service.create_project_with_job(
+        job=task,
+        project_title='New project',
+        project_type='Talking Head',
+        # user_id = pass in the current user id for authenticated users
+    )
+
+    return success_response(
+        status_code=202,
+        message="Summary generation job initiated successfully",
+        data={
+            "job_id": task.id,
+            "project_id": project.id,
+        },
     )
 
 
@@ -67,9 +89,11 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
     if file_size == 0:
         raise HTTPException(status_code=400, detail="The uploaded PDF file is empty")
 
+    # Upload the file and get its path
     pdf_file_path = await upload_file(
         file, allowed_extensions=["pdf"], upload_folder="pdf", save_extension="pdf"
     )
+    
     # Run task
     task = generate_pdf_summary_task.delay(pdf_file_path)
 
@@ -81,6 +105,7 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
         # user_id = pass in the current user id for authenticated users
     )
 
+
     return success_response(
         status_code=202,
         message="Summary generation job initiated successfully",
@@ -90,6 +115,7 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
             "file_name": file.filename,
         },
     )
+
 
 
 @summary.post(
@@ -124,4 +150,40 @@ async def translate_summary(translation_request: TranslationRequest):
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"An error occurred during translation: {str(e)}"
+        )
+
+
+@summary.post("/summarize_podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)
+async def summarize_podcast(podcast_url: str):
+
+    audio_url = summary_service.get_audio_url(podcast_url)
+
+    audio_response = requests.get(audio_url)
+    if audio_response.status_code == 200:
+        file_like_object = io.BytesIO(audio_response.content)
+        file_like_object.filename = "podcast.mp3"
+        file_path = await upload_file_to_current_dir(file_like_object, allowed_extensions=['mp3'], save_extension='mp3')
+        task = generate_audio_summary_task.delay(file_path)
+   
+        # Create project with job
+        project = job_service.create_project_with_job(
+            job=task,
+            project_title='New project',
+            project_type='Podcast Summarizer'
+            # user_id = pass in the current user id for authenticated users
+        )
+
+        return success_response(
+            status_code=202,
+            message="Podcast Summary generation job initiated successfully",
+            data={
+                "job_id": task.id,
+                "project_id": project.id,
+            }
+        )
+    else:
+        return success_response(
+            status_code=404,
+            message="Podcast not found",
+            data={}
         )

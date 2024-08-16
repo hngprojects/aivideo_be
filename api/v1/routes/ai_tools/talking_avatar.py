@@ -17,6 +17,7 @@ async def talking_head_image_upload(
     script: str = Form(...),
     aspect_ratio: str = Form(...),
     voice_over: str = Form(...),
+    audio_id: str = Form(...),
     file: UploadFile = File(...), 
     db: Session = Depends(get_db)
 ):
@@ -29,12 +30,20 @@ async def talking_head_image_upload(
         save_extension=file_extension
     )
 
+    audio = preset_service.fetch_music_by_id(
+        db=db, music_id=audio_id
+    )
+
+    audio_file = audio.file_path
+
     # Run task
     task = generate_talking_avatar_task.delay(
         image_file,
+        audio_file,
         aspect_ratio,
         script,
-        voice_over.lower()
+        voice_over.lower(),
+        default=False  # set to false to prevent deleting of avatar file
     )
 
     # Create project with job
@@ -58,6 +67,7 @@ async def talking_head_image_upload(
 @video_router.post('/talking-head/avatar-selection', status_code=202, response_model=success_response)
 async def talking_head_avatar_selection(
     avatar_id: str = Form(...),
+    audio_id: str = Form(...),
     script: str = Form(...),
     aspect_ratio: str = Form(...),
     voice_over: str = Form(...),
@@ -68,14 +78,22 @@ async def talking_head_avatar_selection(
     avatar = preset_service.fetch_avatar_by_id(
         db=db, avatar_id=avatar_id
     )
+
+    audio = preset_service.fetch_music_by_id(
+        db=db, music_id=audio_id
+    )
+
     image_file = avatar.file_path
+    audio_file = audio.file_path
 
     # Run task
     task = generate_talking_avatar_task.delay(
         image_file,
+        audio_file,
         aspect_ratio,
         script,
-        voice_over.lower()
+        voice_over.lower(),
+        default=True
     )
 
     # Create project with job

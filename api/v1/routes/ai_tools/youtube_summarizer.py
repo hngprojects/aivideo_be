@@ -34,9 +34,22 @@ async def enqueue_summarize_batch_job(
     """Enqueue a batch job to summarize a video"""
     uploaded_files = await upload_files(
         files,
-        allowed_extensions=["mp4"],
+        allowed_extensions=[
+            'mp4',
+            'avi',
+            'mkv',
+            'mov',
+            'wmv',
+            'flv',
+            'webm',
+            'm4v',
+            '3gp',
+            'mpeg',
+            'mpg'
+        ],
         upload_folder=FILE_DIRECTORY,
-        save_extension="mp4"
+        max_file_size=50 * 1024 * 1024,
+        chunk_size=1024 * 1024
     )
 
     job_ids = []

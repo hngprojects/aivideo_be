@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from pydantic import ValidationError
 import json
 from typing import Any, Optional
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -10,7 +11,6 @@ from api.v1.models.profile import Profile
 from api.v1.schemas.profile import ProfileCreateUpdate
 
 
-
 class ProfileService(Service):
     '''Profile service functionality'''
     def create():
@@ -18,21 +18,18 @@ class ProfileService(Service):
     
     def update(self, db: Session, schema: ProfileCreateUpdate, user_id: str):
         '''Updates a Profile, creates one if it doesn't exist'''
-        
         try:
             profile = db.query(Profile).filter(Profile.user_id == user_id).first()
             user = db.query(User).filter(User.id == user_id).first()
 
             if not profile:
-                profile_data = schema.dict(exclude={"email", "avatar_url"})
-                if "social" in profile_data and isinstance(profile_data["social"], dict):
-                    profile_data["social"] = json.dumps(profile_data["social"])
+                profile_data = schema.dict(exclude={"email", "avatar_url", "avatar"})
+                profile_data["social"] = schema.social  # Handle social as str
                 profile = Profile(**profile_data, user_id=user_id)
                 db.add(profile)
             else:
-                update_data = schema.dict(exclude={"email", "avatar_url"})
-                if "social" in update_data and isinstance(update_data["social"], dict):
-                    update_data["social"] = json.dumps(update_data["social"])
+                update_data = schema.dict(exclude={"email", "avatar_url", "avatar"})
+                update_data["social"] = schema.social  # Handle social as str
 
                 for key, value in update_data.items():
                     setattr(profile, key, value)
@@ -47,8 +44,7 @@ class ProfileService(Service):
             db.refresh(profile)
             db.refresh(user)
             
-            
-            # response data
+            # Response data
             response_data = {
                 "id": profile.id,
                 "username": profile.username,
@@ -68,6 +64,9 @@ class ProfileService(Service):
             
             return response_data
         
+        except ValidationError as e:
+            # Convert Pydantic ValidationError to HTTP 422
+            raise HTTPException(status_code=422, detail=e.errors())
         except IntegrityError as e:
             db.rollback()
             raise HTTPException(status_code=409, detail="Email address already in use")
@@ -76,7 +75,6 @@ class ProfileService(Service):
             raise HTTPException(status_code=500, detail="Database error occurred: " + str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail="Internal server error: " + str(e))
-
 
     def fetch_by_user_id(
         self, 
