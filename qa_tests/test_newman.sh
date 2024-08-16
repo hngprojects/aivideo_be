@@ -15,4 +15,5 @@ newman run aivideo_be/qa_tests/regression/Regression-Test-Admin-portal_User_flow
 
 newman run aivideo_be/qa_tests/regression/Job_Management_User_Flow.postman_collection.json -r htmlextra
 # Run Newman with HTMLextra reporter
+newman run aivideo_be/qa_tests/regression/Stage7_Signup_Boilerplate.postman_collection.json -r htmlextra
 newman run aivideo_be/qa_tests/regression/Stage7_Login_Boilerplate.postman_collection.json -r htmlextra
