@@ -207,22 +207,17 @@ def get_all_payments(
         - limit: Number of payment per page (default: 10, minimum: 1)
         - page: Page number (starts from 1)
     """
-    # GET offset from page and limit
+    # get offset from page and limit
     offset = (page - 1) * limit
 
-    # FETCH all payments
-    all_payments = payment_service.fetch_all(
+    # fetch all payments
+    payments_l = payment_service.fetch_all(
         db, offset=offset, limit=limit,
     )
 
-    # GATHER all data in a dict
-    data = {
-        "payments": [p.to_dict() for p in all_payments],
-        "pagination": get_pagination_details(len(all_payments), limit, offset)
-    }
-
+    # return success and data
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Payments fetched successfully",
-        data=data
+        data=payment_service.dictize_payments_and_pagination(payments_l, offset, limit)
     )
