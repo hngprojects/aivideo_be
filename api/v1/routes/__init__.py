@@ -9,8 +9,10 @@ from api.v1.routes.ai_tools.save_summary import save_summary
 from api.v1.routes.ai_tools.yt_summary import yt_summary
 from api.v1.routes.notification_settings import notification_setting
 from api.v1.routes.faq import faq
+from api.v1.routes.resource import resource
 from api.v1.routes.presets import preset_router
 from api.v1.routes.google_auth import google_auth
+
 # from api.v1.routes.websocket import websocket_router
 from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
@@ -41,6 +43,7 @@ api_version_one.include_router(payments)
 api_version_one.include_router(billing_plan)
 api_version_one.include_router(notification_setting)
 api_version_one.include_router(faq)
+api_version_one.include_router(resource)
 api_version_one.include_router(testimonial)
 api_version_one.include_router(project)
 api_version_one.include_router(google_auth)
