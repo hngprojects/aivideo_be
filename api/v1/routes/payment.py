@@ -31,66 +31,27 @@ async def initiate_payment(
     This endpoint generates data for requests going to payment gateways
     """
     # validate payment_gateway
+    # this checks that ONLY accepted payment gateways pass through
     payment_gateway = pg_service.validate_gateway(schema.payment_gateway)
 
     # get billing plan
     bill_plan = bp_service.fetch(db, schema.billing_plan_id)
 
-    # if payment_gateway == "flutterwave":
-    #     pass
-    # else:
-    #     # stripe
-
-    # payment_data = {
-    #     "tx_ref": bill_plan.id,
-    #     "currency": bill_plan.currency,
-    #     "amount": float(bill_plan.price),
-    #     "redirect_url": schema.redirect_url,
-    #     "payment_title": "Convey AI Video Suites",
-    #     "payment_description": "User subscription payment",
-    #     "customer": {
-    #         "email": current_user.email,
-    #         "name": f"{current_user.first_name} {current_user.last_name}",
-    #     },
-    # }
-
-    # if payment_gateway == "flutterwave" and schema.auto_renew:
-    #     subscription_plan_id = pg_service.create_subscription_plan(bill_plan)
-    #     payment_data['payment_plan'] = subscription_plan_id
-
-    # header = {"Authorization": f"Bearer {settings.FLUTTERWAVE_SECRET}"}
-
     if payment_gateway == "flutterwave":
-        # get payment data for flutterwave
-        payment_data = pg_service.get_payment_data_for_flutterwave(
-            current_user, bill_plan, schema.redirect_url)
+        # get a dictionary containing "payment_url" for flutterwave
+        payment_url = pg_service.get_payment_url_for_flutterwave(
+            current_user, bill_plan, schema)
         
-        # check for auto renew and create flutterwave payment plan
-        if schema.auto_renew:
-            subscription_plan_id = pg_service.create_subscription_plan(bill_plan)
-            payment_data['payment_plan'] = subscription_plan_id
-
-        header = {"Authorization": f"Bearer {settings.FLUTTERWAVE_SECRET}"}
-
-        try:
-            response = requests.post(
-                pg_service.FLUTTERWAVE_PAYMENTS_URL, json=payment_data, headers=header
-            )
-            response = response.json()
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Error initializing payment"
-            )
-    else:
-        # stripe
-        pass
+    else: # stripe
+        # get a dictionary containing "payment_url" for stripe
+        payment_url = pg_service.get_payment_url_for_stripe(
+            current_user, bill_plan, schema.redirect_url, schema)
 
     # RETURN payment data
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Payment initialized successfully",
-        data={"payment_url": response["data"]["link"]},
+        data=payment_url,
     )
 
 

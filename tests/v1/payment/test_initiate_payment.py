@@ -74,12 +74,22 @@ def test_payment(test_user):
 
 
 @pytest.fixture()
-def mock_initiate_payment_schema(test_user, test_bill_plan):
+def mock_initiate_payment_schema_flutterwave(test_user, test_bill_plan):
     return InitiatePaymentSchema(
         email=test_user.email,
         billing_plan_id=test_bill_plan.id,
         payment_gateway="flutterwave",
-        redirect_url="example.com"
+        redirect_url="http://example.com"
+    )
+
+
+@pytest.fixture()
+def mock_initiate_payment_schema_stripe(test_user, test_bill_plan):
+    return InitiatePaymentSchema(
+        email=test_user.email,
+        billing_plan_id=test_bill_plan.id,
+        payment_gateway="stripe",
+        redirect_url="http://example.com"
     )
 
 
@@ -105,10 +115,12 @@ async def test_initiate_payment_successful(
     test_user,
     test_bill_plan,
     access_token_user,
-    mock_initiate_payment_schema
+    mock_initiate_payment_schema_stripe,
+    mock_initiate_payment_schema_flutterwave
 ):
     # Setup mocks
     uuid_for_tx_ref = uuid7()
+    mock_settings.STRIPE_SECRET = "test_secret_key"
     mock_settings.FLUTTERWAVE_SECRET = "test_secret_key"
     mock_uuid7.return_value = uuid_for_tx_ref
     mock_post.return_value.json.return_value = {"data": {"link": "http://payment.url"}}
@@ -116,9 +128,15 @@ async def test_initiate_payment_successful(
     mock_db_session.query().filter().first.return_value = test_user
     mock_db_session.get.return_value = test_bill_plan
 
-    response = await initiate_payment(mock_initiate_payment_schema, test_user, mock_db_session)
+    flutterwave_req = await initiate_payment(
+        mock_initiate_payment_schema_flutterwave, test_user, mock_db_session)
 
-    assert response.status_code == status.HTTP_200_OK
+    assert flutterwave_req.status_code == status.HTTP_200_OK
+
+    stripe_req = await initiate_payment(
+        mock_initiate_payment_schema_stripe, test_user, mock_db_session)
+
+    assert stripe_req.status_code == status.HTTP_200_OK
 
 
 def test_initiate_payment_unsuccessful(
@@ -138,10 +156,10 @@ def test_initiate_payment_unsuccessful(
         'redirect_url': "example.com"
     }
 
-    # NON-FLUTTERWAVE
+    # NON-STRIPE/FLUTTERWAVE
     response = client.post(post_url, json=data, headers=headers)
     assert response.status_code == 403
-    assert response.json()["message"] == "Only flutterwave supported for now"
+    assert response.json()["message"] == "Only ['stripe', 'flutterwave'] supported for now"
     # reset url to correct one
     data.update({'payment_gateway': 'flutterwave'})
 
