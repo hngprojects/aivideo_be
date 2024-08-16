@@ -20,6 +20,6 @@ class TalkingHeadRequest(BaseModel):
     def check_voice_over(cls, value):
         allowed_types = ["man", "woman", "neutral"]
         if value not in allowed_types:
-            raise ValueError(f"Invalid image type: {value}. Must be one of {', '.join(allowed_types)}.")
+            raise ValueError(f"Invalid voice over: {value}. Must be one of {', '.join(allowed_types)}.")
         return value
     
