@@ -14,7 +14,14 @@ db = next(get_db())
 
 
 @worker.task()
-def generate_talking_avatar_task(img_file, audio_file, aspect_ratio, script, voice_over, default: bool):
+def generate_talking_avatar_task(
+    img_file, 
+    audio_file, 
+    aspect_ratio, 
+    script: str, 
+    voice_over, 
+    default: bool
+):
 # def generate_talking_avatar_task():
     '''Background task to generate talking avatar and save to database'''
 
