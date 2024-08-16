@@ -3,13 +3,9 @@ from deep_translator import GoogleTranslator
 from io import BytesIO
 import logging
 from typing import Dict, Union
-import numpy as np
-import soundfile as sf
-import librosa
 import speech_recognition as sr
 from pydub import AudioSegment
-from pydub.exceptions import CouldntDecodeError
-from fastapi.responses import JSONResponse
+
 
 
 logger = logging.getLogger(__name__)
