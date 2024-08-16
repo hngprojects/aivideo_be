@@ -9,9 +9,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  on-success:
+  deploy:
     runs-on: pydeploy
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,8 +22,12 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd aivideo-python-be/staging/
+            cd aivideo_be
+            git add .
+            git stash
+            git checkout staging
             git pull origin staging
-            source .venv/bin/activate
+            source venv-staging/bin/activate
             pip install -r requirements.txt
             alembic upgrade head
+            echo "${{ secrets.PASSWORD }}" | sudo -S systemctl restart aivideo-python-staging.service

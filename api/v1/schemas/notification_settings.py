@@ -12,3 +12,4 @@ class NotificationSettingsBase(BaseModel):
     slack_notifications_activity_on_your_workspace: bool
     slack_notifications_always_send_email_notifications: bool
     slack_notifications_announcement_and_update_emails: bool
+    
