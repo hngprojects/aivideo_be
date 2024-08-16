@@ -6,7 +6,6 @@ from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
 import json
 from api.utils.ytdownload import download_video
-from fastapi import HTTPException
 
 db = next(get_db())
 
