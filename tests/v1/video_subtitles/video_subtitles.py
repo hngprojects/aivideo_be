@@ -30,19 +30,6 @@ def mock_create_project_with_job():
         mock.return_value = AsyncMock(id="mock_project_id")
         yield mock
 
-def test_transcribe_video_success(mock_transcribe_video_task, mock_create_project_with_job):
-    request_data = TranscriptionRequest(video_url="https://example.com/video.mp4")
-
-    response = client.post(
-        "/api/v1/tools/video-subtitles/transcribe",
-        json=request_data.dict()
-    )
-
-    assert response.status_code == 200
-    assert response.json()["message"] == "Transcription job initiated successfully"
-    assert "job_id" in response.json()["data"]
-    assert "project_id" in response.json()["data"]
-
 def test_translate_text_success(mock_translate_text_task, mock_create_project_with_job):
     request_data = TranslationRequest(text="Hello, world!", target_language="es")
 
@@ -56,13 +43,24 @@ def test_translate_text_success(mock_translate_text_task, mock_create_project_wi
     assert "job_id" in response.json()["data"]
     assert "project_id" in response.json()["data"]
 
-def test_generate_subtitles_success(mock_generate_subtitles_task, mock_create_project_with_job):
-    request_data = SubtitleRequest(video_url="https://example.com/video.mp4")
+def test_transcribe_video_success(mock_transcribe_video_task, mock_create_project_with_job):
+    with open("test_video.mp4", "rb") as video_file:
+        response = client.post(
+            "/api/v1/tools/video-subtitles/transcribe",
+            files={"file": ("test_video.mp4", video_file, "video/mp4")},
+        )
 
-    response = client.post(
-        "/api/v1/tools/video-subtitles/generate_subtitles",
-        json=request_data.dict()
-    )
+    assert response.status_code == 200
+    assert response.json()["message"] == "Transcription job initiated successfully"
+    assert "job_id" in response.json()["data"]
+    assert "project_id" in response.json()["data"]
+
+def test_generate_subtitles_success(mock_generate_subtitles_task, mock_create_project_with_job):
+    with open("test_video.mp4", "rb") as video_file:
+        response = client.post(
+            "/api/v1/tools/video-subtitles/generate_subtitles",
+            files={"file": ("test_video.mp4", video_file, "video/mp4")},
+        )
 
     assert response.status_code == 200
     assert response.json()["message"] == "Subtitle generation job initiated successfully"
