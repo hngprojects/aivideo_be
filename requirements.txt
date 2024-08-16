@@ -134,6 +134,7 @@ orjson==3.10.7
 packaging==24.1
 passlib==1.7.4
 pathspec==0.12.1
+pandas==2.2.2
 pillow==10.4.0
 pip-tools==7.4.1
 pipdeptree==2.23.1
