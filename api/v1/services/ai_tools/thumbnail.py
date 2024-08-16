@@ -10,8 +10,10 @@ from urllib.parse import urljoin
 async def generate_thumbnails_service(video_id: str, base_url: str, manual_capture: bool = False, timestamp: float = None):
     '''Generate thumbnails for a video'''
     base_name = video_id
+    video_files = os.listdir(os.path.join(
+        settings.MEDIA_DIR, 'uploads', 'videos'))
     video_path = os.path.join(
-        settings.MEDIA_DIR, 'uploads', 'videos', f'{base_name}.mp4')
+        settings.MEDIA_DIR, 'uploads', 'videos', video_files[0])
 
     if not os.path.isfile(video_path):
         raise FileNotFoundError(f"Video file not found: {video_path}")
