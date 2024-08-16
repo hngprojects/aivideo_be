@@ -63,8 +63,8 @@ async def test_talking_head_avatar_selection(
             "avatar_id": "avatar_123",
             "audio_id": "audio_123",
             "script": "Test script",
-            "aspect_ratio": "16:9",
-            "voice_over": "male"
+            "aspect_ratio": "vertical",
+            "voice_over": "man"
         }
     )
 
