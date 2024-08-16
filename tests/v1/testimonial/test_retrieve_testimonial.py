@@ -20,6 +20,7 @@ def mock_testimonial():
         id=str(uuid7()),
         client_name="Zxenon",
         content="Very Useful Product",
+        client_position="Mentor",
         rating=4.5,
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc)
@@ -56,10 +57,12 @@ class TestCodeUnderTest:
         mock_data = [
             Testimonial(id=str(uuid7()), client_name="Zxenon", content="Very Useful Product",
                         rating=4.5, created_at=datetime.now(timezone.utc),
+                        client_position="Mentor",
                         updated_at=datetime.now(timezone.utc)
                         ),
             Testimonial(id=str(uuid7()), client_name="Zeus", content="Doesn't strike me as useful",
                         rating=2, created_at=datetime.now(timezone.utc),
+                        client_position="Mentor",
                         updated_at=datetime.now(timezone.utc)
                         ) 
         ]

@@ -1,4 +1,4 @@
-name: Staging Branch Deployment
+name: Staging Deployment
 
 on:
   push:
@@ -9,22 +9,24 @@ on:
   workflow_dispatch:
 
 jobs:
-  on-success:
+  deploy:
     runs-on: pydeploy
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Use SSH Action
+      - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           script: |
-            cd aivideo-python-be/staging/
+            cd aivideo_be/staging
+            git add .
+            git stash
             git pull origin staging
-            source .venv/bin/activate
+            source venv/bin/activate
             pip install -r requirements.txt
+            alembic revision --autogenerate
             alembic upgrade head

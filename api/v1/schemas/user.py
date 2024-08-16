@@ -73,6 +73,7 @@ class AllUsersResponse(BaseModel):
     status: str
     page: int
     per_page: int
+    total_pages: int
     total: int
     data: Union[List[UserData], List[None]]
 
@@ -145,6 +146,10 @@ class UserStatData(BaseModel):
     active_users: int
     inactive_users: int
     deleted: int
+    created_in_last_hour: int
+    active_in_last_hour: int
+    inactive_in_last_hour: int
+    deleted_in_last_hour: int
 
 
 class UserStatResponse(BaseModel):

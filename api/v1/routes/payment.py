@@ -1,8 +1,10 @@
-from fastapi import Depends, APIRouter, status, HTTPException, Query
+from fastapi import Depends, APIRouter, status, HTTPException, Request, Query
 from sqlalchemy.orm import Session
 from uuid_extensions import uuid7
 from typing import Annotated
 import requests
+import stripe
+import json
 
 
 from api.v1.services.billing_plan import billing_plan_service as bp_service
@@ -34,50 +36,28 @@ async def initiate_payment(
     """
     This endpoint generates data for requests going to payment gateways
     """
-    # CONFIRM payment_gateway
-    if schema.payment_gateway != "flutterwave":
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN, detail="Only flutterwave supported for now"
-        )
+    # validate payment_gateway
+    # this checks that ONLY accepted payment gateways pass through
+    payment_gateway = pg_service.validate_gateway(schema.payment_gateway)
 
-    # GET billing plan
+    # get billing plan
     bill_plan = bp_service.fetch(db, schema.billing_plan_id)
 
-    payment_data = {
-        "tx_ref": bill_plan.id,
-        "currency": bill_plan.currency,
-        "amount": float(bill_plan.price),
-        "redirect_url": schema.redirect_url,
-        "payment_title": "Convey AI Video Suites",
-        "payment_description": "User subscription payment",
-        "customer": {
-            "email": current_user.email,
-            "name": f"{current_user.first_name} {current_user.last_name}",
-        },
-    }
-
-    if schema.payment_gateway == "flutterwave" and schema.auto_renew:
-        subscription_plan_id = pg_service.create_subscription_plan(bill_plan)
-        payment_data['payment_plan'] = subscription_plan_id
-
-    header = {"Authorization": f"Bearer {settings.FLUTTERWAVE_SECRET}"}
-
-    try:
-        response = requests.post(
-            pg_service.FLUTTERWAVE_PAYMENTS_URL, json=payment_data, headers=header
-        )
-        response = response.json()
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Error initializing payment"
-        )
+    if payment_gateway == "flutterwave":
+        # get a dictionary containing "payment_url" for flutterwave
+        payment_url = pg_service.get_payment_url_for_flutterwave(
+            current_user, bill_plan, schema)
+        
+    else: # stripe
+        # get a dictionary containing "payment_url" for stripe
+        payment_url = pg_service.get_payment_url_for_stripe(
+            current_user, bill_plan, schema.redirect_url, schema)
 
     # RETURN payment data
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Payment initialized successfully",
-        data={"payment_url": response["data"]["link"]},
+        data=payment_url,
     )
 
 
@@ -153,6 +133,62 @@ async def verify_payment_status(
             "amount": response["data"]["amount"],
             "currency": response["data"]["currency"],
         },
+    )
+
+
+@payments.post("/stripe/webhook")
+async def stripe_webhook(
+    req: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    stripe webhook for event listening
+    """
+
+    payload = await req.body()
+    stripe.api_key = settings.STRIPE_SECRET
+    event = None
+
+    try:
+        event = stripe.Event.construct_from(
+        json.loads(payload), stripe.api_key
+        )
+    except ValueError as e:
+        return success_response(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        message="Payment failed"
+    )
+
+    # Handle the event
+    if event.type == "checkout.session.completed":
+        payment = event.data
+        amount = payment["amount_total"]
+
+        payload = {
+            "user_id": payment['metadata']['user_id'],
+            "transaction_id": payment['id'],
+            "amount": amount,
+            "currency": payment["currency"],
+            "status": "completed",
+            "method": "stripe",
+        }
+
+        # Record payment
+        payment_service.create(db, payload)
+
+        # create a user subscription plan
+        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(amount, amount)
+        user_subscription_payload = {
+            "start_date": start_date,
+            "billing_plan_id": payment['metadata']['billing_plan_id'],
+            "user_id": payment['metadata']['user_id'],
+            "end_date": end_date
+        }
+        user_subscription_service.create(db, user_subscription_payload)
+
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Payment success"
     )
 
 

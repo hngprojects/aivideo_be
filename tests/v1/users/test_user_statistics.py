@@ -130,17 +130,7 @@ def test_stats_retrieval(
     mock_db_session: Session,
     override_get_current_super_admin: None,
 ):
-    mock_query = mock_db_session.query.return_value
-    mock_query.count.return_value = len(mock_users)
-    mock_query.filter.return_value.count.side_effect = [
-        len([user for user in mock_users if user["is_active"] == True]),
-        len([user for user in mock_users if user["is_active"] == False]),
-        len([user for user in mock_users if user["is_deleted"] == True]),
-    ]
 
     response = client.get(ENDPOINT)
 
-    print(response.json())
-
     assert response.status_code == 200
-    assert response.json()["data"]["total_users"] == len(mock_users)

@@ -36,9 +36,7 @@ def get_current_user_details(
             current_user,
             exclude=[
                 "password",
-                "is_superadmin",
                 "is_deleted",
-                # "is_verified",
                 "updated_at",
             ],
         ),
@@ -62,9 +60,6 @@ async def delete_account(
     )
 
 
-
-
-
 @user_router.patch("", status_code=status.HTTP_200_OK)
 def update_current_user(
     current_user: Annotated[User, Depends(user_service.get_current_user)],
@@ -82,13 +77,36 @@ def update_current_user(
                 "password",
                 "is_superadmin",
                 "is_deleted",
-                # "is_verified",
                 "updated_at",
                 "created_at",
                 "is_active",
             ],
         ),
     )
+
+
+@user_router.get(
+    "/search", status_code=status.HTTP_200_OK, response_model=AllUsersResponse
+)
+async def search_users(
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    db: Annotated[Session, Depends(get_db)],
+    page: int = 1,
+    per_page: int = 10,
+    query: Optional[str] = Query(None),
+    is_deleted: Optional[bool] = Query(None),
+):
+    """
+    user search functionality.
+    Args:
+        current_user: The current user(admin) making the request
+        db: database Session object
+        page: the page number
+        per_page: the maximum size of users for each page
+    Returns:
+        UserData
+    """
+    return user_service.search(db, page, per_page, query, is_deleted)
 
 
 @user_router.get(
@@ -108,8 +126,18 @@ def get_user_statistics(
     )
 
 
+@user_router.get("/export/csv", status_code=status.HTTP_200_OK)
+def export_csv(
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    return user_service.export_to_csv(db)
+
+
 @user_router.get(
-    "/{user_id}/activity", status_code=status.HTTP_200_OK, response_model=UserActivityResponse
+    "/{user_id}/activity",
+    status_code=status.HTTP_200_OK,
+    response_model=UserActivityResponse,
 )
 def get_user_activity(
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
@@ -151,7 +179,6 @@ def update_user(
                 "password",
                 "is_superadmin",
                 "is_deleted",
-                # "is_verified",
                 "updated_at",
                 "created_at",
                 "is_active",
@@ -236,7 +263,6 @@ async def get_users(
         per_page: the maximum size of users for each page
         is_active: boolean to filter active users
         is_deleted: boolean to filter deleted users
-        is_verified: boolean to filter verified users
         is_superadmin: boolean to filter users that are super admin
     Returns:
         UserData
@@ -244,33 +270,9 @@ async def get_users(
     query_params = {
         "is_active": is_active,
         "is_deleted": is_deleted,
-        # "is_verified": is_verified,
         "is_superadmin": is_superadmin,
     }
     return user_service.fetch_all(db, page, per_page, **query_params)
-
-
-@user_router.get(
-    "/search", status_code=status.HTTP_200_OK, response_model=AllUsersResponse
-)
-async def search_users(
-    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
-    db: Annotated[Session, Depends(get_db)],
-    page: int = 1,
-    per_page: int = 10,
-    query: Optional[str] = Query(None),
-):
-    """
-    user search functionality.
-    Args:
-        current_user: The current user(admin) making the request
-        db: database Session object
-        page: the page number
-        per_page: the maximum size of users for each page
-    Returns:
-        UserData
-    """
-    return user_service.search(db, page, per_page, query)
 
 
 @user_router.post(
@@ -293,22 +295,6 @@ def admin_registers_user(
     return user_service.super_admin_create_user(db, user_request)
 
 
-@user_router.get("/{role_id}/roles", status_code=status.HTTP_200_OK)
-async def get_users_by_role(
-    role_id: Literal["admin", "user", "guest", "owner"],
-    db: Session = Depends(get_db),
-    current_user: User = Depends(user_service.get_current_user),
-):
-    """Endpoint to get all users by role"""
-    users = user_service.get_users_by_role(db, role_id, current_user)
-
-    return success_response(
-        status_code=200,
-        message="Users retrieved successfully",
-        data=jsonable_encoder(users),
-    )
-
-
 @user_router.get("/{user_id}", status_code=status.HTTP_200_OK)
 def get_user_by_id(
     user_id: str,
@@ -324,26 +310,22 @@ def get_user_by_id(
             user,
             exclude=[
                 "password",
-                "is_superadmin",
-                "is_deleted",
-                # "is_verified",
                 "updated_at",
-                "created_at",
-                "is_active",
             ],
         ),
     )
 
 
-
-@user_router.put("/update/password", status_code=status.HTTP_200_OK, response_model=success_response)
+@user_router.put(
+    "/update/password", status_code=status.HTTP_200_OK, response_model=success_response
+)
 def change_password(
     request: ChangePasswordSchema,
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user),
 ):
     """Route to change the user's password"""
-    
+
     user_service = UserService()
 
     # Call the service method directly
@@ -352,12 +334,11 @@ def change_password(
         new_password=request.new_password,
         confirm_new_password=request.confirm_new_password,
         user=current_user,
-        db=db
+        db=db,
     )
-    
 
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Password changed successfully!!",
-        data=result
+        data=result,
     )
