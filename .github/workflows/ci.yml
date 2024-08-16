@@ -4,7 +4,7 @@ on:
     types: [opened, synchronize, reopened]
     paths-ignore:
       - "README.md"
-#      - ".github/workflows/**"
+     - ".github/workflows/**"
 jobs:
   build-and-test:
     runs-on: pyrunner
@@ -58,6 +58,7 @@ jobs:
           fi
       - name: Run migrations
         run: |
+          alembic version --autogenerate
           alembic upgrade head
       - name: Run tests
         run: |
