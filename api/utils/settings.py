@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     MAIL_SERVER: str = config("MAIL_SERVER")
 
     FLUTTERWAVE_SECRET: str = config("FLUTTERWAVE_SECRET")
+    STRIPE_SECRET: str = config("STRIPE_SECRET")
 
     TWILIO_ACCOUNT_SID: str = config("TWILIO_ACCOUNT_SID")
     TWILIO_AUTH_TOKEN: str = config("TWILIO_AUTH_TOKEN")
@@ -46,13 +47,16 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str = config("OPENAI_API_KEY")
     CELERY_BROKER_URL: str = config("CELERY_BROKER_URL")
-    ASEMBLYAI_API_KEY: str = config("ASEMBLYAI_API_KEY")
+    ASSEMBLYAI_API_KEY: str = config("ASSEMBLYAI_API_KEY")
     OPENROUTER_API_KEY: str = config("OPENROUTER_API_KEY")
     GOOEY_API_KEY: str = config("GOOEY_API_KEY")
     UNREAL_SPEECH_API_KEY: str = config("UNREAL_SPEECH_API_KEY")
 
     MEDIA_DIR: str = config("MEDIA_DIR")
     MAX_FILE_SIZE: int = config("MAX_FILE_SIZE")
+    
+    X_RAPIDAPI_KEY: str = config("X_RAPIDAPI_KEY")
+    X_RAPIDAPI_HOST: str = config("X_RAPIDAPI_HOST")
 
     @property
     def ALLOWED_EXTENSIONS(self) -> set[str]:
