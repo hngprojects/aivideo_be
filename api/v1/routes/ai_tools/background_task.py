@@ -1,4 +1,5 @@
 import asyncio
+import json
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -28,15 +29,16 @@ async def event_generator(job_id: str, db: Session):
         event_name = 'other'
         
         if status == 'FAILURE':
-            # try:
-            result = f'{task_result.info}'
-            # except Exception as e:
-            #     result = f"Failed with error: {str(e)}"
+            # Safely convert task_result.info to a string
+            try:
+                result = str(task_result.info) if task_result.info else "Unknown error"
+            except Exception as e:
+                result = f"Failed with error: {str(e)}"
 
             event_name = 'failure'
             job_service.update_job(job_id, 'Failed', result)
 
-            yield f'event: {event_name}\ndata: {{status: "{status.capitalize()}", result: "{result}"}}\n\n'
+            yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
             break
         
         elif status == 'SUCCESS':
@@ -49,10 +51,10 @@ async def event_generator(job_id: str, db: Session):
             project.is_active = True
             db.commit()
 
-            yield f'event: {event_name}\ndata: {{status: "{status.capitalize()}", result: "{result}"}}\n\n'
+            yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
             break
         
-        yield f'event: {event_name}\ndata: {{status: "{status.capitalize()}", result: "{result}"}}\n\n'
+        yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
         await asyncio.sleep(1)  # Delay between status checks
 
 
@@ -90,12 +92,11 @@ async def send_job_status_updates(
         job_service.update_job(job_id, "Pending")
 
     elif status == "FAILURE":
-        # try:
-            # result = str(task_result.info)
-        result = f'{task_result.info}'
-        
-        # except Exception as e:
-        #     result = f"Failed with error: {str(e)}"
+        # Safely convert task_result.info to a string
+        try:
+            result = str(task_result.info) if task_result.info else "Unknown error"
+        except Exception as e:
+            result = f"Failed with error: {str(e)}"
 
         job_service.update_job(job_id, "Failed", result)
 
