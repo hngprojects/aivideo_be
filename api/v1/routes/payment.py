@@ -1,7 +1,8 @@
-from fastapi import Depends, APIRouter, status, HTTPException
+from fastapi import Depends, APIRouter, status, HTTPException, Request
 from sqlalchemy.orm import Session
 from uuid_extensions import uuid7
 import requests
+import stripe
 
 
 from api.v1.services.payment import payment_gateway_service as pg_service
@@ -127,4 +128,59 @@ async def verify_payment_status(
             "amount": response["data"]["amount"],
             "currency": response["data"]["currency"],
         },
+    )
+
+@payments.post("/stripe/webhook")
+async def stripe_webhook(
+    req: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    stripe webhook for event listening
+    """
+
+    payload = await req.body()
+    stripe.api_key = settings.STRIPE_SECRET
+    event = None
+
+    try:
+        event = stripe.Event.construct_from(
+        json.loads(payload), stripe.api_key
+        )
+    except ValueError as e:
+        return success_response(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        message="Payment failed"
+    )
+
+    # Handle the event
+    if event.type == "checkout.session.completed":
+        payment = event.data
+        amount = payment["amount_total"]
+
+        payload = {
+            "user_id": payment['metadata']['user_id'],
+            "transaction_id": payment['id'],
+            "amount": amount,
+            "currency": payment["currency"],
+            "status": "completed",
+            "method": "stripe",
+        }
+
+        # Record payment
+        payment_service.create(db, payload)
+
+        # create a user subscription plan
+        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(amount, amount)
+        user_subscription_payload = {
+            "start_date": start_date,
+            "billing_plan_id": payment['metadata']['billing_plan_id'],
+            "user_id": payment['metadata']['user_id'],
+            "end_date": end_date
+        }
+        user_subscription_service.create(db, user_subscription_payload)
+
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Payment success"
     )
