@@ -1,3 +1,4 @@
+from typing import Optional
 from api.utils.logger import logging
 import ffmpeg
 import os
@@ -5,6 +6,7 @@ from typing import List, Optional, Union
 from secrets import token_hex
 from fastapi import HTTPException, status
 from pathlib import Path
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -44,6 +46,7 @@ async def upload_file(file, allowed_extensions: Optional[list], upload_folder: s
 
     return SAVE_FILE_DIR
 
+
 async def download_file(file, download_folder: str, save_extension: str = 'pdf'):
     '''Function to upload a file'''
 
@@ -71,7 +74,7 @@ async def download_file(file, download_folder: str, save_extension: str = 'pdf')
     with open(SAVE_FILE_DIR, 'wb') as f:
         content = await file.read()
         f.write(content)
-        
+
     return SAVE_FILE_DIR
 
 
@@ -85,22 +88,24 @@ async def upload_file_to_current_dir(file: str, allowed_extensions: Optional[lis
     name = file_name.split('.')[0]
 
     if not file:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='File cannot be blank')
-    
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail='File cannot be blank')
+
     if allowed_extensions:
         if file_extension not in allowed_extensions:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid file format')
-        
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid file format')
+
     # UPLOAD_FOLDER = os.path.join(BASE_DIR, 'media')
     # if not os.path.exists(UPLOAD_FOLDER):
     #     os.makedirs(UPLOAD_FOLDER)
-    
+
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
     SAVE_FILE_DIR = os.path.join(BASE_DIR, new_filename)
     with open(SAVE_FILE_DIR, 'wb') as f:
         content = await file.read()
         f.write(content)
-        
+
     return SAVE_FILE_DIR
 
 
@@ -108,7 +113,7 @@ def delete_file(file_path: str):
 
     if os.path.exists(file_path):
         os.remove(file_path)
-    
+
 
 def convert_video_to_audio(
     input_path: str,
@@ -161,20 +166,26 @@ def convert_video_to_audio(
         raise
 
 
+def delete_file(file):
+    """delete a file"""
+    os.remove(file)
+
+
 async def upload_files(
     files,
     allowed_extensions: Optional[list],
     upload_folder: str,
-    save_extension: str = 'pdf'
+    max_file_size: int = 10 * 1024 * 1024,  # 10 MB default size
+    chunk_size: int = 1024
 ):
-    '''Function to upload single or multiple files'''
+    '''Function to upload single or multiple files with file size limitation'''
+
     if not isinstance(files, list):
         files = [files]
 
     uploaded_files = []
 
     for file in files:
-        # Check against invalid extensions
         file_name = file.filename.lower()
         file_extension = file_name.split('.')[-1]
         name = file_name.split('.')[0]
@@ -192,6 +203,19 @@ async def upload_files(
                     detail=f'Invalid file format for {file_name}'
                 )
 
+        # Check the file size by reading it in chunks
+        file_size = 0
+        while chunk := await file.read(chunk_size):
+            file_size += len(chunk)
+            if file_size > max_file_size:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f'File {file_name} exceeds the maximum allowed size of {max_file_size / (1024 * 1024)} MB'
+                )
+
+        # Reset file pointer to the start after checking size
+        await file.seek(0)
+
         UPLOAD_FOLDER = os.path.join(BASE_DIR, 'media', 'uploads')
         if not os.path.exists(UPLOAD_FOLDER):
             os.makedirs(UPLOAD_FOLDER)
@@ -202,12 +226,13 @@ async def upload_files(
             os.makedirs(UPLOAD_DIR)
 
         # Generate a new file name
-        new_filename = f'{name}-{token_hex(5)}.{save_extension}'
+        new_filename = f'{name}-{token_hex(5)}.{file_extension}'
         SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
 
+        # Save the file
         with open(SAVE_FILE_DIR, 'wb') as f:
-            content = await file.read()
-            f.write(content)
+            while chunk := await file.read(chunk_size):
+                f.write(chunk)
 
         uploaded_files.append(SAVE_FILE_DIR)
 
