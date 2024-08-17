@@ -19,6 +19,7 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
 
     file_content = await file.read()
     file_size = len(file_content)
+    await file.seek(0)
 
     print(f"Uploaded file size: {file_size} bytes")
 
@@ -33,6 +34,8 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
         upload_folder='videos',
         save_extension=file.filename.split('.')[-1].lower(),
     )
+
+    print(f"Saved path: {saved_path}")
 
     video_id = os.path.basename(saved_path).split('.')[0]
     video_url = urljoin(
