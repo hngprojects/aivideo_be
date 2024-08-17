@@ -18,7 +18,6 @@ def rate_limiter(max_calls: int, time_frame: int):
                     detail="Too Many Requests."
                 )
             calls.append(now)
-            print(calls)
             return await func(request, *args, **kwargs)
         
         return wrapper
