@@ -7,7 +7,7 @@ from api.utils.settings import settings
 from urllib.parse import urljoin
 
 
-async def generate_thumbnails_service(video_id: str, base_url: str, manual_capture: bool = False, timestamp: float = None):
+async def generate_thumbnails_service(video_id: str, base_url: str, timestamp: float = None):
     '''Generate thumbnails for a video'''
     base_name = video_id
     video_dir = os.path.join(settings.MEDIA_DIR, 'uploads', 'videos')
@@ -31,7 +31,8 @@ async def generate_thumbnails_service(video_id: str, base_url: str, manual_captu
 
     thumbnail_urls = []
 
-    if manual_capture and timestamp is not None:
+    if timestamp is not None:
+        # Manual capture
         thumbnail_id = str(uuid.uuid4())
         output_path = os.path.join(
             thumbnail_dir, f'{base_name}_thumbnail_{thumbnail_id}.jpg'
@@ -48,6 +49,7 @@ async def generate_thumbnails_service(video_id: str, base_url: str, manual_captu
             base_url, f"/media/downloads/thumbnails/{os.path.basename(output_path)}")
         thumbnail_urls.append(thumbnail_url)
     else:
+        # Auto capture
         ffprobe_command = ['ffprobe', '-v', 'error', '-show_entries',
                            'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', video_path]
         print(f"Running ffprobe command: {' '.join(ffprobe_command)}")
