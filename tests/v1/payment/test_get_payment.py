@@ -54,6 +54,18 @@ def super_admin():
         is_superadmin=True
     )
 
+# Other User
+@pytest.fixture
+def other_user():
+    return User(
+        id=str(uuid7()),
+        email="otheruser@gmail.com",
+        password="hashedpassword",
+        first_name="other",
+        last_name="user",
+        is_active=True
+    )
+
 
 @pytest.fixture()
 def test_payment(test_user):
@@ -79,8 +91,8 @@ def access_token_super_admin(super_admin):
     return user_service.create_access_token(user_id=super_admin.id)
 
 @pytest.fixture
-def random_access_tokenr():
-    return user_service.create_access_token(user_id='hshsdgdgdgdgdgdg')
+def random_access_token(other_user):
+    return user_service.create_access_token(user_id=other_user.id)
 
 def make_request(token, payment):
     return client.get(
@@ -93,20 +105,20 @@ def make_request(token, payment):
 def test_get_payment_successful(
     mock_db_session,
     test_user,
+    super_admin,
     test_payment,
-    access_token_test_user
+    access_token_test_user,
+    access_token_super_admin
 ):
     # Mock the query for getting user
-    mock_db_session.query().filter().first.return_value = test_user
+    mock_db_session.query().filter().first.side_effects = [test_user, super_admin]
 
     # Mock the query for payment
-    mock_db_session.query().get.return_value = test_payment
+    mock_db_session.get.return_value = test_payment
 
     # Make request
     response = make_request(access_token_test_user, test_payment)
     resp_d = response.json()
-
-    print(resp_d)
 
     # FOR USER ONWER
     assert response.status_code == 200
@@ -114,8 +126,6 @@ def test_get_payment_successful(
     assert resp_d['message'] == "Payment fetched successfully"
     
     # FOR SUPER ADMIN
-    mock_db_session.query().filter().first.return_value = super_admin
-    # mock_user_service.
     response = make_request(access_token_super_admin, test_payment)
     resp_d = response.json()
     assert response.status_code == 200
@@ -133,17 +143,19 @@ def test_get_payment_successful(
     assert datetime.fromisoformat(pay['created_at']) == test_payment.created_at
 
 
-# Test for unauthenticated requests
-def test_for_unauthenticated_requests(
+# Test for unauthenticated/unauthorized request
+def test_for_unauthenticated_unauthorized_request(
     mock_db_session,
     test_user,
-    test_payment
+    other_user,
+    test_payment,
+    random_access_token
 ):
     # Mock the query for getting user
     mock_db_session.query().filter().first.return_value = test_user
 
-    # WRONG AUTH TOKEN
-    response = make_request(random_access_tokenr, test_payment)
+    # INVALID AUTH TOKEN
+    response = make_request("invalid-access-token", test_payment)
     print(response.json())
     assert response.status_code == 401
     assert response.json()['message'] == "Could not validate credentials"
@@ -155,10 +167,9 @@ def test_for_unauthenticated_requests(
 
     # NON-SUPERADMIN / NON-OWNER
     # --remove the superadmin privilege from superadmin-- #
-    super_admin.is_superadmin = False
-    mock_db_session.query().filter().first.return_value = super_admin
-    resp = make_request(access_token_super_admin, test_payment)
-    assert resp.status_code == 403
+    mock_db_session.query().filter().first.return_value = other_user
+    resp = make_request(random_access_token, test_payment)
+    assert resp.status_code == 401
     assert resp.json()[
         "message"] == "You do not have permission to access this resource"
 
@@ -173,7 +184,7 @@ def test_for_payment_not_found(
     # Mock the query for getting user
     mock_db_session.query().filter().first.return_value = test_user
 
-    mock_db_session.query().get.return_value = None
+    mock_db_session.get.return_value = None
 
     # Make request
     response = make_request(access_token_test_user, test_payment)

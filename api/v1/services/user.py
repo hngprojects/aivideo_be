@@ -698,10 +698,10 @@ class UserService(Service):
     def check_superadmin_or_user_in_object(self, user_: User, obj) -> bool:
         """
         Check that user ``is superadmin`` OR has the ID of ``obj.user_id``.
-        Raise 400 status code error if false, otherwise return ``True``"""
-        if not user_.is_superadmin and not hasattr(obj, "user_id") and obj.user_id == user_.id:
+        Raise 401 status code error if false, otherwise return ``True``"""
+        if not user_.is_superadmin and not (hasattr(obj, "user_id") and obj.user_id == user_.id):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="You do not have permission to access this resource"
             )
         return True

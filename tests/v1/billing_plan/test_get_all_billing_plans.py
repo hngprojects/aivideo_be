@@ -160,4 +160,4 @@ def test_for_no_billing_plans_found(
     assert response.status_code == 200
     assert response.json()['success'] is True
     assert response.json()['message'] == "Billing plans fetched successfully."
-    assert not response.json()['data'] == []
+    assert response.json()['data']['billing_plans'] == []
