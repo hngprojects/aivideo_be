@@ -66,7 +66,7 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
 @thumbnail_router.post("/generate-thumbnails")
 async def generate_thumbnails(request: Request, body: ThumbnailRequest):
     task = generate_thumbnails_task.delay(
-        body.video_id, str(request.url), body.manual_capture, body.timestamp
+        body.video_id, str(request.url),  body.timestamp
     )
 
     thumbnails = task.get()
