@@ -10,24 +10,6 @@ from api.db.database import get_db
 db = next(get_db())
 
 @worker.task()
-def transcribe_video_task(video_url):
-    """Background task to transcribe audio from a video"""
-    try:
-        # Convert video to audio
-        audio_file_path = convert_video_to_audio(video_url)
-
-        # Transcribe audio to text
-        transcription = summary_service.transcribe_audio(audio_file_path)
-
-        # Delete the audio file after transcription
-        delete_file(audio_file_path)
-
-        return json.dumps(transcription)
-    except Exception as e:
-        print(f"Transcription failed: {str(e)}")
-        raise
-
-@worker.task()
 def translate_text_task(text, target_language):
     """Background task to translate text"""
     try:
@@ -39,11 +21,34 @@ def translate_text_task(text, target_language):
         raise
 
 @worker.task()
-def generate_subtitles_task(video_url):
+def transcribe_video_task(video_file_path):
+    """Background task to transcribe audio from a video"""
+    try:
+        # Convert video to audio
+        audio_file_path = convert_video_to_audio(video_file_path)
+
+        # Transcribe audio to text
+        transcription = summary_service.transcribe_audio(audio_file_path)
+
+        # Delete the audio file and video file after transcription
+        delete_file(audio_file_path)
+        delete_file(video_file_path)
+
+        return json.dumps(transcription)
+    except Exception as e:
+        print(f"Transcription failed: {str(e)}")
+        raise
+
+@worker.task()
+def generate_subtitles_task(video_file_path, timestamps):
     """Background task to generate subtitles from a video"""
     try:
-        # Generate subtitles
-        result = generate_subtitles(video_url)
+        # Generate subtitles with the given timestamps
+        result = generate_subtitles(video_file_path, timestamps)
+
+        # Clean up the video file after processing
+        delete_file(video_file_path)
+
         return json.dumps(result)
     except Exception as e:
         print(f"Subtitle generation failed: {str(e)}")

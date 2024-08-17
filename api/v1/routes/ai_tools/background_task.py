@@ -22,8 +22,15 @@ async def event_generator(job_id: str, db: Session):
         status = task_result.state
         result = None
 
-        project.is_active = False
-        db.commit()
+        try:
+            project.is_active = False
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail="Failed to update project status")
+        finally:
+            db.close()
+        
         job_service.update_job(job_id, status.capitalize())
 
         event_name = 'other'
@@ -47,9 +54,15 @@ async def event_generator(job_id: str, db: Session):
             job_service.update_job(job_id, 'Success', result)
 
             # Save project result
-            project.result = result
-            project.is_active = True
-            db.commit()
+            try:
+                project.result = result
+                project.is_active = True
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                raise HTTPException(status_code=500, detail="Failed to update project status")
+            finally:
+                db.close()
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
             break
@@ -85,8 +98,14 @@ async def send_job_status_updates(
     status = task_result.state
     result = None
 
-    project.is_active = False
-    db.commit()
+    try:
+        project.is_active = False
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
 
     if status == "PENDING":
         job_service.update_job(job_id, "Pending")
@@ -104,10 +123,17 @@ async def send_job_status_updates(
         result = task_result.result
         job_service.update_job(job_id, "Success", result)
 
-        # Save project result
-        project.result = result
-        project.is_active = True
-        db.commit()
+        try:
+            # Save project result
+            project.result = result
+            project.is_active = True
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+        finally:
+            db.close()
+        
     else:
         job_service.update_job(job_id, status)
 

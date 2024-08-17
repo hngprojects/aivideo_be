@@ -18,7 +18,14 @@ db: Session = next(get_db())
 
 
 @worker.task()
-def generate_talking_avatar_task(img_file, audio_file, aspect_ratio, script, voice_over, default: bool):
+def generate_talking_avatar_task(
+    img_file, 
+    audio_file, 
+    aspect_ratio, 
+    script: str, 
+    voice_over, 
+    default: bool
+):
 # def generate_talking_avatar_task():
     '''Background task to generate talking avatar and save to database'''
 
@@ -55,7 +62,7 @@ def upload_video_task(video_id: str, base_url: str):
 
     video_url = urljoin(base_url, f"media/uploads/videos/{video_filename}")
 
-    return {"video_id": video_id, "video_url": video_url}
+    return json.dumps({"video_id": video_id, "video_url": video_url})
 
 
 @worker.task()
@@ -66,7 +73,7 @@ def generate_thumbnails_task(video_id: str, base_url: str, manual_capture: bool 
         generate_thumbnails_service(
             video_id, base_url, manual_capture, timestamp)
     )
-    return thumbnails
+    return json.dumps({'thumbnails': thumbnails})
 
 
 @worker.task()

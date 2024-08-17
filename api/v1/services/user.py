@@ -11,7 +11,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, or_, select, func
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from api.core.base.services import Service
 from api.core.dependencies.email_sender import send_email
@@ -54,7 +54,7 @@ class UserService(Service):
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                         detail=f"Invalid value for '{param}'. Must be a boolean.",
                     )
-                if value == None:
+                if value is None:
                     continue
                 if hasattr(User, param):
                     filters.append(getattr(User, param) == value)
@@ -66,12 +66,15 @@ class UserService(Service):
 
         total_pages = int(total_users / per_page) + (total_users % per_page > 0)
 
-        all_users: list = (
+        all_users: list[User] = (
             query.order_by(desc(User.created_at))
             .limit(per_page)
             .offset((page - 1) * per_page)
             .all()
         )
+
+        for user in all_users:
+            user.update_active_status()
 
         return self.all_users_response(
             users=all_users,
@@ -149,6 +152,7 @@ class UserService(Service):
                 total=0,
                 data=[],
             )
+
         all_users = [
             user.UserData.model_validate(usr, from_attributes=True) for usr in users
         ]
@@ -167,6 +171,7 @@ class UserService(Service):
         """Fetches a user by their id"""
 
         user = check_model_existence(db, User, id)
+        user.update_active_status()
 
         # return user if user is not deleted
         if not user.is_deleted:
@@ -175,7 +180,8 @@ class UserService(Service):
     def get_user_by_id(self, db: Session, id: str):
         """Fetches a user by their id"""
 
-        user = check_model_existence(db, User, id)
+        user: User = check_model_existence(db, User, id)
+        user.update_active_status()
         return user
 
     def fetch_by_email(self, db: Session, email):
@@ -342,11 +348,11 @@ class UserService(Service):
         user.update_last_login()
         return user
 
-    def perform_user_check(self, user: User):
-        """This checks if a user is active and verified and not a deleted user"""
-
-        if not user.is_active:
-            raise HTTPException(detail="User is not active", status_code=403)
+    # def perform_user_check(self, user: User):
+    #     """This checks if a user is active and verified and not a deleted user"""
+    #
+    #     if not user.is_active:
+    #         raise HTTPException(detail="User is not active", status_code=403)
 
     def hash_password(self, password: str) -> str:
         """Function to hash a password"""
@@ -460,63 +466,6 @@ class UserService(Service):
 
         return user
 
-    def deactivate_user(
-        self,
-        request: Request,
-        db: Session,
-        schema: user.DeactivateUserSchema,
-        user: User,
-    ):
-        """Function to deactivate a user"""
-
-        if not schema.confirmation:
-            raise HTTPException(
-                detail="Confirmation required to deactivate account", status_code=400
-            )
-
-        self.perform_user_check(user)
-
-        user.is_active = False
-
-        # Create reactivation token
-        token = self.create_access_token(user_id=user.id)
-        reactivation_link = f"https://{request.url.hostname}/api/v1/users/accounts/reactivate?token={token}"
-
-        # mail_service.send_mail(
-        #     to=user.email,
-        #     subject='Account deactivation',
-        #     body=f'Hello, {user.first_name},\n\nYour account has been deactivated successfully.\nTo reactivate your account if this was a mistake, please click the link below:\n{request.url.hostname}/api/users/accounts/reactivate?token={token}\n\nThis link expires after 15 minutes.'
-        # )
-
-        db.commit()
-
-        return reactivation_link
-
-    def reactivate_user(self, db: Session, token: str):
-        """This function reactivates a user account"""
-
-        # Validate the token
-        try:
-            payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-            )
-            user_id = payload.get("user_id")
-
-            if user_id is None:
-                raise HTTPException(400, "Invalid token")
-
-        except JWTError:
-            raise HTTPException(400, "Invalid token")
-
-        user = db.query(User).filter(User.id == user_id).first()
-
-        if user.is_active:
-            raise HTTPException(400, "User is already active")
-
-        user.is_active = True
-
-        db.commit()
-
     def change_password(
         self,
         old_password: str,
@@ -592,18 +541,45 @@ class UserService(Service):
             db: database Session object
         """
 
-        query = db.query(User)
+        users = db.query(User).all()
 
-        total_user_count = query.count()
-        active_user_count = query.filter(User.is_active == True).count()
-        inactive_user_count = query.filter(User.is_active == False).count()
-        deleted_user_count = query.filter(User.is_deleted == True).count()
+        for user in users:
+            user.update_active_status()
+
+        total_user_count = len(users)
+        active_user_count = sum(1 for user in users if user.is_active)
+        inactive_user_count = sum(1 for user in users if not user.is_active)
+        deleted_user_count = sum(1 for user in users if user.is_deleted)
+
+        one_hour_ago = datetime.now(timezone(timedelta(hours=1))) - timedelta(hours=1)
+
+        created_in_last_hour = sum(
+            1 for user in users if user.created_at >= one_hour_ago
+        )
+
+        active_in_last_hour = sum(
+            1 for user in users if user.is_active and user.updated_at >= one_hour_ago
+        )
+
+        inactive_in_last_hour = sum(
+            1
+            for user in users
+            if not user.is_active and user.updated_at >= one_hour_ago
+        )
+
+        deleted_in_last_hour = sum(
+            1 for user in users if user.is_deleted and user.updated_at >= one_hour_ago
+        )
 
         return {
             "total_users": total_user_count,
             "active_users": active_user_count,
             "inactive_users": inactive_user_count,
             "deleted_users": deleted_user_count,
+            "created_in_last_hour": created_in_last_hour,
+            "active_in_last_hour": active_in_last_hour,
+            "inactive_in_last_hour": inactive_in_last_hour,
+            "deleted_in_last_hour": deleted_in_last_hour,
         }
 
     def export_to_csv(self, db: Session):

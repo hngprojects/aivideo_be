@@ -16,7 +16,7 @@ from api.v1.models.user import User
 from api.v1.schemas.project import CreateProject
 from api.v1.services.project import project_service
 from sqlalchemy.orm import joinedload
-from sqlalchemy import or_
+from sqlalchemy import or_, desc
 
 
 db = next(get_db())
@@ -76,13 +76,20 @@ class JobService:
     def update_job(self, job_id: str, status: str, result: Optional[str] = None):
         """Updates the job details"""
 
-        job = self.fetch_by_job_id(job_id=job_id)
-
-        job.status = status
-        job.result = result if result is not None else None
-        db.commit()
-        db.refresh(job)
-        return job
+        try:
+            job = self.fetch_by_job_id(job_id=job_id)
+            job.status = status
+            job.result = result if result is not None else None
+            db.commit()
+            db.refresh(job)
+            return job
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=400, detail=f"{type(e).__name__} occurred. {repr(e)}"
+            )
+        finally:
+            db.close()
 
     def get_project_from_job(self, job_id: str):
         """Returns the project from the job details"""
@@ -174,7 +181,7 @@ class JobService:
 
         # paginate response
 
-        jobs = query.offset(skip).limit(limit).all()
+        jobs = query.order_by(desc(Job.created_at)).offset(skip).limit(limit).all()
 
         jobs = jsonable_encoder(jobs)
 
