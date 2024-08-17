@@ -252,18 +252,12 @@ class JobService:
         query = db.query(Job)
 
         stats["total_tasks"] = query.count()
-        stats["failed_tasks"] = query.filter(
-            getattr(Job, "status").ilike(f"%failed%")
-        ).count()
+        stats["failed_tasks"] = query.filter(Job.status.icontains("FAILED")).count()
         stats["in_progress_tasks"] = query.filter(
-            getattr(Job, "status").ilike(f"%inprogress%")
+            or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
         ).count()
-        stats["pending_tasks"] = query.filter(
-            getattr(Job, "status").ilike(f"%pending%")
-        ).count()
-        stats["completed_tasks"] = query.filter(
-            getattr(Job, "status").ilike(f"%completed%")
-        ).count()
+        stats["pending_tasks"] = query.filter(Job.status.icontains("PENDING")).count()
+        stats["completed_tasks"] = query.filter(Job.status.icontains("SUCCESS")).count()
 
         return stats
 
