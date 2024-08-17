@@ -20,9 +20,13 @@ def generate_video_summary_task(video_file):
         transcription = transcription_service.transcribe_audio(audio_file_path)
         return json.dumps(transcription)
     except Exception as e:
-        print(e)
+        return json.dumps({"error": str(e)})
     finally:
-        delete_file(video_file)
+        try:
+            delete_file(video_file)
+        except Exception as deletion_error:
+            print(str(deletion_error))
+        # Re-raise the exception after handling cleanup
 
 
 @worker.task()
@@ -35,6 +39,10 @@ def download_and_generate_video_summmary_task(link):
         transcription = transcription_service.transcribe_audio(audio_file_path)
         return json.dumps(transcription)
     except Exception as e:
-        print(e)
+        return json.dumps({"error": str(e)})
     finally:
-        delete_file(video_file)
+        try:
+            delete_file(video_file)
+        except Exception as deletion_error:
+            print(str(deletion_error))
+        # Re-raise the exception after handling cleanup
