@@ -7,7 +7,6 @@ import json
 import random
 from openai import OpenAI
 import ffmpeg
-from ffmpeg import Error
 import httpx
 
 from api.utils.files import delete_file
@@ -168,8 +167,7 @@ class TextToVideoService(AsyncService):
             (ffmpeg.input(video_path)
              .output(audio_path, output_path, vcodec='copy', acodec='aac')
              .run(overwrite_output=True))
-        except Error as exc:
-            print('error occured in video editing: ', exc)
+        except Exception as exc:
             raise exc
 
     def generate_audio(self, script, voice_over='man'):
