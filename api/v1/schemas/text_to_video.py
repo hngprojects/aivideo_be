@@ -2,7 +2,9 @@ from pydantic import (BaseModel, StringConstraints,
                       Field, model_validator)
 from typing import Optional, Annotated
 
+
 text_input = "masterpiece, cinematic, man smoking cigarette looking outside window, moving around"
+
 
 class TextInput(BaseModel):
     """
@@ -16,6 +18,7 @@ class TextInput(BaseModel):
             strip_whitespace=True
         )
     ] = Field(default=text_input)
+
 
 class TextInputData(BaseModel):
     """
@@ -39,6 +42,7 @@ class TextInputData(BaseModel):
     ] = Field(default='Task is in queue')
 
     video_url: Optional[str] = None
+
 
 class TextInputResponse(BaseModel):
     """
@@ -69,7 +73,7 @@ class VideoTask(BaseModel):
         )
     ] = Field(default='pending')
     user_id: Annotated[
-        str,
+        Optional[str],
         StringConstraints(
             min_length=3,
             max_length=150,
@@ -99,7 +103,9 @@ class VideoPatchRequest(BaseModel):
             strip_whitespace=True
         )
     ] = Field(default=text_input)
+
     voice_over: Optional[str] = Field(default='none')
+
     task_id: Annotated[
         str,
         StringConstraints(
@@ -109,6 +115,17 @@ class VideoPatchRequest(BaseModel):
         )
     ]
 
+    aspect_ratio: Annotated[
+        str,
+        StringConstraints(strip_whitespace=True)
+    ]
+    
+    background_sound: Annotated[
+        Optional[str],
+        StringConstraints(
+            strip_whitespace=True
+        )
+    ] = Field(default='neutral')
 
     @model_validator(mode='before')
     @classmethod
@@ -119,14 +136,14 @@ class VideoPatchRequest(BaseModel):
         voice_over: str = values.get("voice_over")
 
         if voice_over:
-            choices = ['male', 'female', 'none', 'man', 'woman']
-            if voice_over.lower() == 'man':
-                values['voice_over'] = 'male'
-            if voice_over.lower() == 'woman':
-                values['voice_over'] = 'female'
+            choices = ['male', 'female', 'neutral', 'man', 'woman']
+            if voice_over.lower() == 'male':
+                values['voice_over'] = 'man'
+            if voice_over.lower() == 'female':
+                values['voice_over'] = 'woman'
 
             if voice_over.lower() not in choices:
-                values['voice_over'] = 'none'
-            if not voice_over:
-                values['voice_over'] = 'none'
+                values['voice_over'] = 'neutral'
+        else:
+            values['voice_over'] = 'neutral'
         return values
