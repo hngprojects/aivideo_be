@@ -2,7 +2,7 @@ import os
 import json
 import re
 from typing import List, Dict
-from datetime import time
+from datetime import time, timedelta
 from deep_translator import GoogleTranslator
 from pydub import AudioSegment
 # from whisper import load_model
@@ -18,8 +18,8 @@ def translate_text(text: str, target_language: str) -> str:
     except Exception as e:
         raise Exception(f"Error during translation: {str(e)}")
 
-def generate_subtitles(video_url: str) -> dict:
-    """Generate subtitles for a video"""
+def generate_subtitles(video_url: str, timestamps: List[Dict[str, str]]) -> dict:
+    """Generate subtitles for a video with provided timestamps."""
     try:
         # Convert video to audio
         audio_file_path = convert_video_to_audio(video_url)
@@ -29,8 +29,7 @@ def generate_subtitles(video_url: str) -> dict:
         # Transcribe audio to text
         transcription = summary_service.transcribe_audio(audio_file_path)
         
-        # Generate subtitles
-        timestamps = generate_timestamps_from_transcription(transcription['transcription'])  # You need to implement this function
+        # Generate subtitles with provided timestamps
         subtitles = generate_subtitles_from_transcription(transcription['transcription'], timestamps)
         
         # Save subtitles to file

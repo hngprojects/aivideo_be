@@ -44,7 +44,6 @@ def test_generate_thumbnails_success(
         '/api/v1/tools/thumbnail-generator/generate-thumbnails',
         json={
             'video_id': mock_video_id,
-            'manual_capture': False,
             'timestamp': 0
         }
     )
@@ -61,7 +60,6 @@ def test_generate_thumbnails_manual_capture(
         '/api/v1/tools/thumbnail-generator/generate-thumbnails',
         json={
             'video_id': mock_video_id,
-            'manual_capture': True,
             'timestamp': 10.0
         }
     )

@@ -43,6 +43,7 @@ async def event_generator(job_id: str, db: Session):
             event_name = 'failure'
             job_service.update_job(job_id, 'Failed', result)
 
+            # Use json.loads on the result as it is already a stringified json
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
             break
         
@@ -62,7 +63,7 @@ async def event_generator(job_id: str, db: Session):
             finally:
                 db.close()
 
-            yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
+            yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": json.loads(result)})}\n\n'
             break
         
         yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'

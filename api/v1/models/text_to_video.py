@@ -9,8 +9,10 @@ class TextToVideo(BaseTableModel):
     """
     __tablename__ = "text_to_vdeos"
 
-    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id",
-                                                            ondelete="CASCADE"))
+    user_id: Mapped[str] = mapped_column(String,
+                                         ForeignKey("users.id",
+                                                    ondelete="CASCADE"),
+                                         nullable=True)
     task_id: Mapped[str] = mapped_column(String, nullable=True)
     job_id: Mapped[str] = mapped_column(String)
     status: Mapped[str] = mapped_column(String, server_default='Task is in queue')
