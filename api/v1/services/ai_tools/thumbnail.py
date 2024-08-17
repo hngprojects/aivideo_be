@@ -12,8 +12,9 @@ async def generate_thumbnails_service(video_id: str, base_url: str, manual_captu
     base_name = video_id
     video_files = os.listdir(os.path.join(
         settings.MEDIA_DIR, 'uploads', 'videos'))
-    video_path = os.path.join(
+    possible_path = os.path.join(
         settings.MEDIA_DIR, 'uploads', 'videos', video_files[0])
+    video_path = os.path.abspath(possible_path)
 
     if not os.path.isfile(video_path):
         raise FileNotFoundError(f"Video file not found: {video_path}")
@@ -41,12 +42,17 @@ async def generate_thumbnails_service(video_id: str, base_url: str, manual_captu
             base_url, f"/media/downloads/thumbnails/{os.path.basename(output_path)}")
         thumbnail_urls.append(thumbnail_url)
     else:
+        ffprobe_command = ['ffprobe', '-v', 'error', '-show_entries',
+                           'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', video_path]
+        print(f"Running ffprobe command: {' '.join(ffprobe_command)}")
         result = subprocess.run(
             ['ffprobe', '-v', 'error', '-show_entries', 'format=duration',
              '-of', 'default=noprint_wrappers=1:nokey=1', video_path],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         if result.returncode != 0:
+            error_output = result.stderr.decode().strip()
+            print(f"ffprobe error: {error_output}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error retrieving video duration."
