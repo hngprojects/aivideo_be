@@ -195,10 +195,10 @@ class TalkingAvatarService:
 		delete_file(audio)
 
 		save_url = f'{settings.APP_URL}/{final_save_path}'
-		return json.dumps({
+		return {
 			'app_url': save_url,
 			'source': url
-		})
+		}
 
 
 talking_avatar_service = TalkingAvatarService()

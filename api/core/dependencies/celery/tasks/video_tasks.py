@@ -41,7 +41,7 @@ def generate_talking_avatar_task(
     if not default:
         delete_file(img_file)
 
-    return video
+    return json.dumps(video)
 
 @worker.task()
 def upload_video_task(video_id: str, base_url: str):
