@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Request
+from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
@@ -9,7 +9,6 @@ from api.v1.services.user import user_service
 from api.v1.services.faq import faq_service
 from api.v1.schemas.faq import CreateFAQ, UpdateFAQ, FAQBase
 import logging
-from api.utils.limiter import rate_limited
 
 faq = APIRouter(prefix="/faqs", tags=["FAQs"])
 
@@ -40,8 +39,7 @@ async def create_faq(
     )
 
 @faq.get("", response_model=success_response, status_code=200)
-@rate_limited(max_calls=2, time_frame=30)
-async def get_all_faqs(request: Request, db: Session = Depends(get_db)):
+async def get_all_faqs(db: Session = Depends(get_db),):
     """Endpoint to get all FAQs
 
     Args:
