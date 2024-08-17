@@ -1,0 +1,624 @@
+{
+	"info": {
+		"_postman_id": "a8dea6fc-3d99-4900-a165-d1514cb3c2da",
+		"name": "stage 7 Summarize",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "28723749"
+	},
+	"item": [
+		{
+			"name": "Youtube Video",
+			"item": [
+				{
+					"name": "Negative Cases",
+					"item": [
+						{
+							"name": "Invalid URL -YT VIDEO",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {\r",
+											"    pm.response.to.have.status(202); // Adjust the status code as expected\r",
+											"});\r",
+											"pm.test(\"Response time is less than 2000ms\", function () {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(2000); // Adjust as needed\r",
+											"});\r",
+											"pm.test(\"Content-Type is application/json\", function () {\r",
+											"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+											"});\r",
+											"\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"link\": \"https://www.youtube.com/shorts/PTL0235trEc?feature=share\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.staging.tifi.tv/api/v1/tools/summary/youtubee",
+									"protocol": "https",
+									"host": [
+										"api",
+										"staging",
+										"tifi",
+										"tv"
+									],
+									"path": [
+										"api",
+										"v1",
+										"tools",
+										"summary",
+										"youtubee"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Incorrect Request Info - YT VIDEO",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {\r",
+											"    pm.response.to.have.status(202); // Adjust the status code as expected\r",
+											"});\r",
+											"pm.test(\"Response time is less than 2000ms\", function () {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(2000); // Adjust as needed\r",
+											"});\r",
+											"pm.test(\"Content-Type is application/json\", function () {\r",
+											"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+											"});\r",
+											"\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"link\": 1 //number  inplace of string \r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.staging.tifi.tv/api/v1/tools/summary/youtube",
+									"protocol": "https",
+									"host": [
+										"api",
+										"staging",
+										"tifi",
+										"tv"
+									],
+									"path": [
+										"api",
+										"v1",
+										"tools",
+										"summary",
+										"youtube"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Empty String - YT VIDEO",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {\r",
+											"    pm.response.to.have.status(202); // Adjust the status code as expected\r",
+											"});\r",
+											"pm.test(\"Response time is less than 2000ms\", function () {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(2000); // Adjust as needed\r",
+											"});\r",
+											"pm.test(\"Content-Type is application/json\", function () {\r",
+											"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+											"});\r",
+											"\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"link\": \"https://www.youtube.com/shorts/PTL0235trEc?feature=share\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.staging.tifi.tv/api/v1/tools/summary/youtube",
+									"protocol": "https",
+									"host": [
+										"api",
+										"staging",
+										"tifi",
+										"tv"
+									],
+									"path": [
+										"api",
+										"v1",
+										"tools",
+										"summary",
+										"youtube"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Successful - Youtube Video",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(202); // Adjust the status code as expected\r",
+									"});\r",
+									"pm.test(\"Response time is less than 2000ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000); // Adjust as needed\r",
+									"});\r",
+									"pm.test(\"Content-Type is application/json\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"link\": \"https://www.youtube.com/shorts/PTL0235trEc?feature=share\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://api.staging.tifi.tv/api/v1/tools/summary/youtube",
+							"protocol": "https",
+							"host": [
+								"api",
+								"staging",
+								"tifi",
+								"tv"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tools",
+								"summary",
+								"youtube"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Single",
+			"item": [
+				{
+					"name": "Negative Cases",
+					"item": [
+						{
+							"name": "Invalid URL - Single Video Summary",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 202\", function () {\r",
+											"    pm.response.to.have.status(202); // Adjust the status code as expected\r",
+											"});\r",
+											"pm.test(\"Response time is less than 2000ms\", function () {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(2000); // Adjust as needed\r",
+											"});\r",
+											"pm.test(\"Content-Type is application/json\", function () {\r",
+											"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+											"});\r",
+											"pm.test(\"Body matches string\", function () {\r",
+											"    pm.expect(pm.response.text()).to.include(\"Summary generation job initiated successfully\");\r",
+											"});\r",
+											"\r",
+											"\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"type": "file",
+											"src": "/C:/Users/Maria/Downloads/Are we starting a girl streak or will this be boy # 7_!_ #pregnant #newbaby #momlife #boymom #dad (1).mp4"
+										}
+									]
+								},
+								"url": {
+									"raw": "https://api.staging.tifi.tv/api/v1/tools/summary/video_2",
+									"protocol": "https",
+									"host": [
+										"api",
+										"staging",
+										"tifi",
+										"tv"
+									],
+									"path": [
+										"api",
+										"v1",
+										"tools",
+										"summary",
+										"video_2"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Incorrect Request Body Info _ Single Video Summary",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 202\", function () {\r",
+											"    pm.response.to.have.status(202); // Adjust the status code as expected\r",
+											"});\r",
+											"pm.test(\"Response time is less than 2000ms\", function () {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(2000); // Adjust as needed\r",
+											"});\r",
+											"pm.test(\"Content-Type is application/json\", function () {\r",
+											"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+											"});\r",
+											"pm.test(\"Body matches string\", function () {\r",
+											"    pm.expect(pm.response.text()).to.include(\"Summary generation job initiated successfully\");\r",
+											"});\r",
+											"\r",
+											"\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "files",
+											"type": "file",
+											"src": "/C:/Users/Maria/Downloads/Are we starting a girl streak or will this be boy # 7_!_ #pregnant #newbaby #momlife #boymom #dad (1).mp4"
+										}
+									]
+								},
+								"url": {
+									"raw": "https://api.staging.tifi.tv/api/v1/tools/summary/video",
+									"protocol": "https",
+									"host": [
+										"api",
+										"staging",
+										"tifi",
+										"tv"
+									],
+									"path": [
+										"api",
+										"v1",
+										"tools",
+										"summary",
+										"video"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Successful - Summarize Single Video",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 202\", function () {\r",
+									"    pm.response.to.have.status(202); // Adjust the status code as expected\r",
+									"});\r",
+									"pm.test(\"Response time is less than 2000ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000); // Adjust as needed\r",
+									"});\r",
+									"pm.test(\"Content-Type is application/json\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+									"});\r",
+									"pm.test(\"Body matches string\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include(\"Summary generation job initiated successfully\");\r",
+									"});\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/Maria/Downloads/Are we starting a girl streak or will this be boy # 7_!_ #pregnant #newbaby #momlife #boymom #dad (1).mp4"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://api.staging.tifi.tv/api/v1/tools/summary/video",
+							"protocol": "https",
+							"host": [
+								"api",
+								"staging",
+								"tifi",
+								"tv"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tools",
+								"summary",
+								"video"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Batch Videos",
+			"item": [
+				{
+					"name": "Negative Cases",
+					"item": [
+						{
+							"name": "Empty Request file _  Summarize batch videos",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 202\", function () {\r",
+											"    pm.response.to.have.status(202); // Adjust the status code as expected\r",
+											"});\r",
+											"pm.test(\"Response time is less than 2000ms\", function () {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(2000); // Adjust as needed\r",
+											"});\r",
+											"pm.test(\"Content-Type is application/json\", function () {\r",
+											"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+											"});\r",
+											"pm.test(\"Body matches string\", function () {\r",
+											"    pm.expect(pm.response.text()).to.include(\"Video summary generation task initiated successfully\");\r",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "files",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": {
+									"raw": "https://api.staging.tifi.tv/api/v1/tools/youtube_summarizer/summarize_batch",
+									"protocol": "https",
+									"host": [
+										"api",
+										"staging",
+										"tifi",
+										"tv"
+									],
+									"path": [
+										"api",
+										"v1",
+										"tools",
+										"youtube_summarizer",
+										"summarize_batch"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Invalid file format _  Summarize batch videos",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 202\", function () {\r",
+											"    pm.response.to.have.status(202); // Adjust the status code as expected\r",
+											"});\r",
+											"pm.test(\"Response time is less than 2000ms\", function () {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(2000); // Adjust as needed\r",
+											"});\r",
+											"pm.test(\"Content-Type is application/json\", function () {\r",
+											"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+											"});\r",
+											"pm.test(\"Body matches string\", function () {\r",
+											"    pm.expect(pm.response.text()).to.include(\"Video summary generation task initiated successfully\");\r",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "files",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": {
+									"raw": "https://api.staging.tifi.tv/api/v1/tools/youtube_summarizer/summarize_batch",
+									"protocol": "https",
+									"host": [
+										"api",
+										"staging",
+										"tifi",
+										"tv"
+									],
+									"path": [
+										"api",
+										"v1",
+										"tools",
+										"youtube_summarizer",
+										"summarize_batch"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "batch videos pt",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 202\", function () {\r",
+									"    pm.response.to.have.status(202); // Adjust the status code as expected\r",
+									"});\r",
+									"pm.test(\"Response time is less than 2000ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000); // Adjust as needed\r",
+									"});\r",
+									"pm.test(\"Content-Type is application/json\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+									"});\r",
+									"pm.test(\"Body matches string\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include(\"Video summary generation task initiated successfully\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "files",
+									"type": "file",
+									"src": [
+										"/C:/Users/Maria/Downloads/Are we starting a girl streak or will this be boy # 7_!_ #pregnant #newbaby #momlife #boymom #dad (1).mp4",
+										"/C:/Users/Maria/Downloads/Are we starting a girl streak or will this be boy # 7_!_ #pregnant #newbaby #momlife #boymom #dad.mp4"
+									]
+								}
+							]
+						},
+						"url": {
+							"raw": "https://api.staging.tifi.tv/api/v1/tools/youtube_summarizer/summarize_batch",
+							"protocol": "https",
+							"host": [
+								"api",
+								"staging",
+								"tifi",
+								"tv"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tools",
+								"youtube_summarizer",
+								"summarize_batch"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
