@@ -89,8 +89,6 @@ class JobService:
                 status_code=400,
                 detail=f"{type(e).__name__} occurred. {repr(e)}"
             )
-        finally:
-            db.close()
 
     def get_project_from_job(self, job_id: str):
         """Returns the project from the job details"""
