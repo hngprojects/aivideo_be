@@ -87,7 +87,7 @@ class TalkingAvatarService:
 			ffmpeg.input(input_file).output(output_file, vf=filter_complex).run(overwrite_output=True)
 			print(f"Aspect ratio changed. Output saved to {output_file}")
 		except ffmpeg.Error as e:
-			print(f"An error occurred: {e.stderr.decode()}")
+			print(f"An error occurred: {e}")
 
 	
 	def add_background_audio(self, video_path: str, audio_path: str, output_path: str):
@@ -121,7 +121,7 @@ class TalkingAvatarService:
 			print(f"Successfully added background audio to {output_path}")
 
 		except ffmpeg.Error as e:
-			print(f"Error occurred: {e.stderr.decode()}")
+			print(f"Error occurred: {e}")
 
 
 	def process_script(self, image_file, audio_file, aspect_ratio, script, voice_over):
@@ -173,24 +173,25 @@ class TalkingAvatarService:
 		initial_save_path = os.path.join(BASE_DIR, f'video-{str(uuid4())}.mp4')
 		self.download_large_file(url, initial_save_path)
 
-		final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
-
-		# Perform aspect ratio resizing based on user input
-		self.change_aspect_ratio(
-			input_file=initial_save_path,
-			output_file=final_save_path,
-			aspect_ratio=aspect_ratio
-		)
-		
+		video_audio_path = os.path.join(BASE_DIR, f'video-{str(uuid4())}.mp4')
 		# Add background audio to the file
 		self.add_background_audio(
 			video_path=initial_save_path,
 			audio_path=audio_file,
-			output_path=final_save_path,
+			output_path=video_audio_path,
+		)
+
+		final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
+		# Perform aspect ratio resizing based on user input
+		self.change_aspect_ratio(
+			input_file=video_audio_path,
+			output_file=final_save_path,
+			aspect_ratio=aspect_ratio
 		)
 
 		# Delete the temporary audio and video file after processing is done
 		delete_file(initial_save_path)
+		delete_file(video_audio_path)
 		delete_file(audio)
 
 		save_url = f'{settings.APP_URL}/{final_save_path}'
