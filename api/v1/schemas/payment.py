@@ -66,3 +66,7 @@ class CreatePaymentResponse(ResponseBase):
 class PaymentListResponse(ResponseBase):
     payments: List[CreatePaymentReturnData]
     pagination: PaginationBase
+
+
+class GetPaymentResponse(ResponseBase):
+    data: CreatePaymentReturnData
