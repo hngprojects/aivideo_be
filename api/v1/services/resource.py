@@ -32,6 +32,7 @@ class ResourceService(Service):
             raise HTTPException(status_code=400, detail="Invalid request body")
 
         new_resource = Resource(**schema.model_dump())
+        new_resource.is_published = True
         db.add(new_resource)
         db.commit()
         db.refresh(new_resource)
@@ -70,6 +71,33 @@ class ResourceService(Service):
         if filters:
             query = query.filter(*filters)
             total_resources = query.count()
+
+        total_pages = int(total_resources / per_page) + (total_resources % per_page > 0)
+
+        all_resources: list = (
+            query.order_by(desc(Resource.created_at))
+            .limit(per_page)
+            .offset((page - 1) * per_page)
+            .all()
+        )
+
+        return self.all_resources_response(
+            resources=all_resources,
+            total_resources=total_resources,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+        )
+
+    def fetch_all_public(self, db: Session, page: int, per_page: int):
+        """fetch all public resources"""
+        per_page = min(per_page, 10)
+        query = (
+            db.query(Resource)
+            .filter(Resource.is_published == True)
+            .filter(Resource.is_deleted == False)
+        )
+        total_resources = query.count()
 
         total_pages = int(total_resources / per_page) + (total_resources % per_page > 0)
 
@@ -185,5 +213,20 @@ class ResourceService(Service):
 
         return super().delete()
 
+    def publish(self, db: Session, Resource_id: str):
+        """Publish a Resource"""
+
+        resource = check_model_existence(db, Resource, id)
+
+        resource.is_published = True
+        db.commit()
+
+    def unpublish(self, db:Session, Resource_id: str):
+        """ Unpublish a Resource """
+
+        resource = check_model_existence(db, Resource, id)
+
+        resource.is_published = False
+        db.commit()
 
 resource_service = ResourceService()
