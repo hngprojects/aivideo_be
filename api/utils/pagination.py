@@ -99,7 +99,7 @@ def paginated_response(
     )
 
 
-def get_pagination_details(num_of_items, limit, offset):
+def get_pagination_details(num_of_items, offset, limit):
     total_pages = int(num_of_items / limit) + (num_of_items % limit > 0)
     return {
             "limit": limit,

@@ -101,7 +101,8 @@ async def verify_payment_status(
         )
 
     # check if payment record already exist
-    payment_exist = payment_service.fetch(db, transaction_id)
+    payment_exist = payment_service.fetch_by_params(
+        db, {'transaction_id': transaction_id})
 
     if not payment_exist:    
         payload = {

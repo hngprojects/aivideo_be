@@ -10,7 +10,7 @@ import stripe
 from api.v1.models.payment import Payment
 from api.v1.models import User, BillingPlan
 from api.utils.pagination import get_pagination_details
-from api.utils.db_validators import check_model_existence
+from api.utils.db_validators import check_model_existence, get_model_or_none, get_model_by_params
 from api.utils.settings import settings
 
 stripe.api_key = settings.STRIPE_SECRET
@@ -55,8 +55,17 @@ class PaymentService:
 
     def fetch(self, db: Session, payment_id: str):
         """Fetches a payment by id"""
-        
         payment = check_model_existence(db, Payment, payment_id)
+        return payment
+
+    def fetch_or_none(self, db: Session, payment_id: str):
+        """Fetches a payment by id or returns None"""
+        payment = get_model_or_none(db, Payment, payment_id)
+        return payment
+
+    def fetch_by_params(self, db: Session, query_params: dict):
+        """Fetches a payment one or more query params other than the id"""
+        payment = get_model_by_params(db, Payment, query_params)
         return payment
 
     def fetch_all_for_user(
