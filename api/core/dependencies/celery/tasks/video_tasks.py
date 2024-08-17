@@ -1,4 +1,4 @@
-import http.client
+import requests
 from celery import shared_task
 import json
 from sqlalchemy.orm import Session
@@ -80,84 +80,19 @@ def select_and_download_thumbnail_task(video_id: str, thumbnail_id: str, resolut
     return thumbnail
 
 @shared_task(bind=True)
-def create_video_from_text_task(self, text: str, user_id: str):
-    """
-    Celery task to generate a video from text input.
-    Args:
-        text_input: The text input data
-        user_id: ID of the user who initiated the request
-    Returns:
-        video_url: The URL of the generated video
-    """
-    try:
-        conn = http.client.HTTPSConnection(app_settings.X_RAPIDAPI_HOST)
-        headers = {
-            'x-rapidapi-key': app_settings.X_RAPIDAPI_KEY,
-            'x-rapidapi-host': app_settings.X_RAPIDAPI_HOST,
-            'Content-Type': "application/json"
-        }
-       
-        payload = json.dumps({
-            "text_prompt": text,
-            'model': "gen3",
-            "width": 1344,
-            "height": 768,
-            "motion": 5,
-            "seed": 0,
-            "upscale": True,
-            "interpolate": True,
-            "callback_url": ""
-        })
-        # Send request to start video generation
-        conn.request("POST", "/generate/text", payload, headers)
-       
-        response = conn.getresponse()
-       
-        data: dict = json.loads(response.read().decode("utf-8"))
-        print("data: ", data)
-       
-        task_id = data.get('uuid')
-        status = data.get('status')
-        # store video_url in the database
-        video_task = db.query(TextToVideo).filter_by(user_id=user_id).first()
-        if not video_task and status and task_id:
-            video_task = TextToVideo(
-                user_id=user_id,
-                status=status,
-                task_id=str(task_id)
-            )
-            db.add(video_task)
-            db.commit()
-            db.refresh(video_task)
-        elif status and task_id:
-            video_task.task_id = str(task_id)
-            video_task.status = status
-            db.commit()
-    except Exception as exc:
-        self.retry(exc=exc, countdown=120)
-        raise exc
-
-@shared_task(bind=True)
 def check_video_generate_status(self):
     try:
-        conn = http.client.HTTPSConnection(app_settings.X_RAPIDAPI_HOST)
         process_tasks = db.query(TextToVideo).filter_by(status='Task is in queue').all()
         if not process_tasks:
             return
         for task in process_tasks:
-            headers = {
-                'x-rapidapi-key': app_settings.X_RAPIDAPI_KEY,
-                'x-rapidapi-host': app_settings.X_RAPIDAPI_HOST,
-            }
+            
+            data, _ = asyncio.run(check_video_status(task.task_id))
 
-            conn.request("GET", f"/status?uuid={task.task_id}", headers=headers)
-            response = conn.getresponse()
-            data: dict = json.loads(response.read().decode("utf-8"))
-
-            print('data: ', data)
             status = data.get('status')
             task_id = data.get('uuid')
-            if status == 'success':
+            info = data.get('info')
+            if status == 'success' or info == 'success':
                 video_url = data.get("url")
                 gif_url = data.get("gif_url")
                 (db.query(TextToVideo)
@@ -169,6 +104,21 @@ def check_video_generate_status(self):
                 }))
                 db.commit()
     except Exception as exc:
-        print("error: ", exc)
-        self.retry(exc=exc, countdown=120)
+        self.retry(exc=exc, countdown=180)
         raise exc
+
+async def check_video_status(task_id: str):
+    """
+    Async request
+    """
+    headers = {
+        'x-rapidapi-key': app_settings.X_RAPIDAPI_KEY,
+        'x-rapidapi-host': app_settings.X_RAPIDAPI_HOST,
+    }
+    url = f'https://runwayml.p.rapidapi.com/status?uuid={task_id}'
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        return data, response.status_code
+    else:
+        raise requests.RequestException(f"An error occurred with status code {response.status_code}")
