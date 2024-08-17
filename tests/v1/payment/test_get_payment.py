@@ -38,6 +38,18 @@ def test_user():
         password="hashedpassword",
         first_name="test",
         last_name="user",
+        is_active=True
+    )
+
+# Super Admin
+@pytest.fixture
+def super_admin():
+    return User(
+        id=str(uuid7()),
+        email="superadmin@gmail.com",
+        password="hashedpassword",
+        first_name="super",
+        last_name="admin",
         is_active=True,
         is_superadmin=True
     )
@@ -59,54 +71,58 @@ def test_payment(test_user):
 
 
 @pytest.fixture
-def access_token_user(test_user):
+def access_token_test_user(test_user):
     return user_service.create_access_token(user_id=test_user.id)
+
+@pytest.fixture
+def access_token_super_admin(super_admin):
+    return user_service.create_access_token(user_id=super_admin.id)
 
 @pytest.fixture
 def random_access_tokenr():
     return user_service.create_access_token(user_id='hshsdgdgdgdgdgdg')
 
-def make_request(token):
+def make_request(token, payment):
     return client.get(
-        "/api/v1/payments", 
+        f"/api/v1/payments/{payment.id}", 
         headers={"Authorization": f"Bearer {token}"}
     )
 
 
-# Test for successful retrieve of payments
-def test_get_payments_successful(
+# Test for successful retrieve of payment
+def test_get_payment_successful(
     mock_db_session,
     test_user,
     test_payment,
-    access_token_user
+    access_token_test_user
 ):
     # Mock the query for getting user
     mock_db_session.query().filter().first.return_value = test_user
 
-    # TEST A SINGLE PRODUCT FOR 1-PAGE RESULT #
-
-    # Mock the query for payments
-    mock_db_session.query().all.return_value = [test_payment]
+    # Mock the query for payment
+    mock_db_session.query().get.return_value = test_payment
 
     # Make request
-    response = make_request(access_token_user)
+    response = make_request(access_token_test_user, test_payment)
     resp_d = response.json()
 
     print(resp_d)
+
+    # FOR USER ONWER
     assert response.status_code == 200
     assert resp_d['success'] is True
-    assert resp_d['message'] == "Payments fetched successfully"
+    assert resp_d['message'] == "Payment fetched successfully"
+    
+    # FOR SUPER ADMIN
+    mock_db_session.query().filter().first.return_value = super_admin
+    # mock_user_service.
+    response = make_request(access_token_super_admin, test_payment)
+    resp_d = response.json()
+    assert response.status_code == 200
+    assert resp_d['success'] is True
+    assert resp_d['message'] == "Payment fetched successfully"
 
-    pagination = resp_d['data']['pagination']
-    assert pagination['pages'] == 1
-    assert pagination['limit'] == 10
-    assert pagination['offset'] == 0
-    assert pagination['total_items'] == 1
-
-    payments = resp_d['data']['payments']
-    assert len(payments) == 1
-
-    pay = payments[0]
+    pay = resp_d['data']
     assert pay['id'] == test_payment.id
     assert pay['status'] == test_payment.status
     assert pay['method'] == test_payment.method
@@ -116,80 +132,52 @@ def test_get_payments_successful(
     assert pay['transaction_id'] == test_payment.transaction_id
     assert datetime.fromisoformat(pay['created_at']) == test_payment.created_at
 
-    # RESET MOCK PRODUCTS TO SIMULATE MULTI-PAGE RESULT #
 
-    # Mock the query for payments, this time for 5 payments
-    five_payments = [test_payment, test_payment, test_payment, test_payment, test_payment]
-    mock_db_session.query().all.return_value = five_payments
-
-    # Make request
-    response = make_request(access_token_user)
-
-    resp_d = response.json()
-
-    assert response.status_code == 200
-    assert resp_d['success'] is True
-    assert resp_d['message'] == "Payments fetched successfully"
-
-    pagination = resp_d['data']['pagination']
-    assert pagination['pages'] == 1
-    assert pagination['limit'] == 10
-    assert pagination['offset'] == 0
-    assert pagination['total_items'] == 5
-
-    payments = resp_d['data']['payments']
-    assert len(payments) == 5
-
-
-# Test for un-authenticated request
+# Test for unauthenticated requests
 def test_for_unauthenticated_requests(
     mock_db_session,
     test_user,
-    # test_payment,
-    access_token_user
+    test_payment
 ):
     # Mock the query for getting user
     mock_db_session.query().filter().first.return_value = test_user
 
     # WRONG AUTH TOKEN
-    response = make_request(random_access_tokenr)
+    response = make_request(random_access_tokenr, test_payment)
+    print(response.json())
     assert response.status_code == 401
     assert response.json()['message'] == "Could not validate credentials"
 
     # NO AUTH TOKEN
-    response = client.get("/api/v1/payments")
+    response = client.get(f"/api/v1/payments/{test_payment.id}")
     assert response.status_code == 401
     assert response.json()['message'] == "Not authenticated"
 
-    # NON-SUPERADMIN
-    test_user.is_superadmin = False
-    resp = make_request(access_token_user)
+    # NON-SUPERADMIN / NON-OWNER
+    # --remove the superadmin privilege from superadmin-- #
+    super_admin.is_superadmin = False
+    mock_db_session.query().filter().first.return_value = super_admin
+    resp = make_request(access_token_super_admin, test_payment)
     assert resp.status_code == 403
     assert resp.json()[
         "message"] == "You do not have permission to access this resource"
 
 
 # Test for no payment 
-def test_for_payments_not_found(
+def test_for_payment_not_found(
     mock_db_session,
     test_user,
-    access_token_user
+    test_payment,
+    access_token_test_user
 ):
     # Mock the query for getting user
     mock_db_session.query().filter().first.return_value = test_user
 
-    mock_db_session.query().all.return_value = []
+    mock_db_session.query().get.return_value = None
 
     # Make request
-    response = make_request(access_token_user)
-    assert response.status_code == 200
-    resp_d = response.json()
-    assert resp_d['success'] is True
-    assert resp_d['message'] == "Payments fetched successfully"
-    assert resp_d['data']['payments'] == []
-
-    pagination = resp_d['data']['pagination']
-    assert pagination['pages'] == 0
-    assert pagination['limit'] == 10
-    assert pagination['offset'] == 0
-    assert pagination['total_items'] == 0
+    response = make_request(access_token_test_user, test_payment)
+    print(response.json())
+    assert response.status_code == 404
+    assert response.json()['message'] == "Payment does not exist"
+    assert not response.json().get('data')

@@ -140,8 +140,8 @@ def test_for_unauthenticated_get_billing_plans(
     assert not response.json().get('data')
 
 
-# Test for no billing_plan for user
-def test_for_no_billing_plans_for_user(
+# Test for no billing plans found
+def test_for_no_billing_plans_found(
     mock_db_session,
     test_user,
     test_billing_plan,
@@ -157,6 +157,7 @@ def test_for_no_billing_plans_for_user(
     headers = {'Authorization': f'Bearer {access_token_user}'}
     response = client.get("/api/v1/billing-plans", headers=headers)
 
-    assert response.status_code == 400
-    assert response.json()['message'] == "Blilling plans not found"
-    assert not response.json().get('data')
+    assert response.status_code == 200
+    assert response.json()['success'] is True
+    assert response.json()['message'] == "Billing plans fetched successfully."
+    assert not response.json()['data'] == []
