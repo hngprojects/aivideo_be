@@ -1,6 +1,6 @@
 from io import BytesIO
 from fastapi import Depends, Form, APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 import requests
 
@@ -110,18 +110,19 @@ async def talking_head_avatar_selection(
     )
 
 
-@video_router.get("/video/download")
+@video_router.post("/download")
 async def download_video(schema: DownloadRequest):
     try:
         # Fetch the video from the URL
         response = requests.get(schema.file_url, stream=True)
         response.raise_for_status()  # Check for errors in the response
 
-        # Create a BytesIO object from the response content
-        video_stream = BytesIO(response.content)
+        video_filename = "downloaded_video.mp4"
+        with open(video_filename, "wb") as video_file:
+            video_file.write(response.content)
 
-        # Stream the video back to the client
-        return StreamingResponse(video_stream, media_type="video/mp4")
+        # Return the video file as a FileResponse
+        return FileResponse(video_filename, media_type="video/mp4", filename="convey-talking-avatar-video.mp4")
 
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Error downloading video: {str(e)}")
