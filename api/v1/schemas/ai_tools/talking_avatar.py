@@ -23,3 +23,7 @@ class TalkingHeadRequest(BaseModel):
             raise ValueError(f"Invalid voice over: {value}. Must be one of {', '.join(allowed_types)}.")
         return value
     
+
+class DownloadRequest(BaseModel):
+
+    file_url: str

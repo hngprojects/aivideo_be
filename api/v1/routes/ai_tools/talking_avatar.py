@@ -1,5 +1,6 @@
 from io import BytesIO
-from fastapi import Depends, Form, APIRouter, File, UploadFile
+from fastapi import Depends, Form, APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import requests
 
@@ -8,7 +9,7 @@ from api.utils.success_response import success_response
 from api.utils.files import upload_file_to_current_dir
 from api.v1.services.presets import preset_service
 from api.v1.services.job import job_service
-from api.v1.schemas.ai_tools.talking_avatar import TalkingHeadRequest
+from api.v1.schemas.ai_tools.talking_avatar import DownloadRequest, TalkingHeadRequest
 from api.core.dependencies.celery.tasks.video_tasks import generate_talking_avatar_task
 
 video_router = APIRouter(prefix="/tools/video", tags=["Tools"])
@@ -107,3 +108,20 @@ async def talking_head_avatar_selection(
             "project_id": project.id
         }
     )
+
+
+@video_router.get("/video/download")
+async def download_video(schema: DownloadRequest):
+    try:
+        # Fetch the video from the URL
+        response = requests.get(schema.file_url, stream=True)
+        response.raise_for_status()  # Check for errors in the response
+
+        # Create a BytesIO object from the response content
+        video_stream = BytesIO(response.content)
+
+        # Stream the video back to the client
+        return StreamingResponse(video_stream, media_type="video/mp4")
+
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=400, detail=f"Error downloading video: {str(e)}")
