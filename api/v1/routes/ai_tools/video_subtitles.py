@@ -74,7 +74,7 @@ async def transcribe(
 @video_subtitles_router.post("/generate_subtitles", status_code=status.HTTP_200_OK, response_model=success_response)
 async def generate_subtitle(
     file: UploadFile = File(...),
-    timestamps: List[str] = Form(...)
+    timestamps: str = Form(...),
 ):
     try:
         # Upload and save the video file
