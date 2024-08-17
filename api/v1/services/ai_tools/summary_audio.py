@@ -13,7 +13,6 @@ from langchain.chains.summarize import load_summarize_chain
 class SummaryService():
     
     def __init__(self):
-        super().__init__()
         self.translator = GoogleTranslator()
 
     def init_chain(self):
