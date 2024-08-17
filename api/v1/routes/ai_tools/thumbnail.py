@@ -21,8 +21,6 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
     file_size = len(file_content)
     await file.seek(0)
 
-    print(f"Uploaded file size: {file_size} bytes")
-
     if file_size > max_file_size:
         raise HTTPException(
             status_code=400, detail="File exceeds the maximum allowed size of 100MB."
@@ -68,7 +66,7 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
 @thumbnail_router.post("/generate-thumbnails")
 async def generate_thumbnails(request: Request, body: ThumbnailRequest):
     task = generate_thumbnails_task.delay(
-        body.video_id, str(request.url), body.manual_capture, body.timestamp
+        body.video_id, str(request.url),  body.timestamp
     )
 
     thumbnails = task.get()

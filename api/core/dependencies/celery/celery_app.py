@@ -12,7 +12,9 @@ worker = Celery(
         'api.core.dependencies.celery.tasks.audio_tasks',
         'api.core.dependencies.celery.tasks.video_summary_tasks',
         'api.core.dependencies.celery.tasks.audio_task',
-        'api.core.dependencies.celery.tasks.video_tasks']
+        'api.core.dependencies.celery.tasks.video_tasks',
+        'api.core.dependencies.celery.tasks.video_subtitles_tasks',
+    ]
 )
 
 # Automatically discover tasks from the specified module
@@ -23,12 +25,13 @@ worker.conf.update(
     beat_schedule={
         'check-video-status-every-1-minutes': {
             'task': 'api.core.dependencies.celery.tasks.video_tasks.check_video_generate_status',
-            'schedule': crontab(minute='*/1'),  # every 60 seconds
+            'schedule': crontab(minute='*/2'),  # every 120 seconds
         },
     },
 )
 
 worker.conf.update(task_track_started=True)
+
 if __name__ == "__main__":
     worker.start()
 

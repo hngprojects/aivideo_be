@@ -44,7 +44,6 @@ async def translate(request: TranslationRequest):
 @video_subtitles_router.post("/transcribe", status_code=status.HTTP_200_OK, response_model=success_response)
 async def transcribe(
     file: UploadFile = File(...),
-    target_lang: str = Form(...),
 ):
     try:
         # Upload and save the video file
