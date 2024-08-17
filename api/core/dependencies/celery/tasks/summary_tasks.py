@@ -79,5 +79,5 @@ def generate_audio_summary_task(audio_file):
     summary, transcription = summary_service.summarize_audio(audio_file)
     return json.dumps({
         'summary': summary,
-        'transcription': transcription
+        'transcript': transcription
     })
