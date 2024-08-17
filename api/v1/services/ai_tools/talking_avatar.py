@@ -89,25 +89,39 @@ class TalkingAvatarService:
 		except ffmpeg.Error as e:
 			print(f"An error occurred: {e.stderr.decode()}")
 
-	# TODO: Fix up
-	def add_background_audio(video_path: str, audio_path: str, output_path: str):
+	
+	def add_background_audio(self, video_path: str, audio_path: str, output_path: str):
+		try:
+			# Load the video file with its audio
+			video = ffmpeg.input(video_path)
 
-		# Adjust the volume of the background audio
-		background_audio = ffmpeg.input(audio_path).filter('volume', 0.2)
+			# Load the background audio and adjust its volume
+			background_audio = ffmpeg.input(audio_path).filter('volume', 0.2)
 
-		# Combine the original video with the background audio
-		video = ffmpeg.input(video_path)
-		video_with_audio = ffmpeg.output(
-			video, 
-			background_audio, 
-			output_path, 
-			vcodec='copy', 
-			acodec='aac', 
-			strict='experimental'
-		)
+			# Adjust the volume of the original audio from the video
+			original_audio = video.audio.filter('volume', 1.0)
 
-		# Run the ffmpeg command
-		ffmpeg.run(video_with_audio)
+			# Combine the original audio with the background audio
+			combined_audio = ffmpeg.filter_([original_audio, background_audio], 'amix', inputs=2)
+
+			# Combine the video with the combined audio
+			output = ffmpeg.output(
+				video.video,                  # Video stream
+				combined_audio,               # Combined audio stream
+				output_path,                  # Output file path
+				vcodec='copy',                # Copy the video codec (no re-encoding)
+				acodec='aac',                 # Encode the audio with AAC codec
+				strict='experimental',        # Allow use of experimental codecs
+				shortest=None                 # Stop the output when the shortest input ends
+			)
+
+			# Run the ffmpeg command
+			ffmpeg.run(output, overwrite_output=True)
+
+			print(f"Successfully added background audio to {output_path}")
+
+		except ffmpeg.Error as e:
+			print(f"Error occurred: {e.stderr.decode()}")
 
 
 	def process_script(self, image_file, audio_file, aspect_ratio, script, voice_over):
@@ -166,6 +180,13 @@ class TalkingAvatarService:
 			input_file=initial_save_path,
 			output_file=final_save_path,
 			aspect_ratio=aspect_ratio
+		)
+		
+		# Add background audio to the file
+		self.add_background_audio(
+			video_path=initial_save_path,
+			audio_path=audio_file,
+			output_path=final_save_path,
 		)
 
 		# Delete the temporary audio and video file after processing is done
