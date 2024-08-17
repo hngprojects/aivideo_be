@@ -92,8 +92,12 @@ async def generate_thumbnails_service(video_id: str, base_url: str, manual_captu
 async def select_and_download_thumbnail_service(video_id: str, thumbnail_id: str, resolution: str, base_url: str) -> str:
     try:
         base_name = video_id
-        thumbnail_dir = os.path.join(
+        possible_thumbnail_dir = os.path.join(
             settings.MEDIA_DIR, 'downloads', 'thumbnails')
+        possible_path = os.path.join(
+            settings.MEDIA_DIR, 'downloads', 'thumbnails', possible_thumbnail_dir[0])
+
+        thumbnail_dir = os.path.abspath(possible_path)
         input_path = os.path.join(
             thumbnail_dir, f'{base_name}_thumbnail_{thumbnail_id}.jpg'
         )
@@ -102,10 +106,10 @@ async def select_and_download_thumbnail_service(video_id: str, thumbnail_id: str
         )
 
         resolution_map = {
-            "1080": "1920:1080",
-            "720": "1280:720",
-            "480": "854:480",
-            "360": "640:360"
+            "1080p": "1920:1080",
+            "720p": "1280:720",
+            "480p": "854:480",
+            "360p": "640:360"
         }
 
         size = resolution_map.get(resolution)
@@ -126,7 +130,19 @@ async def select_and_download_thumbnail_service(video_id: str, thumbnail_id: str
                 detail=f"Error resizing thumbnail to resolution {resolution}. {result.stderr.decode()}"
             )
 
-        return os.path.join(base_url, f"/media/downloads/thumbnails/{os.path.basename(output_path)}")
+        absolute_output_path = os.path.abspath(output_path)
+
+        # Remove the MEDIA_DIR part of the path to get the relative path
+        relative_path = os.path.relpath(
+            absolute_output_path, settings.MEDIA_DIR)
+
+        # Replace os.path.sep with '/' for URL consistency
+        relative_path = relative_path.replace(os.path.sep, '/')
+
+        # Construct the full URL
+        thumbnail_url = urljoin(base_url, f"/media/{relative_path}")
+
+        return thumbnail_url
 
     except Exception as e:
 
