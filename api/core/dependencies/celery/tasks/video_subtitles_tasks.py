@@ -43,8 +43,11 @@ def transcribe_video_task(video_file_path):
 def generate_subtitles_task(video_file_path, timestamps):
     """Background task to generate subtitles from a video"""
     try:
+        # Convert timestamps from JSON string to list
+        timestamps_list = json.loads(timestamps)
+
         # Generate subtitles with the given timestamps
-        result = generate_subtitles(video_file_path, timestamps)
+        result = generate_subtitles(video_file_path, timestamps_list)
 
         # Clean up the video file after processing
         delete_file(video_file_path)
