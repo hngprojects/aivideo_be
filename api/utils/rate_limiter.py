@@ -4,7 +4,7 @@ from functools import wraps
 from fastapi import Request, HTTPException, status
 
 
-def rate_limited(max_calls: int, time_frame: int):
+def rate_limiter(max_calls: int, time_frame: int):
     def decorator(func):
         calls = []
         
