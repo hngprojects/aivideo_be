@@ -22,10 +22,11 @@ def generate_video_summary_task(video_file):
     except Exception as e:
         return json.dumps({"error": str(e)})
     finally:
-        delete_file(video_file)
+        try:
+            delete_file(video_file)
+        except Exception as e:
+            print(str(e))
         # Re-raise the exception after handling cleanup
-        if "e" in locals():
-            raise e
 
 
 @worker.task()
@@ -40,7 +41,8 @@ def download_and_generate_video_summmary_task(link):
     except Exception as e:
         return json.dumps({"error": str(e)})
     finally:
-        delete_file(video_file)
+        try:
+            delete_file(video_file)
+        except Exception as e:
+            print(f"Error {str(e)}")
         # Re-raise the exception after handling cleanup
-        if "e" in locals():
-            raise e
