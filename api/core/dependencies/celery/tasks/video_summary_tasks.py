@@ -24,8 +24,8 @@ def generate_video_summary_task(video_file):
     finally:
         try:
             delete_file(video_file)
-        except Exception as e:
-            print(str(e))
+        except Exception as deletion_error:
+            print(str(deletion_error))
         # Re-raise the exception after handling cleanup
 
 
@@ -43,6 +43,6 @@ def download_and_generate_video_summmary_task(link):
     finally:
         try:
             delete_file(video_file)
-        except Exception as e:
-            print(f"Error {str(e)}")
+        except Exception as deletion_error:
+            print(f"rror {str(deletion_error)}")
         # Re-raise the exception after handling cleanup
