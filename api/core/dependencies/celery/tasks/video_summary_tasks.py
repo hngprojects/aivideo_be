@@ -23,6 +23,9 @@ def generate_video_summary_task(video_file):
         return json.dumps({"error": str(e)})
     finally:
         delete_file(video_file)
+        # Re-raise the exception after handling cleanup
+        if "e" in locals():
+            raise e
 
 
 @worker.task()
@@ -38,3 +41,6 @@ def download_and_generate_video_summmary_task(link):
         return json.dumps({"error": str(e)})
     finally:
         delete_file(video_file)
+        # Re-raise the exception after handling cleanup
+        if "e" in locals():
+            raise e
