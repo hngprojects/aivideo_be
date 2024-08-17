@@ -5,6 +5,13 @@ from fastapi import Request, HTTPException, status
 
 
 def rate_limiter(max_calls: int, time_frame: int):
+    """This function is used to limit the amount of requests made to an endpoint within a timeframe
+
+    Args:
+        max_calls (int): Maximum number of calls to be made on an endpoint within a particular time frame.
+        time_frame (int): Time in seconds since the start of the last call.
+    """
+    
     def decorator(func):
         calls = []
         
