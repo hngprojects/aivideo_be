@@ -637,10 +637,10 @@ class UserService(Service):
         )
 
         total_jobs_created = query.count()
-        total_jobs_completed = query.filter(Job.status.contains("SUCCESS")).count()
-        total_jobs_pending = query.filter(Job.status.contains("PENDING")).count()
+        total_jobs_completed = query.filter(Job.status.icontains("SUCCESS")).count()
+        total_jobs_pending = query.filter(Job.status.icontains("PENDING")).count()
         total_jobs_in_progress = query.filter(
-            or_(Job.status.contains("STARTED"), Job.status.contains("RUNNING"))
+            or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
         ).count()
 
         if job:
