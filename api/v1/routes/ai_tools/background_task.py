@@ -44,7 +44,7 @@ async def event_generator(job_id: str, db: Session):
             job_service.update_job(job_id, 'Failed', result)
 
             # Use json.loads on the result as it is already a stringified json
-            yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": json.loads(result)})}\n\n'
+            yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
             break
         
         elif status == 'SUCCESS':
@@ -66,7 +66,7 @@ async def event_generator(job_id: str, db: Session):
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": json.loads(result)})}\n\n'
             break
         
-        yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": json.loads(result)})}\n\n'
+        yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
         await asyncio.sleep(1)  # Delay between status checks
 
 
