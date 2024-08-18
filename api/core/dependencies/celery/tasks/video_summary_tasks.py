@@ -19,7 +19,7 @@ def generate_video_summary_task(video_file):
         transcription = summary_service.summarize_audio(video_file)
         return json.dumps(transcription)
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        raise e
     finally:
         try:
             delete_file(video_file)
@@ -36,7 +36,7 @@ def download_and_generate_video_summmary_task(link):
         transcription = summary_service.summarize_audio(video_file)
         return json.dumps(transcription)
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        raise e
     finally:
         try:
             delete_file(video_file)
