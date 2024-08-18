@@ -637,10 +637,10 @@ class UserService(Service):
         )
 
         total_jobs_created = query.count()
-        total_jobs_completed = query.filter(Job.status.contains("SUCCESS")).count()
-        total_jobs_pending = query.filter(Job.status.contains("PENDING")).count()
+        total_jobs_completed = query.filter(Job.status.icontains("SUCCESS")).count()
+        total_jobs_pending = query.filter(Job.status.icontains("PENDING")).count()
         total_jobs_in_progress = query.filter(
-            or_(Job.status.contains("STARTED"), Job.status.contains("RUNNING"))
+            or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
         ).count()
 
         if job:
@@ -694,6 +694,17 @@ class UserService(Service):
             data=all_tasks,
             status_code=200,
         )
+    
+    def check_superadmin_or_user_in_object(self, user_: User, obj) -> bool:
+        """
+        Check that user ``is superadmin`` OR has the ID of ``obj.user_id``.
+        Raise 401 status code error if false, otherwise return ``True``"""
+        if not user_.is_superadmin and not (hasattr(obj, "user_id") and obj.user_id == user_.id):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="You do not have permission to access this resource"
+            )
+        return True
 
 
 user_service = UserService()

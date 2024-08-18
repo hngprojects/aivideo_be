@@ -28,8 +28,6 @@ async def event_generator(job_id: str, db: Session):
         except Exception as e:
             db.rollback()
             raise HTTPException(status_code=500, detail="Failed to update project status")
-        finally:
-            db.close()
         
         job_service.update_job(job_id, status.capitalize())
 
@@ -37,14 +35,11 @@ async def event_generator(job_id: str, db: Session):
         
         if status == 'FAILURE':
             # Safely convert task_result.info to a string
-            try:
-                result = str(task_result.info) if task_result.info else "Unknown error"
-            except Exception as e:
-                result = f"Failed with error: {str(e)}"
-
+            result = str(task_result.info) if task_result.info else "Unknown error"
             event_name = 'failure'
             job_service.update_job(job_id, 'Failed', result)
 
+            # Use json.loads on the result as it is already a stringified json
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
             break
         
@@ -64,7 +59,7 @@ async def event_generator(job_id: str, db: Session):
             finally:
                 db.close()
 
-            yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
+            yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": json.loads(result)})}\n\n'
             break
         
         yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
@@ -104,19 +99,13 @@ async def send_job_status_updates(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
 
     if status == "PENDING":
         job_service.update_job(job_id, "Pending")
 
     elif status == "FAILURE":
         # Safely convert task_result.info to a string
-        try:
-            result = str(task_result.info) if task_result.info else "Unknown error"
-        except Exception as e:
-            result = f"Failed with error: {str(e)}"
-
+        result = str(task_result.info) if task_result.info else "Unknown error"
         job_service.update_job(job_id, "Failed", result)
 
     elif status == "SUCCESS":

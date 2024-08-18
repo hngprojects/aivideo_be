@@ -19,8 +19,7 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
 
     file_content = await file.read()
     file_size = len(file_content)
-
-    print(f"Uploaded file size: {file_size} bytes")
+    await file.seek(0)
 
     if file_size > max_file_size:
         raise HTTPException(
@@ -33,6 +32,8 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
         upload_folder='videos',
         save_extension=file.filename.split('.')[-1].lower(),
     )
+
+    print(f"Saved path: {saved_path}")
 
     video_id = os.path.basename(saved_path).split('.')[0]
     video_url = urljoin(
@@ -65,7 +66,7 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
 @thumbnail_router.post("/generate-thumbnails")
 async def generate_thumbnails(request: Request, body: ThumbnailRequest):
     task = generate_thumbnails_task.delay(
-        body.video_id, str(request.url), body.manual_capture, body.timestamp
+        body.video_id, str(request.url),  body.timestamp
     )
 
     thumbnails = task.get()
