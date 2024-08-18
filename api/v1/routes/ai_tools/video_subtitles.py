@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
-from typing import List, Optional
+from typing import Optional
 from api.utils.files import upload_file
 from api.utils.success_response import success_response
 from api.core.dependencies.celery.tasks.video_subtitles_tasks import (
@@ -74,20 +74,20 @@ async def transcribe(
 @video_subtitles_router.post("/generate_subtitles", status_code=status.HTTP_200_OK, response_model=success_response)
 async def generate_subtitle(
     file: UploadFile = File(...),
-    timestamps: str = Form(...),
+    interval_seconds: Optional[int] = Form(10),
 ):
     try:
         # Upload and save the video file
-        video_file_path = await upload_file(file, allowed_extensions=['mp4', 'mov', 'avi'], upload_folder="videos")
+        video_file_path = await upload_file(file, allowed_extensions=['mp4', 'mov', 'avi', 'mkv', 'wmv'], upload_folder="videos")
 
         # Call the subtitle generation task
-        task = generate_subtitles_task.delay(video_file_path, timestamps)
+        task = generate_subtitles_task.delay(video_file_path, interval_seconds)
 
         # Create project with job
         project = job_service.create_project_with_job(
             job=task,
-            project_title='New Subtitle Project',
-            project_type='Video Subtitle'
+            project_title='New Subtitle Generation Project',
+            project_type='Subtitle Generation'
         )
 
         return success_response(
