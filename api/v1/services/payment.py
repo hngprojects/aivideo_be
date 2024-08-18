@@ -43,13 +43,6 @@ class PaymentService:
             payments = query.offset(offset).limit(limit).all()
         else:
             payments = query.all()
-
-        if len(payments) < 1:
-            # RETURN not found message
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail="Payments not found"
-            )
         
         return payments
 

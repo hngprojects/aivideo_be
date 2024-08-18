@@ -10,7 +10,8 @@ import json
 from api.v1.services.billing_plan import billing_plan_service as bp_service
 from api.v1.services.payment import payment_gateway_service as pg_service
 from api.v1.schemas.payment import (
-    InitiatePaymentSchema, InitiatePaymentResponse, PaymentListResponse
+    InitiatePaymentSchema, InitiatePaymentResponse, PaymentListResponse, 
+    GetPaymentResponse
 )
 from api.utils.success_response import success_response
 from api.utils.pagination import get_pagination_details
@@ -221,4 +222,29 @@ def get_all_payments(
         status_code=status.HTTP_200_OK,
         message="Payments fetched successfully",
         data=payment_service.dictize_payments_and_pagination(payments_l, offset, limit)
+    )
+
+
+@payments.get("/{payment_id}", 
+              status_code=status.HTTP_200_OK, response_model=GetPaymentResponse)
+def get_payment(
+    payment_id: str,
+    current_user: User = Depends(user_service.get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint to retrieve a single payment object by 
+    ``superadmin`` OR ``user who owns the payment``.
+    """
+    # get the payment object
+    payment = payment_service.fetch(db, payment_id)
+
+    # check that current user is superadmin OR owns the payment 
+    user_service.check_superadmin_or_user_in_object(current_user, payment)
+
+    # return success and data
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Payment fetched successfully",
+        data=payment.to_dict()
     )

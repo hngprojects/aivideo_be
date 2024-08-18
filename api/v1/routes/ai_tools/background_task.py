@@ -35,11 +35,7 @@ async def event_generator(job_id: str, db: Session):
         
         if status == 'FAILURE':
             # Safely convert task_result.info to a string
-            try:
-                result = str(task_result.info) if task_result.info else "Unknown error"
-            except Exception as e:
-                result = f"Failed with error: {str(e)}"
-
+            result = str(task_result.info) if task_result.info else "Unknown error"
             event_name = 'failure'
             job_service.update_job(job_id, 'Failed', result)
 
@@ -109,11 +105,7 @@ async def send_job_status_updates(
 
     elif status == "FAILURE":
         # Safely convert task_result.info to a string
-        try:
-            result = str(task_result.info) if task_result.info else "Unknown error"
-        except Exception as e:
-            result = f"Failed with error: {str(e)}"
-
+        result = str(task_result.info) if task_result.info else "Unknown error"
         job_service.update_job(job_id, "Failed", result)
 
     elif status == "SUCCESS":
