@@ -4,6 +4,7 @@ import random
 from typing import List
 from uuid import uuid4
 import openai
+import ffmpeg
 from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip
 import requests
 
@@ -97,9 +98,7 @@ class TextToVideoService:
         duration_per_image = 10  # Duration each image will be displayed (in seconds)
         transition_duration = 2  # Duration of the fade transition (in seconds)
 
-        video_dir = os.path.join('media', 'downloads', 'video')
-        os.makedirs(video_dir, exist_ok=True)
-        output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
+        output_video_file = os.path.join(BASE_DIR, f'ttvideo-{str(uuid4())}.mp4')
 
         for image_file in images:
             # Create an ImageClip for each image
@@ -123,24 +122,114 @@ class TextToVideoService:
         video.write_videofile(output_video_file, codec="libx264", audio_codec="aac", fps=24, threads=4)
 
         return output_video_file
+    
+
+    def set_aspect_ratio(self, aspect_ratio: str):
+        if aspect_ratio == 'square':
+            return (1000, 1000)
+        elif aspect_ratio == 'horizontal':
+            return (1920, 1080)
+        elif aspect_ratio =='vertical':
+            return (720, 1280)
+        
+
+    def change_aspect_ratio(self, input_file: str, output_file: str, aspect_ratio: str):
+        """
+        Change the aspect ratio of a video by resizing and/or adding padding.
+        
+        :param input_file: Path to the input video file.
+        :param output_file: Path to save the output video file.
+        :param aspect_ratio: Desired aspect ratio of the video, Can be one of square, horizontal or veritcal.
+        """
+
+        aspect_ratio = self.set_aspect_ratio(aspect_ratio)
+        # Define the scaling and padding filter
+        filter_complex = (
+            f"scale={aspect_ratio[0]}:{aspect_ratio[1]}:force_original_aspect_ratio=decrease,"
+            f"pad={aspect_ratio[0]}:{aspect_ratio[1]}:(ow-iw)/2:(oh-ih)/2"
+        )
+
+        try:
+            # Run the ffmpeg command
+            ffmpeg.input(input_file).output(output_file, vf=filter_complex).run(overwrite_output=True)
+            print(f"Aspect ratio changed. Output saved to {output_file}")
+
+            return output_file
+        
+        except ffmpeg.Error as e:
+            print(f"An error occurred: {e}")
+
+
+    def add_background_audio(self, video_path: str, audio_path: str, output_path: str):
+        try:
+            # Load the video file with its audio
+            video = ffmpeg.input(video_path)
+
+            # Load the background audio and adjust its volume
+            background_audio = ffmpeg.input(audio_path).filter('volume', 0.2)
+
+            # Adjust the volume of the original audio from the video
+            original_audio = video.audio.filter('volume', 1.0)
+
+            # Combine the original audio with the background audio
+            combined_audio = ffmpeg.filter_([original_audio, background_audio], 'amix', inputs=2)
+
+            # Combine the video with the combined audio
+            output = ffmpeg.output(
+                video.video,                  # Video stream
+                combined_audio,               # Combined audio stream
+                output_path,                  # Output file path
+                vcodec='copy',                # Copy the video codec (no re-encoding)
+                acodec='aac',                 # Encode the audio with AAC codec
+                strict='experimental',        # Allow use of experimental codecs
+                shortest=None                 # Stop the output when the shortest input ends
+            )
+
+            # Run the ffmpeg command
+            ffmpeg.run(output, overwrite_output=True)
+
+            print(f"Successfully added background audio to {output_path}")
+
+            return output_path
+
+        except ffmpeg.Error as e:
+            print(f"Error occurred: {e}")
 
                   
-    def process_script(self, script: str):
-        audio_file = self.generate_audio_from_script(script)
-        scenes = self.generate_scene_descriptions(script)
-        images = self.generate_images_for_scenes(scenes)
-        save_file = self.create_video_with_audio(images, audio_file)
+    # def process_script(self, script: str, voice_over: str, background_audio: str, aspect_ratio: str):
+    def process_script(
+        self, 
+        script: str, 
+        scenes: List[str], 
+        voice_over: str, 
+        background_audio: str, 
+        aspect_ratio: str
+    ):
 
+        audio_file = self.generate_audio_from_script(script, voice_over)
+        # scenes = self.generate_scene_descriptions(script)
+        images = self.generate_images_for_scenes(scenes)
+        video_file = self.create_video_with_audio(images, audio_file)
+
+        video_with_bg_music_path = os.path.join(BASE_DIR, f'ttvideo-{str(uuid4())}.mp4')
+        video_with_audio = self.add_background_audio(video_file, background_audio, video_with_bg_music_path)
+
+        # Set up for final result
+        video_dir = os.path.join('media', 'downloads', 'video')
+        os.makedirs(video_dir, exist_ok=True)
+        output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
+        final_result_file = self.change_aspect_ratio(video_with_audio, output_video_file, aspect_ratio)
+
+        # Delete unnecessary files
         delete_file(audio_file)
+        delete_file(video_file)
+        delete_file(video_with_bg_music_path)
         for img in images:
             delete_file(img)
         
-        save_url = f'{settings.APP_URL}/{save_file}'
+        save_url = f'{settings.APP_URL}/{final_result_file}'
         data = {
-            "url": save_url,
-            "scenes": scenes,
-            # "images": images,
-            # "scene_image": dict(zip(scenes, images))
+            "url": save_url
         }
 
         print(data)

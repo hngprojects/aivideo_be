@@ -86,7 +86,7 @@ async def talking_head_avatar_selection(
     task = generate_talking_avatar_task.apply_async(kwargs={
         'img_file': image_file,
         'audio_file': audio_file,
-        'aspect_ratio': schema.aspect_ratio,
+        'aspect_ratio': schema.aspect_ratio.lower(),
         'script': schema.script,
         'voice_over': schema.voice_over.lower(),
         'default': True

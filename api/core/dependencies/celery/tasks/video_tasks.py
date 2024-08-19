@@ -1,3 +1,4 @@
+from typing import List
 import requests
 from celery import shared_task
 import json
@@ -45,12 +46,37 @@ def generate_talking_avatar_task(
     return json.dumps(video)
 
 
+# TEXT TO VIDEO
 @worker.task()
-def geenerate_video_from_text_task(script: str):
+def generate_video_scenes_task(script: str):
+    '''Background task to generate video scenes'''
+
+    scenes = ttv_service.generate_scene_descriptions(script=script)
+
+    return json.dumps({'scenes': scenes})
+
+
+@worker.task()
+def geenerate_video_from_script_task(
+    script: str, 
+    scenes: List[str],
+    voice_over: str, 
+    background_audio: str, 
+    aspect_ratio: str
+):
     '''Background task to generate video from text'''
 
-    data = ttv_service.process_script(script)
+    data = ttv_service.process_script(
+        script=script,
+        scenes=scenes,
+        background_audio=background_audio,
+        voice_over=voice_over,
+        aspect_ratio=aspect_ratio,
+    )
+
     return json.dumps(data)
+
+# END TEXT TO VIDEO
 
 
 @worker.task()
