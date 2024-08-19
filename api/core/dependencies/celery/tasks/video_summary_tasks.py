@@ -43,3 +43,11 @@ def download_and_generate_video_summmary_task(link):
         except Exception as deletion_error:
             print(str(deletion_error))
         # Re-raise the exception after handling cleanup
+
+
+def delete_pdf(path):
+    try:
+        delete_file(path)
+    except Exception as deletion_error:
+        print(str(deletion_error))
+    # Re-raise the exception after handling cleanup

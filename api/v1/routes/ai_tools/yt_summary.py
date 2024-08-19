@@ -1,31 +1,22 @@
-from fastapi import APIRouter, Depends, File, UploadFile, status, Request
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from api.core.dependencies.celery.tasks.video_summary_tasks import (
-    generate_video_summary_task,
     download_and_generate_video_summmary_task,
+    generate_video_summary_task,delete_pdf
 )
 from api.db.database import get_db
+from api.utils.files import  upload_files
 from api.utils.logger import logging
 from api.utils.pdf_transform import pdf_transform
 from api.utils.success_response import success_response
-from api.utils.transcriber import transcribe
-from api.utils.videos import upload_video
-from api.utils.ytdownload import download_video
+from api.v1.schemas.ai_tools.youtube import PdfDownloadRequest, VideoLinkRequest
+
 from api.v1.services.job import job_service
-from api.v1.schemas.ai_tools.youtube import VideoLinkRequest
-from api.utils.files import convert_video_to_audio, delete_file
-from api.v1.services.ai_tools.youtube_summarizer import transcription_service
-from api.core.dependencies.celery.celery_app import worker
-from api.db.database import get_db
-import json
-from api.utils.ytdownload import download_video
-import time
-import os
-from api.utils.files import upload_files
-from api.v1.services.ai_tools.summary import summary_service
 
 yt_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
+download = APIRouter(prefix="/tools/download", tags=["Download"])
 
 
 @yt_summary.post(
@@ -79,3 +70,19 @@ async def summarize_yt_vid(request: VideoLinkRequest, db: Session = Depends(get_
             "project_id": project.id,
         },
     )
+
+
+@download.post("/pdf", status_code=status.HTTP_202_ACCEPTED)
+def download_pdf(request: PdfDownloadRequest):
+    try:
+        # Generate PDF
+        pdf_path = pdf_transform(
+            request.transcript, request.summary, request.video_title
+        )
+        delete_pdf.delay(pdf_path)
+        # Return the PDF file
+        return FileResponse(
+            pdf_path, media_type="application/pdf", filename="transcript_summary.pdf"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
