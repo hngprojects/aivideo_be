@@ -28,7 +28,6 @@ from api.v1.routes.ai_tools.audio_transcriber import audio
 from api.v1.routes.dashboard import dashboard
 from api.v1.routes.ai_tools.thumbnail import thumbnail_router
 from api.v1.routes.ai_tools.video_subtitles import video_subtitles_router
-from api.v1.routes.text_to_video import text_to_videos
 from api.v1.routes.ai_tools.text_to_video import ttv_router
 
 
@@ -67,5 +66,3 @@ api_version_one.include_router(audio)
 api_version_one.include_router(dashboard)
 api_version_one.include_router(thumbnail_router)
 api_version_one.include_router(video_subtitles_router)
-
-api_version_one.include_router(text_to_videos)
