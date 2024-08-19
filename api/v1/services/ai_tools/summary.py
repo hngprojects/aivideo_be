@@ -138,19 +138,24 @@ class SummaryService():
             script_tags = soup.find_all('script')
 
             for tag in script_tags:
-                script_content = tag.get_text()
-                if "assetUrl" in script_content:
-                    script_content = self.string_to_dict(script_content)
-                    return script_content
+                if tag.get('id') == 'serialized-server-data':
+                    script_content = tag.string
+                    return json.loads(script_content)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to extract audio URL: {str(e)}")
 
     def get_audio_url(self, podcast_url: str):
-        script_content = self.extract_scripts_with_asseturl(podcast_url)
-        keys_to_search = [i for i in script_content if "podcast-episodes" in i][0]
-        data = self.string_to_dict(script_content[keys_to_search])
-        audio_url = data['d'][0]["attributes"]['assetUrl']
-        return audio_url
+        data = self.extract_scripts_with_asseturl(podcast_url)
+        intent_data = data[0].get('data', {})
+        shelves = intent_data.get('shelves', [])
+        
+        for shelf in shelves:
+            items = shelf.get('items', [])
+            for item in items:
+                context_action = item.get('contextAction', {})
+                episode_offer = context_action.get('episodeOffer', {})
+                stream_url = episode_offer.get('streamUrl')
+        return stream_url
    
 
 summary_service = SummaryService()
