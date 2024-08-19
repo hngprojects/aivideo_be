@@ -16,7 +16,7 @@ from secrets import token_hex
 
 def download_video(link):
     BASE_DIR = Path(__file__).resolve().parent.parent.parent
-    video_dir = BASE_DIR / "videos"
+    video_dir = BASE_DIR / "media/uploads/videos"
     filepth = str(video_dir / f"{token_hex()}.mp4")
     # Ensure the videos directory exists
     if not video_dir.exists():
