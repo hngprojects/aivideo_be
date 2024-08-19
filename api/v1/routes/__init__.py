@@ -6,7 +6,7 @@ from api.v1.routes.payment import payments
 from api.v1.routes.billing_plan import billing_plan
 from api.v1.routes.ai_tools.summary import summary
 from api.v1.routes.ai_tools.save_summary import save_summary
-from api.v1.routes.ai_tools.yt_summary import yt_summary
+from api.v1.routes.ai_tools.yt_summary import yt_summary, download
 from api.v1.routes.notification_settings import notification_setting
 from api.v1.routes.faq import faq
 from api.v1.routes.resource import resource
@@ -66,3 +66,4 @@ api_version_one.include_router(audio)
 api_version_one.include_router(dashboard)
 api_version_one.include_router(thumbnail_router)
 api_version_one.include_router(video_subtitles_router)
+api_version_one.include_router(download)
