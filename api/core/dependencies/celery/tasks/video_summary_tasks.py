@@ -45,6 +45,7 @@ def download_and_generate_video_summmary_task(link):
         # Re-raise the exception after handling cleanup
 
 
+@worker.task()
 def delete_pdf(path):
     try:
         delete_file(path)
