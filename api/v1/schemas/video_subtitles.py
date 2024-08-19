@@ -1,12 +1,11 @@
 from pydantic import BaseModel
-from typing import List, Optional
-from fastapi import File, UploadFile
+from typing import Optional
 
 class TranscriptionRequest(BaseModel):
     language: Optional[str] = "en-US"
 
 class SubtitleRequest(BaseModel):
-    timestamps: List[str]
+    interval_seconds: Optional[int] = 10
 
 class TranslationRequest(BaseModel):
     transcription: str

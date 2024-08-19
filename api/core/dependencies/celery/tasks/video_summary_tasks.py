@@ -6,6 +6,7 @@ from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
 import json
 from api.utils.ytdownload import download_video
+from api.v1.services.ai_tools.summary import summary_service
 
 db = next(get_db())
 
@@ -15,12 +16,10 @@ def generate_video_summary_task(video_file):
     """Background task to summarize a video and save to database"""
 
     try:
-        audio_file_path = convert_video_to_audio(video_file)
-
-        transcription = transcription_service.transcribe_audio(audio_file_path)
+        transcription = summary_service.summarize_audio(video_file)
         return json.dumps(transcription)
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        raise e
     finally:
         try:
             delete_file(video_file)
@@ -34,12 +33,10 @@ def download_and_generate_video_summmary_task(link):
     """Background task to download youtube video and summarize it and save to db"""
     video_file = download_video(link)
     try:
-        audio_file_path = convert_video_to_audio(video_file)
-
-        transcription = transcription_service.transcribe_audio(audio_file_path)
+        transcription = summary_service.summarize_audio(video_file)
         return json.dumps(transcription)
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        raise e
     finally:
         try:
             delete_file(video_file)
