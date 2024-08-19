@@ -42,7 +42,8 @@ cryptography==43.0.0
 cssselect==1.2.0
 cssutils==2.11.1
 dataclasses-json==0.6.7
-decorator==5.1.1
+# decorator==5.1.1
+decorator==4.4.2
 deep-translator==1.11.4
 dill==0.3.8
 distlib==0.3.8
@@ -89,6 +90,8 @@ humanize==4.10.0
 hyperframe==5.2.0
 identify==2.6.0
 idna==2.10
+imageio==2.35.0
+imageio-ffmpeg==0.5.1
 iniconfig==2.0.0
 isort==5.13.2
 itsdangerous==2.2.0
@@ -117,6 +120,7 @@ marshmallow==3.21.3
 mccabe==0.7.0
 mdurl==0.1.2
 more-itertools==10.3.0
+moviepy==1.0.3
 mpmath==1.3.0
 msgpack==1.0.8
 multidict==6.0.5
@@ -128,7 +132,6 @@ numba==0.60.0
 numpy==1.26.4
 onnxruntime==1.18.1
 openai==1.40.3
-# openai-whisper==20231117
 opencv-python==4.10.0.84
 orjson==3.10.7
 packaging==24.1
@@ -143,6 +146,7 @@ pluggy==1.5.0
 pooch==1.8.2
 pre-commit==3.7.1
 premailer==3.10.0
+proglog==0.1.10
 prometheus_client==0.20.0
 prompt_toolkit==3.0.47
 proto-plus==1.24.0

@@ -40,11 +40,11 @@ def transcribe_video_task(video_file_path):
         raise
 
 @worker.task()
-def generate_subtitles_task(video_file_path, timestamps):
+def generate_subtitles_task(video_file_path, interval_seconds: int = 10):
     """Background task to generate subtitles from a video"""
     try:
-        # Generate subtitles with the given timestamps
-        result = generate_subtitles(video_file_path, timestamps)
+        # Generate subtitles with dynamic timestamps
+        result = generate_subtitles(video_file_path, interval_seconds)
 
         # Clean up the video file after processing
         delete_file(video_file_path)
