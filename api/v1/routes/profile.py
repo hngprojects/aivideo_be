@@ -19,7 +19,7 @@ from api.utils.success_response import success_response
 profile = APIRouter(prefix='/profile', tags=['Profiles'])
 
 
-UPLOAD_DIR = "presets/avatars"
+UPLOAD_DIR = "media/uploads/user_avatars"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @profile.get("/me", response_model=success_response)

@@ -24,6 +24,13 @@ class TTVSchema(BaseModel):
             raise ValueError(f"Invalid voice over: {value}. Must be one of {', '.join(allowed_types)}.")
         return value
     
+    @field_validator("scenes")
+    def check_length_of_scenes_list(cls, value):
+        if len(value) < 2:
+            raise ValueError("Number of scenes cannot be less than two")
+        return value
+
+ 
 class SceneGeneration(BaseModel):
 
     script: str
