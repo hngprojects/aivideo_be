@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from api.core.dependencies.celery.celery_app import worker
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
+from api.v1.services.ai_tools.text_to_video import ttv_service
 from api.v1.services.ai_tools.thumbnail import generate_thumbnails_service, select_and_download_thumbnail_service
 from api.utils.settings import settings as app_settings
 from api.utils.files import upload_file
@@ -41,6 +42,15 @@ def generate_talking_avatar_task(
         delete_file(img_file)
 
     return json.dumps(video)
+
+
+@worker.task()
+def geenerate_video_from_text_task(script: str):
+    '''Background task to generate video from text'''
+
+    data = ttv_service.process_script(script)
+    return json.dumps(data)
+
 
 @worker.task()
 def upload_video_task(video_id: str, base_url: str):
