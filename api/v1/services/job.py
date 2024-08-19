@@ -31,9 +31,6 @@ class JobService:
         task_result = AsyncResult(job_id, app=worker)
         return task_result.state
 
-    def create_project_with_job(self, job, project_title: str, project_type: str):
-        """FUnction to create a project alongside a task or job"""
-
     def create_project_with_job(
         self, job, project_title: str, project_type: str, user_id: Optional[str] = None
     ):
@@ -48,11 +45,14 @@ class JobService:
 
         return project
 
-    def create_job(self, job_id: str, project_id: str, user_id: Optional[str] = None):
+    def create_job(self, job_id: str, project_id: Optional[str] = None, user_id: Optional[str] = None):
         """Creates a new celery job"""
 
         job = Job(
-            job_id=job_id, project_id=project_id, user_id=user_id, status="RUNNING"
+            job_id=job_id, 
+            project_id=project_id, 
+            user_id=user_id, 
+            status="RUNNING"
         )
         db.add(job)
         db.commit()
@@ -97,6 +97,7 @@ class JobService:
 
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
+        
         return project
 
     def update_job_result(self, job_id: str):
