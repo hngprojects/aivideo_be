@@ -63,9 +63,8 @@ def generate_timestamps(transcription: str, duration: int, interval_seconds: int
 def generate_subtitles_from_transcription(transcription: str, timestamps: List[Dict[str, str]]) -> str:
     """Generate SRT formatted subtitles from transcription text with timestamps"""
     
-    def format_timedelta(seconds: float) -> str:
-        """Format seconds as SRT timecode"""
-        td = timedelta(seconds=seconds)
+    def format_timedelta(td: timedelta) -> str:
+        """Format timedelta as SRT timecode"""
         total_seconds = int(td.total_seconds())
         hours, remainder = divmod(total_seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
@@ -75,8 +74,8 @@ def generate_subtitles_from_transcription(transcription: str, timestamps: List[D
     srt_content = []
     
     for idx, item in enumerate(timestamps):
-        start_time = float(item["start_time"])
-        end_time = float(item["end_time"])
+        start_time = timedelta(seconds=float(item["start_time"]))
+        end_time = timedelta(seconds=float(item["end_time"]))
         text = item["paragraph"]
         
         srt_content.append(f"{idx + 1}")
