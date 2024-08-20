@@ -1,5 +1,7 @@
 import os
 import uuid
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 from api.utils.settings import settings
 import pytesseract
 from PIL import Image
@@ -190,39 +192,69 @@ class SummaryService():
         """Translates the summary to the target language using GoogleTranslator."""
         translated_text = self.translator.translate(text, target_lang=target_lang)
         return translated_text
-
-    def export_results(self, summary, transcript, translation, output_dir="exports"):
-        """Exports the summary, transcript, and translation to a text file."""
+    
+    def export_results_to_pdf(self, summary, transcript, translation, output_dir="exports"):
+        """Exports the summary, transcript, and translation to a PDF file."""
         os.makedirs(output_dir, exist_ok=True)
-        export_file_path = os.path.join(output_dir, f"summary_export_{uuid.uuid4()}.txt")
-        
-        with open(export_file_path, 'w') as export_file:
-            export_file.write("TRANSCRIPT:\n")
-            export_file.write(transcript)
-            export_file.write("\n\nSUMMARY:\n")
-            export_file.write(summary)
-            export_file.write("\n\nTRANSLATION:\n")
-            export_file.write(translation)
-        
-        return export_file_path
+        pdf_file_path = os.path.join(output_dir, f"summary_export_{uuid.uuid4()}.pdf")
 
-    def process_audio(self, audio_file_path, target_lang):
-        """Processes the audio file: transcribes, summarizes, translates, and exports."""
-        # Step 1: Summarize the audio
-        results = self.summarize_audio(audio_file_path)
+        c = canvas.Canvas(pdf_file_path, pagesize=letter)
+        width, height = letter
+
+        """Add Title"""
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(100, height - 40, "Audio Summary and Transcript")
         
-        # Step 2: Translate the summary
+        """Add Transcript"""
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(30, height - 80, "TRANSCRIPT:")
+        c.setFont("Helvetica", 10)
+        text = c.beginText(30, height - 100)
+        text.setTextOrigin(30, height - 120)
+        text.textLines(transcript)
+        c.drawText(text)
+        
+         
+        """Add Summary"""
+        c.showPage()  # Start a new page
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(30, height - 40, "SUMMARY:")
+        c.setFont("Helvetica", 10)
+        text = c.beginText(30, height - 60)
+        text.setTextOrigin(30, height - 80)
+        text.textLines(summary)
+        c.drawText(text)
+
+        """Add Translation"""
+        c.showPage()  # Start a new page
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(30, height - 40, "TRANSLATION:")
+        c.setFont("Helvetica", 10)
+        text = c.beginText(30, height - 60)
+        text.setTextOrigin(30, height - 80)
+        text.textLines(translation)
+        c.drawText(text)
+        
+        c.save()
+        
+        return pdf_file_path
+
+    def process_audio(self, audio_file_path, target_lang, export_format="pdf"):
+        """Processes the audio file: transcribes, summarizes, translates, and exports."""
+        results = self.summarize_audio(audio_file_path)
         translated_summary = self.translate_summary(results["summary"], target_lang)
         
-        # Step 3: Export the results
-        export_path = self.export_results(results["summary"], results["transcript"], translated_summary)
-        
+        if export_format == "pdf":
+            export_path = self.export_results_to_pdf(results["summary"], results["transcript"], translated_summary)
+        else:
+            export_path = self.export_results(results["summary"], results["transcript"], translated_summary)
+
         return {
             "transcript": results["transcript"],
             "summary": results["summary"],
             "translation": translated_summary,
             "export_path": export_path
         }
-   
 
+"""Initialize the service"""
 summary_service = SummaryService()
