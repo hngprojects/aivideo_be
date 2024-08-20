@@ -133,15 +133,16 @@ class TalkingAvatarService:
 		- output_file: Path to the output compressed video file.
 		- bitrate: Desired bitrate for the output video (e.g., '1000k' for 1000 kbps).
 		"""
+		output_file = os.path.join('media', 'downloads', 'video', f'video-{str(uuid4())}.mp4')
 		try:
 			clip = VideoFileClip(input_file)
-			output_file = os.path.join('media', 'downloads', 'video', f'video-{str(uuid4())}.mp4')
 			clip.write_videofile(output_file, bitrate=f"{bitrate}k")
 			print(f"Video compressed successfully: {output_file}")
 			delete_file(input_file)
 			return output_file
 		except Exception as e:
 			print(f"Error compressing video: {e}")
+			return input_file
 
 	def process_script(
 		self, 
@@ -209,8 +210,6 @@ class TalkingAvatarService:
 
 		final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
 
-		# Compresss video file
-		final_save_path = self.compress_video(input_file=final_save_path, bitrate=500) 
 		# Perform aspect ratio resizing based on user input
 		self.change_aspect_ratio(
 			input_file=video_audio_path if audio_file else initial_save_path,
@@ -225,6 +224,9 @@ class TalkingAvatarService:
 		delete_file(initial_save_path)
 		delete_file(audio)
 
+		# Compress video
+		final_save_path = self.compress_video(input_file=final_save_path, bitrate=500) 
+		
 		save_url = f'{settings.APP_URL}/{final_save_path}'
 		return {
 			'app_url': save_url,
