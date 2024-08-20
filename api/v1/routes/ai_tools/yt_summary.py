@@ -15,6 +15,7 @@ from api.utils.success_response import success_response
 from api.v1.schemas.ai_tools.youtube import PdfDownloadRequest, VideoLinkRequest
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.job import job_service
+from api.v1.services.tool_limiter import track_tool_usage
 
 yt_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 download = APIRouter(prefix="/tools/download", tags=["Download"])
@@ -76,7 +77,12 @@ async def summarize_yt_vid(request: VideoLinkRequest, db: Session = Depends(get_
     )
 
 
-@download.post("/pdf", status_code=status.HTTP_200_OK, response_model=success_response)
+@download.post(
+    "/pdf",
+    status_code=status.HTTP_200_OK,
+    response_model=success_response,
+    dependencies=[Depends(track_tool_usage)],
+)
 def download_pdf(request: PdfDownloadRequest):
     try:
         # Generate PDF
@@ -100,3 +106,17 @@ def download_pdf(request: PdfDownloadRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@download.get(
+    "/test",
+    status_code=status.HTTP_200_OK,
+    response_model=success_response,
+    dependencies=[Depends(track_tool_usage)],
+)
+def download_pdf():
+    return success_response(
+        status_code=200,
+        message="request success",
+        data={},
+    )
