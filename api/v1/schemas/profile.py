@@ -35,9 +35,11 @@ class ProfileCreateUpdate(BaseModel):
     avatar_url: Optional[str] = None
     avatar: Optional[UploadFile] = None
     
-    # Validator for phone number
     @validator('phone_number')
     def phone_validator(cls, value):
+        if value is None:
+            return value
+        
         # Ensure phone number contains only digits and may start with '+'
         if not re.fullmatch(r"^\+?[0-9]+$", value):
             raise ValueError("Phone number must contain only digits and may start with '+'.")
@@ -52,13 +54,15 @@ class ProfileCreateUpdate(BaseModel):
     @validator('job_title', pre=True, always=True)
     def job_title_validator(cls, value):
         if value is None:
-            return value  
+            return value 
+        
         if not isinstance(value, str):
             raise ValueError("Job title must be a string.")
+        
         if not value.replace(" ", "").isalpha():
             raise ValueError("Job title must contain only alphabetic characters.")
-        return value
         
+        return value        
     
     class Config:
         extra = 'allow'
