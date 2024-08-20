@@ -168,6 +168,7 @@ class JobService:
                     or_(
                         User.first_name.icontains(f"%{search}%"),
                         User.last_name.icontains(f"%{search}%"),
+                        User.email.icontains(f"%{search}%"),
                     )
                 ),
             ]
