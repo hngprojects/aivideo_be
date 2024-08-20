@@ -6,7 +6,7 @@ import requests
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.utils.files import upload_file_to_current_dir, contains_face
+from api.utils.files import upload_to_current_dir, contains_face
 from api.v1.services.presets import preset_service
 from api.v1.services.job import job_service
 from api.v1.schemas.ai_tools.talking_avatar import DownloadRequest, TalkingHeadRequest
@@ -26,7 +26,7 @@ async def talking_head_image_upload(
     '''Endpoint to Talking Avatar'''
 
     file_extension = file.filename.split(".")[-1]
-    image_file = await upload_file_to_current_dir(
+    image_file = await upload_to_current_dir(
         file, 
         allowed_extensions=['jpg', 'jpeg', 'png'],
         save_extension=file_extension,
