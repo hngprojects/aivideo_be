@@ -248,6 +248,7 @@ async def upload_files(
 
     return uploaded_files
 
+async def check_file_size(file, max_file_size_mb=10):
     '''Check if the file size exceeds the allowed limit.'''
     await file.seek(0)
     file_content = await file.read()
