@@ -2,8 +2,6 @@ from api.utils.settings import settings
 import pytesseract
 from PIL import Image
 from io import BytesIO
-from tenacity import retry, stop_after_attempt, wait_random_exponential
-from langchain_community.document_loaders.pdf import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains.llm import LLMChain
@@ -11,7 +9,6 @@ from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from openai import OpenAI as OI
 from langchain_community.llms.openai import OpenAI
-# from langchain.llms.openai import OpenAI
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.summarize import load_summarize_chain
@@ -88,12 +85,12 @@ class SummaryService():
         return final_summary
     
     def transcribe_audio(self, file_path):
-           transcript = self.client.audio.transcriptions.create(
+        transcript = self.client.audio.transcriptions.create(
             model="whisper-1",
             response_format="text",
             file=open(file_path, "rb"),
         )
-           return transcript
+        return transcript
        
     def summarize_audio(self, audio_file_path):
         """Summarize podcast audio file.
@@ -155,6 +152,10 @@ class SummaryService():
                 context_action = item.get('contextAction', {})
                 episode_offer = context_action.get('episodeOffer', {})
                 stream_url = episode_offer.get('streamUrl')
+                if stream_url:
+                    break
+            if stream_url:
+                break
         return stream_url
    
 

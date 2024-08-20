@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, EmailStr,  validator
-from fastapi import UploadFile, Form
-from typing import Optional, Dict
+from pydantic import BaseModel, Field, EmailStr, field_validator
+from fastapi import UploadFile
+from typing import Optional
 import re
 from datetime import datetime
 from api.v1.schemas.user import UserBase
@@ -36,7 +36,7 @@ class ProfileCreateUpdate(BaseModel):
     avatar: Optional[UploadFile] = None
     
     # Validator for phone number
-    @validator('phone_number')
+    @field_validator('phone_number')
     def phone_validator(cls, value):
         # Ensure phone number contains only digits and may start with '+'
         if not re.fullmatch(r"^\+?[0-9]+$", value):
@@ -49,7 +49,7 @@ class ProfileCreateUpdate(BaseModel):
         
         return value
 
-    @validator('job_title', pre=True, always=True)
+    @field_validator('job_title')
     def job_title_validator(cls, value):
         if value is None:
             return value  

@@ -1,6 +1,4 @@
-from typing import Annotated, Optional
-from fastapi import Depends, APIRouter, Request, status, Query, HTTPException
-from fastapi.encoders import jsonable_encoder
+from fastapi import Depends, APIRouter, status
 from sqlalchemy.orm import Session
 from api.utils.success_response import success_response
 from api.v1.models.user import User
@@ -10,9 +8,7 @@ from api.db.database import get_db
 from api.v1.services.user import user_service
 
 
-
 privacy = APIRouter(prefix="/data-privacy-settings", tags=["Data Privacy"])
-
 
 @privacy.post("", response_model=DataPrivacySettingUpdate)
 def create_or_update_data_privacy_settings(

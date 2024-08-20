@@ -1,14 +1,12 @@
-from fastapi import Depends, APIRouter, status, Form, HTTPException
+from fastapi import Depends, APIRouter, status, Form
 from sqlalchemy.orm import Session
-import json
 import os
 import shutil
-from typing import Optional, Dict
-from pydantic import ValidationError
+from typing import Optional
 
 
 from api.v1.models.user import User
-from api.v1.schemas.profile import ProfileBase, ProfileCreateUpdate, ProfileUpdateForm
+from api.v1.schemas.profile import ProfileBase, ProfileCreateUpdate
 from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.v1.services.profile import profile_service
@@ -19,7 +17,7 @@ from api.utils.success_response import success_response
 profile = APIRouter(prefix='/profile', tags=['Profiles'])
 
 
-UPLOAD_DIR = "presets/avatars"
+UPLOAD_DIR = "media/uploads/user_avatars"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @profile.get("/me", response_model=success_response)

@@ -7,14 +7,13 @@ from fastapi import status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, or_, select, func
+from sqlalchemy import desc, or_
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 
 from api.core.base.services import Service
-from api.core.dependencies.email_sender import send_email
 from api.db.database import get_db
 from api.utils.settings import settings
 from api.utils.db_validators import check_model_existence
@@ -24,9 +23,9 @@ from api.v1.models.job import Job
 from api.v1.models.data_privacy import DataPrivacySetting
 from api.v1.schemas import user
 
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 class UserService(Service):
     """User service"""

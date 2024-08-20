@@ -4,11 +4,8 @@
 from typing import List
 from fastapi import APIRouter, Depends, File, UploadFile, status
 from sqlalchemy.orm.session import Session
-from starlette.status import HTTP_202_ACCEPTED
 from api.utils.files import upload_files
 from api.db.database import get_db
-from api.v1.schemas.project import CreateProject
-from api.v1.services.project import project_service
 from api.v1.services.job import job_service
 from api.core.dependencies.celery.tasks.video_summary_tasks import (
     generate_video_summary_task
@@ -67,7 +64,7 @@ async def enqueue_summarize_batch_job(
             "project_id": project.id,
         })
     return success_response(
-        status_code=HTTP_202_ACCEPTED,
+        status_code=status.HTTP_202_ACCEPTED,
         message="Video summary generation task initiated successfully",
         data={
             "job_ids": job_ids

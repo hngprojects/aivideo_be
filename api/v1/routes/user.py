@@ -1,5 +1,5 @@
-from typing import Annotated, Optional, Literal
-from fastapi import Depends, APIRouter, Request, status, Query, HTTPException
+from typing import Annotated, Optional
+from fastapi import Depends, APIRouter, Request, status, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
