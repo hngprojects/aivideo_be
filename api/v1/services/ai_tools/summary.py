@@ -152,6 +152,10 @@ class SummaryService():
                 context_action = item.get('contextAction', {})
                 episode_offer = context_action.get('episodeOffer', {})
                 stream_url = episode_offer.get('streamUrl')
+                if stream_url:
+                    break
+            if stream_url:
+                break
         return stream_url
    
 
