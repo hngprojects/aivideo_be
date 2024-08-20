@@ -255,10 +255,28 @@ async def flutterwave_webhook(
     Flutterwave webhook for event listening
     """
 
-    payload = await req.body()
+    payment = await req.body()
 
     # Handle the event
     if payload.event == "charge.completed":
+        amount = payment['data']["amount"]
+        user = payment_service.fetch_by_params(
+            db,
+            {"email": payment['data']['email']}
+            )
+
+        payload = {
+            "user_id": user.id,
+            "transaction_id": payment['data']['id'],
+            "amount": amount,
+            "currency": payment['data']["currency"],
+            "status": "completed",
+            "method": "flutterwave",
+        }
+
+        # Record payment
+        payment_service.create(db, payload)
+
         return success_response(
             status_code=status.HTTP_200_OK,
             message="Payment success"
