@@ -47,16 +47,20 @@ class JobService:
     def create_job(self, job_id: str, project_id: Optional[str] = None, user_id: Optional[str] = None):
         """Creates a new celery job"""
 
-        job = Job(
-            job_id=job_id, 
-            project_id=project_id, 
-            user_id=user_id, 
-            status="RUNNING"
-        )
-        db.add(job)
-        db.commit()
-        db.refresh(job)
-        return job
+        try:
+            job = Job(
+                job_id=job_id, 
+                project_id=project_id, 
+                user_id=user_id, 
+                status="Pending"
+            )
+            db.add(job)
+            db.commit()
+            db.refresh(job)
+            return job
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Error {e}")
 
     def fetch_all_jobs(self):
         """Fetches all celery jobs from the database"""

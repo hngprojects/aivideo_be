@@ -28,7 +28,8 @@ async def talking_head_image_upload(
     image_file = await upload_file_to_current_dir(
         file, 
         allowed_extensions=['jpg', 'jpeg', 'png'],
-        save_extension=file_extension
+        save_extension=file_extension,
+        max_file_size=10 * 1024 * 1024
     )
 
     audio = preset_service.fetch_music_by_id(
