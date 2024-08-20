@@ -1,10 +1,11 @@
+from typing import Optional
 from pydantic import BaseModel, field_validator
 
 
 class TalkingHeadRequest(BaseModel):
 
     avatar_id: str
-    audio_id: str
+    audio_id: Optional[str] = None
     script: str
     aspect_ratio: str
     voice_over: str

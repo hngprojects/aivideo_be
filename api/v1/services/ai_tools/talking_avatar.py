@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Optional
 import wave
 from uuid import uuid4
 from api.utils.settings import settings
@@ -9,6 +10,7 @@ import random
 from openai import OpenAI
 import requests
 import ffmpeg
+from moviepy.editor import VideoFileClip
 
 from api.utils.files import delete_file
 
@@ -89,7 +91,6 @@ class TalkingAvatarService:
 		except ffmpeg.Error as e:
 			print(f"An error occurred: {e}")
 
-	
 	def add_background_audio(self, video_path: str, audio_path: str, output_path: str):
 		try:
 			# Load the video file with its audio
@@ -123,17 +124,42 @@ class TalkingAvatarService:
 		except ffmpeg.Error as e:
 			print(f"Error occurred: {e}")
 
+	def compress_video(self, input_file, bitrate: int=700):
+		"""
+		Compresses a video file using moviepy.
 
-	def process_script(self, image_file, audio_file, aspect_ratio, script, voice_over):
-	# def process_script(self, image_file, aspect_ratio, script, voice_over):
-		"""_summary_
+		Parameters:
+		- input_file: Path to the input video file.
+		- output_file: Path to the output compressed video file.
+		- bitrate: Desired bitrate for the output video (e.g., '1000k' for 1000 kbps).
+		"""
+		output_file = os.path.join('media', 'downloads', 'video', f'video-{str(uuid4())}.mp4')
+		try:
+			clip = VideoFileClip(input_file)
+			clip.write_videofile(output_file, bitrate=f"{bitrate}k")
+			print(f"Video compressed successfully: {output_file}")
+			delete_file(input_file)
+			return output_file
+		except Exception as e:
+			print(f"Error compressing video: {e}")
+			return input_file
+
+	def process_script(
+		self, 
+		image_file: str, 
+		aspect_ratio: str, 
+		script: str, 
+		voice_over: str, 
+		audio_file: Optional[str]=None
+	):
+		"""This is to precess the whole talking avatar script
 
 		Args:
 			image_file (str): Path to image file
 			aspect_ratio (str): Can be one of square, horizontal, vertical
 			script (str): Script to be converted to audio
 			voice_over (str): Either one of man, woman or neutral
-
+			audio_file Optional{str}: Path to audio file
 		Returns:
 			str: A string json for the save url and the source of the video
 		"""
@@ -163,37 +189,44 @@ class TalkingAvatarService:
 		)
 
 		result = response.json()
+		print(result)
 		url = result['output']['output_video']
-		video_dir = os.path.join('media', 'downloads', 'video')
 
-		if not os.path.exists(video_dir):
-			os.makedirs(video_dir)
+		video_dir = os.path.join('media', 'downloads', 'video')
+		os.makedirs(video_dir, exist_ok=True)
 
 		# Download video file to the current directory
 		initial_save_path = os.path.join(BASE_DIR, f'video-{str(uuid4())}.mp4')
 		self.download_large_file(url, initial_save_path)
 
-		video_audio_path = os.path.join(BASE_DIR, f'video-{str(uuid4())}.mp4')
-		# Add background audio to the file
-		self.add_background_audio(
-			video_path=initial_save_path,
-			audio_path=audio_file,
-			output_path=video_audio_path,
-		)
+		if audio_file:
+			video_audio_path = os.path.join(BASE_DIR, f'video-{str(uuid4())}.mp4')
+			# Add background audio to the file
+			self.add_background_audio(
+				video_path=initial_save_path,
+				audio_path=audio_file,
+				output_path=video_audio_path,
+			)
 
 		final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
+
 		# Perform aspect ratio resizing based on user input
 		self.change_aspect_ratio(
-			input_file=video_audio_path,
+			input_file=video_audio_path if audio_file else initial_save_path,
 			output_file=final_save_path,
 			aspect_ratio=aspect_ratio
 		)
 
+
 		# Delete the temporary audio and video file after processing is done
+		if audio_file:
+			delete_file(video_audio_path)
 		delete_file(initial_save_path)
-		delete_file(video_audio_path)
 		delete_file(audio)
 
+		# Compress video
+		final_save_path = self.compress_video(input_file=final_save_path, bitrate=500) 
+		
 		save_url = f'{settings.APP_URL}/{final_save_path}'
 		return {
 			'app_url': save_url,

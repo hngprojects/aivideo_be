@@ -86,30 +86,6 @@ def update_current_user(
 
 
 @user_router.get(
-    "/search", status_code=status.HTTP_200_OK, response_model=AllUsersResponse
-)
-async def search_users(
-    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
-    db: Annotated[Session, Depends(get_db)],
-    page: int = 1,
-    per_page: int = 10,
-    query: Optional[str] = Query(None),
-    is_deleted: Optional[bool] = Query(None),
-):
-    """
-    user search functionality.
-    Args:
-        current_user: The current user(admin) making the request
-        db: database Session object
-        page: the page number
-        per_page: the maximum size of users for each page
-    Returns:
-        UserData
-    """
-    return user_service.search(db, page, per_page, query, is_deleted)
-
-
-@user_router.get(
     "/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
 )
 def get_user_statistics(
@@ -249,9 +225,9 @@ async def get_users(
     db: Annotated[Session, Depends(get_db)],
     page: int = 1,
     per_page: int = 10,
+    search: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
     is_deleted: Optional[bool] = Query(None),
-    # is_verified: Optional[bool] = Query(None),
     is_superadmin: Optional[bool] = Query(None),
 ):
     """
@@ -272,7 +248,7 @@ async def get_users(
         "is_deleted": is_deleted,
         "is_superadmin": is_superadmin,
     }
-    return user_service.fetch_all(db, page, per_page, **query_params)
+    return user_service.fetch_all(db, page, per_page, search, **query_params)
 
 
 @user_router.post(
