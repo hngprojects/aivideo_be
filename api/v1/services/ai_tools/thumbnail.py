@@ -3,7 +3,6 @@ import uuid
 import random
 from fastapi import HTTPException, status
 import subprocess
-from typing import List
 from api.utils.settings import settings
 from urllib.parse import urljoin
 

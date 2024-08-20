@@ -1,6 +1,5 @@
 import logging
 import os
-import json
 from datetime import timedelta
 from typing import List, Dict, Optional
 from deep_translator import GoogleTranslator

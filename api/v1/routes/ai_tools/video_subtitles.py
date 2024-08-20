@@ -1,4 +1,3 @@
-from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from typing import Optional
 from api.utils.files import upload_file
@@ -8,7 +7,7 @@ from api.core.dependencies.celery.tasks.video_subtitles_tasks import (
     translate_text_task,
     generate_subtitles_task,
 )
-from api.v1.schemas.video_subtitles import TranscriptionRequest, TranslationRequest, SubtitleRequest
+from api.v1.schemas.video_subtitles import TranslationRequest
 from api.v1.services.job import job_service
 
 video_subtitles_router = APIRouter(

@@ -1,4 +1,3 @@
-import json
 import os
 import uuid
 from api.utils.settings import settings
@@ -6,13 +5,10 @@ from langchain.chains.llm import LLMChain
 from langchain_core.prompts import PromptTemplate
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders.parsers import OpenAIWhisperParser
 from langchain_openai import ChatOpenAI
 from deep_translator import GoogleTranslator
 from openai import OpenAI as OI
 from langchain_openai import OpenAI
-from langchain.docstore.document import Document
-from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.summarize import load_summarize_chain
 
 class SummaryService():

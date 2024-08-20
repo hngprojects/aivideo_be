@@ -1,5 +1,4 @@
 from api.utils.settings import settings
-from kombu import Queue, Exchange
 
 broker_url = settings.CELERY_BROKER_URL
 result_backend = f"db+{settings.DB_URL}"

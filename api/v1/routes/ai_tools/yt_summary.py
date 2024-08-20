@@ -7,8 +7,7 @@ from api.core.dependencies.celery.tasks.video_summary_tasks import (
     generate_video_summary_task,delete_pdf
 )
 from api.db.database import get_db
-from api.utils.settings import settings
-from api.utils.files import  upload_files, upload_file_to_current_dir
+from api.utils.files import  upload_files
 from api.utils.logger import logging
 from api.utils.success_response import success_response
 from api.v1.schemas.ai_tools.youtube import PdfDownloadRequest, VideoLinkRequest
@@ -27,13 +26,6 @@ download = APIRouter(prefix="/tools/download", tags=["Download"])
 )
 async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Endpoint to summarize a single video"""
-
-    # video = await upload_file_to_current_dir(
-    #     file, 
-    #     allowed_extensions=["mp4", "mp3"], 
-    #     save_extension='mp4',
-    #     max_file_size=settings.MAX_FILE_SIZE
-    # )
 
     video = await upload_files(
         file, 

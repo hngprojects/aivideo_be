@@ -2,9 +2,8 @@
 
 """Services to handle audio transcription"""
 
-import logging
 import os
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 from typing_extensions import List
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains.llm import LLMChain

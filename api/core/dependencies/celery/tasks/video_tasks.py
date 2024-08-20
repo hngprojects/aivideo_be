@@ -1,6 +1,4 @@
 from typing import List
-import requests
-from celery import shared_task
 import json
 from sqlalchemy.orm import Session
 from api.core.dependencies.celery.celery_app import worker

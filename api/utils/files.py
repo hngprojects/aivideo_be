@@ -1,8 +1,6 @@
 from typing import Optional
-from api.utils.logger import logging
-import ffmpeg
 import os
-from typing import List, Optional, Union
+from typing import Optional
 from secrets import token_hex
 from fastapi import HTTPException, status
 from pathlib import Path

@@ -1,15 +1,11 @@
-import logging
-from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, Request, Query, Depends, status
 from sqlalchemy.exc import SQLAlchemyError
-from fastapi.responses import JSONResponse
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.v1.models.user import User
 from api.v1.schemas import request_password_reset
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from api.core.dependencies.email_sender import send_email
 from fastapi import BackgroundTasks
 from api.v1.services.email_services import EmailService 
 from passlib.context import CryptContext

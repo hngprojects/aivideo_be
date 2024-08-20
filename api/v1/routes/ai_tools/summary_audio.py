@@ -1,14 +1,11 @@
-from datetime import timedelta
-from fastapi import BackgroundTasks, Depends, status, APIRouter, File, UploadFile
+from fastapi import Depends, status, APIRouter, File, UploadFile
 from sqlalchemy.orm import Session
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.utils.files import upload_file
 from api.v1.services.job import job_service
-from api.v1.schemas.project import CreateProject
-from api.v1.services.ai_tools.summary_audio import summary_service
 from api.core.dependencies.celery.tasks.audio_tasks import generate_audio_summary_task, transcribe_audio_task
-import base64
+
 
 summary_audio = APIRouter(prefix="/tools/summary", tags=["Tools"])
 

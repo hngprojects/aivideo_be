@@ -1,10 +1,7 @@
 import json
-from celery import shared_task
 from api.core.dependencies.celery.celery_app import worker
 from api.v1.services.ai_tools.summary_audio import summary_service
 from api.db.database import get_db
-import base64
-from typing import Dict
 import json
 from api.v1.services.ai_tools.audio_transcriber import transcribe_audio_file_with_timestamps
 

@@ -1,6 +1,5 @@
 from fastapi import Depends, APIRouter, status, HTTPException, Request, Query
 from sqlalchemy.orm import Session
-from uuid_extensions import uuid7
 from typing import Annotated
 import requests
 import stripe
@@ -14,7 +13,6 @@ from api.v1.schemas.payment import (
     GetPaymentResponse
 )
 from api.utils.success_response import success_response
-from api.utils.pagination import get_pagination_details
 from api.v1.services.user import user_service
 from api.utils.settings import settings
 from api.db.database import get_db
@@ -24,7 +22,6 @@ from api.v1.services.user_subscription import user_subscription_service
 
 
 payments = APIRouter(prefix="/payments", tags=["Payments"])
-
 
 @payments.post(
     "/initiate", response_model=InitiatePaymentResponse, status_code=status.HTTP_200_OK
