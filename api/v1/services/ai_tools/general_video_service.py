@@ -1,10 +1,12 @@
 import os
 from pathlib import Path
+import wave
 import random
 from uuid import uuid4
 import openai
 import ffmpeg
 import requests
+from moviepy.editor import VideoFileClip
 
 from deepgram_captions import DeepgramConverter, srt
 from deepgram import (
@@ -13,6 +15,7 @@ from deepgram import (
     FileSource,
 )
 
+from api.utils.files import delete_file
 from api.utils.settings import settings
 
 CURRENT_DIRECTORY = Path(__file__).resolve().parent
@@ -34,6 +37,36 @@ class GeneralVideoService:
             return save_path
         except requests.RequestException as e:
             print(f"Error downloading large file: {e}")
+
+    
+    def get_audio_duration(self, audio_path):
+        with wave.open(audio_path, "rb") as audio_file:
+            num_frames = audio_file.getnframes()
+            frame_rate = audio_file.getframerate()
+            duration_seconds = num_frames / frame_rate
+            return int(duration_seconds)
+
+    
+    def compress_video(self, input_file, bitrate: int=700):
+        """
+        Compresses a video file using moviepy.
+
+        Parameters:
+        - input_file: Path to the input video file.
+        - output_file: Path to the output compressed video file.
+        - bitrate: Desired bitrate for the output video (e.g., '1000k' for 1000 kbps).
+        """
+
+        output_file = os.path.join('media', 'downloads', 'video', f'video-{str(uuid4())}.mp4')
+        try:
+            clip = VideoFileClip(input_file)
+            clip.write_videofile(output_file, bitrate=f"{bitrate}k")
+            print(f"Video compressed successfully: {output_file}")
+            delete_file(input_file)
+            return output_file
+        except Exception as e:
+            print(f"Error compressing video: {e}")
+            return input_file
 
 
     def generate_audio_from_script(self, script, voice_over='man'):

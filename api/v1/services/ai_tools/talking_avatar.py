@@ -1,54 +1,21 @@
 import os
-from pathlib import Path
 from typing import Optional
-import wave
 from uuid import uuid4
 from api.utils.settings import settings
 import json
 import os
-import random
 import openai
 import requests
-import ffmpeg
-from moviepy.editor import VideoFileClip
 
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.general_video_service import CURRENT_DIRECTORY, video_service
 
-# BASE_DIR = Path(__file__).resolve().parent
 
 class TalkingAvatarService:
 
 	def __init__(self):
 		self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-
-
-	def get_audio_duration(self, audio_path):
-		with wave.open(audio_path, "rb") as audio_file:
-			num_frames = audio_file.getnframes()
-			frame_rate = audio_file.getframerate()
-			duration_seconds = num_frames / frame_rate
-			return int(duration_seconds)
-
-	def compress_video(self, input_file, bitrate: int=700):
-		"""
-		Compresses a video file using moviepy.
-
-		Parameters:
-		- input_file: Path to the input video file.
-		- output_file: Path to the output compressed video file.
-		- bitrate: Desired bitrate for the output video (e.g., '1000k' for 1000 kbps).
-		"""
-		output_file = os.path.join('media', 'downloads', 'video', f'video-{str(uuid4())}.mp4')
-		try:
-			clip = VideoFileClip(input_file)
-			clip.write_videofile(output_file, bitrate=f"{bitrate}k")
-			print(f"Video compressed successfully: {output_file}")
-			delete_file(input_file)
-			return output_file
-		except Exception as e:
-			print(f"Error compressing video: {e}")
-			return input_file
+		
 
 	def process_script(
 		self, 
@@ -122,7 +89,6 @@ class TalkingAvatarService:
 			output_file=final_save_path,
 			aspect_ratio=aspect_ratio
 		)
-
 
 		# Delete the temporary audio and video file after processing is done
 		if audio_file:
