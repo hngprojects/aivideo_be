@@ -10,10 +10,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains.llm import LLMChain
 from langchain_core.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAI
 from deep_translator import GoogleTranslator
 from openai import OpenAI as OI
-from langchain_community.llms.openai import OpenAI
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.summarize import load_summarize_chain
@@ -183,9 +182,15 @@ class SummaryService():
         
         final_summary = " ".join(summaries)
         
+        """Calculate word counts"""
+        transcript_word_count = self.calculate_word_count(transcribed_text)
+        summary_word_count = self.calculate_word_count(final_summary)
+        
         return {
             "summary": final_summary,
-            "transcript": transcribed_text
+            "summary_word_count": summary_word_count,
+            "transcript": transcribed_text,
+            "transcript_word_count": transcript_word_count
         }
         
     def translate_summary(self, text, target_lang):
@@ -238,6 +243,11 @@ class SummaryService():
         c.save()
         
         return pdf_file_path
+    
+    def calculate_word_count(self, text):
+        """Calculates the word count of a given text."""
+        words = text.split()
+        return len(words)
 
     def process_audio(self, audio_file_path, target_lang, export_format="pdf"):
         """Processes the audio file: transcribes, summarizes, translates, and exports."""
@@ -251,7 +261,10 @@ class SummaryService():
 
         return {
             "transcript": results["transcript"],
+            "transcript_word_count": results["transcript_word_count"],
             "summary": results["summary"],
+            "translation": translated_summary,
+            "summary_word_count": results["summary_word_count"],
             "translation": translated_summary,
             "export_path": export_path
         }
