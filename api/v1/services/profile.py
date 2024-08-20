@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from pydantic import ValidationError
+from datetime import datetime
 import json
 from typing import Any, Optional
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -19,17 +20,22 @@ class ProfileService(Service):
     def update(self, db: Session, schema: ProfileCreateUpdate, user_id: str):
         '''Updates a Profile, creates one if it doesn't exist'''
         try:
+            # Fetch the existing profile and user
             profile = db.query(Profile).filter(Profile.user_id == user_id).first()
             user = db.query(User).filter(User.id == user_id).first()
 
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            # If profile doesn't exist, create one
             if not profile:
                 profile_data = schema.dict(exclude={"email", "avatar_url", "avatar"})
-                profile_data["social"] = schema.social  # Handle social as str
+                profile_data["social"] = schema.social
                 profile = Profile(**profile_data, user_id=user_id)
                 db.add(profile)
             else:
                 update_data = schema.dict(exclude={"email", "avatar_url", "avatar"})
-                update_data["social"] = schema.social  # Handle social as str
+                update_data["social"] = schema.social
 
                 for key, value in update_data.items():
                     setattr(profile, key, value)
@@ -65,7 +71,6 @@ class ProfileService(Service):
             return response_data
         
         except ValidationError as e:
-            # Convert Pydantic ValidationError to HTTP 422
             raise HTTPException(status_code=422, detail=e.errors())
         except IntegrityError as e:
             db.rollback()
@@ -76,22 +81,37 @@ class ProfileService(Service):
         except Exception as e:
             raise HTTPException(status_code=500, detail="Internal server error: " + str(e))
 
+    
+    
     def fetch_by_user_id(
-        self, 
-        db: Session, 
-        user_id: str
+    self, 
+    db: Session, 
+    user_id: str
     ):
-        '''Fetches a profile by user_id'''
+        '''Fetches a profile by user_id, returns user information if profile is missing'''
         try:
-
+            # Fetch the profile and user
             profile = db.query(Profile).filter(Profile.user_id == user_id).first()
             user = db.query(User).filter(User.id == user_id).first()
 
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
 
+            # If profile is missing, create a placeholder
             if not profile:
-                raise HTTPException(status_code=404, detail="User profile not found")
-            
-            
+                profile = Profile(
+                    id=None, 
+                    user_id=user_id, 
+                    username=None, 
+                    pronouns=None, 
+                    job_title=None,
+                    social=None, 
+                    bio=None, 
+                    phone_number=None, 
+                    created_at=datetime.utcnow(), 
+                    updated_at=datetime.utcnow()
+                    )
+
             response_data = {
                 "id": profile.id,
                 "username": profile.username,
