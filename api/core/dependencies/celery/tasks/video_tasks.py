@@ -1,18 +1,15 @@
 from typing import List
-import requests
-from celery import shared_task
 import json
 from sqlalchemy.orm import Session
 from api.core.dependencies.celery.celery_app import worker
 from api.utils.files import delete_file
-from api.utils.ytdownload import download_video
+from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
 from api.v1.services.ai_tools.text_to_video import ttv_service
 from api.v1.services.ai_tools.thumbnail import generate_thumbnails_service, select_and_download_thumbnail_service
 from api.utils.settings import settings as app_settings
-from api.utils.files import upload_file, delete_file
+from api.utils.files import delete_file
 from api.db.database import get_db
-from api.v1.models import User, TextToVideo
 import os
 import asyncio
 from urllib.parse import urljoin
@@ -109,7 +106,7 @@ def upload_video_task(video_id: str, base_url: str):
 @worker.task()
 def process_youtube_video_task(youtube_url: str, base_url: str):
 
-    saved_path = download_video(youtube_url)
+    saved_path = yts_service.download_video(youtube_url)
 
     print(f"Saved path: {saved_path}")
 
@@ -141,51 +138,3 @@ def select_and_download_thumbnail_task(video_id: str, thumbnail_id: str, resolut
             video_id, thumbnail_id, resolution, base_url)
     )
     return thumbnail
-
-
-@shared_task(bind=True)
-def check_video_generate_status(self):
-    try:
-        process_tasks = db.query(TextToVideo).filter_by(
-            status='Task is in queue').all()
-        if not process_tasks:
-            return
-        for task in process_tasks:
-
-            data, _ = asyncio.run(check_video_status(task.task_id))
-
-            status = data.get('status')
-            task_id = data.get('uuid')
-            info = data.get('info')
-            if status == 'success' or info == 'success':
-                video_url = data.get("url")
-                gif_url = data.get("gif_url")
-                (db.query(TextToVideo)
-                 .filter_by(task_id=str(task_id))
-                 .update({
-                     "status": status,
-                     "video_url": video_url,
-                     "gif_url": gif_url
-                 }))
-                db.commit()
-    except Exception as exc:
-        self.retry(exc=exc, countdown=180)
-        raise exc
-
-
-async def check_video_status(task_id: str):
-    """
-    Async request
-    """
-    headers = {
-        'x-rapidapi-key': app_settings.X_RAPIDAPI_KEY,
-        'x-rapidapi-host': app_settings.X_RAPIDAPI_HOST,
-    }
-    url = f'https://runwayml.p.rapidapi.com/status?uuid={task_id}'
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        return data, response.status_code
-    else:
-        raise requests.RequestException(
-            f"An error occurred with status code {response.status_code}")

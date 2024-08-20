@@ -5,10 +5,8 @@ from typing import Optional, Union, List, Annotated
 from pydantic import (
     BaseModel,
     EmailStr,
-    field_validator,
     ConfigDict,
     StringConstraints,
-    model_validator,
 )
 
 

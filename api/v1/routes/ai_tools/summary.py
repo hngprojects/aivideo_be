@@ -8,23 +8,17 @@ from fastapi import (
     UploadFile,
 )
 from sqlalchemy.orm import Session
-from pypdf import PdfReader
-from datetime import timedelta
-import os
 import requests
 import io
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.utils.files import upload_file_to_current_dir, delete_file
+from api.utils.files import upload_file_to_current_dir
 from api.utils.files import upload_file
-from api.v1.schemas.project import CreateProject
 from api.utils.language_code import LANGUAGE_CODES
-from api.core.dependencies.translator_service import translate_text
+from api.v1.services.ai_tools.translator_service import translate_text
 from api.v1.schemas.translation import TranslationRequest
-from api.v1.schemas.audio_transcriber import PodcastRequest
-from api.v1.models.project import Project
-from api.v1.services.project import project_service
+from api.v1.schemas.ai_tools.audio_transcriber import PodcastRequest
 from api.v1.services.ai_tools.summary import summary_service
 from api.v1.services.job import job_service
 from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summary_task

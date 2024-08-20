@@ -15,7 +15,6 @@ from sqlalchemy.orm import Session
 from api.core.dependencies.email_sender import send_email
 from api.utils.success_response import success_response
 from api.v1.models import User
-from api.v1.schemas.user import Token
 from api.v1.schemas.user import LoginRequest, UserCreate
 from api.db.database import get_db
 from api.v1.services.user import user_service

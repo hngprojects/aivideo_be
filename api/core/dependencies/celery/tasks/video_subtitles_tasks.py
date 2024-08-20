@@ -1,7 +1,6 @@
-from celery import shared_task
 import json
-from api.utils.files import convert_video_to_audio, delete_file
-from api.v1.services.ai_tools.video_subtitles import translate_text, generate_subtitles
+from api.utils.files import delete_file
+from api.v1.services.ai_tools.video_subtitles import convert_video_to_audio, translate_text, generate_subtitles
 from api.v1.services.ai_tools.summary_audio import summary_service
 
 from api.core.dependencies.celery.celery_app import worker

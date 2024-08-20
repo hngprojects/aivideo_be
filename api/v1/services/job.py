@@ -9,7 +9,6 @@ from celery.result import AsyncResult
 
 from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
-from api.utils.pagination import paginated_response
 from api.v1.models.job import Job
 from api.v1.models.project import Project
 from api.v1.models.user import User

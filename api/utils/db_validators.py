@@ -1,6 +1,5 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from api.v1.models import User
 
 
 def check_model_existence(db: Session, model, id):
