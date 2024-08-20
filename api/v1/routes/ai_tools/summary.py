@@ -156,7 +156,12 @@ async def summarize_podcast(request: PodcastRequest):
     if audio_response.status_code == 200:
         file_like_object = io.BytesIO(audio_response.content)
         file_like_object.filename = "podcast.mp3"
-        file_path = await upload_file_to_current_dir(file_like_object, allowed_extensions=['mp3', 'mp4'], save_extension='mp3')
+        file_path = await upload_file_to_current_dir(
+            file_like_object, 
+            allowed_extensions=['mp3', 'mp4'], 
+            save_extension='mp3',
+            max_file_size=10 * 1024 * 1024
+        )
         task = generate_podcast_summary_task.delay(file_path)
    
         # Create project with job
@@ -196,6 +201,16 @@ async def summarize_audio(
         upload_folder='audio', 
         save_extension='mp3' 
     )
+    await file.seek(0)
+    file_content = await file.read()
+    file_size_mb = len(file_content) / (1024 * 1024)
+    
+    max_file_size_mb = 10
+    if file_size_mb > max_file_size_mb:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File too large. Please upload a file smaller than 10 MB."
+        )
     task_transcribe = transcribe_audio_task.delay(audio_file)
 
 
