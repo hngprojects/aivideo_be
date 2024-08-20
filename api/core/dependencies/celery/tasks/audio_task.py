@@ -1,5 +1,4 @@
 import json
-from celery import shared_task
 from api.core.dependencies.celery.celery_app import worker
 from api.v1.services.ai_tools.audio_transcriber import  translate_text
 from api.db.database import get_db

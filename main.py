@@ -1,6 +1,3 @@
-# import eventlet
-# eventlet.monkey_patch()
-
 import uvicorn
 from fastapi.staticfiles import StaticFiles
 import uvicorn, os
@@ -8,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, status
 from fastapi.staticfiles import StaticFiles
@@ -49,7 +46,8 @@ app.mount('/presets', StaticFiles(directory='./presets'), name='presets')
 
 origins = [
     "http://localhost:3000",
-    "http://localhost:3001"
+    "http://localhost:3001",
+    "https://staging.tifi.tv"
 ]
 
 
