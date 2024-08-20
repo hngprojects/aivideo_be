@@ -10,6 +10,7 @@ import random
 from openai import OpenAI
 import requests
 import ffmpeg
+from moviepy.editor import VideoFileClip
 
 from api.utils.files import delete_file
 
@@ -90,7 +91,6 @@ class TalkingAvatarService:
 		except ffmpeg.Error as e:
 			print(f"An error occurred: {e}")
 
-	
 	def add_background_audio(self, video_path: str, audio_path: str, output_path: str):
 		try:
 			# Load the video file with its audio
@@ -124,6 +124,25 @@ class TalkingAvatarService:
 		except ffmpeg.Error as e:
 			print(f"Error occurred: {e}")
 
+	def compress_video(self, input_file, bitrate: int=700):
+		"""
+		Compresses a video file using moviepy.
+
+		Parameters:
+		- input_file: Path to the input video file.
+		- output_file: Path to the output compressed video file.
+		- bitrate: Desired bitrate for the output video (e.g., '1000k' for 1000 kbps).
+		"""
+		output_file = os.path.join('media', 'downloads', 'video', f'video-{str(uuid4())}.mp4')
+		try:
+			clip = VideoFileClip(input_file)
+			clip.write_videofile(output_file, bitrate=f"{bitrate}k")
+			print(f"Video compressed successfully: {output_file}")
+			delete_file(input_file)
+			return output_file
+		except Exception as e:
+			print(f"Error compressing video: {e}")
+			return input_file
 
 	def process_script(
 		self, 
@@ -190,6 +209,7 @@ class TalkingAvatarService:
 			)
 
 		final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
+
 		# Perform aspect ratio resizing based on user input
 		self.change_aspect_ratio(
 			input_file=video_audio_path if audio_file else initial_save_path,
@@ -197,12 +217,16 @@ class TalkingAvatarService:
 			aspect_ratio=aspect_ratio
 		)
 
+
 		# Delete the temporary audio and video file after processing is done
 		if audio_file:
 			delete_file(video_audio_path)
 		delete_file(initial_save_path)
 		delete_file(audio)
 
+		# Compress video
+		final_save_path = self.compress_video(input_file=final_save_path, bitrate=500) 
+		
 		save_url = f'{settings.APP_URL}/{final_save_path}'
 		return {
 			'app_url': save_url,

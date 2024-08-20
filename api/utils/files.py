@@ -5,6 +5,7 @@ from secrets import token_hex
 from fastapi import HTTPException, status
 from pathlib import Path
 import asyncio
+import cv2
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -85,7 +86,6 @@ async def download_file(file, download_folder: str, save_extension: str = 'pdf')
 async def upload_file_to_current_dir(
     file: str, 
     allowed_extensions: Optional[list], 
-    max_file_size: int,
     save_extension: str
 ):
 
@@ -110,16 +110,6 @@ async def upload_file_to_current_dir(
         if file_extension not in allowed_extensions:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid file format')
     
-    # Check file size
-    file_size = len(file.file.read())
-    if file_size > max_file_size:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Max size is {max_file_size / (1024 * 1024)} MB.",
-        )
-    
-    # Reset file pointer after reading
-    await file.seek(0)
 
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
     SAVE_FILE_DIR = os.path.join(BASE_DIR, new_filename)
@@ -256,3 +246,26 @@ async def upload_files(
         uploaded_files.append(SAVE_FILE_DIR)
 
     return uploaded_files
+
+
+
+async def contains_face(image_path):
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    image = cv2.imread(image_path)
+    
+    if image is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Image not found or unable to load.",
+        )
+    
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    
+    if len(faces) > 0:
+        return True
+    
+    raise HTTPException(
+            status_code=400,
+            detail=f"Image does not contain a face.",
+        ) 
