@@ -13,14 +13,9 @@ def test_sse_job_activity(
     mock_job_statistics,
 ):
     response = client.get(
-        endpoint,
-        headers={
-            "Content-Type": "text/event-stream",
-            "authorization": f"Bearer {access_token}",
-        },
+        f"{endpoint}?token={access_token}",
+        headers={"Content-Type": "text/event-stream"},
     )
-
-    print(response.content)
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/event-stream; charset=utf-8"

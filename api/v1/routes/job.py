@@ -113,8 +113,9 @@ async def get_sse_job_activity(
 
 @job.get("/statistics/sse")
 async def get_sse_job_statistics(
+    token: str,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(user_service.get_current_super_admin),
+    current_admin: User = Depends(user_service.get_current_super_admin_sse),
 ):
     """
     Retrieve a server-sent event stream for job statistics updates.
