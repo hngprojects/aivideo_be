@@ -160,7 +160,6 @@ async def summarize_podcast(request: PodcastRequest):
             file_like_object, 
             allowed_extensions=['mp3', 'mp4'], 
             save_extension='mp3',
-            max_file_size=10 * 1024 * 1024
         )
         task = generate_podcast_summary_task.delay(file_path)
    
