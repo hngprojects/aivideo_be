@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from api.utils.success_response import success_response
 from api.db.database import get_db
 from api.v1.services.presets import preset_service
-from scripts.presets import load_avatars_in_db, load_audio_in_db
 
 
 preset_router = APIRouter(prefix='/presets', tags=['Presets'])
@@ -28,7 +27,10 @@ def get_all_avatars(db: Session = Depends(get_db)):
 def load_all_avatars(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     '''Endpoint to get all avatars'''
 
-    background_tasks.add_task(load_avatars_in_db)
+    background_tasks.add_task(
+        preset_service.load_avatars_in_db,
+        db=db
+    )
 
     return success_response(
         status_code=200,
@@ -60,7 +62,10 @@ def get_all_audio(db: Session = Depends(get_db)):
 def load_all_audio(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     '''Endpoint to get all audio'''
 
-    background_tasks.add_task(load_audio_in_db)
+    background_tasks.add_task(
+        preset_service.load_audio_in_db,
+        db=db
+    )
 
     return success_response(
         status_code=200,
@@ -73,3 +78,18 @@ def delete_all_audio(db: Session = Depends(get_db)):
     '''Endpoint to delete all preset audio'''
 
     preset_service.delete_all_music(db=db)
+
+
+@preset_router.get('/avatars/generate', status_code=200)
+def generate_new_avatars(background_tasks: BackgroundTasks,db: Session = Depends(get_db)):
+    '''Endpoint to generate new avatars'''
+
+    background_tasks.add_task(
+        preset_service.generate_avatars,
+        db=db
+    )
+
+    return success_response(
+        status_code=200,
+        message='Generating avatar',
+    )
