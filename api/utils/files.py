@@ -3,6 +3,7 @@ import os
 from typing import Optional
 from secrets import token_hex
 from fastapi import HTTPException, status
+from pydub import AudioSegment
 from pathlib import Path
 import asyncio
 
@@ -221,3 +222,17 @@ async def check_file_size(file, max_file_size_mb=10):
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File too large. Please upload a file smaller than {max_file_size_mb} MB."
         )
+    
+async def audio_scan(file_path: str) -> bool:
+    '''Basic scan to validate the audio file'''
+    try:
+        if not os.path.getsize(file_path):
+            return False
+        audio = AudioSegment.from_file(file_path)
+        if len(audio) < 1000: 
+            return False
+
+        return True
+    except Exception as e:
+        print(f"Audio scan error: {e}")
+        return False
