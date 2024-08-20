@@ -20,6 +20,8 @@ profile = APIRouter(prefix='/profile', tags=['Profiles'])
 UPLOAD_DIR = "media/uploads/user_avatars"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+
+
 @profile.get("/me", response_model=success_response)
 def get_current_user_profile(
     db: Session = Depends(get_db), 
@@ -66,29 +68,35 @@ def update_user_profile(
     
     
     if avatar:
-        filename = f"{current_user.id}_{avatar.filename}"
-        file_path = os.path.join(UPLOAD_DIR, filename)
+        # Replace spaces in the filename with underscores or hyphens
+        cleaned_filename = avatar.filename.replace(" ", "_")
         
-        # Check if there is an existing avatar URL and remove the old file
-        if current_user.avatar_url:
-            old_filename = os.path.basename(current_user.avatar_url)
-            old_file_path = os.path.join(UPLOAD_DIR, old_filename)
+        # Check if the cleaned filename is not empty or None
+        if cleaned_filename:
+            filename = f"{current_user.id}_{cleaned_filename}"
+            file_path = os.path.join(UPLOAD_DIR, filename)
             
-            # Delete the old avatar file if it exists and is different from the new one
-            if os.path.exists(old_file_path) and old_filename != filename:
-                os.remove(old_file_path)
-        
-        # Save the new avatar file to the server
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(avatar.file, buffer)
-        
-        # Generate the URL or path for the saved file
-        avatar_url = f"/presets/avatars/{filename}"
-        
-        current_user.avatar_url = avatar_url
-        db.commit()
-        db.refresh(current_user)
-    
+            # Check if there is an existing avatar URL and remove the old file
+            if current_user.avatar_url:
+                old_filename = os.path.basename(current_user.avatar_url)
+                old_file_path = os.path.join(UPLOAD_DIR, old_filename)
+                
+                # Delete the old avatar file if it exists and is different from the new one
+                if os.path.exists(old_file_path) and old_filename != filename:
+                    os.remove(old_file_path)
+            
+            # Save the new avatar file to the server
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(avatar.file, buffer)
+            
+            # Generate the URL or path for the saved file
+            avatar_url = f"media/uploads/user_avatars/{filename}"
+            current_user.avatar_url = avatar_url
+        else:
+            pass
+    else:
+        pass
+
     # Update the user profile and related user data
     updated_profile = profile_service.update(db, schema=schema, user_id=current_user.id)
     
