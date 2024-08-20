@@ -266,7 +266,7 @@ def contains_face(image_path):
     
     if image is None:
         raise HTTPException(
-            status_code=400,
+            status_code=404,
             detail=f"Image not found or unable to load.",
         )
     
