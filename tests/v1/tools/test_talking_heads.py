@@ -9,6 +9,7 @@ client = TestClient(app)
 
 @pytest.mark.asyncio
 @patch('api.v1.routes.ai_tools.talking_avatar.upload_file_to_current_dir')
+@patch('api.v1.routes.ai_tools.talking_avatar.contains_face')
 @patch('api.v1.routes.ai_tools.talking_avatar.preset_service.fetch_music_by_id')
 @patch('api.v1.routes.ai_tools.talking_avatar.generate_talking_avatar_task.apply_async')
 @patch('api.v1.routes.ai_tools.talking_avatar.job_service.create_project_with_job')
