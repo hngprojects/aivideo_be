@@ -15,14 +15,16 @@ from api.utils.logger import logging
 from api.utils.settings import settings
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+
+
 
 class YoutubeSummary:
 
     def download_video(self, link):
-        
+
         # video_dir = BASE_DIR / "videos"
-        video_dir = os.path.join(BASE_DIR, 'media', 'downloads', 'video')
+        video_dir = os.path.join(BASE_DIR, 'media', 'downloads', 'videos')
         os.makedirs(video_dir, exist_ok=True)
         filepth = os.path.join(video_dir, f"{uuid4()}.mp4")
 
@@ -41,14 +43,14 @@ class YoutubeSummary:
             try:
                 future.result()
             except yt_dlp.utils.DownloadError as e:
-                raise HTTPException(status_code=500, detail=f"Error downloading video: {e}")
+                raise HTTPException(
+                    status_code=500, detail=f"Error downloading video: {e}")
             except Exception as e:
                 raise HTTPException(
                     status_code=500, detail=f"An unexpected error occurred: {e}"
                 )
 
         return filepth
-    
 
     def transcribe(self, filepth: str) -> str:
         """utilise the assembly assemblyai transcribe video files"""
@@ -70,8 +72,7 @@ class YoutubeSummary:
                 status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
                 detail=f"An Error occurred: {e}",
             )
-        
-    
+
     def pdf_transform(self, transcript: str, summary: str, video_title: str = "video.mp4"):
         # Save file using BASE_DIR
         pdf_filename = f"{uuid4()}.pdf"
@@ -114,7 +115,6 @@ class YoutubeSummary:
 
         logging.info(f"PDF saved as {pdf_filename}")
         return file_location
-
 
     def summarize_video(self, video_pth):
         """Summarize a youtube video"""
