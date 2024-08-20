@@ -1,9 +1,13 @@
+import asyncio
 import csv
 from io import StringIO
+import json
+from time import sleep
 from typing import Optional
 from fastapi import HTTPException
 from fastapi import status as HTTPStatus
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from celery.result import AsyncResult
 
@@ -44,7 +48,12 @@ class JobService:
 
         return project
 
-    def create_job(self, job_id: str, project_id: Optional[str] = None, user_id: Optional[str] = None):
+    def create_job(
+        self,
+        job_id: str,
+        project_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ):
         """Creates a new celery job"""
 
         try:
@@ -100,7 +109,7 @@ class JobService:
 
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
-        
+
         return project
 
     def update_job_result(self, job_id: str):
@@ -262,6 +271,40 @@ class JobService:
         stats["completed_tasks"] = query.filter(Job.status.icontains("SUCCESS")).count()
 
         return stats
+
+    async def stream_job_activity(self, db: Session):
+        """SSE handler to stream job activities"""
+
+        initial: str = ""
+
+        while True:
+            query = (
+                db.query(Job)
+                .options(
+                    joinedload(Job.project),
+                    joinedload(Job.user),
+                )
+                .order_by(Job.created_at.desc())
+                .all()
+            )
+
+            jobs = jsonable_encoder(query)
+
+            # Remove the password field from user data
+
+            for job in jobs:
+                if job.get("user"):
+                    user_data = job.get("user")
+                    if "password" in user_data:
+                        del user_data["password"]
+
+            data = json.dumps(jobs)
+
+            if data != initial:
+                yield f"data: {data}\n\n"
+                initial = data
+
+            await asyncio.sleep(1)
 
 
 job_service = JobService()
