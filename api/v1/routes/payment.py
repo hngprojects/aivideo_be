@@ -245,3 +245,26 @@ def get_payment(
         message="Payment fetched successfully",
         data=payment.to_dict()
     )
+
+@payments.post("/flutterwave/webhook")
+async def flutterwave_webhook(
+    req: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Flutterwave webhook for event listening
+    """
+
+    payload = await req.body()
+
+    # Handle the event
+    if payload.event == "charge.completed":
+        return success_response(
+            status_code=status.HTTP_200_OK,
+            message="Payment success"
+        )
+
+    return success_response(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        message="Payment failed"
+    )
