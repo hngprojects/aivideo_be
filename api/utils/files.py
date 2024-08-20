@@ -260,7 +260,7 @@ async def upload_files(
 
 
 
-def contains_face(image_path):
+async def contains_face(image_path):
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
     image = cv2.imread(image_path)
     
