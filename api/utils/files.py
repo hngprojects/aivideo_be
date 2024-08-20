@@ -3,6 +3,7 @@ import os
 from typing import Optional
 from secrets import token_hex
 from fastapi import HTTPException, status
+from pydub import AudioSegment
 from pathlib import Path
 import asyncio
 import cv2
@@ -247,6 +248,31 @@ async def upload_files(
 
     return uploaded_files
 
+async def check_file_size(file, max_file_size_mb=10):
+    '''Check if the file size exceeds the allowed limit.'''
+    await file.seek(0)
+    file_content = await file.read()
+    file_size_mb = len(file_content) / (1024 * 1024)
+
+    if file_size_mb > max_file_size_mb:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File too large. Please upload a file smaller than {max_file_size_mb} MB."
+        )
+    
+async def audio_scan(file_path: str) -> bool:
+    '''Basic scan to validate the audio file'''
+    try:
+        if not os.path.getsize(file_path):
+            return False
+        audio = AudioSegment.from_file(file_path)
+        if len(audio) < 1000: 
+            return False
+
+        return True
+    except Exception as e:
+        print(f"Audio scan error: {e}")
+        return False
 
 
 async def contains_face(image_path):

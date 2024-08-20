@@ -35,11 +35,11 @@ class ProjectService(Service):
                     )
 
         return query.all()
-    
-    
+
     def fetch_user_project(self, user: User, project_id: str):
         """Fetch a project by user and project ID."""
-        project = next((p for p in user.projects if p.id == project_id and not p.is_deleted), None)
+        project = next((p for p in user.projects if p.id ==
+                       project_id and not p.is_deleted), None)
         return project
 
     def fetch(self, db: Session, project_id: str):
@@ -64,7 +64,6 @@ class ProjectService(Service):
 
     def delete(self, db: Session, project_id: str):
         """Deletes a project"""
-
         project = self.fetch(db=db, project_id=project_id)
         project.is_deleted = True
         db.commit()
@@ -80,14 +79,21 @@ class ProjectService(Service):
         all_projects = user.projects
 
         return all_projects
-    
+
     def fetch_project_by_id(self, db: Session, project_id: str):
         """Fetches a project by id"""
         return check_model_existence(db, Project, project_id)
-    
+
     def fetch_all(self, db: Session):
         """Fetch all projects"""
         return db.query(Project).all()
-    
+
+    def add_user_to_project(self, db: Session, project: Project, user: User):
+        """Add a user to a project"""
+        project.user = user
+        db.commit()
+        db.refresh(project)
+        return project
+
 
 project_service = ProjectService()
