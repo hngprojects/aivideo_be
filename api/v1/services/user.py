@@ -27,6 +27,7 @@ from api.v1.schemas import user
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 class UserService(Service):
     """User service"""
 
@@ -57,6 +58,12 @@ class UserService(Service):
                     continue
                 if hasattr(User, param):
                     filters.append(getattr(User, param) == value)
+
+        # update the active status for each user before filtering
+        for user_instance in db.query(User).all():
+            user_instance.update_active_status()
+        db.commit()
+
         query = db.query(User)
         total_users = query.count()
         if filters:
@@ -71,9 +78,6 @@ class UserService(Service):
             .offset((page - 1) * per_page)
             .all()
         )
-
-        for user in all_users:
-            user.update_active_status()
 
         return self.all_users_response(
             users=all_users,
@@ -693,15 +697,17 @@ class UserService(Service):
             data=all_tasks,
             status_code=200,
         )
-    
+
     def check_superadmin_or_user_in_object(self, user_: User, obj) -> bool:
         """
         Check that user ``is superadmin`` OR has the ID of ``obj.user_id``.
         Raise 401 status code error if false, otherwise return ``True``"""
-        if not user_.is_superadmin and not (hasattr(obj, "user_id") and obj.user_id == user_.id):
+        if not user_.is_superadmin and not (
+            hasattr(obj, "user_id") and obj.user_id == user_.id
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You do not have permission to access this resource"
+                detail="You do not have permission to access this resource",
             )
         return True
 
