@@ -504,6 +504,23 @@ class UserService(Service):
             )
         return user
 
+    def get_current_super_admin_sse(
+        self, token: str, db: Session = Depends(get_db)
+    ):
+        """Get the current super admin when using sse.
+        
+        Can be used for any route though but this supports passing the Bearer token as a param instead of passing it in the headers.
+        """
+        
+        user = self.get_current_user(db=db, access_token=token)
+
+        if not user.is_superadmin:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to access this resource",
+            )
+        return user
+
     def generate_token(self):
         """Generate a 6-digit token"""
         return "".join(
