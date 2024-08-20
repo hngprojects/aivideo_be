@@ -1,8 +1,8 @@
 import os
 import uuid
+import random
 from fastapi import HTTPException, status
 import subprocess
-from typing import List
 from api.utils.settings import settings
 from urllib.parse import urljoin
 
@@ -68,8 +68,10 @@ async def generate_thumbnails_service(video_id: str, base_url: str, timestamp: f
 
         duration = float(result.stdout.decode().strip())
 
-        for i in range(4):
-            timestamp = duration * (i + 1) / 5
+        random_timestamps = sorted(
+            [random.uniform(0, duration) for _ in range(3)])
+
+        for timestamp in random_timestamps:
             thumbnail_id = str(uuid.uuid4())
             output_path = os.path.join(
                 thumbnail_dir, f'{base_name}_thumbnail_{thumbnail_id}.jpg'
@@ -134,14 +136,11 @@ async def select_and_download_thumbnail_service(video_id: str, thumbnail_id: str
 
         absolute_output_path = os.path.abspath(output_path)
 
-        # Remove the MEDIA_DIR part of the path to get the relative path
         relative_path = os.path.relpath(
             absolute_output_path, settings.MEDIA_DIR)
 
-        # Replace os.path.sep with '/' for URL consistency
         relative_path = relative_path.replace(os.path.sep, '/')
 
-        # Construct the full URL
         thumbnail_url = urljoin(base_url, f"/media/{relative_path}")
 
         return thumbnail_url

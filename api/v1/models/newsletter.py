@@ -1,5 +1,4 @@
-from sqlalchemy import Column, String, Text, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, Text
 from api.v1.models.base_model import BaseTableModel
 
 

@@ -1,6 +1,5 @@
 from fastapi import HTTPException
 from pydantic import ValidationError
-import json
 from typing import Any, Optional
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
