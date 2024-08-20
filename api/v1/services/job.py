@@ -1,5 +1,6 @@
 import asyncio
 import csv
+from datetime import datetime, timedelta, timezone
 from io import StringIO
 import json
 from time import sleep
@@ -58,10 +59,7 @@ class JobService:
 
         try:
             job = Job(
-                job_id=job_id, 
-                project_id=project_id, 
-                user_id=user_id, 
-                status="Pending"
+                job_id=job_id, project_id=project_id, user_id=user_id, status="Pending"
             )
             db.add(job)
             db.commit()
@@ -261,17 +259,61 @@ class JobService:
 
     def get_job_statistics(self, db: Session):
         stats = {}
+        one_hour_ago = datetime.now(timezone(timedelta(hours=1))) - timedelta(hours=1)
+
         query = db.query(Job)
 
-        stats["total_tasks"] = query.count()
-        stats["failed_tasks"] = query.filter(Job.status.icontains("FAILED")).count()
-        stats["in_progress_tasks"] = query.filter(
+        total_tasks = query.count()
+        failed_tasks = query.filter(Job.status.icontains("FAILED"))
+        in_progress_tasks = query.filter(
             or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
+        )
+        pending_tasks = query.filter(Job.status.icontains("PENDING"))
+        completed_tasks = query.filter(Job.status.icontains("SUCCESS"))
+
+        created_in_last_hour = query.filter(Job.created_at >= one_hour_ago).count()
+
+        active_in_last_hour = in_progress_tasks.filter(
+            Job.created_at >= one_hour_ago
         ).count()
-        stats["pending_tasks"] = query.filter(Job.status.icontains("PENDING")).count()
-        stats["completed_tasks"] = query.filter(Job.status.icontains("SUCCESS")).count()
+
+        pending_in_last_hour = pending_tasks.filter(
+            Job.created_at >= one_hour_ago
+        ).count()
+
+        completed_in_last_hour = completed_tasks.filter(
+            Job.created_at >= one_hour_ago
+        ).count()
+
+        stats = {
+            "total_tasks": total_tasks,
+            "failed_tasks": failed_tasks.count(),
+            "in_progress_tasks": in_progress_tasks.count(),
+            "pending_tasks": pending_tasks.count(),
+            "completed_tasks": completed_tasks.count(),
+            "created_in_last_hour": created_in_last_hour,
+            "active_in_last_hour": active_in_last_hour,
+            "pending_in_last_hour": pending_in_last_hour,
+            "completed_in_last_hour": completed_in_last_hour,
+        }
 
         return stats
+
+    async def stream_job_statistics(self, db: Session):
+        """SSE handler to stream job statistics"""
+
+        initial: str = ""
+
+        while True:
+            stats = self.get_job_statistics(db=db)
+
+            data = json.dumps(stats)
+
+            if data != initial:
+                yield f"data: {data}\n\n"
+                initial = data
+
+            await asyncio.sleep(1)
 
     async def stream_job_activity(self, db: Session):
         """SSE handler to stream job activities"""
