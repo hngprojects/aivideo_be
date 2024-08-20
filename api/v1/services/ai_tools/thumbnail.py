@@ -3,7 +3,6 @@ import uuid
 import random
 from fastapi import HTTPException, status
 import subprocess
-from typing import List
 from api.utils.settings import settings
 from urllib.parse import urljoin
 
@@ -11,15 +10,20 @@ from urllib.parse import urljoin
 async def generate_thumbnails_service(video_id: str, base_url: str, timestamp: float = None):
     '''Generate thumbnails for a video'''
     base_name = video_id
-    video_dir = os.path.join(settings.MEDIA_DIR, 'uploads', 'videos')
-    video_files = os.listdir(video_dir)
+    video_dirs = [
+        os.path.join(settings.MEDIA_DIR, 'uploads', 'videos'),
+        os.path.join(settings.MEDIA_DIR, 'downloads', 'videos')
+    ]
 
-    # Find the correct video file based on the video_id
     video_path = None
-    for file in video_files:
-        if base_name in file:
-            possible_path = os.path.join(video_dir, file)
-            video_path = os.path.abspath(possible_path)
+    for video_dir in video_dirs:
+        video_files = os.listdir(video_dir)
+        for file in video_files:
+            if video_id in file:
+                possible_path = os.path.join(video_dir, file)
+                video_path = os.path.abspath(possible_path)
+                break
+        if video_path:  # Stop if we found the video
             break
 
     if not video_path or not os.path.isfile(video_path):

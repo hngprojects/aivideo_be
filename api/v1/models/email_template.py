@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Text, String, Enum
+from sqlalchemy import Column, Text, String, Enum
 from api.v1.models.base_model import BaseTableModel
 
 

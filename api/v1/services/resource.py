@@ -1,5 +1,5 @@
 from typing import Any, Optional
-from sqlalchemy import desc, or_, select, func
+from sqlalchemy import desc
 from fastapi import status
 
 from sqlalchemy.orm import Session

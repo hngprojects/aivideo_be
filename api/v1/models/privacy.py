@@ -1,5 +1,4 @@
-from sqlalchemy import Column, Text, Integer
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Text
 from api.v1.models.base_model import BaseTableModel
 
 

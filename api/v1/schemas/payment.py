@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from datetime import datetime
 from typing import List
 
@@ -8,7 +8,6 @@ from api.v1.schemas.base_schema import ResponseBase, PaginationBase
 
 
 class InitiatePaymentSchema(BaseModel):
-    email: EmailStr
     billing_plan_id: str
     payment_gateway: str
     redirect_url: str

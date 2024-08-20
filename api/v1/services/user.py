@@ -7,14 +7,13 @@ from fastapi import status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, or_, select, func
+from sqlalchemy import desc, or_
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 
 from api.core.base.services import Service
-from api.core.dependencies.email_sender import send_email
 from api.db.database import get_db
 from api.utils.settings import settings
 from api.utils.db_validators import check_model_existence
@@ -24,6 +23,7 @@ from api.v1.models.job import Job
 from api.v1.models.data_privacy import DataPrivacySetting
 from api.v1.schemas import user
 
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -32,7 +32,12 @@ class UserService(Service):
     """User service"""
 
     def fetch_all(
-        self, db: Session, page: int, per_page: int, **query_params: Optional[Any]
+        self,
+        db: Session,
+        page: int,
+        per_page: int,
+        search: str,
+        **query_params: Optional[Any],
     ):
         """
         Fetch all users
@@ -43,6 +48,12 @@ class UserService(Service):
             query_params: params to filter by
         """
         per_page = min(per_page, 10)
+
+        if not isinstance(search, str) and search is not None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid value for search parameter. Must be a non empty string.",
+            )
 
         # Enable filter by query parameter
         filters = []
@@ -58,11 +69,27 @@ class UserService(Service):
                     continue
                 if hasattr(User, param):
                     filters.append(getattr(User, param) == value)
+
+        # update the active status for each user before filtering
+        for user_instance in db.query(User).all():
+            user_instance.update_active_status()
+        db.commit()
+
         query = db.query(User)
-        total_users = query.count()
+
+        if search:
+            query = query.filter(
+                or_(
+                    User.first_name.icontains(search),
+                    User.last_name.icontains(search),
+                    User.email.icontains(search),
+                )
+            )
+
         if filters:
             query = query.filter(*filters)
-            total_users = query.count()
+
+        total_users = query.count()
 
         total_pages = int(total_users / per_page) + (total_users % per_page > 0)
 
@@ -73,60 +100,9 @@ class UserService(Service):
             .all()
         )
 
-        for user in all_users:
-            user.update_active_status()
-
         return self.all_users_response(
             users=all_users,
             total_users=total_users,
-            page=page,
-            per_page=per_page,
-            total_pages=total_pages,
-        )
-
-    def search(
-        self, db: Session, page: int, per_page: int, query_param: str, is_deleted: bool
-    ):
-        per_page = min(per_page, 10)
-
-        # validate query_param
-        # query_param must be a string
-
-        if (
-            not isinstance(query_param, str)
-            or query_param is None
-            or not query_param.strip()
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Invalid value for search parameter. Must be a non empty string.",
-            )
-
-        if not isinstance(is_deleted, bool) and is_deleted is not None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Invalid value for is_deleted parameter. Must be a boolean",
-            )
-
-        query = db.query(User).filter(
-            or_(
-                User.first_name.icontains(query_param),
-                User.last_name.icontains(query_param),
-                User.email.icontains(query_param),
-            )
-        )
-
-        if is_deleted is not None:
-            query = query.filter(User.is_deleted == is_deleted)
-
-        total = query.count()
-        total_pages = int(total / per_page) + (total % per_page > 0)
-
-        users: list = query.limit(per_page).offset((page - 1) * per_page).all()
-
-        return self.all_users_response(
-            users=users,
-            total_users=total,
             page=page,
             per_page=per_page,
             total_pages=total_pages,
@@ -694,15 +670,17 @@ class UserService(Service):
             data=all_tasks,
             status_code=200,
         )
-    
+
     def check_superadmin_or_user_in_object(self, user_: User, obj) -> bool:
         """
         Check that user ``is superadmin`` OR has the ID of ``obj.user_id``.
         Raise 401 status code error if false, otherwise return ``True``"""
-        if not user_.is_superadmin and not (hasattr(obj, "user_id") and obj.user_id == user_.id):
+        if not user_.is_superadmin and not (
+            hasattr(obj, "user_id") and obj.user_id == user_.id
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You do not have permission to access this resource"
+                detail="You do not have permission to access this resource",
             )
         return True
 

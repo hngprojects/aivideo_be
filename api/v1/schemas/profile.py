@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, EmailStr,  validator
-from fastapi import UploadFile, Form
-from typing import Optional, Dict
+from pydantic import BaseModel, Field, EmailStr, validator
+from fastapi import UploadFile
+from typing import Optional
 import re
 from datetime import datetime
 from api.v1.schemas.user import UserBase
@@ -35,30 +35,35 @@ class ProfileCreateUpdate(BaseModel):
     avatar_url: Optional[str] = None
     avatar: Optional[UploadFile] = None
     
-    # Validator for phone number
-    @validator('phone_number')
-    def phone_validator(cls, value):
-        # Ensure phone number contains only digits and may start with '+'
+    
+    @validator('phone_number', always=True)
+    def phone_number_validator(cls, value):
+        if value is None:
+            return value
+        
+        if not isinstance(value, str):
+            raise ValueError("Phone number must be a string.")
+        
         if not re.fullmatch(r"^\+?[0-9]+$", value):
             raise ValueError("Phone number must contain only digits and may start with '+'.")
         
-        # Validate length of phone number
         number_length = len(re.sub(r"\D", "", value))  
         if number_length < 10 or number_length > 15:
             raise ValueError("Phone number must be between 10 and 15 digits long.")
         
-        return value
 
     @validator('job_title', pre=True, always=True)
     def job_title_validator(cls, value):
         if value is None:
-            return value  
+            return value 
+        
         if not isinstance(value, str):
             raise ValueError("Job title must be a string.")
+        
         if not value.replace(" ", "").isalpha():
             raise ValueError("Job title must contain only alphabetic characters.")
-        return value
         
+        return value        
     
     class Config:
         extra = 'allow'

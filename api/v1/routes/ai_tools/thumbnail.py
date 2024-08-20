@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, Request, Body, Form
+from fastapi import APIRouter, File, UploadFile, HTTPException, Request, Form
 from api.core.dependencies.celery.tasks.video_tasks import (
     upload_video_task,
     generate_thumbnails_task,
@@ -9,7 +9,7 @@ from api.utils.settings import settings
 from api.utils.success_response import success_response
 from api.utils.files import upload_file
 from api.v1.services.job import job_service
-from api.v1.schemas.ai_tools.thumbnail import ThumbnailRequest, ThumbnailSelectionRequest
+from api.v1.schemas.ai_tools.thumbnail import ThumbnailSelectionRequest
 from urllib.parse import urljoin
 import os
 import json
