@@ -105,5 +105,6 @@ async def get_sse_job_activity(
     """
 
     return StreamingResponse(
-        job_service.stream_job_activity(db=db), media_type="text/event-stream"
+        job_service.stream_job_activity(db=db),
+        media_type="text/event-stream",
     )

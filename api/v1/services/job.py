@@ -267,7 +267,7 @@ class JobService:
 
     async def stream_job_activity(self, db: Session):
         """SSE handler to stream job activities"""
-        
+
         initial: str = ""
 
         while True:
@@ -281,10 +281,19 @@ class JobService:
                 .all()
             )
 
-            data = json.dumps(jsonable_encoder(query))
+            jobs = jsonable_encoder(query)
+
+            # Remove the password field from user data
+
+            for job in jobs:
+                if job.get("user"):
+                    user_data = job.get("user")
+                    if "password" in user_data:
+                        del user_data["password"]
+
+            data = json.dumps(jobs)
 
             if data != initial:
-                print("Yielding")
                 yield f"data: {data}\n\n"
                 initial = data
 
