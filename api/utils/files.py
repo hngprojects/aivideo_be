@@ -209,3 +209,15 @@ async def upload_files(
         uploaded_files.append(SAVE_FILE_DIR)
 
     return uploaded_files
+
+async def check_file_size(file, max_file_size_mb=10):
+    '''Check if the file size exceeds the allowed limit.'''
+    await file.seek(0)
+    file_content = await file.read()
+    file_size_mb = len(file_content) / (1024 * 1024)
+
+    if file_size_mb > max_file_size_mb:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File too large. Please upload a file smaller than {max_file_size_mb} MB."
+        )
