@@ -19,7 +19,7 @@ from api.v1.services.user import user_service, UserService
 client = TestClient(app)
 
 
-ENDPOINT = "/api/v1/users/search"
+ENDPOINT = "/api/v1/users"
 
 
 @pytest.fixture
@@ -120,15 +120,6 @@ def test_non_admin_access(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_empty_query_param(
-    mock_db_session: Session,
-    mock_user_service: UserService,
-    override_get_current_super_admin: None,
-):
-    response = client.get(ENDPOINT, params={"query": ""})
-    assert response.status_code == 422
-
-
 def test_successful_search_correct_case(
     mock_db_session: Session,
     mock_user_service: UserService,
@@ -144,7 +135,7 @@ def test_successful_search_correct_case(
     # Setting the mock session to use the mocked query
     mock_db_session.query.return_value = query_mock
 
-    response = client.get(ENDPOINT, params={"query": "John"})
+    response = client.get(ENDPOINT, params={"search": "John"})
 
     print(response.json())
     assert response.status_code == 200
@@ -164,7 +155,7 @@ def test_successful_search_incorrect_case(
     # Setting the mock session to use the mocked query
     mock_db_session.query.return_value = query_mock
 
-    response = client.get(ENDPOINT, params={"query": "doe"})
+    response = client.get(ENDPOINT, params={"search": "doe"})
 
     print(response.json())
     assert response.status_code == 200

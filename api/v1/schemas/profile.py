@@ -35,21 +35,22 @@ class ProfileCreateUpdate(BaseModel):
     avatar_url: Optional[str] = None
     avatar: Optional[UploadFile] = None
     
-    @validator('phone_number')
-    def phone_validator(cls, value):
+    
+    @validator('phone_number', always=True)
+    def phone_number_validator(cls, value):
         if value is None:
             return value
         
-        # Ensure phone number contains only digits and may start with '+'
+        if not isinstance(value, str):
+            raise ValueError("Phone number must be a string.")
+        
         if not re.fullmatch(r"^\+?[0-9]+$", value):
             raise ValueError("Phone number must contain only digits and may start with '+'.")
         
-        # Validate length of phone number
         number_length = len(re.sub(r"\D", "", value))  
         if number_length < 10 or number_length > 15:
             raise ValueError("Phone number must be between 10 and 15 digits long.")
         
-        return value
 
     @validator('job_title', pre=True, always=True)
     def job_title_validator(cls, value):
