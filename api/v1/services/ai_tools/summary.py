@@ -193,9 +193,6 @@ class SummaryService():
         translated_text = self.translator.translate(text, target_lang=target_lang)
         return translated_text
     
-    """Add a new method that generates a PDF 
-    containing the transcript, summary, and translation."""
-    
     def export_results_to_pdf(self, summary, transcript, translation, output_dir="exports"):
         """Exports the summary, transcript, and translation to a PDF file."""
         os.makedirs(output_dir, exist_ok=True)
