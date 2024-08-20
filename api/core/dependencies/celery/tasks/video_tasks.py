@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 import json
 from sqlalchemy.orm import Session
 from api.core.dependencies.celery.celery_app import worker
@@ -20,11 +20,11 @@ db: Session = next(get_db())
 @worker.task()
 def generate_talking_avatar_task(
     img_file,
-    audio_file,
     aspect_ratio,
     script: str,
     voice_over,
-    default: bool
+    default: bool,
+    audio_file: Optional[str]=None,
 ):
     # def generate_talking_avatar_task():
     '''Background task to generate talking avatar and save to database'''
@@ -55,10 +55,10 @@ def generate_video_scenes_task(script: str):
 
 @worker.task()
 def geenerate_video_from_script_task(
-    script: str, 
+    script: str,
     scenes: List[str],
-    voice_over: str, 
-    background_audio: str, 
+    voice_over: str,
+    background_audio: str,
     aspect_ratio: str
 ):
     '''Background task to generate video from text'''
@@ -112,7 +112,7 @@ def process_youtube_video_task(youtube_url: str, base_url: str):
 
     video_id = os.path.basename(saved_path).split('.')[0]
     video_url = urljoin(
-        base_url, f"/media/uploads/videos/{os.path.basename(saved_path)}")
+        base_url, f"/media/downloads/videos/{os.path.basename(saved_path)}")
 
     return json.dumps({"video_id": video_id, "video_url": video_url})
 
