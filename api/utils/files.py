@@ -5,6 +5,7 @@ from secrets import token_hex
 from fastapi import HTTPException, status
 from pathlib import Path
 import asyncio
+import cv2
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -256,3 +257,26 @@ async def upload_files(
         uploaded_files.append(SAVE_FILE_DIR)
 
     return uploaded_files
+
+
+
+def contains_face(image_path):
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    image = cv2.imread(image_path)
+    
+    if image is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Image not found or unable to load.",
+        )
+    
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    
+    if len(faces) > 0:
+        return True
+    
+    raise HTTPException(
+            status_code=400,
+            detail=f"Image does not contain a face.",
+        ) 

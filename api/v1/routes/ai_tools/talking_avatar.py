@@ -6,7 +6,7 @@ import requests
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.utils.files import upload_file_to_current_dir
+from api.utils.files import upload_file_to_current_dir, contains_face
 from api.v1.services.presets import preset_service
 from api.v1.services.job import job_service
 from api.v1.schemas.ai_tools.talking_avatar import DownloadRequest, TalkingHeadRequest
@@ -32,7 +32,7 @@ async def talking_head_image_upload(
         save_extension=file_extension,
         max_file_size=10 * 1024 * 1024
     )
-
+    contains_face(image_file)
     if audio_id:
         audio = preset_service.fetch_music_by_id(
             db=db, music_id=audio_id
