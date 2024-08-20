@@ -88,7 +88,7 @@ async def upload_file_to_current_dir(
         file: str, 
         allowed_extensions: Optional[list], 
         max_file_size: int,
-        save_extension: str = 'pdf'
+        save_extension: str
     ):
 
     BASE_DIR = Path(__file__).resolve().parent

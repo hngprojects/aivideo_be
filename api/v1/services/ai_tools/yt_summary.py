@@ -120,8 +120,8 @@ class YoutubeSummary:
         """Summarize a youtube video"""
 
         transcript = self.transcribe(video_pth)
-        pdf_file = self.pdf_transform(transcript)
         full_summary = summary_service.summarize_pdf(pdf_file)
+        pdf_file = self.pdf_transform(transcript, full_summary)
         return {"summary": full_summary, "transcript": transcript}
 
 

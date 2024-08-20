@@ -88,12 +88,12 @@ class SummaryService():
         return final_summary
     
     def transcribe_audio(self, file_path):
-           transcript = self.client.audio.transcriptions.create(
+        transcript = self.client.audio.transcriptions.create(
             model="whisper-1",
             response_format="text",
             file=open(file_path, "rb"),
         )
-           return transcript
+        return transcript
        
     def summarize_audio(self, audio_file_path):
         """Summarize podcast audio file.

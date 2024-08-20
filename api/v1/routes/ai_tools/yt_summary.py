@@ -7,6 +7,7 @@ from api.core.dependencies.celery.tasks.video_summary_tasks import (
     generate_video_summary_task,delete_pdf
 )
 from api.db.database import get_db
+from api.utils.settings import settings
 from api.utils.files import  upload_files, upload_file_to_current_dir
 from api.utils.logger import logging
 from api.utils.success_response import success_response
@@ -22,16 +23,25 @@ download = APIRouter(prefix="/tools/download", tags=["Download"])
 @yt_summary.post(
     "/video",
     status_code=status.HTTP_200_OK,
-    # response_model=success_response,
+    response_model=success_response,
 )
 async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Endpoint to summarize a single video"""
 
-    video = await upload_file_to_current_dir(
-        file, allowed_extensions=["mp4", "mp3"], save_extension='mp4'
+    # video = await upload_file_to_current_dir(
+    #     file, 
+    #     allowed_extensions=["mp4", "mp3"], 
+    #     save_extension='mp4',
+    #     max_file_size=settings.MAX_FILE_SIZE
+    # )
+
+    video = await upload_files(
+        file, 
+        allowed_extensions=["mp4", "mp3"], 
+        upload_folder='video_summary'
     )
 
-    task = generate_video_summary_task.delay(video)
+    task = generate_video_summary_task.delay(video[0])
     logging.info(f"Background task started {task.id}")
 
     # Create project with job
