@@ -156,7 +156,12 @@ async def summarize_podcast(request: PodcastRequest):
     if audio_response.status_code == 200:
         file_like_object = io.BytesIO(audio_response.content)
         file_like_object.filename = "podcast.mp3"
-        file_path = await upload_file_to_current_dir(file_like_object, allowed_extensions=['mp3', 'mp4'], save_extension='mp3')
+        file_path = await upload_file_to_current_dir(
+            file_like_object, 
+            allowed_extensions=['mp3', 'mp4'], 
+            save_extension='mp3',
+            max_file_size=10 * 1024 * 1024
+        )
         task = generate_podcast_summary_task.delay(file_path)
    
         # Create project with job
