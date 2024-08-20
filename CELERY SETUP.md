@@ -62,8 +62,8 @@ pip install celery[django]
 ## Celery commands for this app
 Run the following commands in two separate terminsla:
 ```bash
-celery -A api.core.dependencies.celery.celery_app worker --loglevel-info
-celery -A api.core.dependencies.celery.celery_app flower --loglevel-info
+celery -A api.core.dependencies.celery.celery_app worker --loglevel=info
+celery -A api.core.dependencies.celery.celery_app flower --loglevel=info
 ```
 
 ## Access RabbitMQ Management Syatem

@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     
     X_RAPIDAPI_KEY: str = config("X_RAPIDAPI_KEY")
     X_RAPIDAPI_HOST: str = config("X_RAPIDAPI_HOST")
-
+    
     @property
     def ALLOWED_EXTENSIONS(self) -> set[str]:
         raw_extensions = config("ALLOWED_EXTENSIONS", default="")
