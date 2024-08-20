@@ -5,7 +5,7 @@ from typing import List, Dict, Optional
 from deep_translator import GoogleTranslator
 import ffmpeg
 from api.utils.files import delete_file
-from api.v1.services.ai_tools.summary_audio import summary_service
+from api.v1.services.ai_tools.summary import summary_service
 
 
 def convert_video_to_audio(
