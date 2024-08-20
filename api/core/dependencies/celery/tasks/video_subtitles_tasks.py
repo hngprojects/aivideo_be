@@ -1,7 +1,7 @@
 import json
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.video_subtitles import convert_video_to_audio, translate_text, generate_subtitles
-from api.v1.services.ai_tools.summary_audio import summary_service
+from api.v1.services.ai_tools.summary import summary_service
 
 from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db

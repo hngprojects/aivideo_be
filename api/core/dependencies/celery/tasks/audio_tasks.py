@@ -1,6 +1,6 @@
 import json
 from api.core.dependencies.celery.celery_app import worker
-from api.v1.services.ai_tools.summary_audio import summary_service
+from api.v1.services.ai_tools.summary import summary_service
 from api.db.database import get_db
 import json
 from api.v1.services.ai_tools.audio_transcriber import transcribe_audio_file_with_timestamps

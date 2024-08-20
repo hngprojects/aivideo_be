@@ -21,8 +21,7 @@ from api.v1.schemas.translation import TranslationRequest
 from api.v1.schemas.ai_tools.audio_transcriber import PodcastRequest
 from api.v1.services.ai_tools.summary import summary_service
 from api.v1.services.job import job_service
-from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summary_task
-from api.core.dependencies.celery.tasks.summary_tasks import generate_audio_summary_task
+from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summary_task, generate_podcast_summary_task, generate_audio_summary_task, transcribe_audio_task
 
 summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
@@ -158,7 +157,7 @@ async def summarize_podcast(request: PodcastRequest):
         file_like_object = io.BytesIO(audio_response.content)
         file_like_object.filename = "podcast.mp3"
         file_path = await upload_file_to_current_dir(file_like_object, allowed_extensions=['mp3', 'mp4'], save_extension='mp3')
-        task = generate_audio_summary_task.delay(file_path)
+        task = generate_podcast_summary_task.delay(file_path)
    
         # Create project with job
         project = job_service.create_project_with_job(
@@ -182,3 +181,47 @@ async def summarize_podcast(request: PodcastRequest):
             message="Podcast not found",
             data={}
         )
+
+@summary.post('/audio-summarizer', status_code=status.HTTP_200_OK, response_model=success_response)
+async def summarize_audio(
+    file: UploadFile = File(...), 
+    target_lang: str = "es",  # Default to Spanish
+    db: Session = Depends(get_db)
+):
+    '''Endpoint to summarize an audio file'''
+    
+    audio_file = await upload_file(
+        file, 
+        allowed_extensions=['mp3', 'wav'],
+        upload_folder='audio', 
+        save_extension='mp3' 
+    )
+    task_transcribe = transcribe_audio_task.delay(audio_file)
+
+
+    task = generate_audio_summary_task.delay(audio_file, target_lang)
+    
+
+    project = job_service.create_project_with_job(
+        job=task,
+        project_title='New Audio Summarization Project',
+        project_type='Audio Summarizer'
+    )
+
+    project_transcribe = job_service.create_project_with_job(
+        job=task_transcribe,
+        project_title='New Audio transcription Project',
+        project_type='Audio transcriber'
+    )
+
+    return success_response(
+        status_code=202,
+        message="Audio summary generation and transcription  job initiated successfully",
+        data={
+            "job_id": task.id,
+            "project_id": project.id,
+            "transcription_job_id": task_transcribe.id,
+            "transcription_project_id": project_transcribe.id,
+
+        }
+    )
