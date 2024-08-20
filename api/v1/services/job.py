@@ -1,9 +1,13 @@
+import asyncio
 import csv
 from io import StringIO
+import json
+from time import sleep
 from typing import Optional
 from fastapi import HTTPException
 from fastapi import status as HTTPStatus
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from celery.result import AsyncResult
 
@@ -44,14 +48,16 @@ class JobService:
 
         return project
 
-    def create_job(self, job_id: str, project_id: Optional[str] = None, user_id: Optional[str] = None):
+    def create_job(
+        self,
+        job_id: str,
+        project_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ):
         """Creates a new celery job"""
 
         job = Job(
-            job_id=job_id, 
-            project_id=project_id, 
-            user_id=user_id, 
-            status="RUNNING"
+            job_id=job_id, project_id=project_id, user_id=user_id, status="RUNNING"
         )
         db.add(job)
         db.commit()
@@ -96,7 +102,7 @@ class JobService:
 
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
-        
+
         return project
 
     def update_job_result(self, job_id: str):
@@ -258,6 +264,31 @@ class JobService:
         stats["completed_tasks"] = query.filter(Job.status.icontains("SUCCESS")).count()
 
         return stats
+
+    async def stream_job_activity(self, db: Session):
+        """SSE handler to stream job activities"""
+        
+        initial: str = ""
+
+        while True:
+            query = (
+                db.query(Job)
+                .options(
+                    joinedload(Job.project),
+                    joinedload(Job.user),
+                )
+                .order_by(Job.created_at.desc())
+                .all()
+            )
+
+            data = json.dumps(jsonable_encoder(query))
+
+            if data != initial:
+                print("Yielding")
+                yield f"data: {data}\n\n"
+                initial = data
+
+            await asyncio.sleep(1)
 
 
 job_service = JobService()
