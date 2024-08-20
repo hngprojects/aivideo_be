@@ -1,12 +1,8 @@
 from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Text
 from sqlalchemy.orm import relationship
-from enum import Enum
 
 from api.v1.models.base_model import BaseTableModel
 
-
-# class ProjectType(str, Enum):
-#     '''Project type enum'''
 
 class Project(BaseTableModel):
     __tablename__ = 'projects'

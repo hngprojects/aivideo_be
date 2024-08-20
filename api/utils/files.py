@@ -1,15 +1,21 @@
-from api.utils.logger import logging
-import ffmpeg
+from typing import Optional
 import os
-from typing import List, Optional, Union
+from typing import Optional
 from secrets import token_hex
 from fastapi import HTTPException, status
 from pathlib import Path
+import asyncio
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
-async def upload_file(file, allowed_extensions: Optional[list], upload_folder: str, save_extension: str = 'pdf'):
+async def upload_file(
+    file, 
+    allowed_extensions: Optional[list], 
+    upload_folder: str, 
+    save_extension: str = 'pdf'
+):
     '''Function to upload a file'''
 
     # Check against invalid extensions
@@ -76,71 +82,82 @@ async def download_file(file, download_folder: str, save_extension: str = 'pdf')
     return SAVE_FILE_DIR
 
 
-def convert_video_to_audio(
-    input_path: str,
-    output_path: Optional[str] = None,
-    audio_format: str = 'mp3',
-    audio_bitrate: str = '192k'
-) -> str:
-    """
-    Convert a video file to an audio file using FFmpeg.
+async def upload_file_to_current_dir(
+        file: str, 
+        allowed_extensions: Optional[list], 
+        max_file_size: int,
+        save_extension: str
+    ):
 
-    Args:
-    input_path (str): Path to the input video file.
-    output_path (Optional[str]): Path for the output audio file. If not
-                                 provided, it will be derived from the
-                                 input path.
-    audio_format (str): Output audio format (default is 'mp3').
-    audio_bitrate (str): Output audio bitrate (default is '192k').
+    BASE_DIR = Path(__file__).resolve().parent
 
-    Returns:
-    str: Path to the output audio file.
+    # Check against invalid extensions
 
-    Raises:
-    FileNotFoundError: If the input file doesn't exist.
-    ffmpeg.Error: If FFmpeg encounters an error during conversion.
-    """
-    if not os.path.exists(input_path):
-        raise FileNotFoundError(f"Input file not found: {input_path}")
+    if hasattr(file, 'filename'):
+        file_name = file.filename.lower()
+    else:
+        # If it's a file-like object created from bytes
+        file_name = getattr(file, 'filename', 'unnamed_file')
 
-    if output_path is None:
-        base_name = os.path.splitext(input_path)[0]
-        output_path = f"{base_name}.{audio_format}"
+    file_extension = file_name.split('.')[-1]
+    name = file_name.split('.')[0]
 
-    try:
-        stream = ffmpeg.input(input_path)
+    if not file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail='File cannot be blank')
 
-        stream = ffmpeg.output(
-            stream,
-            output_path,
-            acodec=audio_format,
-            audio_bitrate=audio_bitrate,
-            vn=None
+    if allowed_extensions:
+        if file_extension not in allowed_extensions:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid file format')
+    
+    # Check file size
+    file_size = len(file.file.read())
+    if file_size > max_file_size:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Max size is {max_file_size / (1024 * 1024)} MB.",
         )
 
-        ffmpeg.run(stream, overwrite_output=True)
+    new_filename = f'{name}-{token_hex(5)}.{save_extension}'
+    SAVE_FILE_DIR = os.path.join(BASE_DIR, new_filename)
+    with open(SAVE_FILE_DIR, 'wb') as f:
+        if hasattr(file, 'read'):
+            # If it's a file-like object (e.g., BytesIO)
+            if asyncio.iscoroutinefunction(file.read):
+                # If it's an async file
+                content = await file.read()
+            else:
+                # If it's not an async file
+                content = file.read()
+        else:
+            # If it's already bytes content
+            content = file
+        f.write(content)
 
-        return output_path
+    return SAVE_FILE_DIR
 
-    except ffmpeg.Error:
-        logging.error("FFmpeg error occurred")
-        raise
 
+def delete_file(file_path: str):
+
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        
 
 async def upload_files(
-        files,
-        allowed_extensions: Optional[list],
-        upload_folder: str,
-        save_extension: str = 'pdf'
+    files,
+    allowed_extensions: Optional[list],
+    upload_folder: str,
+    max_file_size: int = 10 * 1024 * 1024,  # 10 MB default size
+    chunk_size: int = 1024
 ):
-    '''Function to upload single or multiple files'''
+    '''Function to upload single or multiple files with file size limitation'''
+
     if not isinstance(files, list):
         files = [files]
 
     uploaded_files = []
 
     for file in files:
-        # Check against invalid extensions
         file_name = file.filename.lower()
         file_extension = file_name.split('.')[-1]
         name = file_name.split('.')[0]
@@ -158,6 +175,19 @@ async def upload_files(
                     detail=f'Invalid file format for {file_name}'
                 )
 
+        # Check the file size by reading it in chunks
+        file_size = 0
+        while chunk := await file.read(chunk_size):
+            file_size += len(chunk)
+            if file_size > max_file_size:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f'File {file_name} exceeds the maximum allowed size of {max_file_size / (1024 * 1024)} MB'
+                )
+
+        # Reset file pointer to the start after checking size
+        await file.seek(0)
+
         UPLOAD_FOLDER = os.path.join(BASE_DIR, 'media', 'uploads')
         if not os.path.exists(UPLOAD_FOLDER):
             os.makedirs(UPLOAD_FOLDER)
@@ -168,12 +198,13 @@ async def upload_files(
             os.makedirs(UPLOAD_DIR)
 
         # Generate a new file name
-        new_filename = f'{name}-{token_hex(5)}.{save_extension}'
+        new_filename = f'{name}-{token_hex(5)}.{file_extension}'
         SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
 
+        # Save the file
         with open(SAVE_FILE_DIR, 'wb') as f:
-            content = await file.read()
-            f.write(content)
+            while chunk := await file.read(chunk_size):
+                f.write(chunk)
 
         uploaded_files.append(SAVE_FILE_DIR)
 

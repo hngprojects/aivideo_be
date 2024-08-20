@@ -1,13 +1,20 @@
 from datetime import timedelta
-from fastapi import BackgroundTasks, Depends, status, APIRouter, Response, Request, Query
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    status,
+    APIRouter,
+    Response,
+    Request,
+    Query,
+)
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session 
+from sqlalchemy.orm import Session
 
 from api.core.dependencies.email_sender import send_email
 from api.utils.success_response import success_response
 from api.v1.models import User
-from api.v1.schemas.user import Token
 from api.v1.schemas.user import LoginRequest, UserCreate
 from api.db.database import get_db
 from api.v1.services.user import user_service
@@ -16,10 +23,17 @@ from api.v1.services.request_pwd import reset_service as magic_link_service
 
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
 
-  
-@auth.post("/register", status_code=status.HTTP_201_CREATED, response_model=success_response)
-def register(background_tasks: BackgroundTasks, response: Response, user_schema: UserCreate, db: Session = Depends(get_db)):
-    '''Endpoint for a user to register their account'''
+
+@auth.post(
+    "/register", status_code=status.HTTP_201_CREATED, response_model=success_response
+)
+def register(
+    background_tasks: BackgroundTasks,
+    response: Response,
+    user_schema: UserCreate,
+    db: Session = Depends(get_db),
+):
+    """Endpoint for a user to register their account"""
 
     # Create user account
     user = user_service.create(db=db, schema=user_schema)
@@ -30,29 +44,25 @@ def register(background_tasks: BackgroundTasks, response: Response, user_schema:
 
     # Send email in the background
     background_tasks.add_task(
-        send_email, 
+        send_email,
         recipient=user.email,
-        template_name='welcome.html',
-        subject='Welcome to HNG Boilerplate',
-        context={
-            'first_name': user.first_name,
-            'last_name': user.last_name
-        }
+        template_name="welcome.html",
+        subject="Welcome to HNG Boilerplate",
+        context={"first_name": user.first_name, "last_name": user.last_name},
     )
 
     response = JSONResponse(
         status_code=201,
         content={
-            'status_code': 201,
-            'message': 'User created successfully',
-            'access_token': access_token,
-            'data': {
-                'user': jsonable_encoder(
-                    user,
-                    exclude=['password', 'is_superadmin', 'is_deleted', 'is_verified', 'updated_at']
+            "status_code": 201,
+            "message": "User created successfully",
+            "access_token": access_token,
+            "data": {
+                "user": jsonable_encoder(
+                    user, exclude=["password", "is_deleted", "updated_at"]
                 )
-            }
-        }
+            },
+        },
     )
 
     # Add refresh token to cookies
@@ -81,16 +91,15 @@ def register_as_super_admin(user: UserCreate, db: Session = Depends(get_db)):
     response = JSONResponse(
         status_code=201,
         content={
-            'status_code': 201,
-            'message': 'User created successfully',
-            'access_token': access_token,
-            'data': {
-                'user': jsonable_encoder(
-                    user,
-                    exclude=['password', 'is_superadmin', 'is_deleted', 'is_verified', 'updated_at']
+            "status_code": 201,
+            "message": "User created successfully",
+            "access_token": access_token,
+            "data": {
+                "user": jsonable_encoder(
+                    user, exclude=["password", "is_deleted", "updated_at"]
                 )
-            }
-        }
+            },
+        },
     )
 
     # Add refresh token to cookies
@@ -122,16 +131,15 @@ def login(login_request: LoginRequest, db: Session = Depends(get_db)):
     response = JSONResponse(
         status_code=200,
         content={
-            'status_code': 200,
-            'message': 'Login successful',
-            'access_token': access_token,
-            'data': {
-                'user': jsonable_encoder(
-                    user,
-                    exclude=['password', 'is_superadmin', 'is_deleted', 'is_verified', 'updated_at']
+            "status_code": 200,
+            "message": "Login successful",
+            "access_token": access_token,
+            "data": {
+                "user": jsonable_encoder(
+                    user, exclude=["password", "is_deleted", "updated_at"]
                 )
-            }
-        }
+            },
+        },
     )
 
     # Add refresh token to cookies
@@ -198,6 +206,7 @@ def refresh_access_token(
 
     return response
 
+
 @auth.post("/magic-link", status_code=status.HTTP_200_OK)
 async def request_magic_link(
     reset_schema: RequestEmail,
@@ -208,17 +217,31 @@ async def request_magic_link(
     subject = "Magic Link"
     url = "api/v1/auth/magic-link/verify"
     template_file = "magic_link.html"
-    data =  await magic_link_service.create(reset_schema, request, db, background_tasks,
-                                           subject=subject, template_file=template_file, url=url)
+    data = await magic_link_service.create(
+        reset_schema,
+        request,
+        db,
+        background_tasks,
+        subject=subject,
+        template_file=template_file,
+        url=url,
+    )
     link = data["data"]["reset_link"]
-    data.update({
-         "message": "Magic link sent sucessfully.",
-         "data": {"magic-link": link},
-         "status_code": status.HTTP_200_OK
-    })
+    data.update(
+        {
+            "message": "Magic link sent sucessfully.",
+            "data": {"magic-link": link},
+            "status_code": status.HTTP_200_OK,
+        }
+    )
     return success_response(**data)
 
-@auth.get("/magic-link/verify", status_code=status.HTTP_200_OK, response_model=success_response)
+
+@auth.get(
+    "/magic-link/verify",
+    status_code=status.HTTP_200_OK,
+    response_model=success_response,
+)
 def verify_magic_link(token: str = Query(...), db: Session = Depends(get_db)):
     """Endpoint to verify a magic link"""
 
@@ -232,16 +255,15 @@ def verify_magic_link(token: str = Query(...), db: Session = Depends(get_db)):
     response = JSONResponse(
         status_code=200,
         content={
-            'status_code': 200,
-            'message': 'Login successful',
-            'access_token': access_token,
-            'data': {
-                'user': jsonable_encoder(
-                    user,
-                    exclude=['password', 'is_superadmin', 'is_deleted', 'is_verified', 'updated_at']
+            "status_code": 200,
+            "message": "Login successful",
+            "access_token": access_token,
+            "data": {
+                "user": jsonable_encoder(
+                    user, exclude=["password", "is_deleted", "updated_at"]
                 )
-            }
-        }
+            },
+        },
     )
 
     # Add refresh token to cookies

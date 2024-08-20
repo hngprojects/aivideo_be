@@ -37,6 +37,18 @@ def test_user():
     )
     return user
 
+@pytest.fixture()
+def test_bill_plan():
+    bill_plan = BillingPlan(
+        features=['One', 'Two'],
+        plan_interval="one-off",
+        plan_name="Plan 1",
+        id=str(uuid7()),
+        currency="NGN",
+        price=3000
+    )
+    return bill_plan
+
 @pytest.fixture
 def mock_user_service(test_user):
     app.dependency_overrides[user_service.get_current_user] = lambda: test_user
@@ -60,7 +72,8 @@ async def test_verify_payment_successful(
     mock_db_session,
     test_user,
     access_token_user,
-    mock_user_service
+    mock_user_service,
+    test_bill_plan
 ):
     # Setup mocks
     mock_settings.FLUTTERWAVE_SECRET = "test_secret_key"
@@ -68,12 +81,14 @@ async def test_verify_payment_successful(
         "status": "success",
         "data": {
             "amount": 3000,
-            "currency": "NGN"
+            "currency": "NGN",
+            "tx_ref": "test123"
             }}
 
     mock_db_session.add.return_value = None
     mock_db_session.commit.return_value = None
     mock_db_session.refresh.return_value = None
+    mock_db_session.get.return_value = test_bill_plan
 
     response = client.get(
         f'api/v1/payments/verify/1234',

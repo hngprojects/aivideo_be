@@ -12,6 +12,7 @@ class InitiatePaymentSchema(BaseModel):
     billing_plan_id: str
     payment_gateway: str
     redirect_url: str
+    auto_renew: bool = False
 
 
 class InitiatePaymentData(BaseModel):
@@ -65,3 +66,7 @@ class CreatePaymentResponse(ResponseBase):
 class PaymentListResponse(ResponseBase):
     payments: List[CreatePaymentReturnData]
     pagination: PaginationBase
+
+
+class GetPaymentResponse(ResponseBase):
+    data: CreatePaymentReturnData

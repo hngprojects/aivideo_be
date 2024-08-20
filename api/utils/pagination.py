@@ -13,8 +13,6 @@ def paginated_response(
     limit: int,
     join: Optional[Any] = None,
     filters: Optional[Dict[str, Any]] = None,
-    related_models: Optional[List[Any]] = None,
-    related_model_excludes: Optional[Dict[str, List[str]]] = {},
 ):
     """
     Custom response for pagination.\n
@@ -64,10 +62,6 @@ def paginated_response(
 
     query = db.query(model)
 
-    if related_models:
-        for related_model in related_models:
-            query = query.options(subqueryload(related_model))
-
     if join is not None:
         query = query.join(join)
 
@@ -91,20 +85,6 @@ def paginated_response(
 
     items = jsonable_encoder(results)
 
-    if not related_model_excludes.get("user"):
-        related_model_excludes["user"] = [
-            "password",
-            "is_superadmin",
-            "is_deleted",
-            "is_active",
-        ]
-
-    if related_model_excludes:
-        for item in items:
-            for related_key, fields in related_model_excludes.items():
-                related_data = item.get(related_key, {})
-                for field in fields:
-                    related_data.pop(field, None)
 
     return success_response(
         status_code=200,

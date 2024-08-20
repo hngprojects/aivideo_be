@@ -5,10 +5,8 @@ from typing import Optional, Union, List, Annotated
 from pydantic import (
     BaseModel,
     EmailStr,
-    field_validator,
     ConfigDict,
     StringConstraints,
-    model_validator,
 )
 
 
@@ -73,6 +71,7 @@ class AllUsersResponse(BaseModel):
     status: str
     page: int
     per_page: int
+    total_pages: int
     total: int
     data: Union[List[UserData], List[None]]
 
@@ -137,6 +136,7 @@ class ChangePasswordSchema(BaseModel):
 
     old_password: str
     new_password: str
+    confirm_new_password: str
 
 
 class UserStatData(BaseModel):
@@ -144,6 +144,10 @@ class UserStatData(BaseModel):
     active_users: int
     inactive_users: int
     deleted: int
+    created_in_last_hour: int
+    active_in_last_hour: int
+    inactive_in_last_hour: int
+    deleted_in_last_hour: int
 
 
 class UserStatResponse(BaseModel):

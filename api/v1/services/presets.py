@@ -33,6 +33,12 @@ class PresetService:
         db.delete(avatar)
         db.commit()
 
+    def delete_all_avatars(self, db: Session):
+        """Deletes all avatars from the db"""
+
+        db.query(Avatar).delete()
+        db.commit()
+
     
     def fetch_all_background_music(self, db: Session, **query_params: Optional[Any]):
         """Fetch all background music with option to search using query parameters"""
@@ -58,6 +64,12 @@ class PresetService:
 
         music = self.fetch_music_by_id(db, music_id)
         db.delete(music)
+        db.commit()
+
+    def delete_all_music(self, db: Session):
+        """Deletes all music from the db"""
+
+        db.query(BackgroundMusic).delete()
         db.commit()
 
 

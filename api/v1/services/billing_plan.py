@@ -46,12 +46,6 @@ class BillingPlanService:
                     )
         
         all_plans = query.all()
-        
-        if len(all_plans) <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Blilling plans not found"
-            )
 
         return all_plans
 

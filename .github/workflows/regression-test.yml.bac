@@ -1,36 +1,71 @@
-name: Run Newman Tests
+name: Run Regression Tests
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
-    paths-ignore:
-      - "README.md"
-      - ".github/workflows/**"
+    types: [opened, reopened]
+    branches: [dev, staging, main]
+  push:
+    branches: [dev, staging, main]
+
 
 jobs:
   run-newman:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "16" # Use the Node.js version that matches your environment
+          node-version: "18" 
 
       - name: Install Newman and HTML reporter
         run: |
-          npm install -g newman newman-reporter-html
+          npm install -g newman
+          npm install -g newman-reporter-htmlextra
 
-      - name: Run Newman Tests
+      # Make directory to upload the test results
+      - name: Make Directory for results
+        run: mkdir -p newmanResults
+
+      - name: Run Newman Tests here
+        if: github.event_name == 'pull_request' 
         run: |
-          chmod +x test-newman.sh
-          ./test-newman.sh
+          newman run qa_tests/regression/Payments-Flow_one-off-subscription.postman_collection.json -r htmlextra --reporter-htmlextra-export newmanResults/htmlreport-pr-${{ github.event.pull_request.number }}.html --reporter-htmlextra-darkTheme --suppress-exit-code
 
+      - name: Find PR number
+        if: github.event_name == 'push' 
+        uses: jwalton/gh-find-current-pr@master
+        with:
+          state: closed
+        id: findPr
+        
+      - name: Run Newman Tests on push here
+        if: github.event_name == 'push' 
+        run: |
+          newman run qa_tests/regression/Payments-Flow_one-off-subscription.postman_collection.json -r htmlextra --reporter-htmlextra-export newmanResults/htmlreport-pr-${{ steps.findPr.outputs.pr }}-merged.html --reporter-htmlextra-darkTheme --suppress-exit-code
+      
       - name: Archive HTML report
-        uses: actions/upload-artifact@v3
+        id: artifact-upload-step
+        uses: actions/upload-artifact@v4
         with:
           name: newman-report
-          path: newman-reports/
+          path: newmanResults/
+
+      - name: Post Report Link in PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            Your PR has triggered the Newman tests. Please download the report here ${{ steps.artifact-upload-step.outputs.artifact-url }}
+
+      - name: Post Report Link in PR
+        if: github.event_name == 'push'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: push report
+          number: ${{ steps.findPr.outputs.pr }}
+          message: |
+            PR merged! Download and compare this post-merge Newman report with the pre-merge report to verify everything works ${{ steps.artifact-upload-step.outputs.artifact-url }}

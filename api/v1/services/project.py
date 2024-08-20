@@ -1,4 +1,5 @@
 from typing import Any, Optional
+
 from sqlalchemy.orm import Session
 from api.core.base.services import Service
 from api.v1.models.project import Project
@@ -8,7 +9,7 @@ from api.v1.models.user import User
 
 
 class ProjectService(Service):
-    '''Project service functionality'''
+    """Project service functionality"""
 
     def create(self, db: Session, schema: CreateProject):
         """Create a new project"""
@@ -20,9 +21,8 @@ class ProjectService(Service):
 
         return new_project
 
-    def fetch_all(self, db: Session, **query_params: Optional[Any]):
+    def fetch_all_projects(self, db: Session, **query_params: Optional[Any]):
         """Fetch all projects with option to search using query parameters"""
-
         query = db.query(Project)
 
         # Enable filter by query parameter
@@ -30,17 +30,23 @@ class ProjectService(Service):
             for column, value in query_params.items():
                 if hasattr(Project, column) and value:
                     query = query.filter(
-                        Project.is_active == True, 
-                        getattr(Project, column).ilike(f"%{value}%")
+                        Project.is_active == True,
+                        getattr(Project, column).ilike(f"%{value}%"),
                     )
 
         return query.all()
+    
+    
+    def fetch_user_project(self, user: User, project_id: str):
+        """Fetch a project by user and project ID."""
+        project = next((p for p in user.projects if p.id == project_id and not p.is_deleted), None)
+        return project
 
     def fetch(self, db: Session, project_id: str):
         """Fetches a, project by id"""
 
-        prohect = check_model_existence(db, Project, project_id)
-        return prohect
+        project = check_model_existence(db, Project, project_id)
+        return project
 
     def update(self, db: Session, project_id: str, schema: UpdateProject):
         """Updates a project"""
@@ -75,14 +81,13 @@ class ProjectService(Service):
 
         return all_projects
     
-    def fetch_user_project(self, user: User, project_id: str):
-        all_user_projects = user.projects
-
-        for project in all_user_projects:
-            if str(project.id) == project_id:
-                return project
-        
-        return None
+    def fetch_project_by_id(self, db: Session, project_id: str):
+        """Fetches a project by id"""
+        return check_model_existence(db, Project, project_id)
+    
+    def fetch_all(self, db: Session):
+        """Fetch all projects"""
+        return db.query(Project).all()
     
 
 project_service = ProjectService()
