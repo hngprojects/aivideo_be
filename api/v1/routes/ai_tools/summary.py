@@ -196,6 +196,16 @@ async def summarize_audio(
         upload_folder='audio', 
         save_extension='mp3' 
     )
+    await file.seek(0)
+    file_content = await file.read()
+    file_size_mb = len(file_content) / (1024 * 1024)
+    
+    max_file_size_mb = 10
+    if file_size_mb > max_file_size_mb:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File too large. Please upload a file smaller than 10 MB."
+        )
     task_transcribe = transcribe_audio_task.delay(audio_file)
 
 
