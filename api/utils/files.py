@@ -117,6 +117,9 @@ async def upload_file_to_current_dir(
             status_code=400,
             detail=f"File too large. Max size is {max_file_size / (1024 * 1024)} MB.",
         )
+    
+    # Reset file pointer after reading
+    await file.seek(0)
 
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
     SAVE_FILE_DIR = os.path.join(BASE_DIR, new_filename)
@@ -132,6 +135,50 @@ async def upload_file_to_current_dir(
         else:
             # If it's already bytes content
             content = file
+
+        f.write(content)
+
+    return SAVE_FILE_DIR
+
+
+async def upload_to_current_dir(
+    file, 
+    allowed_extensions: Optional[list], 
+    max_file_size: int,
+    save_extension: str
+):
+
+    BASE_DIR = Path(__file__).resolve().parent
+
+    file_extension = file.filename.split('.')[-1]
+    name = file.filename.split('.')[0]
+
+    if not file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail='File cannot be blank')
+
+    if allowed_extensions:
+        if file_extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail='Invalid file format'
+            )
+    
+    # Check file size
+    file_size = len(file.file.read())
+    if file_size > max_file_size:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Max size is {max_file_size / (1024 * 1024)} MB.",
+        )
+    
+    # Reset file pointer after reading
+    await file.seek(0)
+
+    new_filename = f'{name}-{token_hex(5)}.{save_extension}'
+    SAVE_FILE_DIR = os.path.join(BASE_DIR, new_filename)
+    with open(SAVE_FILE_DIR, 'wb') as f:
+        content = await file.read()
         f.write(content)
 
     return SAVE_FILE_DIR
