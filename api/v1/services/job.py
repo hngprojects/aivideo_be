@@ -56,13 +56,6 @@ class JobService:
     ):
         """Creates a new celery job"""
 
-        job = Job(
-            job_id=job_id, project_id=project_id, user_id=user_id, status="RUNNING"
-        )
-        db.add(job)
-        db.commit()
-        db.refresh(job)
-        return job
         try:
             job = Job(
                 job_id=job_id, 
