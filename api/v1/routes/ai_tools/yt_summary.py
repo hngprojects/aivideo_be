@@ -4,10 +4,11 @@ from sqlalchemy.orm import Session
 
 from api.core.dependencies.celery.tasks.video_summary_tasks import (
     download_and_generate_video_summmary_task,
-    generate_video_summary_task,delete_pdf
+    generate_video_summary_task,
+    delete_pdf,
 )
 from api.db.database import get_db
-from api.utils.files import  upload_files
+from api.utils.files import upload_files
 from api.utils.logger import logging
 from api.utils.success_response import success_response
 from api.v1.schemas.ai_tools.youtube import PdfDownloadRequest, VideoLinkRequest
@@ -84,10 +85,15 @@ def download_pdf(request: PdfDownloadRequest):
         pdf_path = yts_service.pdf_transform(
             request.transcript, request.summary, request.video_title
         )
-        delete_pdf.delay(pdf_path)
+        task = delete_pdf.delay(pdf_path)
+        project = job_service.create_project_with_job(
+            job=task, project_title="New project", project_type="YT video Summarizer"
+        )
         # Return the PDF file
         return FileResponse(
-            pdf_path, media_type="application/pdf", filename="transcript_summary.pdf"
+            str(pdf_path),
+            media_type="application/pdf",
+            filename="transcript_summary.pdf",
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
