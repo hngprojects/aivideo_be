@@ -6,9 +6,11 @@ import requests
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
+from api.v1.models.user import User
 from api.utils.files import upload_to_current_dir, contains_face
 from api.v1.services.presets import preset_service
 from api.v1.services.job import job_service
+from api.v1.services.user import user_service
 from api.v1.schemas.ai_tools.talking_avatar import DownloadRequest, TalkingHeadRequest
 from api.core.dependencies.celery.tasks.video_tasks import generate_talking_avatar_task
 
@@ -21,7 +23,8 @@ async def talking_head_image_upload(
     voice_over: str = Form(...),
     audio_id: Optional[str] = Form(None),
     file: UploadFile = File(...), 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(user_service.get_current_user)
 ):
     '''Endpoint to Talking Avatar'''
 
