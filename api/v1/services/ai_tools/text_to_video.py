@@ -5,8 +5,16 @@ from typing import List
 from uuid import uuid4
 import openai
 import ffmpeg
-from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip
+from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip, TextClip, CompositeVideoClip
+from moviepy.video.tools.subtitles import SubtitlesClip
 import requests
+
+from deepgram_captions import DeepgramConverter, srt
+from deepgram import (
+    DeepgramClient,
+    PrerecordedOptions,
+    FileSource,
+)
 
 from api.utils.files import delete_file
 from api.utils.settings import settings
@@ -91,9 +99,40 @@ class TextToVideoService:
             images.append(image_path)
         
         return images
+    
+
+    def generate_subtitles_from_audio(self, audio_file: str):
+        try:
+            deepgram = DeepgramClient(settings.DEEPGRAM_API_KEY)
+
+            with open(audio_file, "rb") as file:
+                buffer_data = file.read()
+
+            payload: FileSource = {
+                "buffer": buffer_data,
+            }
+
+            options = PrerecordedOptions(
+                model="nova-2",
+                smart_format=True,
+            )
+
+            response = deepgram.listen.prerecorded.v("1").transcribe_file(payload, options)
+
+            transcription = DeepgramConverter(dg_response=response)
+            captions = srt(transcription)
+
+            subtitles_file = os.path.join(BASE_DIR, f'subtitles-{uuid4()}.srt')
+            with open(subtitles_file, 'w') as subtitles:
+                subtitles.write(captions)
+            
+            return subtitles_file
+
+        except Exception as e:
+            print(f"Exception: {e}")
 
 
-    def create_video_with_audio(self, images, audio_file):
+    def create_video_with_images(self, images: List[str], audio_file: str):
         clips = []
         duration_per_image = 10  # Duration each image will be displayed (in seconds)
         transition_duration = 2  # Duration of the fade transition (in seconds)
@@ -119,9 +158,24 @@ class TextToVideoService:
         video = video.set_duration(audio.duration)
 
         # Write the final video file to the specified output path
-        video.write_videofile(output_video_file, codec="libx264", audio_codec="aac", fps=24, threads=4)
+        video.write_videofile(output_video_file, codec='libx264', audio_codec="aac", fps=24, threads=4)
 
         return output_video_file
+    
+    def add_subtitles_to_video(self, input_video: str, subtitles_file: str, output_video: str):
+        # Load the input video
+        input_stream = ffmpeg.input(input_video)
+        
+        # Apply the subtitles filter
+        video = input_stream.video.filter('subtitles', subtitles_file)
+        
+        # Combine the video with audio (if any) and output the result
+        output = ffmpeg.output(video, input_stream.audio, output_video)
+        
+        # Run the command
+        ffmpeg.run(output)
+
+        return output_video
     
 
     def set_aspect_ratio(self, aspect_ratio: str):
@@ -207,22 +261,43 @@ class TextToVideoService:
     ):
 
         audio_file = self.generate_audio_from_script(script, voice_over)
+        subtitle_file = self.generate_subtitles_from_audio(audio_file)
         # scenes = self.generate_scene_descriptions(script)
         images = self.generate_images_for_scenes(scenes)
-        video_file = self.create_video_with_audio(images, audio_file)
+        video_file = self.create_video_with_images(images, audio_file)
+        
+        # Add subtitles to video
+        video_with_subtitles_path = os.path.join(BASE_DIR, f'ttvideo-{str(uuid4())}.mp4')
+        video_with_subtitles = self.add_subtitles_to_video(
+            input_video=video_file, 
+            subtitles_file=subtitle_file, 
+            output_video=video_with_subtitles_path
+        )
 
+        # Add background music to video
         video_with_bg_music_path = os.path.join(BASE_DIR, f'ttvideo-{str(uuid4())}.mp4')
-        video_with_audio = self.add_background_audio(video_file, background_audio, video_with_bg_music_path)
+        video_with_audio = self.add_background_audio(
+            video_path=video_with_subtitles, 
+            audio_path=background_audio, 
+            output_path=video_with_bg_music_path
+        )
 
         # Set up for final result
         video_dir = os.path.join('media', 'downloads', 'video')
         os.makedirs(video_dir, exist_ok=True)
         output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
-        final_result_file = self.change_aspect_ratio(video_with_audio, output_video_file, aspect_ratio)
+        # Adjust aspect ratio
+        final_result_file = self.change_aspect_ratio(
+            input_file=video_with_audio, 
+            output_file=output_video_file, 
+            aspect_ratio=aspect_ratio
+        )
 
         # Delete unnecessary files
         delete_file(audio_file)
+        delete_file(subtitle_file)
         delete_file(video_file)
+        delete_file(video_with_subtitles_path)
         delete_file(video_with_bg_music_path)
         for img in images:
             delete_file(img)
