@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     ASSEMBLYAI_API_KEY: str = config("ASSEMBLYAI_API_KEY")
     OPENROUTER_API_KEY: str = config("OPENROUTER_API_KEY")
     GOOEY_API_KEY: str = config("GOOEY_API_KEY")
+    DEEPGRAM_API_KEY: str = config("DEEPGRAM_API_KEY")
     UNREAL_SPEECH_API_KEY: str = config("UNREAL_SPEECH_API_KEY")
 
     MEDIA_DIR: str = config("MEDIA_DIR")
