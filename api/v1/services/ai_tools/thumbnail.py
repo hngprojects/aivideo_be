@@ -1,8 +1,8 @@
 import os
 import uuid
+import random
 from fastapi import HTTPException, status
 import subprocess
-from typing import List
 from api.utils.settings import settings
 from urllib.parse import urljoin
 
@@ -10,15 +10,20 @@ from urllib.parse import urljoin
 async def generate_thumbnails_service(video_id: str, base_url: str, timestamp: float = None):
     '''Generate thumbnails for a video'''
     base_name = video_id
-    video_dir = os.path.join(settings.MEDIA_DIR, 'uploads', 'videos')
-    video_files = os.listdir(video_dir)
+    video_dirs = [
+        os.path.join(settings.MEDIA_DIR, 'uploads', 'videos'),
+        os.path.join(settings.MEDIA_DIR, 'downloads', 'videos')
+    ]
 
-    # Find the correct video file based on the video_id
     video_path = None
-    for file in video_files:
-        if base_name in file:
-            possible_path = os.path.join(video_dir, file)
-            video_path = os.path.abspath(possible_path)
+    for video_dir in video_dirs:
+        video_files = os.listdir(video_dir)
+        for file in video_files:
+            if video_id in file:
+                possible_path = os.path.join(video_dir, file)
+                video_path = os.path.abspath(possible_path)
+                break
+        if video_path:  # Stop if we found the video
             break
 
     if not video_path or not os.path.isfile(video_path):
@@ -68,8 +73,10 @@ async def generate_thumbnails_service(video_id: str, base_url: str, timestamp: f
 
         duration = float(result.stdout.decode().strip())
 
-        for i in range(4):
-            timestamp = duration * (i + 1) / 5
+        random_timestamps = sorted(
+            [random.uniform(0, duration) for _ in range(3)])
+
+        for timestamp in random_timestamps:
             thumbnail_id = str(uuid.uuid4())
             output_path = os.path.join(
                 thumbnail_dir, f'{base_name}_thumbnail_{thumbnail_id}.jpg'
@@ -134,14 +141,11 @@ async def select_and_download_thumbnail_service(video_id: str, thumbnail_id: str
 
         absolute_output_path = os.path.abspath(output_path)
 
-        # Remove the MEDIA_DIR part of the path to get the relative path
         relative_path = os.path.relpath(
             absolute_output_path, settings.MEDIA_DIR)
 
-        # Replace os.path.sep with '/' for URL consistency
         relative_path = relative_path.replace(os.path.sep, '/')
 
-        # Construct the full URL
         thumbnail_url = urljoin(base_url, f"/media/{relative_path}")
 
         return thumbnail_url

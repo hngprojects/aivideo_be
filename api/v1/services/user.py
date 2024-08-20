@@ -7,14 +7,13 @@ from fastapi import status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, or_, select, func
+from sqlalchemy import desc, or_
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 
 from api.core.base.services import Service
-from api.core.dependencies.email_sender import send_email
 from api.db.database import get_db
 from api.utils.settings import settings
 from api.utils.db_validators import check_model_existence
@@ -23,6 +22,7 @@ from api.v1.models.project import Project
 from api.v1.models.job import Job
 from api.v1.models.data_privacy import DataPrivacySetting
 from api.v1.schemas import user
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -58,6 +58,12 @@ class UserService(Service):
                     continue
                 if hasattr(User, param):
                     filters.append(getattr(User, param) == value)
+
+        # update the active status for each user before filtering
+        for user_instance in db.query(User).all():
+            user_instance.update_active_status()
+        db.commit()
+
         query = db.query(User)
         total_users = query.count()
         if filters:
@@ -72,9 +78,6 @@ class UserService(Service):
             .offset((page - 1) * per_page)
             .all()
         )
-
-        for user in all_users:
-            user.update_active_status()
 
         return self.all_users_response(
             users=all_users,
@@ -694,15 +697,17 @@ class UserService(Service):
             data=all_tasks,
             status_code=200,
         )
-    
+
     def check_superadmin_or_user_in_object(self, user_: User, obj) -> bool:
         """
         Check that user ``is superadmin`` OR has the ID of ``obj.user_id``.
         Raise 401 status code error if false, otherwise return ``True``"""
-        if not user_.is_superadmin and not (hasattr(obj, "user_id") and obj.user_id == user_.id):
+        if not user_.is_superadmin and not (
+            hasattr(obj, "user_id") and obj.user_id == user_.id
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You do not have permission to access this resource"
+                detail="You do not have permission to access this resource",
             )
         return True
 

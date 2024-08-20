@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, EmailStr,  validator
-from fastapi import UploadFile, Form
-from typing import Optional, Dict
+from pydantic import BaseModel, Field, EmailStr, field_validator
+from fastapi import UploadFile
+from typing import Optional
 import re
 from datetime import datetime
 from api.v1.schemas.user import UserBase

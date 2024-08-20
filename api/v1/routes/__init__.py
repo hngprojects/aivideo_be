@@ -17,7 +17,6 @@ from api.v1.routes.data_privacy import privacy
 from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
-from api.v1.routes.ai_tools.summary_audio import summary_audio
 
 from api.v1.routes.ai_tools.talking_avatar import video_router
 from api.v1.routes.ai_tools.background_task import background_router
@@ -57,7 +56,6 @@ api_version_one.include_router(preset_router)
 api_version_one.include_router(regions)
 api_version_one.include_router(privacy)
 api_version_one.include_router(test_rout)
-api_version_one.include_router(summary_audio)
 api_version_one.include_router(background_router)
 api_version_one.include_router(save_summary)
 api_version_one.include_router(job)
