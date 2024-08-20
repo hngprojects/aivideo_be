@@ -27,6 +27,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 api/core/dependencies/mailjet.py
+downloaded_video.mp4
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -173,3 +174,4 @@ cython_debug/
 #.idea/
 
 test_case1.py
+alembic/versions

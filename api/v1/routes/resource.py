@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Query
+from fastapi import APIRouter, Depends, status, Query
 from fastapi.encoders import jsonable_encoder
-from typing import Annotated, Optional, Literal
+from typing import Annotated, Optional
 from sqlalchemy.orm import Session
 
 from api.db.database import get_db
@@ -10,7 +10,6 @@ from api.v1.services.user import user_service
 from api.v1.services.resource import resource_service
 from api.v1.schemas.resource import (
     CreateResource,
-    UpdateResource,
     ResourceBase,
     AllResourcesResponse,
 )
@@ -72,3 +71,23 @@ async def get_resources(
         "is_deleted": is_deleted,
     }
     return resource_service.fetch_all(db, page, per_page, **query_params)
+
+
+@resource.get(
+    "/public", status_code=status.HTTP_200_OK, response_model=AllResourcesResponse
+)
+async def get_public_resources(
+    db: Annotated[Session, Depends(get_db)], page: int = 1, per_page: int = 10
+):
+    """
+    Retrieves all public resources.
+    Args:
+        db: database Session object
+        page: the page number
+        per_page: the maximum size of resources for each page
+    Returns:
+        ResourceData
+    """
+
+    return resource_service.fetch_all_public(db, page, per_page)
+

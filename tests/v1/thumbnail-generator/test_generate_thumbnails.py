@@ -5,7 +5,7 @@ from main import app
 
 client = TestClient(app)
 
-# Define mock settings
+# Mocked settings and data
 mock_video_id = 'mock-video-id'
 mock_base_url = 'http://testserver'
 mock_thumbnail_url = f"{mock_base_url}/media/downloads/thumbnails/mock-thumbnail.jpg"
@@ -13,9 +13,9 @@ mock_thumbnail_url = f"{mock_base_url}/media/downloads/thumbnails/mock-thumbnail
 
 @pytest.fixture
 def mock_generate_thumbnails_task(mocker):
-    # Mock the Celery task result
     mock_task = MagicMock()
-    mock_task.get.return_value = {'thumbnail_url': mock_thumbnail_url}
+    mock_task.id = 'mock-task-id'
+    # No need to mock `get()` here since we're just returning the task ID
     return mocker.patch("api.core.dependencies.celery.tasks.video_tasks.generate_thumbnails_task.delay", return_value=mock_task)
 
 
@@ -42,9 +42,8 @@ def test_generate_thumbnails_success(
 ):
     response = client.post(
         '/api/v1/tools/thumbnail-generator/generate-thumbnails',
-        json={
+        data={
             'video_id': mock_video_id,
-            'manual_capture': False,
             'timestamp': 0
         }
     )
@@ -59,9 +58,8 @@ def test_generate_thumbnails_manual_capture(
 ):
     response = client.post(
         '/api/v1/tools/thumbnail-generator/generate-thumbnails',
-        json={
+        data={
             'video_id': mock_video_id,
-            'manual_capture': True,
             'timestamp': 10.0
         }
     )

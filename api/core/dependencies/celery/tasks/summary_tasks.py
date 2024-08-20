@@ -1,12 +1,11 @@
 import json
-from celery import shared_task
 from pypdf import PdfReader
 from api.core.dependencies.celery.celery_app import worker
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.summary import summary_service
-from api.v1.services.job import job_service  # Import job_service to update job status
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.db.database import get_db
+from api.v1.services.ai_tools.audio_transcriber import transcribe_audio_file_with_timestamps
 
 db = next(get_db())
 
@@ -70,11 +69,28 @@ def generate_yt_transcript(video_pth):
     """background task generates a transcript based off yt video"""
 
     summary = yts_service.summarize_video(video_pth)
-    return summary
+    return json.dumps(summary)
 
 @worker.task()
-def generate_audio_summary_task(audio_file):
-    '''BAckground task to summarize a pdf and save to database'''
+def generate_podcast_summary_task(audio_file):
+    '''BAckground task to summarize a podcast and save to database'''
 
-    summary, transcription = summary_service.summarize_audio(audio_file)
-    return summary, transcription
+    summary, transcription = summary_service.summarize_podcast(audio_file)
+    return json.dumps({
+        'summary': summary,
+        'transcript': transcription
+    })
+
+@worker.task()
+def generate_audio_summary_task(audio_file, target_lang):
+    '''Background task to summarize an audio file and save to the database'''
+
+    # Process the audio file: transcribe, summarize, translate, and export
+    result = summary_service.process_audio(audio_file, target_lang)
+    return json.dumps(result)
+
+    
+@worker.task()
+def transcribe_audio_task(audio_data):
+    result = transcribe_audio_file_with_timestamps(audio_data)
+    return json.dumps(result)

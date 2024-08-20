@@ -1,67 +1,64 @@
 import pytest
-from fastapi.testclient import TestClient
-from fastapi import status
 from unittest.mock import patch, MagicMock
+from fastapi.testclient import TestClient
+
 from main import app
-from api.v1.models import User
-from uuid_extensions import uuid7
-from sqlalchemy.orm import Session
-
-from api.db.database import get_db
-from api.v1.schemas.text_to_video import TextInputResponse, TextInputData
-
+from api.v1.routes.ai_tools.talking_avatar import video_router
 
 client = TestClient(app)
 
-@pytest.fixture
-def mock_db_session():
-    """Fixture to create a mock database session."
+@pytest.mark.asyncio
+@patch('api.core.dependencies.celery.tasks.video_tasks.geenerate_video_from_script_task.apply_async')
+@patch('api.v1.services.job.job_service.create_project_with_job')
+async def test_text_to_video_success_validation_error(
+    mock_create_project_with_job,
+    mock_apply_async
+):
+    # Arrange
+    mock_apply_async.return_value.id = "test_task_id"
+    mock_create_project_with_job.return_value.id = "test_project_id"
 
-    Yields:
-        MagicMock: mock database
-    """
-    with patch("api.v1.services.user.get_db", autospec=True) as mock_get_db:
-        mock_db = MagicMock()
-        app.dependency_overrides[get_db] = lambda: mock_db
-        yield mock_db
-    app.dependency_overrides = {}
-
-@pytest.fixture
-def mock_get_current_user():
-    """Fixture to create a mock current user"""
-    with patch(
-        "api.v1.services.user.UserService.get_current_user", autospec=True
-    ) as mock_get_current_user:
-        yield mock_get_current_user
-
-
-@patch("api.v1.services.text_to_video.TextToVideoService.create", autospec=True)
-def test_create_video_from_text(mock_create, mock_get_current_user, mock_db_session):
-    """
-    Test for text-to-video
-    """
-    user = User(id='user_id')
-    
-    (mock_get_current_user
-     .return_value.query.return_value
-     .filter.return_value.first.return_value) = user
-    
-    mock_create.return_value = TextInputResponse(
-        message='successful',
-        status_code=status.HTTP_200_OK,
-        data=TextInputData(
-            task_id='task_id',
-            status='processing',
-            user_id=user.id
-        )
+    # Act
+    response = client.post(
+        "/api/v1/tools/video/text-to-video/generate-video",
+        json={
+            "script": "test script",
+        }
     )
-    payload = {}
-    headers = {"Authorization": "Bearer fake_token"}
-    response = client.post('/api/v1/text-to-videos', json=payload, headers=headers)
+
+    # Assert
+    assert response.status_code == 422
     
-    assert response.json() == {'status_code': 200,
-                               'message': 'successful',
-                               'data':
-                                    {'status': 'processing',
-                                     'task_id': 'task_id',
-                                     'video_url': None}}
+
+@pytest.mark.asyncio
+@patch('api.core.dependencies.celery.tasks.video_tasks.geenerate_video_from_script_task.apply_async')
+@patch('api.v1.services.job.job_service.create_project_with_job')
+@patch('api.v1.services.presets.preset_service.fetch_music_by_id')
+async def test_text_to_video_success(
+    mock_create_project_with_job,
+    mock_apply_async,
+    mock_music_by_id
+):
+    # Arrange
+    mock_apply_async.return_value.id = "test_task_id"
+    mock_create_project_with_job.return_value.id = "test_project_id"
+    mock_music_by_id.return_value.id = "audio-id"
+
+    # Act
+    response = client.post(
+        "/api/v1/tools/video/text-to-video/generate-video",
+        json={
+            "script": "Test script to test video",
+            "audio_id": "audio-id",
+            "aspect_ratio": "horizontal",
+            "voice_over": "woman",
+            "scenes": [
+                "A man jogging with a red shirt and white shoes", 
+                "1. In a bustling office, a group of programmers sit at their computers", 
+                "2. A young child sits in front of a computer, eagerly typing "
+            ]
+        }
+    )
+
+    # Assert
+    assert response.status_code == 202

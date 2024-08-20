@@ -2,9 +2,8 @@
 
 """Services to handle audio transcription"""
 
-import logging
 import os
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 from typing_extensions import List
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains.llm import LLMChain
@@ -88,9 +87,7 @@ class TranscriptionService:
                 # Each doc represents a paragraph. Get its content and timestamps.
                 transcribe = {
                     "paragraph": doc.page_content,
-                    # Start timestamp of the paragraph
                     "start_time": doc.metadata.get("start_time"),
-                    # End timestamp of the paragraph
                     "end_time": doc.metadata.get("end_time")
                 }
                 transcription_timestamp.append(transcribe)
@@ -106,7 +103,8 @@ class TranscriptionService:
         """Returns a summarized version of the transcription
 
         Args:
-            transcription (List[Document]): List of Document objects containing transcription
+            transcription (List[Document]): List of Document objects containing
+            transcription
 
         Returns:
             str: Summary of the transcription

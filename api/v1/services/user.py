@@ -7,14 +7,13 @@ from fastapi import status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, or_, select, func
+from sqlalchemy import desc, or_
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from api.core.base.services import Service
-from api.core.dependencies.email_sender import send_email
 from api.db.database import get_db
 from api.utils.settings import settings
 from api.utils.db_validators import check_model_existence
@@ -23,6 +22,7 @@ from api.v1.models.project import Project
 from api.v1.models.job import Job
 from api.v1.models.data_privacy import DataPrivacySetting
 from api.v1.schemas import user
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -54,10 +54,16 @@ class UserService(Service):
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                         detail=f"Invalid value for '{param}'. Must be a boolean.",
                     )
-                if value == None:
+                if value is None:
                     continue
                 if hasattr(User, param):
                     filters.append(getattr(User, param) == value)
+
+        # update the active status for each user before filtering
+        for user_instance in db.query(User).all():
+            user_instance.update_active_status()
+        db.commit()
+
         query = db.query(User)
         total_users = query.count()
         if filters:
@@ -66,7 +72,7 @@ class UserService(Service):
 
         total_pages = int(total_users / per_page) + (total_users % per_page > 0)
 
-        all_users: list = (
+        all_users: list[User] = (
             query.order_by(desc(User.created_at))
             .limit(per_page)
             .offset((page - 1) * per_page)
@@ -149,6 +155,7 @@ class UserService(Service):
                 total=0,
                 data=[],
             )
+
         all_users = [
             user.UserData.model_validate(usr, from_attributes=True) for usr in users
         ]
@@ -167,6 +174,7 @@ class UserService(Service):
         """Fetches a user by their id"""
 
         user = check_model_existence(db, User, id)
+        user.update_active_status()
 
         # return user if user is not deleted
         if not user.is_deleted:
@@ -175,7 +183,8 @@ class UserService(Service):
     def get_user_by_id(self, db: Session, id: str):
         """Fetches a user by their id"""
 
-        user = check_model_existence(db, User, id)
+        user: User = check_model_existence(db, User, id)
+        user.update_active_status()
         return user
 
     def fetch_by_email(self, db: Session, email):
@@ -342,11 +351,11 @@ class UserService(Service):
         user.update_last_login()
         return user
 
-    def perform_user_check(self, user: User):
-        """This checks if a user is active and verified and not a deleted user"""
-
-        if not user.is_active:
-            raise HTTPException(detail="User is not active", status_code=403)
+    # def perform_user_check(self, user: User):
+    #     """This checks if a user is active and verified and not a deleted user"""
+    #
+    #     if not user.is_active:
+    #         raise HTTPException(detail="User is not active", status_code=403)
 
     def hash_password(self, password: str) -> str:
         """Function to hash a password"""
@@ -460,63 +469,6 @@ class UserService(Service):
 
         return user
 
-    def deactivate_user(
-        self,
-        request: Request,
-        db: Session,
-        schema: user.DeactivateUserSchema,
-        user: User,
-    ):
-        """Function to deactivate a user"""
-
-        if not schema.confirmation:
-            raise HTTPException(
-                detail="Confirmation required to deactivate account", status_code=400
-            )
-
-        self.perform_user_check(user)
-
-        user.is_active = False
-
-        # Create reactivation token
-        token = self.create_access_token(user_id=user.id)
-        reactivation_link = f"https://{request.url.hostname}/api/v1/users/accounts/reactivate?token={token}"
-
-        # mail_service.send_mail(
-        #     to=user.email,
-        #     subject='Account deactivation',
-        #     body=f'Hello, {user.first_name},\n\nYour account has been deactivated successfully.\nTo reactivate your account if this was a mistake, please click the link below:\n{request.url.hostname}/api/users/accounts/reactivate?token={token}\n\nThis link expires after 15 minutes.'
-        # )
-
-        db.commit()
-
-        return reactivation_link
-
-    def reactivate_user(self, db: Session, token: str):
-        """This function reactivates a user account"""
-
-        # Validate the token
-        try:
-            payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-            )
-            user_id = payload.get("user_id")
-
-            if user_id is None:
-                raise HTTPException(400, "Invalid token")
-
-        except JWTError:
-            raise HTTPException(400, "Invalid token")
-
-        user = db.query(User).filter(User.id == user_id).first()
-
-        if user.is_active:
-            raise HTTPException(400, "User is already active")
-
-        user.is_active = True
-
-        db.commit()
-
     def change_password(
         self,
         old_password: str,
@@ -592,18 +544,45 @@ class UserService(Service):
             db: database Session object
         """
 
-        query = db.query(User)
+        users = db.query(User).all()
 
-        total_user_count = query.count()
-        active_user_count = query.filter(User.is_active == True).count()
-        inactive_user_count = query.filter(User.is_active == False).count()
-        deleted_user_count = query.filter(User.is_deleted == True).count()
+        for user in users:
+            user.update_active_status()
+
+        total_user_count = len(users)
+        active_user_count = sum(1 for user in users if user.is_active)
+        inactive_user_count = sum(1 for user in users if not user.is_active)
+        deleted_user_count = sum(1 for user in users if user.is_deleted)
+
+        one_hour_ago = datetime.now(timezone(timedelta(hours=1))) - timedelta(hours=1)
+
+        created_in_last_hour = sum(
+            1 for user in users if user.created_at >= one_hour_ago
+        )
+
+        active_in_last_hour = sum(
+            1 for user in users if user.is_active and user.updated_at >= one_hour_ago
+        )
+
+        inactive_in_last_hour = sum(
+            1
+            for user in users
+            if not user.is_active and user.updated_at >= one_hour_ago
+        )
+
+        deleted_in_last_hour = sum(
+            1 for user in users if user.is_deleted and user.updated_at >= one_hour_ago
+        )
 
         return {
             "total_users": total_user_count,
             "active_users": active_user_count,
             "inactive_users": inactive_user_count,
             "deleted_users": deleted_user_count,
+            "created_in_last_hour": created_in_last_hour,
+            "active_in_last_hour": active_in_last_hour,
+            "inactive_in_last_hour": inactive_in_last_hour,
+            "deleted_in_last_hour": deleted_in_last_hour,
         }
 
     def export_to_csv(self, db: Session):
@@ -661,10 +640,10 @@ class UserService(Service):
         )
 
         total_jobs_created = query.count()
-        total_jobs_completed = query.filter(Job.status.contains("SUCCESS")).count()
-        total_jobs_pending = query.filter(Job.status.contains("PENDING")).count()
+        total_jobs_completed = query.filter(Job.status.icontains("SUCCESS")).count()
+        total_jobs_pending = query.filter(Job.status.icontains("PENDING")).count()
         total_jobs_in_progress = query.filter(
-            or_(Job.status.contains("STARTED"), Job.status.contains("RUNNING"))
+            or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
         ).count()
 
         if job:
@@ -718,6 +697,19 @@ class UserService(Service):
             data=all_tasks,
             status_code=200,
         )
+
+    def check_superadmin_or_user_in_object(self, user_: User, obj) -> bool:
+        """
+        Check that user ``is superadmin`` OR has the ID of ``obj.user_id``.
+        Raise 401 status code error if false, otherwise return ``True``"""
+        if not user_.is_superadmin and not (
+            hasattr(obj, "user_id") and obj.user_id == user_.id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="You do not have permission to access this resource",
+            )
+        return True
 
 
 user_service = UserService()

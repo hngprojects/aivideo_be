@@ -1,5 +1,5 @@
-from io import BytesIO
-from fastapi import Depends, Form, APIRouter, File, UploadFile
+from fastapi import Depends, Form, APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 import requests
 
@@ -8,6 +8,7 @@ from api.utils.success_response import success_response
 from api.utils.files import upload_file_to_current_dir
 from api.v1.services.presets import preset_service
 from api.v1.services.job import job_service
+from api.v1.schemas.ai_tools.talking_avatar import DownloadRequest, TalkingHeadRequest
 from api.core.dependencies.celery.tasks.video_tasks import generate_talking_avatar_task
 
 video_router = APIRouter(prefix="/tools/video", tags=["Tools"])
@@ -65,21 +66,17 @@ async def talking_head_image_upload(
 
 @video_router.post('/talking-head/avatar-selection', status_code=202, response_model=success_response)
 async def talking_head_avatar_selection(
-    avatar_id: str = Form(...),
-    audio_id: str = Form(...),
-    script: str = Form(...),
-    aspect_ratio: str = Form(...),
-    voice_over: str = Form(...),
+    schema: TalkingHeadRequest,
     db: Session = Depends(get_db)
 ):
     '''Endpoint to Talking Avatar'''
 
     avatar = preset_service.fetch_avatar_by_id(
-        db=db, avatar_id=avatar_id
+        db=db, avatar_id=schema.avatar_id
     )
 
     audio = preset_service.fetch_music_by_id(
-        db=db, music_id=audio_id
+        db=db, music_id=schema.audio_id
     )
 
     image_file = avatar.file_path
@@ -88,9 +85,9 @@ async def talking_head_avatar_selection(
     task = generate_talking_avatar_task.apply_async(kwargs={
         'img_file': image_file,
         'audio_file': audio_file,
-        'aspect_ratio': aspect_ratio,
-        'script': script,
-        'voice_over': voice_over.lower(),
+        'aspect_ratio': schema.aspect_ratio.lower(),
+        'script': schema.script,
+        'voice_over': schema.voice_over.lower(),
         'default': True
     })
 
@@ -110,3 +107,21 @@ async def talking_head_avatar_selection(
             "project_id": project.id
         }
     )
+
+
+@video_router.post("/download")
+async def download_video(schema: DownloadRequest):
+    try:
+        # Fetch the video from the URL
+        response = requests.get(schema.file_url, stream=True)
+        response.raise_for_status()  # Check for errors in the response
+
+        video_filename = "downloaded_video.mp4"
+        with open(video_filename, "wb") as video_file:
+            video_file.write(response.content)
+
+        # Return the video file as a FileResponse
+        return FileResponse(video_filename, media_type="video/mp4", filename="convey-talking-avatar-video.mp4")
+
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=400, detail=f"Error downloading video: {str(e)}")

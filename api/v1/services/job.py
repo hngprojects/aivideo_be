@@ -9,14 +9,13 @@ from celery.result import AsyncResult
 
 from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
-from api.utils.pagination import paginated_response
 from api.v1.models.job import Job
 from api.v1.models.project import Project
 from api.v1.models.user import User
 from api.v1.schemas.project import CreateProject
 from api.v1.services.project import project_service
 from sqlalchemy.orm import joinedload
-from sqlalchemy import or_
+from sqlalchemy import or_, desc
 
 
 db = next(get_db())
@@ -30,9 +29,6 @@ class JobService:
 
         task_result = AsyncResult(job_id, app=worker)
         return task_result.state
-
-    def create_project_with_job(self, job, project_title: str, project_type: str):
-        """FUnction to create a project alongside a task or job"""
 
     def create_project_with_job(
         self, job, project_title: str, project_type: str, user_id: Optional[str] = None
@@ -48,11 +44,14 @@ class JobService:
 
         return project
 
-    def create_job(self, job_id: str, project_id: str, user_id: Optional[str] = None):
+    def create_job(self, job_id: str, project_id: Optional[str] = None, user_id: Optional[str] = None):
         """Creates a new celery job"""
 
         job = Job(
-            job_id=job_id, project_id=project_id, user_id=user_id, status="RUNNING"
+            job_id=job_id, 
+            project_id=project_id, 
+            user_id=user_id, 
+            status="RUNNING"
         )
         db.add(job)
         db.commit()
@@ -76,13 +75,18 @@ class JobService:
     def update_job(self, job_id: str, status: str, result: Optional[str] = None):
         """Updates the job details"""
 
-        job = self.fetch_by_job_id(job_id=job_id)
-
-        job.status = status
-        job.result = result if result is not None else None
-        db.commit()
-        db.refresh(job)
-        return job
+        try:
+            job = self.fetch_by_job_id(job_id=job_id)
+            job.status = status
+            job.result = result if result is not None else None
+            db.commit()
+            db.refresh(job)
+            return job
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=400, detail=f"{type(e).__name__} occurred. {repr(e)}"
+            )
 
     def get_project_from_job(self, job_id: str):
         """Returns the project from the job details"""
@@ -92,6 +96,7 @@ class JobService:
 
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
+        
         return project
 
     def update_job_result(self, job_id: str):
@@ -174,7 +179,7 @@ class JobService:
 
         # paginate response
 
-        jobs = query.offset(skip).limit(limit).all()
+        jobs = query.order_by(desc(Job.created_at)).offset(skip).limit(limit).all()
 
         jobs = jsonable_encoder(jobs)
 
@@ -245,18 +250,12 @@ class JobService:
         query = db.query(Job)
 
         stats["total_tasks"] = query.count()
-        stats["failed_tasks"] = query.filter(
-            getattr(Job, "status").ilike(f"%failed%")
-        ).count()
+        stats["failed_tasks"] = query.filter(Job.status.icontains("FAILED")).count()
         stats["in_progress_tasks"] = query.filter(
-            getattr(Job, "status").ilike(f"%inprogress%")
+            or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
         ).count()
-        stats["pending_tasks"] = query.filter(
-            getattr(Job, "status").ilike(f"%pending%")
-        ).count()
-        stats["completed_tasks"] = query.filter(
-            getattr(Job, "status").ilike(f"%completed%")
-        ).count()
+        stats["pending_tasks"] = query.filter(Job.status.icontains("PENDING")).count()
+        stats["completed_tasks"] = query.filter(Job.status.icontains("SUCCESS")).count()
 
         return stats
 
