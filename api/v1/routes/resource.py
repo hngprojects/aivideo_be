@@ -150,7 +150,7 @@ async def delete_resources(
     current_user : Annotated[User, Depends(user_service.get_current_super_admin)]
     ) :
     """
-    Route to soft delete Resources
+    Route to soft  delete Resources
 
     Args:
         resource_id (str): used as an identifier for the resource
