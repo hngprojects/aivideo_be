@@ -31,11 +31,11 @@ def test_select_thumbnail_success(
     mock_create_project_with_job
 ):
     response = client.post(
-        f'/api/v1/tools/thumbnail-generator/select-thumbnail/{mock_video_id}',
+        f'/api/v1/tools/thumbnail-generator/select-thumbnail',
         json={
             'thumbnail_id': mock_thumbnail_id,
-            'resolution': mock_resolution
+            
         }
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 202
