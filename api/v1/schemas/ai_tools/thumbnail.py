@@ -13,4 +13,3 @@ class ThumbnailRequest(BaseModel):
 
 class ThumbnailSelectionRequest(BaseModel):
     thumbnail_id: str
-    resolution: Optional [str] = None

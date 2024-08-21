@@ -15,7 +15,6 @@ mock_thumbnail_url = f"{mock_base_url}/media/downloads/thumbnails/mock-thumbnail
 def mock_generate_thumbnails_task(mocker):
     mock_task = MagicMock()
     mock_task.id = 'mock-task-id'
-    # No need to mock `get()` here since we're just returning the task ID
     return mocker.patch("api.core.dependencies.celery.tasks.video_tasks.generate_thumbnails_task.delay", return_value=mock_task)
 
 
@@ -44,10 +43,11 @@ def test_generate_thumbnails_success(
         '/api/v1/tools/thumbnail-generator/generate-thumbnails',
         data={
             'video_id': mock_video_id,
-            'timestamp': 0
+            'timestamp': 0,
+            'aspect_ratio': 'square'
         }
     )
-    assert response.status_code == 200
+    assert response.status_code == 202
 
 
 def test_generate_thumbnails_manual_capture(
@@ -60,7 +60,8 @@ def test_generate_thumbnails_manual_capture(
         '/api/v1/tools/thumbnail-generator/generate-thumbnails',
         data={
             'video_id': mock_video_id,
-            'timestamp': 10.0
+            'timestamp': 10.0,
+            'aspect_ratio': 'square'
         }
     )
-    assert response.status_code == 200
+    assert response.status_code == 202

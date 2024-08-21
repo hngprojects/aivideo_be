@@ -15,7 +15,8 @@ from api.utils.success_response import success_response
 from api.v1.schemas.ai_tools.youtube import PdfDownloadRequest, VideoLinkRequest
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.job import job_service
-from api.v1.services.tool_limiter import track_tool_usage
+from api.v1.services.user import user_service
+from api.utils.tool_limiter import track_tool_usage
 
 yt_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 download = APIRouter(prefix="/tools/download", tags=["Download"])
@@ -114,7 +115,7 @@ def download_pdf(request: PdfDownloadRequest):
     response_model=success_response,
     dependencies=[Depends(track_tool_usage)],
 )
-def download_pdf():
+def test_tool_limiter():
     return success_response(
         status_code=200,
         message="request success",

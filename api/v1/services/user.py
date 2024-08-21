@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from api.core.base.services import Service
 from api.db.database import get_db
 from api.utils.settings import settings
-from api.utils.db_validators import check_model_existence
+from api.utils.db_validators import check_model_existence, get_model_by_params
 from api.v1.models.user import User
 from api.v1.models.project import Project
 from api.v1.models.job import Job
@@ -152,6 +152,11 @@ class UserService(Service):
         # return user if user is not deleted
         if not user.is_deleted:
             return user
+
+    def fetch_by_params(self, db: Session, query_params: dict):
+        """Fetches a user by one or more query params"""
+        user = get_model_by_params(db, User, query_params)
+        return user
 
     def get_user_by_id(self, db: Session, id: str):
         """Fetches a user by their id"""
@@ -440,6 +445,30 @@ class UserService(Service):
             raise credentials_exception
         user.update_last_login()
 
+        return user
+    
+    def get_current_user_optional(
+        self, 
+        access_token: Optional[str] = Depends(oauth2_scheme), 
+        db: Session = Depends(get_db)
+    ) -> Optional[User]:
+        '''Used to optionally check for a user. This will be used for tracking unauthenticated users'''
+
+        if access_token is None:
+            return None
+
+        credentials_exception = HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+        token = self.verify_access_token(access_token, credentials_exception)
+        user = db.query(User).filter(User.id == token.id).first()
+        if not user:
+            raise credentials_exception
+
+        user.update_last_login()
         return user
 
     def change_password(
