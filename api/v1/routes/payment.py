@@ -221,31 +221,6 @@ def get_all_payments(
     )
 
 
-@payments.get("/{payment_id}", 
-              status_code=status.HTTP_200_OK, response_model=GetPaymentResponse)
-def get_payment(
-    payment_id: str,
-    current_user: User = Depends(user_service.get_current_user),
-    db: Session = Depends(get_db),
-):
-    """
-    Endpoint to retrieve a single payment object by 
-    ``superadmin`` OR ``user who owns the payment``.
-    """
-    # get the payment object
-    payment = payment_service.fetch(db, payment_id)
-
-    # check that current user is superadmin OR owns the payment 
-    user_service.check_superadmin_or_user_in_object(current_user, payment)
-
-    # return success and data
-    return success_response(
-        status_code=status.HTTP_200_OK,
-        message="Payment fetched successfully",
-        data=payment.to_dict()
-    )
-
-
 @payments.post("/flutterwave/webhook")
 async def flutterwave_webhook(
     req: Request,
@@ -327,4 +302,29 @@ def get_all_payments_for_current_user(
         status_code=status.HTTP_200_OK,
         message="Current user payments fetched successfully",
         data=payment_service.dictize_payments_and_pagination(payments_l, offset, limit)
+    )
+
+
+@payments.get("/{payment_id}", 
+              status_code=status.HTTP_200_OK, response_model=GetPaymentResponse)
+def get_payment(
+    payment_id: str,
+    current_user: User = Depends(user_service.get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint to retrieve a single payment object by 
+    ``superadmin`` OR ``user who owns the payment``.
+    """
+    # get the payment object
+    payment = payment_service.fetch(db, payment_id)
+
+    # check that current user is superadmin OR owns the payment 
+    user_service.check_superadmin_or_user_in_object(current_user, payment)
+
+    # return success and data
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Payment fetched successfully",
+        data=payment.to_dict()
     )

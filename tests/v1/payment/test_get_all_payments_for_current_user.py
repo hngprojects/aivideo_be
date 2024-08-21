@@ -66,9 +66,11 @@ def access_token_user(test_user):
 def random_access_tokenr():
     return user_service.create_access_token(user_id='hshsdgdgdgdgdgdg')
 
-def make_request(token):
+def make_request(token, params=None):
+    # params = {'page': 1, 'limit': 10}
     return client.get(
         "/api/v1/payments/current-user", 
+        params=params or {'page': 1, 'limit': 10},
         headers={"Authorization": f"Bearer {token}"}
     )
 
@@ -123,7 +125,9 @@ def test_get_payments_successful(
     mock_db_session.query().all.return_value = five_payments
 
     # Make request
-    response = make_request(access_token_user)
+    # Make request, with limit set to 2, to get 3 pages
+    params = {'page': 1, 'limit': 2}
+    response = make_request(access_token_user, params=params)
 
     resp_d = response.json()
 
@@ -132,8 +136,12 @@ def test_get_payments_successful(
     assert resp_d['message'] == "Current user payments fetched successfully"
 
     pagination = resp_d['data']['pagination']
-    assert pagination['pages'] == 1
-    assert pagination['limit'] == 10
+    # assert pagination['pages'] == 1
+    # assert pagination['limit'] == 10
+    # assert pagination['offset'] == 0
+    # assert pagination['total_items'] == 5
+    assert pagination['pages'] == 3
+    assert pagination['limit'] == 2
     assert pagination['offset'] == 0
     assert pagination['total_items'] == 5
 
