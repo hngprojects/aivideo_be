@@ -7,9 +7,12 @@ from sqlalchemy.orm import Session
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.v1.models.user import User
-from api.v1.schemas.project import (AddFullProjectSchema,
-                                    CreateFullProjectSchema,
-                                    ProjectCreateResponseSchema)
+from api.v1.schemas.project import (
+    AddFullProjectSchema,
+    CreateFullProjectSchema,
+    ProjectCreateResponseSchema,
+    ToolStatsResponse,
+)
 from api.v1.services.project import project_service
 from api.v1.services.user import user_service
 
@@ -23,14 +26,14 @@ async def create_project(
 ):
     """Endpoint to create a new project"""
     full_project = AddFullProjectSchema(
-        user_id="default_user_id", **schema.model_dump())
+        user_id="default_user_id", **schema.model_dump()
+    )
 
     new_project = project_service.create(db, full_project)
 
-    logging.info(f'Creating new Project. ID: {new_project.id}.')
+    logging.info(f"Creating new Project. ID: {new_project.id}.")
     return success_response(
-        data=jsonable_encoder(
-            ProjectCreateResponseSchema.model_validate(new_project)),
+        data=jsonable_encoder(ProjectCreateResponseSchema.model_validate(new_project)),
         message="Successfully created project",
         status_code=status.HTTP_201_CREATED,
     )
@@ -54,6 +57,13 @@ async def get_all_projects(db: Session = Depends(get_db)):
     )
 
 
+@project.get("/statistics", response_model=ToolStatsResponse, status_code=200)
+async def get_statistics(db: Session = Depends(get_db)):
+    """Endpoint to get tool usage data"""
+
+    return project_service.fetch_statistics(db)
+
+
 @project.get("/{id}", response_model=success_response, status_code=200)
 async def get_single_project(id: str, db: Session = Depends(get_db)):
     """Endpoint to get a single project"""
@@ -64,8 +74,7 @@ async def get_single_project(id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Project not found")
 
     return success_response(
-        data=jsonable_encoder(
-            ProjectCreateResponseSchema.model_validate(project)),
+        data=jsonable_encoder(ProjectCreateResponseSchema.model_validate(project)),
         message="Project retrieved successfully",
         status_code=status.HTTP_200_OK,
     )
@@ -75,7 +84,7 @@ async def get_single_project(id: str, db: Session = Depends(get_db)):
 async def save_project(
     id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(user_service.get_current_user)
+    current_user: User = Depends(user_service.get_current_user),
 ):
     """Endpoint to save a project"""
     project = project_service.fetch_project_by_id(project_id=id, db=db)
@@ -86,8 +95,7 @@ async def save_project(
     project_service.add_user_to_project(db, project=project, user=current_user)
 
     return success_response(
-        data=jsonable_encoder(
-            ProjectCreateResponseSchema.model_validate(project)),
+        data=jsonable_encoder(ProjectCreateResponseSchema.model_validate(project)),
         message="Project saved successfully",
         status_code=status.HTTP_200_OK,
     )

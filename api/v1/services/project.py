@@ -3,7 +3,12 @@ from typing import Any, Optional
 from sqlalchemy.orm import Session
 from api.core.base.services import Service
 from api.v1.models.project import Project
-from api.v1.schemas.project import CreateProject, UpdateProject
+from api.v1.schemas.project import (
+    CreateProject,
+    UpdateProject,
+    ToolStatsData,
+    ToolStatsResponse,
+)
 from api.utils.db_validators import check_model_existence
 from api.v1.models.user import User
 
@@ -38,8 +43,9 @@ class ProjectService(Service):
 
     def fetch_user_project(self, user: User, project_id: str):
         """Fetch a project by user and project ID."""
-        project = next((p for p in user.projects if p.id ==
-                       project_id and not p.is_deleted), None)
+        project = next(
+            (p for p in user.projects if p.id == project_id and not p.is_deleted), None
+        )
         return project
 
     def fetch(self, db: Session, project_id: str):
@@ -94,6 +100,93 @@ class ProjectService(Service):
         db.commit()
         db.refresh(project)
         return project
+
+    def fetch_statistics(self, db: Session):
+        """Fetch tool usage statistics"""
+
+        total_projects = db.query(Project).all()
+        total_count = len(total_projects)
+
+        pdf_summarizer = sum(
+            [
+                1
+                for project in total_projects
+                if project.project_type == "PDF Summarizer"
+            ]
+        )
+        podcast_summarizer = sum(
+            [
+                1
+                for project in total_projects
+                if project.project_type == "Podcast Summarizer"
+            ]
+        )
+        youtube_summarizer = sum(
+            [
+                1
+                for project in total_projects
+                if project.project_type == "Youtube Summarizer"
+            ]
+        )
+        audio_transcriber = sum(
+            [
+                1
+                for project in total_projects
+                if project.project_type == "Audio transcriber"
+            ]
+        )
+        text_to_video = sum(
+            [1 for project in total_projects if project.project_type == "Text To Video"]
+        )
+        image_to_video = sum(
+            [1 for project in total_projects if project.project_type == "Talking Head"]
+        )
+        thumbnail_generator = sum(
+            [
+                1
+                for project in total_projects
+                if project.project_type == "Video Thumbnail Generator"
+            ]
+        )
+
+        if total_count:
+            pdf_summarizer_percentage = (pdf_summarizer / total_count) * 100
+            podcast_summarizer_percentage = (podcast_summarizer / total_count) * 100
+            youtube_summarizer_percentage = (youtube_summarizer / total_count) * 100
+            audio_transcriber_percentage = (audio_transcriber / total_count) * 100
+            text_to_video_percentage = (text_to_video / total_count) * 100
+            image_to_video_percentage = (image_to_video / total_count) * 100
+            thumbnail_generator_percentage = (thumbnail_generator / total_count) * 100
+
+            return ToolStatsResponse(
+                status="success",
+                status_code=200,
+                message="Tool Usage data successfully retrieved!",
+                data=ToolStatsData(
+                    pdf_summarizer=pdf_summarizer_percentage,
+                    podcast_summarizer=podcast_summarizer_percentage,
+                    audio_transcriber=audio_transcriber_percentage,
+                    text_to_video=text_to_video_percentage,
+                    image_to_video=image_to_video_percentage,
+                    thumbnail_generator=thumbnail_generator_percentage,
+                    youtube_summarizer=youtube_summarizer_percentage,
+                ),
+            )
+
+        return ToolStatsResponse(
+            status="success",
+            status_code=200,
+            message="No Tool Usage data recorded!",
+            data=ToolStatsData(
+                pdf_summarizer=0,
+                podcast_summarizer=0,
+                audio_transcriber=0,
+                text_to_video=0,
+                image_to_video=0,
+                thumbnail_generator=0,
+                youtube_summarizer=0,
+            ),
+        )
 
 
 project_service = ProjectService()
