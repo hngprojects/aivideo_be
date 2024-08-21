@@ -1,9 +1,14 @@
+import asyncio
 import csv
+from datetime import datetime, timedelta, timezone
 from io import StringIO
+import json
+from time import sleep
 from typing import Optional
 from fastapi import HTTPException
 from fastapi import status as HTTPStatus
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from celery.result import AsyncResult
 
@@ -44,19 +49,25 @@ class JobService:
 
         return project
 
-    def create_job(self, job_id: str, project_id: Optional[str] = None, user_id: Optional[str] = None):
+    def create_job(
+        self,
+        job_id: str,
+        project_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ):
         """Creates a new celery job"""
 
-        job = Job(
-            job_id=job_id, 
-            project_id=project_id, 
-            user_id=user_id, 
-            status="RUNNING"
-        )
-        db.add(job)
-        db.commit()
-        db.refresh(job)
-        return job
+        try:
+            job = Job(
+                job_id=job_id, project_id=project_id, user_id=user_id, status="Pending"
+            )
+            db.add(job)
+            db.commit()
+            db.refresh(job)
+            return job
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Error {e}")
 
     def fetch_all_jobs(self):
         """Fetches all celery jobs from the database"""
@@ -96,7 +107,7 @@ class JobService:
 
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
-        
+
         return project
 
     def update_job_result(self, job_id: str):
@@ -155,6 +166,7 @@ class JobService:
                     or_(
                         User.first_name.icontains(f"%{search}%"),
                         User.last_name.icontains(f"%{search}%"),
+                        User.email.icontains(f"%{search}%"),
                     )
                 ),
             ]
@@ -247,17 +259,95 @@ class JobService:
 
     def get_job_statistics(self, db: Session):
         stats = {}
+        one_hour_ago = datetime.now(timezone(timedelta(hours=1))) - timedelta(hours=1)
+
         query = db.query(Job)
 
-        stats["total_tasks"] = query.count()
-        stats["failed_tasks"] = query.filter(Job.status.icontains("FAILED")).count()
-        stats["in_progress_tasks"] = query.filter(
+        total_tasks = query.count()
+        failed_tasks = query.filter(Job.status.icontains("FAILED"))
+        in_progress_tasks = query.filter(
             or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
+        )
+        pending_tasks = query.filter(Job.status.icontains("PENDING"))
+        completed_tasks = query.filter(Job.status.icontains("SUCCESS"))
+
+        created_in_last_hour = query.filter(Job.created_at >= one_hour_ago).count()
+
+        active_in_last_hour = in_progress_tasks.filter(
+            Job.created_at >= one_hour_ago
         ).count()
-        stats["pending_tasks"] = query.filter(Job.status.icontains("PENDING")).count()
-        stats["completed_tasks"] = query.filter(Job.status.icontains("SUCCESS")).count()
+
+        pending_in_last_hour = pending_tasks.filter(
+            Job.created_at >= one_hour_ago
+        ).count()
+
+        completed_in_last_hour = completed_tasks.filter(
+            Job.created_at >= one_hour_ago
+        ).count()
+
+        stats = {
+            "total_tasks": total_tasks,
+            "failed_tasks": failed_tasks.count(),
+            "in_progress_tasks": in_progress_tasks.count(),
+            "pending_tasks": pending_tasks.count(),
+            "completed_tasks": completed_tasks.count(),
+            "created_in_last_hour": created_in_last_hour,
+            "active_in_last_hour": active_in_last_hour,
+            "pending_in_last_hour": pending_in_last_hour,
+            "completed_in_last_hour": completed_in_last_hour,
+        }
 
         return stats
+
+    async def stream_job_statistics(self, db: Session):
+        """SSE handler to stream job statistics"""
+
+        initial: str = ""
+
+        while True:
+            stats = self.get_job_statistics(db=db)
+
+            data = json.dumps(stats)
+
+            if data != initial:
+                yield f"data: {data}\n\n"
+                initial = data
+
+            await asyncio.sleep(1)
+
+    async def stream_job_activity(self, db: Session):
+        """SSE handler to stream job activities"""
+
+        initial: str = ""
+
+        while True:
+            query = (
+                db.query(Job)
+                .options(
+                    joinedload(Job.project),
+                    joinedload(Job.user),
+                )
+                .order_by(Job.created_at.desc())
+                .all()
+            )
+
+            jobs = jsonable_encoder(query)
+
+            # Remove the password field from user data
+
+            for job in jobs:
+                if job.get("user"):
+                    user_data = job.get("user")
+                    if "password" in user_data:
+                        del user_data["password"]
+
+            data = json.dumps(jobs)
+
+            if data != initial:
+                yield f"data: {data}\n\n"
+                initial = data
+
+            await asyncio.sleep(1)
 
 
 job_service = JobService()

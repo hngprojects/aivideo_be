@@ -14,7 +14,7 @@ import io
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.utils.files import upload_file_to_current_dir
-from api.utils.files import upload_file
+from api.utils.files import upload_file, check_file_size, audio_scan
 from api.utils.language_code import LANGUAGE_CODES
 from api.v1.services.ai_tools.translator_service import translate_text
 from api.v1.schemas.translation import TranslationRequest
@@ -156,7 +156,11 @@ async def summarize_podcast(request: PodcastRequest):
     if audio_response.status_code == 200:
         file_like_object = io.BytesIO(audio_response.content)
         file_like_object.filename = "podcast.mp3"
-        file_path = await upload_file_to_current_dir(file_like_object, allowed_extensions=['mp3', 'mp4'], save_extension='mp3')
+        file_path = await upload_file_to_current_dir(
+            file_like_object, 
+            allowed_extensions=['mp3', 'mp4'], 
+            save_extension='mp3',
+        )
         task = generate_podcast_summary_task.delay(file_path)
    
         # Create project with job
@@ -196,6 +200,10 @@ async def summarize_audio(
         upload_folder='audio', 
         save_extension='mp3' 
     )
+    await check_file_size(file)
+    if not await audio_scan(audio_file):
+        raise HTTPException(status_code=400, detail="Audio file scan failed. The file might be corrupted or empty.")
+    
     task_transcribe = transcribe_audio_task.delay(audio_file)
 
 

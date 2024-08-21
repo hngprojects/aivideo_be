@@ -67,7 +67,7 @@ async def get_managed_jobs(
     Raises:
         None: This function does not raise any exceptions directly but may propagate exceptions from the database query or data processing if errors occur.
     """
-    
+
     status = [value.strip() for value in status.split(",")]
     project_type = [value.strip() for value in project_type.split(",")]
 
@@ -93,3 +93,33 @@ async def export_jobs_as_csv(
     response.status_code = 200
 
     return response
+
+
+@job.get("/sse")
+async def get_sse_job_activity(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(user_service.get_current_super_admin),
+):
+    """
+    Retrieve a server-sent event stream for job activity updates.
+    """
+
+    return StreamingResponse(
+        job_service.stream_job_activity(db=db),
+        media_type="text/event-stream",
+    )
+
+
+@job.get("/statistics/sse")
+async def get_sse_job_statistics(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(user_service.get_current_super_admin),
+):
+    """
+    Retrieve a server-sent event stream for job statistics updates.
+    """
+
+    return StreamingResponse(
+        job_service.stream_job_statistics(db=db),
+        media_type="text/event-stream",
+    )

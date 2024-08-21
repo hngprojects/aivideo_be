@@ -1,7 +1,7 @@
 # audio_transcriber.py
 from fastapi import HTTPException, APIRouter
 from api.v1.schemas.ai_tools.audio_transcriber import TranslationRequest
-from api.core.dependencies.celery.tasks.audio_task import translate_text_task
+from api.core.dependencies.celery.tasks.audio_tasks import translate_text_task
 from api.v1.services.job import job_service
 from api.utils.success_response import success_response
 

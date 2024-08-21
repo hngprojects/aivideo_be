@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from typing import List
+from typing import List, Optional
 import json
 from sqlalchemy.orm import Session
 from api.core.dependencies.celery.celery_app import worker
@@ -22,11 +22,11 @@ db: Session = next(get_db())
 @worker.task()
 def generate_talking_avatar_task(
     img_file,
-    audio_file,
     aspect_ratio,
     script: str,
     voice_over,
-    default: bool
+    default: bool,
+    audio_file: Optional[str]=None,
 ):
     # def generate_talking_avatar_task():
     '''Background task to generate talking avatar and save to database'''
