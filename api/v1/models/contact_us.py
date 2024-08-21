@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, ForeignKey
+from sqlalchemy import Column, String
 from api.v1.models.base_model import BaseTableModel
 
 class ContactUs(BaseTableModel):

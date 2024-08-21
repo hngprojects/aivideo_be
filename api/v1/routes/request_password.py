@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from api.v1.schemas.request_password_reset import RequestEmail, ResetPassword
 from api.db.database import get_db as get_session
 from api.v1.services.request_pwd import reset_service
-import logging
 from api.utils.success_response import success_response
 from api.v1.services.user import user_service
 from api.v1.models.user import User

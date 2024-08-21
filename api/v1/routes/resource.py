@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Query
+from fastapi import APIRouter, Depends, status, Query
 from fastapi.encoders import jsonable_encoder
-from typing import Annotated, Optional, Literal
+from typing import Annotated, Optional
 from sqlalchemy.orm import Session
 
 from api.db.database import get_db
@@ -10,7 +10,6 @@ from api.v1.services.user import user_service
 from api.v1.services.resource import resource_service
 from api.v1.schemas.resource import (
     CreateResource,
-    UpdateResource,
     ResourceBase,
     AllResourcesResponse,
 )

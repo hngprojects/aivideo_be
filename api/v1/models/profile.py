@@ -1,7 +1,7 @@
 """ The Profile model
 """
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, func
+from sqlalchemy import Column, String, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from api.v1.models.base_model import BaseTableModel
 

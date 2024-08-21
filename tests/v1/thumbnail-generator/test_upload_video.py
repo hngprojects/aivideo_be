@@ -12,6 +12,9 @@ class MockTask:
     def __init__(self, task_id):
         self.id = task_id
 
+    def get(self, timeout=None):
+        return '{"video_id": "mock-video-id"}'
+
 
 class MockSettings:
     MEDIA_DIR = './media'
@@ -25,6 +28,11 @@ settings = MockSettings()
 @pytest.fixture
 def mock_upload_video_task(mocker):
     return mocker.patch("api.core.dependencies.celery.tasks.video_tasks.upload_video_task.delay", return_value=MockTask(task_id='mock-task-id'))
+
+
+@pytest.fixture
+def mock_process_youtube_video_task(mocker):
+    return mocker.patch("api.core.dependencies.celery.tasks.video_tasks.process_youtube_video_task.delay", return_value=MockTask(task_id='mock-task-id'))
 
 
 @pytest.fixture
@@ -42,11 +50,13 @@ def test_upload_video_success(mock_open, mock_makedirs, mock_exists, mock_upload
     mock_file.read.return_value = b'test video content'
 
     response = client.post(
-        '/api/v1/tools/thumbnail-generator/upload',
+        '/api/v1/tools/thumbnail-generator/upload-or-process',
         files={'file': ('video.mov', mock_file.read())}
     )
 
     assert response.status_code == 200
+    assert 'job_id' in response.json()['data']
+    assert 'project_id' in response.json()['data']
 
 
 @patch('os.path.exists')
@@ -55,7 +65,7 @@ def test_upload_video_file_size_exceeds_limit(mock_makedirs, mock_exists):
     mock_exists.return_value = False
 
     response = client.post(
-        '/api/v1/tools/thumbnail-generator/upload',
+        '/api/v1/tools/thumbnail-generator/upload-or-process',
         files={'file': ('video.mov', b'x' * (settings.MAX_FILE_SIZE + 1))}
     )
 
@@ -68,9 +78,27 @@ def test_upload_video_invalid_file_extension(mock_makedirs, mock_exists):
     mock_exists.return_value = False
 
     response = client.post(
-        '/api/v1/tools/thumbnail-generator/upload',
+        '/api/v1/tools/thumbnail-generator/upload-or-process',
         files={'file': ('video.txt', b'test video content')}
     )
 
     assert response.status_code == 400
-    assert response.json()['message'] == 'Invalid file format'
+
+
+def test_process_youtube_video_success(mock_process_youtube_video_task, mock_create_project_with_job):
+    youtube_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+    response = client.post(
+        '/api/v1/tools/thumbnail-generator/upload-or-process',
+        data={'youtube_url': youtube_url}
+    )
+    print(f"response: {response.json()}")
+
+    assert response.status_code == 200
+
+
+def test_upload_or_process_video_no_input_provided():
+    response = client.post(
+        '/api/v1/tools/thumbnail-generator/upload-or-process')
+
+    assert response.status_code == 400

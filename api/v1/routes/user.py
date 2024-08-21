@@ -1,5 +1,5 @@
-from typing import Annotated, Optional, Literal
-from fastapi import Depends, APIRouter, Request, status, Query, HTTPException
+from typing import Annotated, Optional
+from fastapi import Depends, APIRouter, Request, status, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
@@ -329,7 +329,7 @@ def change_password(
     user_service = UserService()
 
     # Call the service method directly
-    result = user_service.change_password(
+    user_service.change_password(
         old_password=request.old_password,
         new_password=request.new_password,
         confirm_new_password=request.confirm_new_password,
@@ -339,6 +339,5 @@ def change_password(
 
     return success_response(
         status_code=status.HTTP_200_OK,
-        message="Password changed successfully!!",
-        data=result,
+        message="Password changed successfully!!"
     )

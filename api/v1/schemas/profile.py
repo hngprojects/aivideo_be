@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, EmailStr,  validator
-from fastapi import UploadFile, Form
-from typing import Optional, Dict
+from pydantic import BaseModel, Field, EmailStr, validator
+from fastapi import UploadFile
+from typing import Optional
 import re
 from datetime import datetime
 from api.v1.schemas.user import UserBase
@@ -50,9 +50,8 @@ class ProfileCreateUpdate(BaseModel):
         number_length = len(re.sub(r"\D", "", value))  
         if number_length < 10 or number_length > 15:
             raise ValueError("Phone number must be between 10 and 15 digits long.")
-        
-        return value
-        
+
+        return value        
 
     @validator('job_title', pre=True, always=True)
     def job_title_validator(cls, value):
@@ -69,3 +68,4 @@ class ProfileCreateUpdate(BaseModel):
     
     class Config:
         extra = 'allow'
+
