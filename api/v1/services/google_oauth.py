@@ -108,6 +108,7 @@ class GoogleOauthServices(Service):
                 avatar_url=google_response.get("picture"),
             )
             new_user.update_last_login()
+            print(new_user.id)
             profile = Profile(user_id=new_user.id)
             db.add_all([new_user, profile])
             db.commit()
