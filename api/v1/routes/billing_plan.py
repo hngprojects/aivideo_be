@@ -55,8 +55,7 @@ async def get_all_billing_plans(
 @billing_plan.get('/{billing_plan_id}', response_model=CreateBillingPlanResponse)
 async def get_billing_plan(
     billing_plan_id: str,
-    db: Session = Depends(get_db),
-    _: User = Depends(user_service.get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Endpoint to get single billing plan by id

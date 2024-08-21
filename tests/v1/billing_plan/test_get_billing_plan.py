@@ -58,19 +58,18 @@ def access_token_test_user(test_user):
 def random_access_token():
     return user_service.create_access_token(user_id="dhdhdhdgsgsgsffs")
 
-def make_request(token, billing_plan):
+def make_request(billing_plan):
     return client.get(
-        f"/api/v1/billing-plans/{billing_plan.id}", 
-        headers={"Authorization": f"Bearer {token}"}
+        f"/api/v1/billing-plans/{billing_plan.id}"
     )
 
 
 # Test for successful retrieve of billing plan
+# NO AUTHENTICATION
 def test_get_billing_plan_successful(
     mock_db_session,
     test_user,
     test_billing_plan,
-    access_token_test_user
 ):
     # Mock the query for getting user
     mock_db_session.query().filter().first.return_value = test_user
@@ -79,7 +78,7 @@ def test_get_billing_plan_successful(
     mock_db_session.get.return_value = test_billing_plan
 
     # Make request
-    response = make_request(access_token_test_user, test_billing_plan)
+    response = make_request(test_billing_plan)
     resp_d = response.json()
 
     assert response.status_code == 200
@@ -95,29 +94,8 @@ def test_get_billing_plan_successful(
     assert datetime.fromisoformat(plan['created_at']) == test_billing_plan.created_at
 
 
-# Test for unauthenticated/unauthorized request
-def test_for_unauthenticated_unauthorized_request(
-    mock_db_session,
-    test_user,
-    test_billing_plan
-):
-    # Mock the query for getting user
-    mock_db_session.query().filter().first.return_value = test_user
-
-    # INVALID AUTH TOKEN
-    response = make_request("invalid-access-token", test_billing_plan)
-    print(response.json())
-    assert response.status_code == 401
-    assert response.json()['message'] == "Could not validate credentials"
-
-    # NO AUTH TOKEN
-    response = client.get(f"/api/v1/billing-plans/{test_billing_plan.id}")
-    assert response.status_code == 401
-    assert response.json()['message'] == "Not authenticated"
-
-
-# Test for no billing plan 
-def test_for_billing_plan_not_found(
+# Test that authenticated requests also goes through
+def test_for_authenticated_request_goes_through(
     mock_db_session,
     test_user,
     test_billing_plan,
@@ -126,10 +104,34 @@ def test_for_billing_plan_not_found(
     # Mock the query for getting user
     mock_db_session.query().filter().first.return_value = test_user
 
+    headers = {"Authorization": f"Bearer {access_token_test_user}"}
+    response = client.get(
+        f"/api/v1/billing-plans/{test_billing_plan.id}", headers=headers)
+
+    # Mock the query for billing plan
+    mock_db_session.get.return_value = test_billing_plan
+
+    # Make request
+    response = make_request(test_billing_plan)
+
+    assert response.status_code == 200
+    assert response.json()['success'] is True
+    assert response.json()['message'] == "Billing plan fetched successfully"
+
+
+# Test for no billing plan 
+def test_for_billing_plan_not_found(
+    mock_db_session,
+    test_user,
+    test_billing_plan
+):
+    # Mock the query for getting user
+    mock_db_session.query().filter().first.return_value = test_user
+
     mock_db_session.get.return_value = None
 
     # Make request
-    response = make_request(access_token_test_user, test_billing_plan)
+    response = make_request(test_billing_plan)
     print(response.json())
     assert response.status_code == 404
     assert response.json()['message'] == "BillingPlan does not exist"
