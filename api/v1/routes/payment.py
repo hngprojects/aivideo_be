@@ -245,3 +245,56 @@ def get_payment(
         message="Payment fetched successfully",
         data=payment.to_dict()
     )
+
+@payments.post("/flutterwave/webhook")
+async def flutterwave_webhook(
+    req: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Flutterwave webhook for event listening
+    """
+
+    payment = await req.body()
+
+    # Handle the event
+    if payload.event == "charge.completed":
+        amount = payment['data']["amount"]
+        user = payment_service.fetch_by_params(
+            db,
+            {"email": payment['data']['email']}
+            )
+
+        payload = {
+            "user_id": user.id,
+            "transaction_id": payment['data']['id'],
+            "amount": amount,
+            "currency": payment['data']["currency"],
+            "status": "completed",
+            "method": "flutterwave",
+        }
+
+        # Record payment
+        payment_service.create(db, payload)
+
+        billing_plan_id = response['data']['tx_ref']
+
+        # create a user subscription plan
+        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(amount, amount)
+        user_subscription_payload = {
+            "start_date": start_date,
+            "billing_plan_id": billing_plan_id,
+            "user_id": user.id,
+            "end_date": end_date
+        }
+        user_subscription_service.create(db, user_subscription_payload)
+
+        return success_response(
+            status_code=status.HTTP_200_OK,
+            message="Payment success"
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail='Payment not found'
+    )
