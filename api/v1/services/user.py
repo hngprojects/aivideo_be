@@ -712,6 +712,9 @@ class UserService(Service):
                 detail="You do not have permission to access this resource",
             )
         return True
+    
+    def get_fullname(self, user_):
+        return f"{user_.first_name} {user_.last_name}"
 
 
 user_service = UserService()
