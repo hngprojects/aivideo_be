@@ -69,7 +69,7 @@ def test_upload_video_file_size_exceeds_limit(mock_makedirs, mock_exists):
         files={'file': ('video.mov', b'x' * (settings.MAX_FILE_SIZE + 1))}
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 413
 
 
 @patch('os.path.exists')
