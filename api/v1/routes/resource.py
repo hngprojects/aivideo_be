@@ -91,3 +91,24 @@ async def get_public_resources(
 
     return resource_service.fetch_all_public(db, page, per_page)
 
+@resource.get("/search", status_code=status.HTTP_200_OK, response_model=AllResourcesResponse)
+async def search_resources(
+    keywords: str,
+    db: Session = Depends(get_db),
+    page: int = 1,
+    per_page: int = 10,
+):
+    """
+    Search for resources by keywords.
+
+    Args:
+        keywords: Search terms provided by the user.
+        db: Database session object.
+        page: Page number for pagination.
+        per_page: Max number of resources per page.
+    
+    Returns:
+        Search results in a paginated format.
+    """
+    search_results = resource_service.search_resources(db, keywords, page, per_page)
+    return search_results

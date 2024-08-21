@@ -1,5 +1,5 @@
 from typing import Any, Optional
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 from fastapi import status
 
 from sqlalchemy.orm import Session
@@ -228,5 +228,47 @@ class ResourceService(Service):
 
         resource.is_published = False
         db.commit()
+
+    def search_resources(
+        self, db: Session, keywords: str, page: int, per_page: int
+    ):
+        """Search resources by keywords
+
+        Args:
+            db: database Session object
+            keywords: the search keywords provided by the user
+            page: page number for pagination
+            per_page: max number of resources in a page
+
+        Returns:
+            AllResourcesResponse: Pydantic model containing the search results
+        """
+        per_page = min(per_page, 10)
+
+        query = db.query(Resource).filter(
+            or_(
+                Resource.title.ilike(f"%{keywords}%"),
+                Resource.content.ilike(f"%{keywords}%")
+            )
+        )
+
+        total_resources = query.count()
+        total_pages = (total_resources // per_page) + (total_resources % per_page > 0)
+
+        search_results = (
+            query.order_by(desc(Resource.created_at))
+            .limit(per_page)
+            .offset((page - 1) * per_page)
+            .all()
+        )
+
+        return self.all_resources_response(
+            resources=search_results,
+            total_resources=total_resources,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+        )
+
 
 resource_service = ResourceService()
