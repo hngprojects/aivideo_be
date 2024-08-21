@@ -143,3 +143,19 @@ async def update_resources(
         data = jsonable_encoder(ResourceBase.model_validate(resource))
     )
 
+@resource.delete('/{resource_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_resources(
+    resource_id : str,
+    db : Annotated[Session, Depends(get_db)],
+    current_user : Annotated[User, Depends(user_service.get_current_super_admin)]
+    ) :
+    """
+    Route to soft delete Resources
+
+    Args:
+        resource_id (str): used as an identifier for the resource
+        db (Annotated[Session, Depends): database dependency
+        current_user (Annotated[User, Depends): Admin User dependency
+    """
+    return resource_service.delete(db=db, Resource_id=resource_id)
+    
