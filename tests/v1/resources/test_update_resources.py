@@ -38,8 +38,13 @@ client = TestClient(app)
 def test_update_user(db_session_mock, mock_user):
     app.dependency_overrides[user_service.get_current_super_admin] = mock_user
     app.dependency_overrides[get_db] = db_session_mock
-    req_body = {'title' : 'New test title', 'content':'New content'}
+    body = {
+        "title" : "I love titles"
+        }
+ 
     resource = mock_resource()
     db_session_mock.get.return_value = resource
-    response = client.put(f'/api/v1/resources/{resource.id}', json=req_body)
+    response = client.patch(f'/api/v1/resources/{resource.id}',
+                            json=body)
+    print(response.json())
     assert response.status_code == 200

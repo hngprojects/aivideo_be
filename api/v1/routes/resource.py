@@ -114,12 +114,12 @@ async def search_resources(
     search_results = resource_service.search_resources(db, keywords, page, per_page)
     return search_results
 
-@resource.put('/{resource_id}',response_model=success_response, status_code=status.HTTP_200_OK)
+@resource.patch('/{resource_id}',response_model=success_response, status_code=status.HTTP_200_OK)
 async def update_resources(
     schema: UpdateResource,
     resource_id : str,
     db: Annotated[Session, Depends(get_db)],
-    current_user = Annotated[User, Depends(user_service.get_current_super_admin)],
+    current_user : Annotated[User, Depends(user_service.get_current_super_admin)],
     ):
     """
     Route to Update resources
