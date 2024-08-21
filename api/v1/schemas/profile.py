@@ -51,8 +51,7 @@ class ProfileCreateUpdate(BaseModel):
         if number_length < 10 or number_length > 15:
             raise ValueError("Phone number must be between 10 and 15 digits long.")
 
-        return value
-        
+        return value        
 
     @validator('job_title', pre=True, always=True)
     def job_title_validator(cls, value):
@@ -69,3 +68,4 @@ class ProfileCreateUpdate(BaseModel):
     
     class Config:
         extra = 'allow'
+
