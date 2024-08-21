@@ -95,7 +95,7 @@ async def export_jobs_as_csv(
     return response
 
 
-@job.get("activity/sse", summary="Get job activity via SSE")
+@job.get("/activity/sse", summary="Get job activity via SSE")
 async def get_sse_job_activity(db: Session = Depends(get_db)):
     """
     Retrieve a server-sent event stream for job activity updates.
