@@ -11,7 +11,6 @@ worker = Celery(
         'api.core.dependencies.celery.tasks.summary_tasks',
         'api.core.dependencies.celery.tasks.audio_tasks',
         'api.core.dependencies.celery.tasks.video_summary_tasks',
-        'api.core.dependencies.celery.tasks.audio_task',
         'api.core.dependencies.celery.tasks.video_tasks',
         'api.core.dependencies.celery.tasks.video_subtitles_tasks',
     ]

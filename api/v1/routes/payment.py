@@ -1,5 +1,6 @@
 from fastapi import Depends, APIRouter, status, HTTPException, Request, Query
 from sqlalchemy.orm import Session
+from uuid_extensions import uuid7
 from typing import Annotated
 import requests
 import stripe
@@ -245,7 +246,59 @@ def get_payment(
     )
 
 
-@payments.get("current-user", 
+@payments.post("/flutterwave/webhook")
+async def flutterwave_webhook(
+    req: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Flutterwave webhook for event listening
+    """
+
+    payment = await req.body()
+
+    # Handle the event
+    if payload.event == "charge.completed":
+        amount = payment['data']["amount"]
+        user = user_service.fetch_by_params(
+            db, {"email": payment['data']['email']})
+
+        payload = {
+            "user_id": user.id,
+            "transaction_id": payment['data']['id'],
+            "amount": amount,
+            "currency": payment['data']["currency"],
+            "status": "completed",
+            "method": "flutterwave",
+        }
+
+        # Record payment
+        payment_service.create(db, payload)
+
+        billing_plan_id = payment['data']['tx_ref']
+
+        # create a user subscription plan
+        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(amount, amount)
+        user_subscription_payload = {
+            "start_date": start_date,
+            "billing_plan_id": billing_plan_id,
+            "user_id": user.id,
+            "end_date": end_date
+        }
+        user_subscription_service.create(db, user_subscription_payload)
+
+        return success_response(
+            status_code=status.HTTP_200_OK,
+            message="Payment success"
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail='Payment not found'
+    )
+
+
+@payments.get("/current-user", 
               status_code=status.HTTP_200_OK, response_model=PaymentListResponse
 )
 def get_all_payments_for_current_user(
@@ -261,15 +314,15 @@ def get_all_payments_for_current_user(
         - limit: Number of payment per page (default: 10, minimum: 1)
         - page: Page number (starts from 1)
     """
-    # GET offset from page and limit
+    # get offset from page and limit
     offset = (page - 1) * limit
 
-    # FETCH all payments for current user
+    # fetch all payments for current user
     payments_l = payment_service.fetch_all_for_user(
         db, current_user, offset, limit,
     )
 
-    # RETURN success and data
+    # return success and data
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Current user payments fetched successfully",

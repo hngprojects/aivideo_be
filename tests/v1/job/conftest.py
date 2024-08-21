@@ -129,3 +129,21 @@ def mock_get_job_statistics():
 
         get_job_statistics.return_value = response
         yield get_job_statistics
+
+
+@pytest.fixture
+def mock_job_activity():
+    with patch("api.v1.services.job.job_service.stream_job_activity") as mock:
+        response = 'data: {"job_id": "123-xxx", "status": "PENDING"}'
+
+        mock.return_value = response
+        yield mock
+
+
+@pytest.fixture
+def mock_job_statistics():
+    with patch("api.v1.services.job.job_service.stream_job_statistics") as mock:
+        response = 'data: {"total_tasks": 10, "failed_tasks": 0, "in_progress_tasks": 0, "pending_tasks": 8, "completed_tasks": 1,"created_in_last_hour": 1, "active_in_last_hour": 0,"pending_in_last_hour": 0,"completed_in_last_hour": 1}'
+
+        mock.return_value = response
+        yield mock

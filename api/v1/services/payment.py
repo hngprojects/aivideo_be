@@ -57,7 +57,7 @@ class PaymentService:
         return payment
 
     def fetch_by_params(self, db: Session, query_params: dict):
-        """Fetches a payment one or more query params other than the id"""
+        """Fetches a payment by one or more query params"""
         payment = get_model_by_params(db, Payment, query_params)
         return payment
 

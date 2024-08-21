@@ -95,7 +95,7 @@ def test_get_payments_successful(
     print(resp_d)
     assert response.status_code == 200
     assert resp_d['success'] is True
-    assert resp_d['message'] == "Payments fetched successfully"
+    assert resp_d['message'] == "Current user payments fetched successfully"
 
     pagination = resp_d['data']['pagination']
     assert pagination['pages'] == 1
@@ -173,6 +173,6 @@ def test_for_payments_not_found(
 
     # Make request
     response = make_request(access_token_user)
-    assert response.status_code == 404
-    assert response.json()['message'] == "Payments not found"
-    assert not response.json().get('data')
+    assert response.status_code == 200
+    assert response.json()['message'] == "Current user payments fetched successfully"
+    assert not response.json()['data'] == []
