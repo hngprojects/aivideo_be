@@ -25,6 +25,8 @@ class ViewUserSubReturnData(CreateUserSubResponse):
     is_active: bool
     user_name: str
     plan_name: str
+    price: float
+    currency: str
 
 
 class UserSubscriptionListResponse(ResponseBase):
