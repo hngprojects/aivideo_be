@@ -1,19 +1,14 @@
-from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
-from api.v1.services.job import JobService
 from main import app
 
 client = TestClient(app)
 endpoint = "/api/v1/jobs/sse"
 
 
-def test_sse_job_activity(db_session_mock, access_token, mock_job_activity):
+def test_sse_job_activity(db_session_mock, mock_job_activity):
     response = client.get(
         endpoint,
-        headers={
-            "Content-Type": "text/event-stream",
-            "authorization": f"Bearer {access_token}",
-        },
+        headers={"Content-Type": "text/event-stream"},
     )
 
     assert response.status_code == 200
