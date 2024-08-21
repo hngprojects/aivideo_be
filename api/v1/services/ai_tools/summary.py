@@ -22,7 +22,7 @@ from api.utils.files import delete_file
 from io import BytesIO
 from fastapi import HTTPException
 import json
-import fitz
+# import fitz
 
 class SummaryService():  
     def __init__(self):
