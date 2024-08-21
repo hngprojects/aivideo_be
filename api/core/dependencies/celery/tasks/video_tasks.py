@@ -26,7 +26,7 @@ def generate_talking_avatar_task(
     script: str,
     voice_over,
     default: bool,
-    audio_file: Optional[str]=None,
+    audio_file: Optional[str] = None,
 ):
     # def generate_talking_avatar_task():
     '''Background task to generate talking avatar and save to database'''
@@ -120,7 +120,7 @@ def process_youtube_video_task(youtube_url: str, base_url: str):
 
     if video_size_mb > max_size_mb:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"The video exceeds the maximum allowed size of {max_size_mb} MB."
         )
 
