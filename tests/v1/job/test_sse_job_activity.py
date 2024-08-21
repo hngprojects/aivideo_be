@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from main import app
 
 client = TestClient(app)
-endpoint = "/api/v1/jobs/sse"
+endpoint = "/api/v1/jobs/activity/sse"
 
 
 def test_sse_job_activity(db_session_mock, mock_job_activity):
