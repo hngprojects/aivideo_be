@@ -54,7 +54,7 @@ def test_upload_video_success(mock_open, mock_makedirs, mock_exists, mock_upload
         files={'file': ('video.mov', mock_file.read())}
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     assert 'job_id' in response.json()['data']
     assert 'project_id' in response.json()['data']
 
@@ -69,7 +69,7 @@ def test_upload_video_file_size_exceeds_limit(mock_makedirs, mock_exists):
         files={'file': ('video.mov', b'x' * (settings.MAX_FILE_SIZE + 1))}
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 413
 
 
 @patch('os.path.exists')
@@ -94,7 +94,7 @@ def test_process_youtube_video_success(mock_process_youtube_video_task, mock_cre
     )
     print(f"response: {response.json()}")
 
-    assert response.status_code == 200
+    assert response.status_code == 202
 
 
 def test_upload_or_process_video_no_input_provided():

@@ -14,7 +14,7 @@ import io
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.utils.files import upload_file_to_current_dir
-from api.utils.files import upload_file
+from api.utils.files import upload_file, check_file_size, audio_scan
 from api.utils.language_code import LANGUAGE_CODES
 from api.v1.services.ai_tools.translator_service import translate_text
 from api.v1.schemas.translation import TranslationRequest
@@ -200,16 +200,10 @@ async def summarize_audio(
         upload_folder='audio', 
         save_extension='mp3' 
     )
-    await file.seek(0)
-    file_content = await file.read()
-    file_size_mb = len(file_content) / (1024 * 1024)
+    await check_file_size(file)
+    if not await audio_scan(audio_file):
+        raise HTTPException(status_code=400, detail="Audio file scan failed. The file might be corrupted or empty.")
     
-    max_file_size_mb = 10
-    if file_size_mb > max_file_size_mb:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File too large. Please upload a file smaller than 10 MB."
-        )
     task_transcribe = transcribe_audio_task.delay(audio_file)
 
 
