@@ -264,7 +264,6 @@ async def flutterwave_webhook(
             message="Payment success"
         )
 
-    return success_response(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        message="Payment failed"
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST
     )
