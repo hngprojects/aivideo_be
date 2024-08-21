@@ -8,7 +8,7 @@ import openai
 import requests
 
 from api.utils.files import delete_file
-from api.v1.services.ai_tools.general_video_service import CURRENT_DIRECTORY, video_service
+from api.v1.services.ai_tools.general_video_service import video_service
 
 
 class TalkingAvatarService:
@@ -69,11 +69,11 @@ class TalkingAvatarService:
 		os.makedirs(video_dir, exist_ok=True)
 
 		# Download video file to the current directory
-		initial_save_path = os.path.join(CURRENT_DIRECTORY, f'video-{str(uuid4())}.mp4')
+		initial_save_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4())}.mp4')
 		video_service.download_file(url, initial_save_path)
 
 		if audio_file:
-			video_audio_path = os.path.join(CURRENT_DIRECTORY, f'video-{str(uuid4())}.mp4')
+			video_audio_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4())}.mp4')
 			# Add background audio to the file
 			video_service.add_background_audio(
 				video_path=initial_save_path,
@@ -97,7 +97,7 @@ class TalkingAvatarService:
 		delete_file(audio)
 
 		# Compress video
-		final_save_path = self.compress_video(input_file=final_save_path, bitrate=500) 
+		# final_save_path = video_service.compress_video(input_file=final_save_path, bitrate=500)
 		
 		save_url = f'{settings.APP_URL}/{final_save_path}'
 		return {
