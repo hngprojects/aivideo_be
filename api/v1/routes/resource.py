@@ -12,6 +12,7 @@ from api.v1.schemas.resource import (
     CreateResource,
     ResourceBase,
     AllResourcesResponse,
+    UpdateResource
 )
 import logging
 
@@ -112,3 +113,33 @@ async def search_resources(
     """
     search_results = resource_service.search_resources(db, keywords, page, per_page)
     return search_results
+
+@resource.put('/{resource_id}',response_model=success_response, status_code=status.HTTP_200_OK)
+async def update_resources(
+    schema: UpdateResource,
+    resource_id : str,
+    db: Annotated[Session, Depends(get_db)],
+    current_user = Annotated[User, Depends(user_service.get_current_super_admin)],
+    ):
+    """
+    Route to Update resources
+
+    Args:
+        schema (UpdateResource): Schema for the resource model
+        resource_id (str): id for the resource about to be updated
+        db (Annotated[Session, Depends): database dependency
+        current_user: dependency to verify whether the supposed user is an admin. Defaults to Annotated[User, Depends(user_service.get_current_super_admin)].
+
+    Returns:
+        dict: {"status":200,
+               "message":Resource Updated Successfully,
+               "data" : {}
+               }
+    """
+    resource = resource_service.update(db=db, resource_id=resource_id, schema=schema)
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message='Resource updated Succesfully',
+        data = jsonable_encoder(ResourceBase.model_validate(resource))
+    )
+
