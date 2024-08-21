@@ -63,7 +63,7 @@ def test_enqueue_summarize_batch_job(mock_upload_files, mock_generate_video_summ
 
     # Send a POST request to the summarize_batch endpoint
     response = client.post(
-        "/api/v1/tools/youtube_summarizer/summarize_batch", files=files)
+        "/api/v1/tools/summary/video_batch", files=files)
 
     # Assertions
     assert response.status_code == 202

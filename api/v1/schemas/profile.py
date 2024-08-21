@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr, field_validator
+from pydantic import BaseModel, Field, EmailStr, validator
 from fastapi import UploadFile
 from typing import Optional
 import re
@@ -35,42 +35,37 @@ class ProfileCreateUpdate(BaseModel):
     avatar_url: Optional[str] = None
     avatar: Optional[UploadFile] = None
     
-    # Validator for phone number
-    @field_validator('phone_number')
-    def phone_validator(cls, value):
-        # Ensure phone number contains only digits and may start with '+'
+    
+    @validator('phone_number', always=True)
+    def phone_number_validator(cls, value):
+        if value is None:
+            return value
+        
+        if not isinstance(value, str):
+            raise ValueError("Phone number must be a string.")
+        
         if not re.fullmatch(r"^\+?[0-9]+$", value):
             raise ValueError("Phone number must contain only digits and may start with '+'.")
         
-        # Validate length of phone number
         number_length = len(re.sub(r"\D", "", value))  
         if number_length < 10 or number_length > 15:
             raise ValueError("Phone number must be between 10 and 15 digits long.")
-        
-        return value
 
-    @field_validator('job_title')
+        return value
+        
+
+    @validator('job_title', pre=True, always=True)
     def job_title_validator(cls, value):
         if value is None:
-            return value  
+            return value 
+        
         if not isinstance(value, str):
             raise ValueError("Job title must be a string.")
+        
         if not value.replace(" ", "").isalpha():
             raise ValueError("Job title must contain only alphabetic characters.")
-        return value
         
+        return value        
     
     class Config:
         extra = 'allow'
-        
-        
-class ProfileUpdateForm(BaseModel):
-    username: Optional[str] = Field(None, max_length=50)
-    pronouns: Optional[str] = Field(None, max_length=50)
-    job_title: Optional[str] = Field(None, max_length=100)
-    social: Optional[str] = None
-    bio: Optional[str] = Field(None)
-    social: Optional[str] = None
-    phone_number: Optional[str] = Field(None, pattern=r'^\+?[1-9]\d{1,14}$')
-    email: Optional[EmailStr] = None
-    avatar_url: Optional[str] = None
