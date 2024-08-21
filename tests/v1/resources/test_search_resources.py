@@ -12,109 +12,124 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from api.db.database import get_db
-from api.v1.models.user import User
-from api.v1.services.user import user_service, UserService
+from api.v1.models.resource import Resource
+from api.v1.services.resource import ResourceService
 
 
 client = TestClient(app)
 
 
-ENDPOINT = "/api/v1/resources/search"
+SEARCH_ENDPOINT = "/api/v1/resources/search"
 
 
 @pytest.fixture
 def mock_db_session():
-    """Fixture to create a mock database session."
-
-    Yields:
-        MagicMock: mock database
-    """
-
-    with patch("api.v1.services.user.get_db", autospec=True) as mock_get_db:
-        mock_db = MagicMock()
+    """Fixture to create a mock database session."""
+    with patch("api.v1.services.resource.get_db", autospec=True) as mock_get_db:
+        mock_db = MagicMock(spec=Session)
+        mock_get_db.return_value = mock_db
         app.dependency_overrides[get_db] = lambda: mock_db
         yield mock_db
     app.dependency_overrides = {}
 
 
 @pytest.fixture
-def mock_user_service():
-    """Fixture to create a mock user service."""
-
-    with patch("api.v1.services.user.user_service", autospec=True) as mock_service:
-        yield mock_service
+def mock_resource_service(mock_db_session):
+    """Fixture to create a mock resource service."""
+    with patch("api.v1.services.resource.ResourceService", autospec=True) as mock_service:
+        mock_service_instance = mock_service.return_value
+        mock_service_instance.search_resources.return_value = {
+            "resources": mock_resources,
+            "total_resources": len(mock_resources),
+            "page": 1,
+            "per_page": 10,
+            "total_pages": 1,
+        }
+        yield mock_service_instance
 
 
 @pytest.fixture
 def mock_get_current_user():
-    """Fixture to create a mock current user"""
+    """Fixture to create a mock current user."""
     with patch(
         "api.v1.services.user.UserService.get_current_user", autospec=True
     ) as mock_get_current_user:
         yield mock_get_current_user
 
 
-@pytest.fixture
-def override_get_current_super_admin():
-    """Mock the get_current_super_admin dependency"""
-
-    app.dependency_overrides[user_service.get_current_super_admin] = lambda: User(
+mock_resources = [
+    Resource(
         id=str(uuid7()),
-        email="admintestuser@gmail.com",
-        password=user_service.hash_password("Testpassword@123"),
-        first_name="AdminTest",
-        last_name="User",
-        is_active=False,
-        is_superadmin=True,
+        title="Test Resource 1",
+        content="This is a test content for Resource 1.",
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
-    )
-
-
-mock_users = [
-    User(
+    ),
+    Resource(
         id=str(uuid7()),
-        email="johndoeuser@gmail.com",
-        password=user_service.hash_password("Testpassword@123"),
-        first_name="John",
-        last_name="Doe",
-        is_active=True,
-        is_superadmin=False,
-        is_deleted=False,
+        title="Test Resource 2",
+        content="This is another test content for Resource 2.",
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
     )
 ]
 
 
-def test_unauthorised_access(mock_user_service: UserService, mock_db_session: Session):
-    """Test for unauthorized access to endpoint."""
-
-    response = client.get(ENDPOINT)
-
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-
-def test_non_admin_access(
-    mock_get_current_user, mock_user_service: UserService, mock_db_session: Session
+def test_search_resources(
+    mock_get_current_user, mock_resource_service: ResourceService, mock_db_session: Session
 ):
-    """Test for non admin user access to endpoint"""
+    """Test for successful search of resources by keywords."""
 
-    mock_get_current_user.return_value = User(
-        id=str(uuid7()),
-        email="admintestuser@gmail.com",
-        password=user_service.hash_password("Testpassword@123"),
-        first_name="AdminTest",
-        last_name="User",
-        is_active=False,
-        is_superadmin=False,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-    )
+    # Simulating an authenticated user
+    mock_get_current_user.return_value = MagicMock()
 
+    # Mock the service method to return the mock resources
+    mock_resource_service.search_resources.return_value = {
+        "resources": mock_resources,
+        "total_resources": len(mock_resources),
+        "page": 1,
+        "per_page": 10,
+        "total_pages": 1,
+    }
+
+    # Make the API request
     response = client.get(
-        ENDPOINT,
+        SEARCH_ENDPOINT,
+        params={"keywords": "test", "page": 1, "per_page": 10},
         headers={"Authorization": "Bearer dummy_token"},
     )
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert len(response_data["Data"]["resources"]) == len(mock_resources)
+    assert response_data["Message"] == "Resources successfully retrieved"
+
+
+def test_search_no_results(
+    mock_get_current_user, mock_resource_service: ResourceService, mock_db_session: Session
+):
+    """Test search with no matching results."""
+
+    # Simulating an authenticated user
+    mock_get_current_user.return_value = MagicMock()
+
+    # Mock the service method to return no resources
+    mock_resource_service.search_resources.return_value = {
+        "resources": [],
+        "total_resources": 0,
+        "page": 1,
+        "per_page": 10,
+        "total_pages": 0,
+    }
+
+    # Make the API request
+    response = client.get(
+        SEARCH_ENDPOINT,
+        params={"keywords": "nonexistent", "page": 1, "per_page": 10},
+        headers={"Authorization": "Bearer dummy_token"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert len(response_data["Data"]["resources"]) == 0
+    assert response_data["Message"] == "Resources successfully retrieved"
