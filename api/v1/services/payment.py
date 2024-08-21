@@ -65,10 +65,12 @@ class PaymentService:
             self, db: Session, user: User, offset: int = 0, limit: int = 0):
         """Fetches all payments for/by a user"""
 
-        payments = self.fetch_all(
-            db, offset=offset, limit=limit, 
-            query_params={"user_id": user.id}
-        )
+        query = db.query(Payment).filter(Payment.user_id == user.id)
+
+        if limit and offset:
+            payments = query.offset(offset).limit(limit).all()
+        else:
+            payments = query.all()
 
         return payments
     

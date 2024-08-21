@@ -88,7 +88,7 @@ def test_get_payments_successful(
     # TEST A SINGLE PRODUCT FOR 1-PAGE RESULT #
 
     # Mock the query for payments
-    mock_db_session.query().all.return_value = [test_payment]
+    mock_db_session.query().filter().all.return_value = [test_payment]
 
     # Make request
     response = make_request(access_token_user)
@@ -122,7 +122,7 @@ def test_get_payments_successful(
 
     # Mock the query for payments, this time for 5 payments
     five_payments = [test_payment, test_payment, test_payment, test_payment, test_payment]
-    mock_db_session.query().all.return_value = five_payments
+    mock_db_session.query().filter().all.return_value = five_payments
 
     # Make request
     # Make request, with limit set to 2, to get 3 pages
@@ -136,10 +136,6 @@ def test_get_payments_successful(
     assert resp_d['message'] == "Current user payments fetched successfully"
 
     pagination = resp_d['data']['pagination']
-    # assert pagination['pages'] == 1
-    # assert pagination['limit'] == 10
-    # assert pagination['offset'] == 0
-    # assert pagination['total_items'] == 5
     assert pagination['pages'] == 3
     assert pagination['limit'] == 2
     assert pagination['offset'] == 0
@@ -177,7 +173,7 @@ def test_for_payments_not_found(
     # Mock the query for getting user
     mock_db_session.query().filter().first.return_value = test_user
 
-    mock_db_session.query().all.return_value = []
+    mock_db_session.query().filter().all.return_value = []
 
     # Make request
     response = make_request(access_token_user)
