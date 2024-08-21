@@ -38,7 +38,7 @@ email_templates = Jinja2Templates(directory='api/core/dependencies/email/templat
 MEDIA_DIR = './media'
 os.makedirs(MEDIA_DIR, exist_ok=True)
 
-TEMP_DIR = './tmp'
+TEMP_DIR = './tmp/media'
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 # Load up media static files
