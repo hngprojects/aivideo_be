@@ -60,6 +60,8 @@ class UserSubscriptionService:
                 {
                     **user_sub.to_dict(),
                     "is_active": user_sub.is_active(),
+                    "price": user_sub.billing_plan.price,
+                    "currency": user_sub.billing_plan.currency,
                     "plan_name": user_sub.billing_plan.plan_name,
                     "user_name": user_service.get_fullname(user_sub.user)
                 } 
