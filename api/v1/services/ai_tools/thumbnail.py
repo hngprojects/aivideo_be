@@ -3,9 +3,10 @@ import uuid
 import random
 from fastapi import HTTPException, status
 import subprocess
+from api.utils.files import delete_file
 from api.utils.settings import settings
 from urllib.parse import urljoin
-from api.v1.services.ai_tools.talking_avatar import TalkingAvatarService
+from api.v1.services.ai_tools.general_video_service import GeneralVideoService
 
 
 async def generate_thumbnails_service(video_id: str, base_url: str, aspect_ratio: str, timestamp: float = None):
@@ -37,7 +38,7 @@ async def generate_thumbnails_service(video_id: str, base_url: str, aspect_ratio
 
     thumbnail_urls = []
 
-    aspect_ratio_service = TalkingAvatarService()
+    aspect_ratio_service = GeneralVideoService()
     aspect_ratio_dimensions = aspect_ratio_service.set_aspect_ratio(
         aspect_ratio)
 
@@ -106,6 +107,9 @@ async def generate_thumbnails_service(video_id: str, base_url: str, aspect_ratio
             thumbnail_url = urljoin(
                 base_url, f"/media/downloads/thumbnails/{os.path.basename(output_path)}")
             thumbnail_urls.append(thumbnail_url)
+
+    if video_path and os.path.isfile(video_path):
+        delete_file(video_path)
 
     return thumbnail_urls
 
