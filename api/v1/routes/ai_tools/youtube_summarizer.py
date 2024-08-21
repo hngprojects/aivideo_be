@@ -32,17 +32,17 @@ async def enqueue_summarize_batch_job(
     uploaded_files = await upload_files(
         files,
         allowed_extensions=[
-            'mp4',
-            'avi',
-            'mkv',
-            'mov',
-            'wmv',
-            'flv',
-            'webm',
-            'm4v',
-            '3gp',
-            'mpeg',
-            'mpg'
+            '.mp4',
+            '.avi',
+            '.mkv',
+            '.mov',
+            '.wmv',
+            '.flv',
+            '.webm',
+            '.m4v',
+            '.3gp',
+            '.mpeg',
+            '.mpg'
         ],
         upload_folder=FILE_DIRECTORY,
         max_file_size=50 * 1024 * 1024,
