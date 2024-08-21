@@ -277,6 +277,18 @@ async def flutterwave_webhook(
         # Record payment
         payment_service.create(db, payload)
 
+        billing_plan_id = response['data']['tx_ref']
+
+        # create a user subscription plan
+        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(amount, amount)
+        user_subscription_payload = {
+            "start_date": start_date,
+            "billing_plan_id": billing_plan_id,
+            "user_id": user.id,
+            "end_date": end_date
+        }
+        user_subscription_service.create(db, user_subscription_payload)
+
         return success_response(
             status_code=status.HTTP_200_OK,
             message="Payment success"
