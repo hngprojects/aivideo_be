@@ -11,6 +11,7 @@ from api.v1.services.job import job_service
 
 background_router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
+
 async def event_generator(job_id: str, db: Session):
     '''Generates events for SSE'''
 
@@ -26,22 +27,33 @@ async def event_generator(job_id: str, db: Session):
             db.commit()
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=500, detail="Failed to update project status")
-        
+            raise HTTPException(
+                status_code=500, detail="Failed to update project status")
+
         job_service.update_job(job_id, status.capitalize())
 
         event_name = 'other'
-        
+
         if status == 'FAILURE':
             # Safely convert task_result.info to a string
-            result = str(task_result.info) if task_result.info else "Unknown error"
+            result = str(
+                task_result.info) if task_result.info else "Unknown error"
             event_name = 'failure'
             job_service.update_job(job_id, 'Failed', result)
 
             # Use json.loads on the result as it is already a stringified json
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
             break
-        
+
+        elif status == 'PROGRESS':
+            result = task_result.result
+            print(task_result.info)
+            event_name = 'progress'
+            job_service.update_job(job_id, 'Progress', json.dumps(result))
+
+            yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
+            await asyncio.sleep(1)
+
         elif status == 'SUCCESS':
             result = task_result.result
             event_name = 'success'
@@ -54,13 +66,14 @@ async def event_generator(job_id: str, db: Session):
                 db.commit()
             except Exception as e:
                 db.rollback()
-                raise HTTPException(status_code=500, detail="Failed to update project status")
+                raise HTTPException(
+                    status_code=500, detail="Failed to update project status")
             finally:
                 db.close()
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": json.loads(result)})}\n\n'
             break
-        
+
         yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
         await asyncio.sleep(1)  # Delay between status checks
 
@@ -75,17 +88,27 @@ async def event_generator_for_job(job_id: str):
         result = None
         job_service.update_job(job_id, status.capitalize())
         event_name = 'other'
-        
+
         if status == 'FAILURE':
             # Safely convert task_result.info to a string
-            result = str(task_result.info) if task_result.info else "Unknown error"
+            result = str(
+                task_result.info) if task_result.info else "Unknown error"
             event_name = 'failure'
             job_service.update_job(job_id, 'Failed', result)
 
             # Use json.loads on the result as it is already a stringified json
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
             break
-        
+
+        elif status == 'PROGRESS':
+            result = task_result.result
+            print(task_result.info)
+            event_name = 'progress'
+            job_service.update_job(job_id, 'Progress', json.dumps(result))
+
+            yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
+            await asyncio.sleep(1)
+
         elif status == 'SUCCESS':
             result = task_result.result
             event_name = 'success'
@@ -93,10 +116,9 @@ async def event_generator_for_job(job_id: str):
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": json.loads(result)})}\n\n'
             break
-        
+
         yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
         await asyncio.sleep(1)  # Delay between status checks
-
 
 
 @background_router.get("/{job_id}/sse/progress")
@@ -111,7 +133,8 @@ async def send_job_status_updates_over_sse(
     '''
 
     try:
-        event_stream = event_generator(job_id, db) if save_project else event_generator_for_job(job_id)
+        event_stream = event_generator(
+            job_id, db) if save_project else event_generator_for_job(job_id)
         return StreamingResponse(event_stream, media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
