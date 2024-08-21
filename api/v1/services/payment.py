@@ -1,6 +1,5 @@
 from fastapi import HTTPException, status
 import stripe.error
-from api.v1.models.payment import Payment
 from sqlalchemy.orm import Session
 from typing import Any, Optional
 from decimal import Decimal
@@ -12,6 +11,7 @@ from api.v1.models import User, BillingPlan
 from api.utils.pagination import get_pagination_details
 from api.utils.db_validators import check_model_existence, get_model_or_none, get_model_by_params
 from api.utils.settings import settings
+
 
 stripe.api_key = settings.STRIPE_SECRET
 
@@ -57,7 +57,7 @@ class PaymentService:
         return payment
 
     def fetch_by_params(self, db: Session, query_params: dict):
-        """Fetches a payment one or more query params other than the id"""
+        """Fetches a payment by one or more query params"""
         payment = get_model_by_params(db, Payment, query_params)
         return payment
 
@@ -65,10 +65,12 @@ class PaymentService:
             self, db: Session, user: User, offset: int = 0, limit: int = 0):
         """Fetches all payments for/by a user"""
 
-        payments = self.fetch_all(
-            db, offset=offset, limit=limit, 
-            query_params={"user_id": user.id}
-        )
+        query = db.query(Payment).filter(Payment.user_id == user.id)
+
+        if limit and offset:
+            payments = query.offset(offset).limit(limit).all()
+        else:
+            payments = query.all()
 
         return payments
     

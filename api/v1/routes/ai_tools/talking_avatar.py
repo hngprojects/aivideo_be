@@ -18,7 +18,7 @@ video_router = APIRouter(prefix="/tools/video", tags=["Tools"])
 
 @video_router.post('/talking-head/image-upload', status_code=202, response_model=success_response)
 async def talking_head_image_upload(
-    script: str = Form(...),
+    script: str = Form(..., max_length=2500),
     aspect_ratio: str = Form(...),
     voice_over: str = Form(...),
     audio_id: Optional[str] = Form(None),
