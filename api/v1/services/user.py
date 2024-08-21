@@ -446,6 +446,30 @@ class UserService(Service):
         user.update_last_login()
 
         return user
+    
+    def get_current_user_optional(
+        self, 
+        access_token: Optional[str] = Depends(oauth2_scheme), 
+        db: Session = Depends(get_db)
+    ) -> Optional[User]:
+        '''Used to optionally check for a user. This will be used for tracking unauthenticated users'''
+
+        if access_token is None:
+            return None
+
+        credentials_exception = HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+        token = self.verify_access_token(access_token, credentials_exception)
+        user = db.query(User).filter(User.id == token.id).first()
+        if not user:
+            raise credentials_exception
+
+        user.update_last_login()
+        return user
 
     def change_password(
         self,
