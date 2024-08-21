@@ -1,46 +1,120 @@
+"""
+Test for resource fetch endpoint
+"""
+
 import pytest
-from unittest.mock import patch
 from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
 from main import app
+from uuid_extensions import uuid7
+from fastapi import status
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
+
+from api.db.database import get_db
+from api.v1.models.user import User
+from api.v1.services.user import user_service, UserService
+
+
+client = TestClient(app)
+
+
+ENDPOINT = "/api/v1/resources"
+
 
 @pytest.fixture
 def mock_db_session():
-    """Fixture to create a mock database session."""
-    with patch("api.v1.dependencies.get_db", autospec=True) as mock_get_db:
-        yield mock_get_db
+    """Fixture to create a mock database session."
+
+    Yields:
+        MagicMock: mock database
+    """
+
+    with patch("api.v1.services.user.get_db", autospec=True) as mock_get_db:
+        mock_db = MagicMock()
+        app.dependency_overrides[get_db] = lambda: mock_db
+        yield mock_db
+    app.dependency_overrides = {}
+
 
 @pytest.fixture
-def client():
-    """Fixture to create a TestClient instance."""
-    return TestClient(app)
+def mock_user_service():
+    """Fixture to create a mock user service."""
 
-def test_search_resources(mock_db_session, client):
-    """Test the search resources endpoint."""
-    # Define mock behavior for `get_db` if necessary
-    mock_db_session.return_value.__enter__.return_value = MockDatabaseSession()
-    
-    # Perform the test
-    response = client.get("/api/v1/resources/search", params={"query": "test"})
-    assert response.status_code == 200
-    # Add more assertions based on expected behavior
+    with patch("api.v1.services.user.user_service", autospec=True) as mock_service:
+        yield mock_service
 
-def test_search_no_results(mock_db_session, client):
-    """Test the search resources endpoint with no results."""
-    # Define mock behavior for `get_db` if necessary
-    mock_db_session.return_value.__enter__.return_value = MockDatabaseSession(no_results=True)
-    
-    # Perform the test
-    response = client.get("/api/v1/resources/search", params={"query": "nonexistent"})
-    assert response.status_code == 200
-    assert response.json() == {"results": []}
-    # Add more assertions based on expected behavior
 
-class MockDatabaseSession:
-    """Mock database session class for testing."""
-    def __enter__(self):
-        return self
+@pytest.fixture
+def mock_get_current_user():
+    """Fixture to create a mock current user"""
+    with patch(
+        "api.v1.services.user.UserService.get_current_user", autospec=True
+    ) as mock_get_current_user:
+        yield mock_get_current_user
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
 
-    # Define methods to mock database interactions if needed
+@pytest.fixture
+def override_get_current_super_admin():
+    """Mock the get_current_super_admin dependency"""
+
+    app.dependency_overrides[user_service.get_current_super_admin] = lambda: User(
+        id=str(uuid7()),
+        email="admintestuser@gmail.com",
+        password=user_service.hash_password("Testpassword@123"),
+        first_name="AdminTest",
+        last_name="User",
+        is_active=False,
+        is_superadmin=True,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+
+
+mock_users = [
+    User(
+        id=str(uuid7()),
+        email="johndoeuser@gmail.com",
+        password=user_service.hash_password("Testpassword@123"),
+        first_name="John",
+        last_name="Doe",
+        is_active=True,
+        is_superadmin=False,
+        is_deleted=False,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+]
+
+
+def test_unauthorised_access(mock_user_service: UserService, mock_db_session: Session):
+    """Test for unauthorized access to endpoint."""
+
+    response = client.get(ENDPOINT)
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_non_admin_access(
+    mock_get_current_user, mock_user_service: UserService, mock_db_session: Session
+):
+    """Test for non admin user access to endpoint"""
+
+    mock_get_current_user.return_value = User(
+        id=str(uuid7()),
+        email="admintestuser@gmail.com",
+        password=user_service.hash_password("Testpassword@123"),
+        first_name="AdminTest",
+        last_name="User",
+        is_active=False,
+        is_superadmin=False,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+
+    response = client.get(
+        ENDPOINT,
+        headers={"Authorization": "Bearer dummy_token"},
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
