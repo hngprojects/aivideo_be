@@ -5,6 +5,7 @@ from secrets import token_hex
 from fastapi import HTTPException, status
 from pydub import AudioSegment
 from pathlib import Path
+from api.utils.settings import settings
 import asyncio
 import cv2
 
@@ -45,7 +46,7 @@ async def upload_file(
 
     # Generate a new file name
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
-    SAVE_FILE_DIR = os.path.join(DOWNLOAD_DIR, new_filename)
+    SAVE_FILE_DIR = os.path.join(settings.TEMP_DIR, new_filename)
     with open(SAVE_FILE_DIR, 'wb') as f:
         content = await file.read()
         f.write(content)
@@ -76,7 +77,8 @@ async def download_file(file, download_folder: str, save_extension: str = 'pdf')
 
     # Generate a new file name
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
-    SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+    # SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+    SAVE_FILE_DIR = os.path.join(DOWNLOAD_ROLDER, new_filename)
     with open(SAVE_FILE_DIR, 'wb') as f:
         content = await file.read()
         f.write(content)
@@ -113,7 +115,7 @@ async def upload_file_to_current_dir(
     
 
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
-    SAVE_FILE_DIR = os.path.join(BASE_DIR, new_filename)
+    SAVE_FILE_DIR = os.path.join(settings.TEMP_DIR, new_filename)
     with open(SAVE_FILE_DIR, 'wb') as f:
         if hasattr(file, 'read'):
             # If it's a file-like object (e.g., BytesIO)
@@ -138,8 +140,6 @@ async def upload_to_current_dir(
     max_file_size: int,
     save_extension: str
 ):
-
-    BASE_DIR = Path(__file__).resolve().parent
 
     file_extension = file.filename.split('.')[-1]
     name = file.filename.split('.')[0]
@@ -167,7 +167,7 @@ async def upload_to_current_dir(
     await file.seek(0)
 
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
-    SAVE_FILE_DIR = os.path.join(BASE_DIR, new_filename)
+    SAVE_FILE_DIR = os.path.join(settings.TEMP_DIR, new_filename)
     with open(SAVE_FILE_DIR, 'wb') as f:
         content = await file.read()
         f.write(content)
@@ -237,7 +237,8 @@ async def upload_files(
 
         # Generate a new file name
         new_filename = f'{name}-{token_hex(5)}.{file_extension}'
-        SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+        # SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+        SAVE_FILE_DIR = os.path.join(settings.TEMP_DIR, new_filename)
 
         # Save the file
         with open(SAVE_FILE_DIR, 'wb') as f:
@@ -280,10 +281,7 @@ async def contains_face(image_path):
     image = cv2.imread(image_path)
     
     if image is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Image not found or unable to load.",
-        )
+        raise HTTPException(status_code=404,detail=f"Image not found or unable to load.",)
     
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
@@ -291,7 +289,4 @@ async def contains_face(image_path):
     if len(faces) > 0:
         return True
     
-    raise HTTPException(
-            status_code=400,
-            detail=f"Image does not contain a face.",
-        ) 
+    raise HTTPException(status_code=400,detail=f"Image does not contain a face.",) 

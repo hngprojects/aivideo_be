@@ -17,9 +17,8 @@ from deepgram import (
 
 from api.utils.files import delete_file
 from api.utils.settings import settings
-from api.v1.services.ai_tools.general_video_service import CURRENT_DIRECTORY, video_service
+from api.v1.services.ai_tools.general_video_service import video_service
 
-# CURRENT_DIRECTORY = Path(__file__).resolve().parent
 
 class TextToVideoService:
 
@@ -55,7 +54,7 @@ class TextToVideoService:
 
             image_path = video_service.download_file(
                 url=image_url, 
-                save_path=os.path.join(CURRENT_DIRECTORY, f"ttvimage-{i:03d}.png")
+                save_path=os.path.join(settings.TEMP_DIR, f"ttvimage-{i:03d}.png")
             )
             images.append(image_path)
         
@@ -67,7 +66,7 @@ class TextToVideoService:
         duration_per_image = 10  # Duration each image will be displayed (in seconds)
         transition_duration = 2  # Duration of the fade transition (in seconds)
 
-        output_video_file = os.path.join(CURRENT_DIRECTORY, f'ttvideo-{str(uuid4())}.mp4')
+        output_video_file = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
 
         for image_file in images:
             # Create an ImageClip for each image
@@ -109,7 +108,7 @@ class TextToVideoService:
         video_file = self.create_video_with_images(images, audio_file)
         
         # Add subtitles to video
-        video_with_subtitles_path = os.path.join(CURRENT_DIRECTORY, f'ttvideo-{str(uuid4())}.mp4')
+        video_with_subtitles_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
         video_with_subtitles = video_service.add_subtitles_to_video(
             input_video=video_file, 
             subtitles_file=subtitle_file, 
@@ -117,7 +116,7 @@ class TextToVideoService:
         )
 
         # Add background music to video
-        video_with_bg_music_path = os.path.join(CURRENT_DIRECTORY, f'ttvideo-{str(uuid4())}.mp4')
+        video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
         video_with_audio = video_service.add_background_audio(
             video_path=video_with_subtitles, 
             audio_path=background_audio, 

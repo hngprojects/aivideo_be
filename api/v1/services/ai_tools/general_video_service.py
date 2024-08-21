@@ -18,7 +18,6 @@ from deepgram import (
 from api.utils.files import delete_file
 from api.utils.settings import settings
 
-CURRENT_DIRECTORY = Path(__file__).resolve().parent
 
 class GeneralVideoService:
 
@@ -70,7 +69,7 @@ class GeneralVideoService:
 
 
     def generate_audio_from_script(self, script, voice_over='man'):
-        file_path = os.path.join(CURRENT_DIRECTORY, f'audio-{str(uuid4())}.wav')
+        file_path = os.path.join(settings.TEMP_DIR, f'audio-{str(uuid4())}.wav')
 
         female = ["nova", "shimmer"]
         neutral = ["fable", "alloy"]
@@ -115,7 +114,7 @@ class GeneralVideoService:
             transcription = DeepgramConverter(dg_response=response)
             captions = srt(transcription)
 
-            subtitles_file = os.path.join(CURRENT_DIRECTORY, f'subtitles-{uuid4()}.srt')
+            subtitles_file = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4()}.srt')
             with open(subtitles_file, 'w') as subtitles:
                 subtitles.write(captions)
             
