@@ -8,10 +8,9 @@ from api.utils.client_helpers import get_ip_address
 from api.v1.models.usage_store import UsageStore
 from api.v1.services.user import user_service
 
-# from api.v1.services.user import cu
-ACCESS_LIMIT = 2
-TIME_WINDOW = timedelta(days=1)
 
+ACCESS_LIMIT = 15
+TIME_WINDOW = timedelta(days=1)
 
 # Middleware to track and enforce access limits
 async def track_tool_usage(
