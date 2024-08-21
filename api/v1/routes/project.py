@@ -1,12 +1,16 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+from sqlalchemy import event
+from sse_starlette import EventSourceResponse
+import asyncio
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.v1.models.user import User
+from api.v1.models.project import Project
 from api.v1.schemas.project import (
     AddFullProjectSchema,
     CreateFullProjectSchema,
@@ -56,12 +60,58 @@ async def get_all_projects(db: Session = Depends(get_db)):
         data=jsonable_encoder(projects_filtered),
     )
 
+# total number of connected clients
+connections = 0
+# {"connection": "state"}
+state_map = {}
+
+@event.listens_for(Project, "after_insert")
+@event.listens_for(Project, "after_update")
+def orm_event_listener(mapper, connection, target):
+    # once a change in the db is detected
+    # fill each connection in the state_map with 1
+    for i in range(connections):
+        state_map[f"connection_{i}"] = 1
+
+    # - state -> 1 when there is an update
+    # - state -> 0 when there is no update
+
+
+async def event_generator(request: Request, db: Session):
+    global connections, state_map
+    connection_index = connections
+    connections += 1
+    map_key = f"connection_{connection_index}"
+
+    # initialize current connection state
+    state_map[map_key] = 1
+
+    while True:
+        # close connection is client disconnects
+        if await request.is_disconnected():
+            print(f"client {request.client.host} disconnected")
+            connections -= 1
+            del state_map[map_key]
+            break
+
+        # check if state map is non empty
+        if state_map:
+            if state_map[map_key] == 1:
+                # send a message if state is 1
+                data = project_service.fetch_statistics(db).model_dump_json()
+
+                # reset current connection state to 0
+                state_map[map_key] = 0
+
+                yield {"event": "toolUsageStatisticsUpdate", "data": data}
+        await asyncio.sleep(1)
+
 
 @project.get("/statistics", response_model=ToolStatsResponse, status_code=200)
-async def get_statistics(db: Session = Depends(get_db)):
+def get_statistics(request: Request, db: Session = Depends(get_db)):
     """Endpoint to get tool usage data"""
 
-    return project_service.fetch_statistics(db)
+    return EventSourceResponse(event_generator(request, db))
 
 
 @project.get("/{id}", response_model=success_response, status_code=200)
