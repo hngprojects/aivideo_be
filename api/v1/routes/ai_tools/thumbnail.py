@@ -36,7 +36,7 @@ async def upload_or_process_video(
 
         if file_size > max_file_size:
             raise HTTPException(
-                status_code=400, detail="File exceeds the maximum allowed size of 100MB."
+                status_code=413, detail="File exceeds the maximum allowed size of 100MB."
             )
 
         saved_path = await upload_file(
@@ -58,12 +58,6 @@ async def upload_or_process_video(
             result = task.get(timeout=120)
             response_data = json.loads(result)
             video_id = response_data.get('video_id')
-            # video_size = response_data.get('video_size')
-
-            # if video_size > max_file_size:
-            #     raise HTTPException(
-            #         status_code=400, detail="YouTube video exceeds the maximum allowed size of 100MB."
-            #     )
 
         except HTTPException as e:
             raise e
