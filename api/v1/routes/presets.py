@@ -9,7 +9,6 @@ from api.v1.services.presets import preset_service
 
 preset_router = APIRouter(prefix='/presets', tags=['Presets'])
 
-
 @preset_router.get('/avatars')
 def get_all_avatars(db: Session = Depends(get_db)):
     '''Endpoint to get all avatars'''
