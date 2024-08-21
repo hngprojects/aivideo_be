@@ -2,6 +2,10 @@ from typing import Annotated, Optional
 from fastapi import Depends, APIRouter, Request, status, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+from sqlalchemy import event
+from sse_starlette import EventSourceResponse
+import asyncio
+import json
 
 from api.utils.success_response import success_response
 from api.v1.models.user import User
@@ -85,22 +89,63 @@ def update_current_user(
     )
 
 
+# total number of connected clients
+connections = 0
+# {"connection": "state"}
+state_map = {}
+
+@event.listens_for(User, "after_insert")
+@event.listens_for(User, "after_update")
+def orm_event_listener(mapper, connection, target):
+    # once a change in the db is detected
+    # fill each connection in the state_map with 1
+    for i in range(connections):
+        state_map[f"connection_{i}"] = 1
+
+    # - state -> 1 when there is an update
+    # - state -> 0 when there is no update
+
+
+async def event_generator(request: Request, db: Session):
+    global connections, state_map
+    connection_index = connections
+    connections += 1
+    map_key = f"connection_{connection_index}"
+
+    # initialize current connection state
+    state_map[map_key] = 1
+
+    while True:
+        # close connection is client disconnects
+        if await request.is_disconnected():
+            print(f"client {request.client.host} disconnected")
+            connections -= 1
+            del state_map[map_key]
+            break
+
+        # check if state map is non empty
+        if state_map:
+            if state_map[map_key] == 1:
+                # send a message if state is 1
+                data = json.dumps(user_service.get_users_statistics(db))
+
+                # reset current connection state to 0
+                state_map[map_key] = 0
+
+                yield {"event": "statsUpdate", "data": data}
+        await asyncio.sleep(1)
+
+
+
 @user_router.get(
     "/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
 )
 def get_user_statistics(
-    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    request: Request,
     db: Annotated[Session, Depends(get_db)],
 ):
     """Endpoint to fetch all user statistics"""
-    stats_data = user_service.get_users_statistics(db=db)
-
-    return success_response(
-        status_code=status.HTTP_200_OK,
-        message="User statistics retrieved successfully",
-        data=stats_data,
-    )
-
+    return EventSourceResponse(event_generator(request, db))
 
 @user_router.get("/export/csv", status_code=status.HTTP_200_OK)
 def export_csv(
