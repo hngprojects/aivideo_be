@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     X_RAPIDAPI_KEY: str = config("X_RAPIDAPI_KEY")
     X_RAPIDAPI_HOST: str = config("X_RAPIDAPI_HOST")
 
-    TEMP_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent, 'tmp')
+    TEMP_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent, 'tmp', 'media')
     
     @property
     def ALLOWED_EXTENSIONS(self) -> set[str]:
