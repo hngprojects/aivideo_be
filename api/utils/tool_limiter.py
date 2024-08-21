@@ -1,12 +1,10 @@
 from datetime import datetime, timedelta
-from typing import Annotated
 
-from fastapi import Cookie, Depends, Header, HTTPException, Request
+from fastapi import Depends, Header, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from api.db.database import get_db
 from api.utils.client_helpers import get_ip_address
-from api.utils.current_user import get_current_user_optional
 from api.v1.models.usage_store import UsageStore
 from api.v1.services.user import user_service
 
@@ -24,12 +22,14 @@ async def track_tool_usage(
     # Check if user is logged in
     if request.cookies.get("refresh_token"):
         aut = authorization.split()[1] if authorization else None
+
         # if user is logged in logout user
-        if aut and get_current_user_optional(aut, db):
+        if aut and user_service.get_current_user_optional(aut, db):
             return
 
     client_ip = get_ip_address(request)
     now = datetime.utcnow()
+
     # Retrieve user tracking record by IP
     tracking_record = db.query(UsageStore).filter_by(ip_address=client_ip).first()
     if tracking_record:
@@ -53,4 +53,5 @@ async def track_tool_usage(
         )
 
         db.add(tracking_record)
+        
     db.commit()
