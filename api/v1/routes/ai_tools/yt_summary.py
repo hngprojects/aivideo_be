@@ -31,7 +31,7 @@ async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(g
     """Endpoint to summarize a single video"""
 
     video = await upload_files(
-        file, allowed_extensions=["mp4", "mp3"], upload_folder="video_summary"
+        file, allowed_extensions=[".mp4", ".mp3"], upload_folder="video_summary"
     )
 
     task = generate_video_summary_task.delay(video[0])
