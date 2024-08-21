@@ -35,7 +35,10 @@ async def talking_head_image_upload(
         save_extension=file_extension,
         max_file_size=10 * 1024 * 1024
     )
+
+    # Check if image contains a face
     contains_face(image_file)
+    
     if audio_id:
         audio = preset_service.fetch_music_by_id(
             db=db, music_id=audio_id

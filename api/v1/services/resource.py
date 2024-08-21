@@ -163,6 +163,8 @@ class ResourceService(Service):
         # return resource if resource is not deleted
         if not resource.is_deleted:
             return resource
+        else :
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='No Such resource exists')
 
     def get_resource_by_id(self, db: Session, id: str):
         """Fetches a resource by their id"""
@@ -206,7 +208,7 @@ class ResourceService(Service):
         Returns:
             bool: True if Resource object is found else False
         """
-        resource = check_model_existence(db, Resource, id)
+        resource = self.fetch(db=db, id=Resource_id)
 
         resource.is_deleted = True
         db.commit()
@@ -216,7 +218,7 @@ class ResourceService(Service):
     def publish(self, db: Session, Resource_id: str):
         """Publish a Resource"""
 
-        resource = check_model_existence(db, Resource, id)
+        resource = check_model_existence(db, Resource, id=Resource_id)
 
         resource.is_published = True
         db.commit()
@@ -224,7 +226,7 @@ class ResourceService(Service):
     def unpublish(self, db:Session, Resource_id: str):
         """ Unpublish a Resource """
 
-        resource = check_model_existence(db, Resource, id)
+        resource = check_model_existence(db, Resource, id=Resource_id)
 
         resource.is_published = False
         db.commit()
