@@ -1,20 +1,18 @@
-from fastapi import Depends, APIRouter, status, Form, HTTPException
+from fastapi import Depends, APIRouter, status, Form
 from sqlalchemy.orm import Session
 import json
 import os
 import shutil
 from typing import Optional, Dict
-from pydantic import ValidationError
 
 
 from api.v1.models.user import User
-from api.v1.schemas.profile import ProfileBase, ProfileCreateUpdate, ProfileUpdateForm
+from api.v1.schemas.profile import ProfileBase, ProfileCreateUpdate
 from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.v1.services.profile import profile_service
 from fastapi import UploadFile, File
 from api.utils.success_response import success_response
-from fastapi.staticfiles import StaticFiles
 
 
 

@@ -51,6 +51,8 @@ class ProfileCreateUpdate(BaseModel):
         if number_length < 10 or number_length > 15:
             raise ValueError("Phone number must be between 10 and 15 digits long.")
         
+        return value
+        
 
     @validator('job_title', pre=True, always=True)
     def job_title_validator(cls, value):
@@ -67,15 +69,3 @@ class ProfileCreateUpdate(BaseModel):
     
     class Config:
         extra = 'allow'
-        
-        
-class ProfileUpdateForm(BaseModel):
-    username: Optional[str] = Field(None, max_length=50)
-    pronouns: Optional[str] = Field(None, max_length=50)
-    job_title: Optional[str] = Field(None, max_length=100)
-    social: Optional[str] = None
-    bio: Optional[str] = Field(None)
-    social: Optional[str] = None
-    phone_number: Optional[str] = Field(None, pattern=r'^\+?[1-9]\d{1,14}$')
-    email: Optional[EmailStr] = None
-    avatar_url: Optional[str] = None
