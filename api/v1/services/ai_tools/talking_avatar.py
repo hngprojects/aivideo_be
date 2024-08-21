@@ -95,9 +95,6 @@ class TalkingAvatarService:
 			delete_file(video_audio_path)
 		delete_file(initial_save_path)
 		delete_file(audio)
-
-		# Compress video
-		# final_save_path = video_service.compress_video(input_file=final_save_path, bitrate=500)
 		
 		save_url = f'{settings.APP_URL}/{final_save_path}'
 		return {
