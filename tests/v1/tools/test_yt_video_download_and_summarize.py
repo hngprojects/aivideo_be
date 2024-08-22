@@ -59,7 +59,12 @@ def test_enqueue_summarize_batch_job(
     link = {"link": "https://www.youtube.com/watch?v=testvideo"}
 
     # Send a POST request to the summarize_batch endpoint
-    response = client.post("/api/v1/tools/summary/youtube", json=link)
+    response = client.post(
+        "/api/v1/tools/summary/youtube",
+        json=link,
+        headers={"Authorization": "Bearer random_token"},
+        cookies={"refresh_token": "random_token"},
+    )
 
     # Assertions
     assert response.status_code == 202

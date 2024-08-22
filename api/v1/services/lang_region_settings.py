@@ -8,113 +8,76 @@ from api.utils.db_validators import check_model_existence
 
 class RegionService(Service):
     """Region Services"""
-
-    def create(self, db: Session, schema: RegionCreate, user_id: str) -> Dict[str, Any]:
-        '''Create a new Region'''
-
-        new_region = LanguageRegionTimezoneSetting(**schema.model_dump(), user_id=user_id)
-        db.add(new_region)
-        db.commit()
-        db.refresh(new_region)
-        
-        # Response data
-        response_data = {
-            "region": new_region.region,
-            "timezone": new_region.timezone,
-            "language": new_region.language
-        }
-        
-        return {
-            "status_code": 201,
-            "message": "Region created successfully",
-            "data": response_data
-        }
     
+    def create(self, db: Session, schema: RegionUpdate, user_id: str) -> Dict[str, Any]:
+        '''Basic implementation of create'''
+        raise NotImplementedError("The create method is not implemented.")
 
-    def fetch_all(self, db: Session, **query_params: Optional[Any]) -> Dict[str, Any]:
-        '''Fetch all Region with option to search using query parameters'''
-
-        query = db.query(LanguageRegionTimezoneSetting)
-
-        # Enable filter by query parameter
-        if query_params:
-            for column, value in query_params.items():
-                if hasattr(LanguageRegionTimezoneSetting, column) and value:
-                    query = query.filter(getattr(LanguageRegionTimezoneSetting, column).ilike(f'%{value}%'))
-
-        regions = query.all()
-
-        # Prepare the response data
-        response_data = [
-            {
-                "region": region.region,
-                "timezone": region.timezone,
-                "language": region.language
-            } for region in regions
-        ]
-
-        return {
-            "status_code": 200,
-            "message": "Regions retrieved successfully",
-            "data": response_data
-        }
     
+    def create_or_update(self, db: Session, schema: RegionCreate, user_id: str) -> Dict[str, Any]:
+        '''Create or Update a Region based on user_id'''
 
-    def fetch(self, db: Session, region_id: str) -> Dict[str, Any]:
-        '''Fetches a Region by id'''
-
-        region = check_model_existence(db, LanguageRegionTimezoneSetting, region_id)
-
-        response_data = {
-            "region": region.region,
-            "timezone": region.timezone,
-            "language": region.language
-        }
-
-        return {
-            "status_code": 200,
-            "message": "Region retrieved successfully",
-            "data": response_data
-        }
-    
-
-    def update(self, db: Session, region_id: str, schema: RegionUpdate) -> Dict[str, Any]:
-        '''Updates a Region'''
-
-        region = self.fetch(db=db, region_id=region_id)
+        # Check if a region exists for the user
+        region = db.query(LanguageRegionTimezoneSetting).filter_by(user_id=user_id).first()
         
-        # Update the fields with the provided schema data
-        update_data = schema.dict(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(region, key, value)
+
+        if region:
+            # Update the existing region
+            update_data = schema.dict(exclude_unset=True)
+            for key, value in update_data.items():
+                setattr(region, key, value)
+        else:
+            # Create a new region
+            region = LanguageRegionTimezoneSetting(**schema.dict(), user_id=user_id)
+            db.add(region)
         
         db.commit()
         db.refresh(region)
 
+        # Prepare the response data
         response_data = {
             "region": region.region,
             "timezone": region.timezone,
             "language": region.language
         }
 
-        return {
-            "status_code": 200,
-            "message": "Region updated successfully",
-            "data": response_data
-        }
+        return {'data': response_data}
+
+
+
+    def fetch(self, db: Session, user_id: str) -> Optional[Dict[str, Any]]:
+        '''Fetches a Region by user_id'''
+
+        region = db.query(LanguageRegionTimezoneSetting).filter_by(user_id=user_id).first()
+
+        if region:
+            response_data = {
+                "region": region.region,
+                "timezone": region.timezone,
+                "language": region.language
+            }
+            return {'data': response_data}
+
+        return None
+
+    
+    
+    
+    def update(self, db: Session, schema: RegionCreate, user_id: str) -> Dict[str, Any]:
+        '''Create a new Region'''
+        pass
+    
+
+    def fetch_all(self, db: Session, **query_params: Optional[Any]) -> Dict[str, Any]:
+        '''Fetch all Region with option to search using query parameters'''
+        pass
     
 
     def delete(self, db: Session, region_id: str) -> Dict[str, Any]:
         '''Deletes a region service'''
-        
-        region = self.fetch(db=db, region_id=region_id)
-        db.delete(region)
-        db.commit()
-
-        return {
-            "status_code": 204,
-            "message": "Region deleted successfully",
-            "data": None
-        }
-
+        pass
+    
+    
+    
 region_service = RegionService()
+

@@ -17,6 +17,3 @@ class RegionOut(BaseModel):
     region: Optional[str] = None
     language: Optional[str] = None
     timezone: Optional[str] = None
-
-    class Config:
-        from_attributes = True
