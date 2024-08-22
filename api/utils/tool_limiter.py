@@ -21,7 +21,6 @@ async def track_tool_usage(
     # Check if user is logged in
     if request.cookies.get("refresh_token"):
         aut = authorization.split()[1] if authorization else None
-
         # if user is logged in logout user
         if aut and user_service.get_current_user_optional(aut, db):
             return
@@ -30,7 +29,7 @@ async def track_tool_usage(
     now = datetime.utcnow()
 
     # Retrieve user tracking record by IP
-    tracking_record = db.query(UsageStore).filter_by(ip_address=client_ip).first()
+    tracking_record = await db.query(UsageStore).filter_by(ip_address=client_ip).first()
     if tracking_record:
         time_since_last_access = now - tracking_record.last_accessed
         if time_since_last_access > TIME_WINDOW:
