@@ -29,7 +29,7 @@ async def track_tool_usage(
     now = datetime.utcnow()
 
     # Retrieve user tracking record by IP
-    tracking_record = await db.query(UsageStore).filter_by(ip_address=client_ip).first()
+    tracking_record = db.query(UsageStore).filter_by(ip_address=client_ip).first()
     if tracking_record:
         time_since_last_access = now - tracking_record.last_accessed
         if time_since_last_access > TIME_WINDOW:
