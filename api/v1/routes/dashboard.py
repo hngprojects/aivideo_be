@@ -11,6 +11,7 @@ from api.v1.schemas.project import CreateFullProjectSchema, AddFullProjectSchema
 import logging
 from api.v1.services.notification import notification_service
 from api.v1.schemas.notification import RetrieveNotificationSchema
+from typing import Optional
 
 dashboard = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -42,17 +43,24 @@ async def create_project(
     )
 
 @dashboard.get("/projects", response_model=success_response, status_code=200)
-async def get_all_projects(db: Session = Depends(get_db),
+async def get_all_projects(keywords: Optional[str] = None,
+                           db: Session = Depends(get_db),
                            current_user: User = Depends(user_service.get_current_user),
                            ):
-    """Endpoint to get all projects
+    """Endpoint to get [all] projects
 
     Args:
+        keywords: Optional query parameter to search through projects before retrieval
         db (Session, optional): The db session object. Defaults to Depends(get_db).
         current_user: The signed-in user
-    """    
+    """
+
+    if keywords is None:
+        projects = project_service.fetch_all_user_projects(current_user, db)
+    else:
+        projects = project_service.fetch_user_projects_by_keywords(db, current_user, keywords)
+
     
-    projects = project_service.fetch_all_user_projects(current_user)
     projects_filtered = list(
         map(lambda x: ProjectCreateResponseSchema.model_validate(x), projects)
     )
