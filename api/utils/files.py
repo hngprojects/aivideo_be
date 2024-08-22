@@ -1,10 +1,12 @@
-from typing import Optional
+from typing import List, Optional, Union
 import os
 from typing import Optional
 from secrets import token_hex
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
 from pydub import AudioSegment
 from pathlib import Path
+from api.utils.settings import settings
+import aiofiles
 import asyncio
 import cv2
 
@@ -13,9 +15,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 async def upload_file(
-    file, 
-    allowed_extensions: Optional[list], 
-    upload_folder: str, 
+    file,
+    allowed_extensions: Optional[list],
+    upload_folder: str,
     save_extension: str = 'pdf'
 ):
     '''Function to upload a file'''
@@ -45,7 +47,7 @@ async def upload_file(
 
     # Generate a new file name
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
-    SAVE_FILE_DIR = os.path.join(DOWNLOAD_DIR, new_filename)
+    SAVE_FILE_DIR = os.path.join(settings.TEMP_DIR, new_filename)
     with open(SAVE_FILE_DIR, 'wb') as f:
         content = await file.read()
         f.write(content)
@@ -76,7 +78,8 @@ async def download_file(file, download_folder: str, save_extension: str = 'pdf')
 
     # Generate a new file name
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
-    SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+    # SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+    SAVE_FILE_DIR = os.path.join(DOWNLOAD_ROLDER, new_filename)
     with open(SAVE_FILE_DIR, 'wb') as f:
         content = await file.read()
         f.write(content)
@@ -85,8 +88,8 @@ async def download_file(file, download_folder: str, save_extension: str = 'pdf')
 
 
 async def upload_file_to_current_dir(
-    file: str, 
-    allowed_extensions: Optional[list], 
+    file: str,
+    allowed_extensions: Optional[list],
     save_extension: str
 ):
 
@@ -109,11 +112,11 @@ async def upload_file_to_current_dir(
 
     if allowed_extensions:
         if file_extension not in allowed_extensions:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid file format')
-    
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid file format')
 
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
-    SAVE_FILE_DIR = os.path.join(BASE_DIR, new_filename)
+    SAVE_FILE_DIR = os.path.join(settings.TEMP_DIR, new_filename)
     with open(SAVE_FILE_DIR, 'wb') as f:
         if hasattr(file, 'read'):
             # If it's a file-like object (e.g., BytesIO)
@@ -133,13 +136,11 @@ async def upload_file_to_current_dir(
 
 
 async def upload_to_current_dir(
-    file, 
-    allowed_extensions: Optional[list], 
+    file,
+    allowed_extensions: Optional[list],
     max_file_size: int,
     save_extension: str
 ):
-
-    BASE_DIR = Path(__file__).resolve().parent
 
     file_extension = file.filename.split('.')[-1]
     name = file.filename.split('.')[0]
@@ -151,10 +152,10 @@ async def upload_to_current_dir(
     if allowed_extensions:
         if file_extension not in allowed_extensions:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail='Invalid file format'
             )
-    
+
     # Check file size
     file_size = len(file.file.read())
     if file_size > max_file_size:
@@ -162,12 +163,12 @@ async def upload_to_current_dir(
             status_code=400,
             detail=f"File too large. Max size is {max_file_size / (1024 * 1024)} MB.",
         )
-    
+
     # Reset file pointer after reading
     await file.seek(0)
 
     new_filename = f'{name}-{token_hex(5)}.{save_extension}'
-    SAVE_FILE_DIR = os.path.join(BASE_DIR, new_filename)
+    SAVE_FILE_DIR = os.path.join(settings.TEMP_DIR, new_filename)
     with open(SAVE_FILE_DIR, 'wb') as f:
         content = await file.read()
         f.write(content)
@@ -179,26 +180,42 @@ def delete_file(file_path: str):
 
     if os.path.exists(file_path):
         os.remove(file_path)
-        
+
+
+async def save_file(file: UploadFile, save_path: str, chunk_size: int) -> None:
+    """Save a file to a specified path"""
+    async with aiofiles.open(save_path, 'wb') as f:
+        while chunk := await file.read(chunk_size):
+            await f.write(chunk)
+
 
 async def upload_files(
-    files,
+    files: Union[List[UploadFile], UploadFile],
     allowed_extensions: Optional[list],
     upload_folder: str,
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB default size
-    chunk_size: int = 1024
+    chunk_size: int = 10 * 1024 * 1024
 ):
     '''Function to upload single or multiple files with file size limitation'''
-
     if not isinstance(files, list):
         files = [files]
 
     uploaded_files = []
+    tasks = []
+
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'media', 'uploads')
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+
+    UPLOAD_DIR = os.path.join(UPLOAD_FOLDER, upload_folder)
+    if not os.path.exists(UPLOAD_DIR):
+        os.makedirs(UPLOAD_DIR)
 
     for file in files:
-        file_name = file.filename.lower()
-        file_extension = file_name.split('.')[-1]
-        name = file_name.split('.')[0]
+        file_name = str(file.filename).lower()
+        file_extension = os.path.splitext(file_name)[1]
+        name = os.path.splitext(file_name)[0]
+        print(file_extension, name)
 
         if not file:
             raise HTTPException(
@@ -206,22 +223,18 @@ async def upload_files(
                 detail='File cannot be blank'
             )
 
-        if allowed_extensions:
-            if file_extension not in allowed_extensions:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f'Invalid file format for {file_name}'
-                )
+        if allowed_extensions and file_extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Invalid file format'
+            )
 
-        # Check the file size by reading it in chunks
-        file_size = 0
-        while chunk := await file.read(chunk_size):
-            file_size += len(chunk)
-            if file_size > max_file_size:
-                raise HTTPException(
-                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                    detail=f'File {file_name} exceeds the maximum allowed size of {max_file_size / (1024 * 1024)} MB'
-                )
+        content_length = file.size
+        if content_length and int(content_length) > max_file_size:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File {file_name} exceeds the maximum allowed size is {max_file_size / (1024 * 1024)} MB."
+            )
 
         # Reset file pointer to the start after checking size
         await file.seek(0)
@@ -237,16 +250,33 @@ async def upload_files(
 
         # Generate a new file name
         new_filename = f'{name}-{token_hex(5)}.{file_extension}'
-        SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+        # SAVE_FILE_DIR = os.path.join(UPLOAD_DIR, new_filename)
+        SAVE_FILE_DIR = os.path.join(settings.TEMP_DIR, new_filename)
 
         # Save the file
         with open(SAVE_FILE_DIR, 'wb') as f:
-            while chunk := await file.read(chunk_size):
-                f.write(chunk)
+            if not content_length:
+                file_size = 0
+                await file.seek(0)
+                while chunk := await file.read(chunk_size):
+                    file_size += len(chunk)
+                    if file_size > max_file_size:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"File {file_name} exceeds the maximum allowed size is {max_file_size / (1024 * 1024)} MB."
+                        )
+                await file.seek(0)
 
-        uploaded_files.append(SAVE_FILE_DIR)
+        new_filename = f'{name}-{token_hex(5)}{file_extension}'
+        save_path = os.path.join(UPLOAD_DIR, new_filename)
+
+        tasks.append(save_file(file, save_path, chunk_size))
+        uploaded_files.append(save_path)
+
+    await asyncio.gather(*tasks)
 
     return uploaded_files
+
 
 async def check_file_size(file, max_file_size_mb=10):
     '''Check if the file size exceeds the allowed limit.'''
@@ -259,14 +289,15 @@ async def check_file_size(file, max_file_size_mb=10):
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File too large. Please upload a file smaller than {max_file_size_mb} MB."
         )
-    
+
+
 async def audio_scan(file_path: str) -> bool:
     '''Basic scan to validate the audio file'''
     try:
         if not os.path.getsize(file_path):
             return False
         audio = AudioSegment.from_file(file_path)
-        if len(audio) < 1000: 
+        if len(audio) < 1000:
             return False
 
         return True
@@ -276,22 +307,19 @@ async def audio_scan(file_path: str) -> bool:
 
 
 async def contains_face(image_path):
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
     image = cv2.imread(image_path)
-    
+
     if image is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Image not found or unable to load.",
-        )
-    
+        raise HTTPException(status_code=404,detail=f"Image not found or unable to load.",)
+
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-    
+    faces = face_cascade.detectMultiScale(
+        gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
     if len(faces) > 0:
         return True
     
-    raise HTTPException(
-            status_code=400,
-            detail=f"Image does not contain a face.",
-        ) 
+    raise HTTPException(status_code=400,detail=f"Image does not contain a face.",) 
+

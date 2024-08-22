@@ -18,6 +18,7 @@ thumbnail_router = APIRouter(
     prefix="/tools/thumbnail-generator", tags=["Tools"])
 max_file_size = 100 * 1024 * 1024  # 100 MB
 
+
 @thumbnail_router.post("/upload-or-process")
 async def upload_or_process_video(
     request: Request,
@@ -35,7 +36,7 @@ async def upload_or_process_video(
 
         if file_size > max_file_size:
             raise HTTPException(
-                status_code=400, detail="File exceeds the maximum allowed size of 100MB."
+                status_code=413, detail="File exceeds the maximum allowed size of 100MB."
             )
 
         saved_path = await upload_file(
@@ -53,20 +54,13 @@ async def upload_or_process_video(
         task = process_youtube_video_task.delay(youtube_url, base_url)
         task_id = task.id
 
-        
         try:
-            result = task.get(timeout=120)  
+            result = task.get(timeout=120)
             response_data = json.loads(result)
             video_id = response_data.get('video_id')
-            # video_size = response_data.get('video_size')
-
-            # if video_size > max_file_size:
-            #     raise HTTPException(
-            #         status_code=400, detail="YouTube video exceeds the maximum allowed size of 100MB."
-            #     )
 
         except HTTPException as e:
-            raise e  
+            raise e
         except Exception as e:
             raise HTTPException(
                 status_code=500,
@@ -90,20 +84,22 @@ async def upload_or_process_video(
     )
 
     return success_response(
-        status_code=200,
+        status_code=202,
         message="Video processing started successfully.",
         data={
             "job_id": task_id,
             "project_id": project.id,
-            
+
         }
     )
+
 
 @thumbnail_router.post("/generate-thumbnails")
 async def generate_thumbnails(
     request: Request,
     video_id: str = Form(...),
-    timestamp: float = Form(None)  
+    aspect_ratio: str = Form(...),
+    timestamp: float = Form(None)
 ):
     base_url = str(request.base_url)
 
@@ -111,17 +107,14 @@ async def generate_thumbnails(
         raise HTTPException(
             status_code=400, detail="Video ID is required."
         )
-    
-    
+
     task_title = 'Manual Thumbnail Capture' if timestamp is not None else 'Auto Thumbnail Generation'
 
-    
     if timestamp is not None:
-       
-        task = generate_thumbnails_task.delay(video_id, base_url, timestamp=timestamp)
+        task = generate_thumbnails_task.delay(
+            video_id, base_url, aspect_ratio, timestamp=timestamp)
     else:
-        
-        task = generate_thumbnails_task.delay(video_id, base_url)
+        task = generate_thumbnails_task.delay(video_id, base_url, aspect_ratio)
 
     project = job_service.create_project_with_job(
         job=task,
@@ -130,23 +123,22 @@ async def generate_thumbnails(
     )
 
     return success_response(
-        status_code=200,
+        status_code=202,
         message=f"{task_title} started successfully.",
         data={
             "job_id": task.id,
             "project_id": project.id,
-           
         }
     )
 
-@thumbnail_router.post("/select-thumbnail/{video_id}")
+
+@thumbnail_router.post("/select-thumbnail")
 async def select_and_download_thumbnail(
     request: Request,
-    video_id: str,
     body: ThumbnailSelectionRequest
 ):
     task = select_and_download_thumbnail_task.delay(
-        video_id, body.thumbnail_id, body.resolution, str(request.url)
+        body.thumbnail_id, str(request.url)
     )
 
     project = job_service.create_project_with_job(
@@ -156,7 +148,7 @@ async def select_and_download_thumbnail(
     )
 
     return success_response(
-        status_code=200,
+        status_code=202,
         message="Thumbnail selection and download started successfully.",
         data={
             "job_id": task.id,

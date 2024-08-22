@@ -24,18 +24,6 @@ async def get_all_jobs():
     return jobs
 
 
-# Get a job by its ID
-@job.get("/{job_id}/update_result", response_model=JobResponse)
-async def update_job_result(job_id: str, background_tasks: BackgroundTasks):
-    """Endpoint to update the job result after the task is completed"""
-
-    def update_result_task(job_id: str):
-        job_service.update_job_result(job_id)
-
-    background_tasks.add_task(update_result_task, job_id)
-    return job_service.fetch_by_job_id(job_id)
-
-
 @job.get("/activity")
 async def get_managed_jobs(
     current_admin: User = Depends(user_service.get_current_super_admin),
@@ -95,11 +83,8 @@ async def export_jobs_as_csv(
     return response
 
 
-@job.get("/sse")
-async def get_sse_job_activity(
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(user_service.get_current_super_admin),
-):
+@job.get("/activity/sse", summary="Get job activity via SSE")
+async def get_sse_job_activity(db: Session = Depends(get_db)):
     """
     Retrieve a server-sent event stream for job activity updates.
     """
@@ -110,11 +95,8 @@ async def get_sse_job_activity(
     )
 
 
-@job.get("/statistics/sse")
-async def get_sse_job_statistics(
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(user_service.get_current_super_admin),
-):
+@job.get("/statistics/sse", summary="Get job statistics via SSE")
+async def get_sse_job_statistics(db: Session = Depends(get_db)):
     """
     Retrieve a server-sent event stream for job statistics updates.
     """

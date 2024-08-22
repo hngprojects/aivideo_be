@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings
 from decouple import config
 from pathlib import Path
@@ -40,6 +41,7 @@ class Settings(BaseSettings):
 
     FLUTTERWAVE_SECRET: str = config("FLUTTERWAVE_SECRET")
     STRIPE_SECRET: str = config("STRIPE_SECRET")
+    FLW_SECRET_HASH: str = config("FLW_SECRET_HASH")
 
     TWILIO_ACCOUNT_SID: str = config("TWILIO_ACCOUNT_SID")
     TWILIO_AUTH_TOKEN: str = config("TWILIO_AUTH_TOKEN")
@@ -58,6 +60,8 @@ class Settings(BaseSettings):
     
     X_RAPIDAPI_KEY: str = config("X_RAPIDAPI_KEY")
     X_RAPIDAPI_HOST: str = config("X_RAPIDAPI_HOST")
+
+    TEMP_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent, 'tmp', 'media')
     
     @property
     def ALLOWED_EXTENSIONS(self) -> set[str]:

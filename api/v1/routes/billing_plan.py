@@ -18,7 +18,7 @@ billing_plan = APIRouter(prefix="/billing-plans", tags=["Billing Plan"])
 @billing_plan.post("", response_model=CreateBillingPlanResponse)
 async def create_billing_plan(
     billing_plan_schema: CreateBillingPlanSchema,
-    current_user: User = Depends(user_service.get_current_super_admin),
+    _: User = Depends(user_service.get_current_super_admin),
     db: Session = Depends(get_db),
 ):
     """
@@ -36,11 +36,10 @@ async def create_billing_plan(
 
 @billing_plan.get("", response_model=GetBillingPlanListResponse)
 async def get_all_billing_plans(
-    _: User = Depends(user_service.get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Endpoint to get all billing plans.
+    UNSECURED Endpoint to get all billing plans.
     """
 
     all_plans = bp_service.fetch_all(db=db)
@@ -49,4 +48,42 @@ async def get_all_billing_plans(
         status_code=status.HTTP_200_OK,
         message="Billing plans fetched successfully.",
         data={"billing_plans": [bp.to_dict() for bp in all_plans]},
+    )
+
+
+@billing_plan.get('/{billing_plan_id}', response_model=CreateBillingPlanResponse)
+async def get_single_billing_plan(
+    billing_plan_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    UNSECURED Endpoint to get single billing plan by id
+    """
+
+    bill_plan = bp_service.fetch(db, billing_plan_id)
+
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Billing plan fetched successfully",
+        data=bill_plan.to_dict()
+    )
+
+
+@billing_plan.patch("/{billing_plan_id}", response_model=CreateBillingPlanResponse)
+async def update_billing_plan(
+    billing_plan_id: str,
+    schema: CreateBillingPlanSchema,
+    _: User = Depends(user_service.get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint to update a billing plan by `superadmin`
+    """
+    
+    bill_plan = bp_service.update(db=db, plan_id=billing_plan_id, schema=schema)
+
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Billing plan updated successfully",
+        data=bill_plan.to_dict(),
     )

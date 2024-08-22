@@ -1,7 +1,9 @@
-from fastapi import BackgroundTasks, Depends, APIRouter, status, HTTPException
+from fastapi import BackgroundTasks, Depends, APIRouter, status, HTTPException, Request
+from starlette.responses import RedirectResponse
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from decouple import config
+import os
 
 from api.db.database import get_db
 from api.v1.services.google_oauth import GoogleOauthServices
@@ -13,7 +15,7 @@ import requests
 from datetime import timedelta
 
 google_auth = APIRouter(prefix="/auth", tags=["Authentication"])
-FRONTEND_URL = config("FRONTEND_URL")
+FRONTEND_URL = os.environ.get("FRONTEND_URL")
 
 @google_auth.post("/google", status_code=200)
 async def google_login(background_tasks: BackgroundTasks, token_request: OAuthToken, db: Session = Depends(get_db)):
@@ -39,6 +41,7 @@ async def google_login(background_tasks: BackgroundTasks, token_request: OAuthTo
             "status_code": 200,
             "message": "Successfully authenticated",
             "access_token": access_token,
+            "id_token": id_token,
             "data": {
                 "user": jsonable_encoder(
                     user,
@@ -58,3 +61,52 @@ async def google_login(background_tasks: BackgroundTasks, token_request: OAuthTo
     )
 
     return response
+
+
+@google_auth.get("/google/initiate")
+async def initiate_google_auth():
+    client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
+    scope = "openid email profile"
+    response_type = "code"
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&redirect_uri={redirect_uri}&response_type={response_type}&scope={scope}"
+    return RedirectResponse(url=auth_url, status_code=302)
+
+
+@google_auth.get("/google/callback")
+async def google_callback(request: Request):
+    code = request.query_params.get("code")
+    # Exchange the authorization code for an access token
+    token_url = "https://oauth2.googleapis.com/token"
+    token_response = requests.post(
+        token_url,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": os.environ.get("GOOGLE_REDIRECT_URI"),
+            "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
+            "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
+        },
+    )
+    token_data = token_response.json()
+    id_token = token_data.get("id_token")
+    # Validate the ID token
+    profile_endpoint = f"https://www.googleapis.com/oauth2/v3/tokeninfo?id_token={id_token}"
+    profile_response = requests.get(profile_endpoint)
+    profile_data = profile_response.json()
+    # Authenticate the user using the profile data
+    # Print all profile information from Google
+    print("Profile Information:")
+    print("-------------------")
+    print(f"Email: {profile_data.get('email')}")
+    print(f"Name: {profile_data.get('name')}")
+    print(f"Family Name: {profile_data.get('family_name')}")
+    print(f"Given Name: {profile_data.get('given_name')}")
+    print(f"Picture: {profile_data.get('picture')}")
+    print(f"Locale: {profile_data.get('locale')}")
+    print(f"Verified Email: {profile_data.get('email_verified')}")
+    print(f"Id Token: {id_token}")
+    print("-------------------")
+    # ...
+    return JSONResponse(content={"message": "Authenticated successfully"}, status_code=200)

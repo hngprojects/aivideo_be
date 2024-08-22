@@ -18,7 +18,7 @@ video_router = APIRouter(prefix="/tools/video", tags=["Tools"])
 
 @video_router.post('/talking-head/image-upload', status_code=202, response_model=success_response)
 async def talking_head_image_upload(
-    script: str = Form(...),
+    script: str = Form(..., max_length=2500),
     aspect_ratio: str = Form(...),
     voice_over: str = Form(...),
     audio_id: Optional[str] = Form(None),
@@ -35,7 +35,10 @@ async def talking_head_image_upload(
         save_extension=file_extension,
         max_file_size=10 * 1024 * 1024
     )
-    contains_face(image_file)
+
+    # Check if image contains a face
+    # contains_face(image_file)
+    
     if audio_id:
         audio = preset_service.fetch_music_by_id(
             db=db, music_id=audio_id
