@@ -39,7 +39,7 @@ async def create_faq(
         status_code=status.HTTP_201_CREATED,
     )
 
-@faq.get("", response_model=success_response, status_code=200, dependencies=[Depends(track_tool_usage)])
+@faq.get("", response_model=success_response, status_code=200)
 async def get_all_faqs(
     db: Session = Depends(get_db),
 ):

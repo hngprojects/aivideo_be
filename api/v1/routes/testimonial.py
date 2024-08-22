@@ -37,7 +37,7 @@ async def create_testimonial(
         status_code=status.HTTP_201_CREATED,
     )
 
-@testimonial.get("", response_model=success_response, status_code=200, dependencies=[Depends(track_tool_usage)])
+@testimonial.get("", response_model=success_response, status_code=200,)
 async def get_all_testimonials(db: Session = Depends(get_db),):
     """Endpoint to get all testimonials
 
