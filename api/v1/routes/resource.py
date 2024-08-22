@@ -158,4 +158,23 @@ async def delete_resources(
         current_user (Annotated[User, Depends): Admin User dependency
     """
     return resource_service.delete(db=db, Resource_id=resource_id)
+
+@resource.get('/{resource_id}', status_code=status.HTTP_200_OK, response_model=success_response)
+async def get_resource_by_id(
+    resource_id : str,
+    db : Annotated[Session, Depends(get_db)]
+) :
+    """
+    Route to get resource by its id 
+
+    Args:
+        resource_id (str):the identifier of the resource to query
+        db (Annotated[Session, Depends): database dependency
+    """
     
+    resource = resource_service.fetch(db=db , id=resource_id)
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message='Resource fetched successfully',\
+        data=jsonable_encoder(resource)
+    )

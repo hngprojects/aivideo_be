@@ -4,6 +4,8 @@ import subprocess
 import speech_recognition as sr
 from io import BytesIO
 from pydub import AudioSegment
+from typing import Union
+import json
 
 def format_time(ms):
     """Convert milliseconds to mm:ss format."""
@@ -77,7 +79,22 @@ def transcribe_audio_file_with_timestamps(audio_file_path):
     return transcriptions
 
 
-def translate_text(text: str, target_language: str) -> str:
-    """Translate text using Deep Translator with Google Translator."""
-    translation = GoogleTranslator(target=target_language).translate(text)
-    return translation
+
+def translate_text(text: Union[str, dict], target_language: str) -> str:
+    """Translate text or JSON using Google Translator."""
+    if isinstance(text, dict):
+        def translate_json(obj):
+            if isinstance(obj, dict):
+                return {k: translate_json(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [translate_json(i) for i in obj]
+            elif isinstance(obj, str):
+                return GoogleTranslator(target=target_language).translate(obj)
+            else:
+                return obj
+        
+        translated_text = translate_json(text)
+        return json.dumps(translated_text)
+    else:
+        translated_text = GoogleTranslator(target=target_language).translate(text)
+        return translated_text
