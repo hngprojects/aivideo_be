@@ -29,6 +29,7 @@ from api.v1.routes.dashboard import dashboard
 from api.v1.routes.ai_tools.thumbnail import thumbnail_router
 from api.v1.routes.ai_tools.video_subtitles import video_subtitles_router
 from api.v1.routes.ai_tools.text_to_video import ttv_router
+from api.v1.routes.file_downloader import downloader
 
 
 api_version_one = APIRouter(prefix="/api/v1")
@@ -67,3 +68,4 @@ api_version_one.include_router(thumbnail_router)
 api_version_one.include_router(video_subtitles_router)
 api_version_one.include_router(download)
 api_version_one.include_router(user_subs)
+api_version_one.include_router(downloader)
