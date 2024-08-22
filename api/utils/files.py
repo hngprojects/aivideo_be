@@ -322,8 +322,9 @@ async def contains_face(image_path):
 
     if len(faces) > 0:
         return True
-    
-    raise HTTPException(status_code=400,detail=f"Image does not contain a face.",) 
+      
+    raise HTTPException(
+        status_code=400, detail=f"Image does not contain a face.",)
 
 async def get_media_type_from_extension(file_extension):
     """
