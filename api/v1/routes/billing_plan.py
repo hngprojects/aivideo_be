@@ -50,3 +50,20 @@ async def get_all_billing_plans(
         message="Billing plans fetched successfully.",
         data={"billing_plans": [bp.to_dict() for bp in all_plans]},
     )
+
+
+@billing_plan.get('/{billing_plan_id}', response_model=CreateBillingPlanResponse)
+async def get_billing_plan(
+    billing_plan_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Endpoint to get single billing plan by id
+    """
+    bill_plan = bp_service.fetch(db, billing_plan_id)
+
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Billing plan fetched successfully",
+        data=bill_plan.to_dict()
+    )

@@ -97,12 +97,18 @@ class TalkingAvatarService:
 		delete_file(audio)
 
 		# Compress video
-		# final_save_path = video_service.compress_video(input_file=final_save_path, bitrate=500)
+		low_quality = video_service.compress_video(input_file=final_save_path, bitrate=500)
+		medium_quality = video_service.compress_video(input_file=final_save_path, bitrate=1080)
 		
 		save_url = f'{settings.APP_URL}/{final_save_path}'
 		return {
 			'app_url': save_url,
-			'source': url
+			'source': url,
+			'quality': {
+				"low_quality": f'{settings.APP_URL}/{low_quality}',
+				"medium_quality": f'{settings.APP_URL}/{medium_quality}',
+				"high_quality": f'{settings.APP_URL}/{final_save_path}',
+			}
 		}
 
 
