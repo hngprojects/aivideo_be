@@ -83,7 +83,6 @@ def transcribe_audio_file_with_timestamps(audio_file_path):
 def translate_text(text: Union[str, dict], target_language: str) -> str:
     """Translate text or JSON using Google Translator."""
     if isinstance(text, dict):
-        # Recursively translate JSON objects
         def translate_json(obj):
             if isinstance(obj, dict):
                 return {k: translate_json(v) for k, v in obj.items()}
@@ -97,6 +96,5 @@ def translate_text(text: Union[str, dict], target_language: str) -> str:
         translated_text = translate_json(text)
         return json.dumps(translated_text)
     else:
-        # Translate plain text
         translated_text = GoogleTranslator(target=target_language).translate(text)
         return translated_text
