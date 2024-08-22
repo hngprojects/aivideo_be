@@ -43,84 +43,57 @@ def client(db_session_mock):
     client = TestClient(app)
     yield client
     app.dependency_overrides = {}
-
-def test_create_region(client, db_session_mock):
-    '''Test for creating a region successfully'''
     
-    app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
-
-    mock_region = {
-        "region": "Test Region",
-        "timezone": "GMT",
-        "language": "English"
-    }
-    
-    with patch("api.v1.services.lang_region_settings.region_service.create", return_value=mock_region) as mock_create:
-        response = client.post(
-            "api/v1/regions",
-            json=mock_region,
-            headers={'Authorization': 'Bearer token'}
-        )
-        
-        assert response.status_code == 201
-
-
-
-def test_get_regions(client, db_session_mock):
-    '''Test for fetching all regions successfully'''
-    
-    mock_regions = [{"name": "Region1", "code": "R1"}, {"name": "Region2", "code": "R2"}]
-    
-    with patch("api.v1.services.lang_region_settings.region_service.fetch_all", return_value=mock_regions) as mock_fetch:
-        response = client.get(
-            "api/v1/regions",
-            headers={'Authorization': 'Bearer token'}
-        )
-        
-        assert response.status_code == 200
     
 
-def test_get_region_by_user(client, db_session_mock):
-    '''Test for fetching a specific region by ID successfully'''
-    
-    region_id = str(uuid7())
-    mock_region = {"id": region_id, "name": "Test Region", "code": "TR"}
-    
-    with patch("api.v1.services.lang_region_settings.region_service.fetch", return_value=mock_region) as mock_fetch:
-        response = client.get(
-            f"api/v1/regions/{region_id}",
-            headers={'Authorization': 'Bearer token'}
-        )
-        
-        assert response.status_code == 200
-   
 
 def test_update_region(client, db_session_mock):
     '''Test for updating a region successfully'''
     
-    region_id = str(uuid7())
-    update_data = {"name": "Updated Region", "code": "UR"}
-    mock_region = {"id": region_id, **update_data}
+    app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
+
     
-    with patch("api.v1.services.lang_region_settings.region_service.update", return_value=mock_region) as mock_update:
+    region_id = str(uuid7())
+    update_data = {"region": "Updated Region", "timezone": "UTC+1", "language": "French"}
+    mock_region = {**update_data, "id": region_id, "user_id": "test_user_id"}
+    
+    with patch("api.v1.services.lang_region_settings.region_service.create_or_update", return_value={"data": mock_region}) as mock_update:
         response = client.put(
-            f"api/v1/regions/{region_id}",
+            "api/v1/regions",
             json=update_data,
             headers={'Authorization': 'Bearer token'}
         )
         
         assert response.status_code == 200
-    
+        assert response.json() == {
+            "status_code": 200,
+            "success": True,
+            "message": "Region created or updated successfully",
+            "data": mock_region
+        }
 
-def test_delete_region(client, db_session_mock):
-    '''Test for deleting a region successfully'''
+def test_get_region_by_user(client, db_session_mock):
+    '''Test for fetching a specific region by user ID successfully'''
     
-    region_id = str(uuid7())
+    app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
+
     
-    with patch("api.v1.services.lang_region_settings.region_service.delete", return_value=None) as mock_delete:
-        response = client.delete(
-            f"api/v1/regions/{region_id}",
+    mock_region = {
+        "region": "Test Region", 
+        "timezone": "UTC", 
+        "language": "English"
+    }
+    
+    with patch("api.v1.services.lang_region_settings.region_service.fetch", return_value={"data": mock_region}) as mock_fetch:
+        response = client.get(
+            "api/v1/regions",
             headers={'Authorization': 'Bearer token'}
         )
         
-        assert response.status_code == 204
+        assert response.status_code == 200
+        assert response.json() == {
+            "status_code": 200,
+            "success": True,
+            "message": "Region retrieved successfully",
+            "data": mock_region
+        }
