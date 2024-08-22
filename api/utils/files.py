@@ -1,3 +1,4 @@
+import mimetypes
 from typing import List, Optional, Union
 import os
 from typing import Optional
@@ -323,3 +324,9 @@ async def contains_face(image_path):
     
     raise HTTPException(status_code=400,detail=f"Image does not contain a face.",) 
 
+async def get_media_type_from_extension(file_extension):
+    """
+    Given a file extension (e.g., 'mp4', 'jpg', 'pdf'), return the corresponding media type (MIME type).
+    """
+    media_type, _ = mimetypes.guess_type(f"dummy.{file_extension}")
+    return media_type
