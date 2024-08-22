@@ -174,6 +174,24 @@ class UserService(Service):
             raise HTTPException(status_code=404, detail="User not found")
 
         return user
+    
+    def get_user_by_email(self, db: Session, email: str) -> Optional[User]:
+        """
+        Fetches a user by their email address.
+        
+        Args:
+            db: The database session.
+            email: The email address of the user.
+        
+        Returns:
+            The user object if found, otherwise None.
+        """
+        user = db.query(User).filter(User.email == email).first()
+
+        if not user:
+            return None
+
+        return user
 
     def create(self, db: Session, schema: user.UserCreate):
         """Creates a new user"""
