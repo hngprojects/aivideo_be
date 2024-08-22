@@ -153,4 +153,4 @@ def select_and_download_thumbnail_task(thumbnail_id: str, base_url: str):
         select_and_download_thumbnail_service(
             thumbnail_id, base_url)
     )
-    return thumbnail
+    return json.dumps({"thumbnail": thumbnail})
