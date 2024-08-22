@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
 
 
@@ -39,3 +39,18 @@ class ProjectCreateResponseSchema(CreateFullProjectSchema):
 
     class Config:
         from_attributes = True
+
+class ToolStatsData(BaseModel):
+    pdf_summarizer: float
+    podcast_summarizer: float
+    youtube_summarizer: float
+    audio_transcriber: float
+    text_to_video: float
+    image_to_video: float
+    thumbnail_generator: float
+
+class ToolStatsResponse(BaseModel):
+    message: str
+    status_code: int
+    status: str
+    data: Union[ToolStatsData, None]
