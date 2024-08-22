@@ -8,9 +8,9 @@ from api.utils.client_helpers import get_ip_address
 from api.v1.models.usage_store import UsageStore
 from api.v1.services.user import user_service
 
-
 ACCESS_LIMIT = 15
 TIME_WINDOW = timedelta(days=1)
+
 
 # Middleware to track and enforce access limits
 async def track_tool_usage(
@@ -21,9 +21,8 @@ async def track_tool_usage(
     # Check if user is logged in
     if request.cookies.get("refresh_token"):
         aut = authorization.split()[1] if authorization else None
-
         # if user is logged in logout user
-        if aut and user_service.get_current_user_optional(aut, db):
+        if aut:
             return
 
     client_ip = get_ip_address(request)
@@ -52,5 +51,5 @@ async def track_tool_usage(
         )
 
         db.add(tracking_record)
-        
+
     db.commit()
