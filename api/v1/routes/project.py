@@ -60,21 +60,47 @@ async def get_all_projects(db: Session = Depends(get_db)):
         data=jsonable_encoder(projects_filtered),
     )
 
+################ SSE ENDPOINT FOR TOOL USAGE STATISTICS ###################
+
 # total number of connected clients
 connections = 0
-# {"connection": "state"}
+# {"connection": ["state", "active_status"]}
 state_map = {}
+
+
+def reset_connection_active_status():
+    """reset the active status for each open connection tracked by the state_map"""
+    if state_map:
+        for key, value in state_map.items():
+            state_map[key][1] = 0
+
+
+def remove_inactive_connections():
+    """remove all inactive connections from the state_map"""
+    connections_to_remove = []
+    if state_map:
+        for key, value in state_map.items():
+            if state_map[key][1] == 0:
+                connections_to_remove.append(key)
+        for connection in connections_to_remove:
+            del state_map[connection]
+
 
 @event.listens_for(Project, "after_insert")
 @event.listens_for(Project, "after_update")
 def orm_event_listener(mapper, connection, target):
-    # once a change in the db is detected
-    # fill each connection in the state_map with 1
-    for i in range(connections):
-        state_map[f"connection_{i}"] = 1
+    """listen for db updates and update the state_map"""
 
-    # - state -> 1 when there is an update
-    # - state -> 0 when there is no update
+    # once a change in the db is detected
+    # clear all inactive connections from state_map
+    # fill each connection in the state_map with [1, 1]
+    # [update_state, active_state]
+
+    remove_inactive_connections()
+
+    if state_map:
+        for key, value in state_map.items():
+            state_map[key] = [1, 1]
 
 
 async def event_generator(request: Request, db: Session):
@@ -83,28 +109,25 @@ async def event_generator(request: Request, db: Session):
     connections += 1
     map_key = f"connection_{connection_index}"
 
+    reset_connection_active_status()
+
     # initialize current connection state
-    state_map[map_key] = 1
+    state_map[map_key] = [1, 1]
 
     while True:
-        # close connection is client disconnects
-        if await request.is_disconnected():
-            print(f"client {request.client.host} disconnected")
-            connections -= 1
-            del state_map[map_key]
-            break
-
+        # mark the current connection as active
+        state_map[map_key][1] = 1
         # check if state map is non empty
-        if state_map:
-            if state_map[map_key] == 1:
-                # send a message if state is 1
-                data = project_service.fetch_statistics(db).model_dump_json()
+        if state_map[map_key][0] == 1:
+            # send a message if update_state is 1
+            data = project_service.fetch_statistics(db).model_dump_json()
 
-                # reset current connection state to 0
-                state_map[map_key] = 0
+            # reset current connection update_state to 0
+            state_map[map_key][0] = 0
 
-                yield {"event": "toolUsageStatisticsUpdate", "data": data}
+            yield {"event": "toolUsageStatisticsUpdate", "data": data}
         await asyncio.sleep(1)
+
 
 
 @project.get("/statistics", response_model=ToolStatsResponse, status_code=200)
