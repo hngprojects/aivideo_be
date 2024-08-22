@@ -24,7 +24,7 @@ class YoutubeSummary:
     def download_video(self, link):
 
         # video_dir = BASE_DIR / "videos"
-        video_dir = os.path.join(BASE_DIR, 'media', 'downloads', 'videos')
+        video_dir = settings.TEMP_DIR
         os.makedirs(video_dir, exist_ok=True)
         filepth = os.path.join(video_dir, f"{uuid4()}.mp4")
 
