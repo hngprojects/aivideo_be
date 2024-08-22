@@ -80,10 +80,6 @@ class YoutubeSummary:
         pdf_filename = f"{uuid4()}.pdf"
         video_dir = settings.TEMP_DIR
         os.makedirs(video_dir, exist_ok=True)
-        # video_dir = BASE_DIR / "yt_pdf"
-        # video_dir.mkdir(
-        #     parents=True, exist_ok=True
-        # )  # Create the directory if it doesn't exist
         file_location = os.path.join(video_dir, f"{uuid4()}.pdf")
 
         # Create a SimpleDocTemplate for the PDF
