@@ -54,7 +54,6 @@ async def talking_head_image_upload(
         job=task,
         project_title='New project',
         project_type='Talking Head',
-        # user_id = pass in the current user id for authenticated users
     )
 
     return success_response(

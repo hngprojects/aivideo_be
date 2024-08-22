@@ -124,7 +124,7 @@ class TextToVideoService:
         )
 
         # Set up for final result
-        video_dir = os.path.join('media', 'downloads', 'video')
+        video_dir = os.path.join(settings.STORAGE_DIR, 'video')
         os.makedirs(video_dir, exist_ok=True)
         output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
         # Adjust aspect ratio

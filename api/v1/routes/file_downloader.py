@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 import requests
@@ -6,7 +5,7 @@ import requests
 from api.utils.files import get_media_type_from_extension
 from api.v1.schemas.ai_tools.talking_avatar import DownloadRequest
 
-downloader = APIRouter(prefix="/download", tags=["Downloader"])
+downloader = APIRouter(prefix="/download", tags=["Download"])
 
 
 @downloader.post("")
