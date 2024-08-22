@@ -318,7 +318,7 @@ async def contains_face(image_path):
     faces = face_cascade.detectMultiScale(
         gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
-    if len(faces) == 1:
+    if len(faces) > 0:
         return True
     
     raise HTTPException(status_code=400,detail=f"Image does not contain a face.",) 

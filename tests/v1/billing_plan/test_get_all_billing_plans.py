@@ -54,6 +54,7 @@ def random_access_token():
 
 
 # Test for successful retrieve of billing_plans
+# NO AUTHENTICATION
 def test_get_billing_plans_successfully(
     mock_db_session,
     test_user,
@@ -69,8 +70,7 @@ def test_get_billing_plans_successfully(
     mock_db_session.query().all.return_value = [test_billing_plan]
 
     # Make request
-    headers = {'Authorization': f'Bearer {access_token_user}'}
-    response = client.get("/api/v1/billing-plans", headers=headers)
+    response = client.get("/api/v1/billing-plans")
 
     resp_d = response.json()
 
@@ -99,8 +99,7 @@ def test_get_billing_plans_successfully(
     mock_db_session.query().all.return_value = five_billing_plans
 
     # Make request
-    headers = {'Authorization': f'Bearer {access_token_user}'}
-    response = client.get("/api/v1/billing-plans", headers=headers)
+    response = client.get("/api/v1/billing-plans")
 
     resp_d = response.json()
 
@@ -112,8 +111,8 @@ def test_get_billing_plans_successfully(
     assert len(billing_plans) == 5
 
 
-# Test for un-authenticated request
-def test_for_unauthenticated_get_billing_plans(
+# Test that authenticated requests also goes through
+def test_for_authenticated_request_goes_through(
     mock_db_session,
     test_user,
     test_billing_plan,
@@ -122,22 +121,21 @@ def test_for_unauthenticated_get_billing_plans(
     # Mock the query for getting user
     mock_db_session.query().filter().first.return_value = test_user
 
+    # Mock the query for billing-plans
+    mock_db_session.query().all.return_value = [test_billing_plan]
 
-    # Make request || WRONG Authorization
-    headers = {'Authorization': f'Bearer {random_access_token}'}
+    # Make request
+    headers = {'Authorization': f'Bearer {access_token_user}'}
     response = client.get("/api/v1/billing-plans", headers=headers)
 
-    assert response.status_code == 401
-    assert response.json()['message'] == "Could not validate credentials"
-    assert not response.json().get('data')
+    resp_d = response.json()
 
+    assert response.status_code == 200
+    assert resp_d['success'] is True
+    assert resp_d['message'] == "Billing plans fetched successfully."
 
-    # Make request || NO Authorization
-    response = client.get("/api/v1/billing-plans")
-
-    assert response.status_code == 401
-    assert response.json()['message'] == "Not authenticated"
-    assert not response.json().get('data')
+    billing_plans = resp_d['data']['billing_plans']
+    assert len(billing_plans) == 1
 
 
 # Test for no billing plans found

@@ -18,6 +18,9 @@ from api.v1.services.job import job_service
 from api.v1.services.user import user_service
 from api.utils.tool_limiter import track_tool_usage
 
+from api.v1.services.user import user_service
+from api.v1.models.user import User
+
 yt_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 download = APIRouter(prefix="/tools/download", tags=["Download"])
 
@@ -26,6 +29,7 @@ download = APIRouter(prefix="/tools/download", tags=["Download"])
     "/video",
     status_code=status.HTTP_200_OK,
     response_model=success_response,
+    dependencies=[Depends(track_tool_usage)],
 )
 async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Endpoint to summarize a single video"""
@@ -56,6 +60,7 @@ async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(g
     "/youtube",
     status_code=status.HTTP_200_OK,
     response_model=success_response,
+    dependencies=[Depends(track_tool_usage)],
 )
 async def summarize_yt_vid(request: VideoLinkRequest, db: Session = Depends(get_db)):
     """Endpoint to download and summarize a single youtube video"""
@@ -82,9 +87,11 @@ async def summarize_yt_vid(request: VideoLinkRequest, db: Session = Depends(get_
     "/pdf",
     status_code=status.HTTP_200_OK,
     response_model=success_response,
-    dependencies=[Depends(track_tool_usage)],
 )
-def download_pdf(request: PdfDownloadRequest):
+def download_pdf(
+    request: PdfDownloadRequest,
+    current_user: User = Depends(user_service.get_current_user),
+):
     try:
         # Generate PDF
         pdf_path = yts_service.pdf_transform(

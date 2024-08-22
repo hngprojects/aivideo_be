@@ -29,4 +29,4 @@ def translate_text_task(text: str, target_language: str):
     """Celery task for translating text."""
     
     translation =  translate_text(text, target_language)
-    return translation
+    return json.dumps({'translation': translation})

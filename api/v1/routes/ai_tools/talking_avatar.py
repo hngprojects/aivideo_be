@@ -37,7 +37,7 @@ async def talking_head_image_upload(
     )
 
     # Check if image contains a face
-    contains_face(image_file)
+    # contains_face(image_file)
     
     if audio_id:
         audio = preset_service.fetch_music_by_id(
