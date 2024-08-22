@@ -18,7 +18,6 @@ from api.utils.settings import settings
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 
 
-
 class YoutubeSummary:
 
     def download_video(self, link):
@@ -44,7 +43,8 @@ class YoutubeSummary:
                 future.result()
             except yt_dlp.utils.DownloadError as e:
                 raise HTTPException(
-                    status_code=500, detail=f"Error downloading video: {e}")
+                    status_code=500, detail=f"Error downloading video: {e}"
+                )
             except Exception as e:
                 raise HTTPException(
                     status_code=500, detail=f"An unexpected error occurred: {e}"
@@ -73,14 +73,18 @@ class YoutubeSummary:
                 detail=f"An Error occurred: {e}",
             )
 
-    def pdf_transform(self, transcript: str, summary: str, video_title: str = "video.mp4"):
+    def pdf_transform(
+        self, transcript: str, summary: str, video_title: str = "video.mp4"
+    ):
         # Save file using BASE_DIR
         pdf_filename = f"{uuid4()}.pdf"
-        video_dir = BASE_DIR / "yt_pdf"
-        video_dir.mkdir(
-            parents=True, exist_ok=True
-        )  # Create the directory if it doesn't exist
-        file_location = video_dir / pdf_filename
+        video_dir = settings.TEMP_DIR
+        os.makedirs(video_dir, exist_ok=True)
+        # video_dir = BASE_DIR / "yt_pdf"
+        # video_dir.mkdir(
+        #     parents=True, exist_ok=True
+        # )  # Create the directory if it doesn't exist
+        file_location = os.path.join(video_dir, f"{uuid4()}.pdf")
 
         # Create a SimpleDocTemplate for the PDF
         pdf = SimpleDocTemplate(str(file_location), pagesize=letter)
