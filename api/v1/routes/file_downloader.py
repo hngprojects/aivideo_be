@@ -6,10 +6,10 @@ import requests
 from api.utils.files import get_media_type_from_extension
 from api.v1.schemas.ai_tools.talking_avatar import DownloadRequest
 
-download_router = APIRouter(prefix="/download", tags=["Download"])
+downloader = APIRouter(prefix="/download", tags=["Downloader"])
 
 
-@download_router.post("")
+@downloader.post("")
 async def download_file(schema: DownloadRequest):
     try:
         # Fetch the file from the URL
