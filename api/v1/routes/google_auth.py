@@ -33,7 +33,7 @@ async def google_login(background_tasks: BackgroundTasks, token_request: OAuthTo
 
     # Check if the user exists
     email = profile_data.get('email')
-    user = user_service.get_user_by_email(email=email, db=db)
+    user = user_service.get_user_by_email(db=db, email=email)
     
     if not user:
         # Create a new user if they don't exist
@@ -82,7 +82,7 @@ async def initiate_google_auth():
 
 
 @google_auth.get("/google/callback")
-async def google_callback(request: Request):
+async def google_callback(background_tasks: BackgroundTasks, request: Request, db: Session = Depends(get_db)):
     code = request.query_params.get("code")
 
     if not code:
@@ -117,17 +117,43 @@ async def google_callback(request: Request):
     
     profile_data = profile_response.json()
     
-    # Collect all profile information from Google
-    profile_info = {
-        "email": profile_data.get("email"),
-        "name": profile_data.get("name"),
-        "family_name": profile_data.get("family_name"),
-        "given_name": profile_data.get("given_name"),
-        "picture": profile_data.get("picture"),
-        "locale": profile_data.get("locale"),
-        "email_verified": profile_data.get("email_verified"),
-        "id_token": id_token
-    }
+    # Check if the user exists or create a new user
+    google_oauth_service = GoogleOauthServices()
+    email = profile_data.get('email')
+    user = user_service.get_user_by_email(db=db, email=email)
+    print("PROFILE DATA", profile_data)
+    if not user:
+        # Create a new user if they don't exist
 
-    # Return the profile information in the response body
-    return JSONResponse(content={"message": "Authenticated successfully", "profile_info": profile_info}, status_code=200)
+        user = google_oauth_service.create(background_tasks=background_tasks, google_response=profile_data, db=db)
+    
+    # Generate tokens
+    access_token = user_service.create_access_token(user_id=user.id)
+    refresh_token = user_service.create_refresh_token(user_id=user.id)
+
+    response = JSONResponse(
+        status_code=200,
+        content={
+            "status_code": 200,
+            "message": "Authenticated successfully",
+            "access_token": access_token,
+            "id_token": id_token,
+            "data": {
+                "user": jsonable_encoder(
+                    user,
+                    exclude=['password', 'is_superadmin', 'is_deleted', 'is_verified', 'updated_at']
+                )
+            }
+        }
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        expires=timedelta(days=60),
+        httponly=True,
+        secure=True,
+        samesite="none",
+    )
+
+    return response
