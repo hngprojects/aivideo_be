@@ -22,7 +22,7 @@ async def track_tool_usage(
     if request.cookies.get("refresh_token"):
         aut = authorization.split()[1] if authorization else None
         # if user is logged in logout user
-        if aut and user_service.get_current_user_optional(aut, db):
+        if aut:
             return
 
     client_ip = get_ip_address(request)
