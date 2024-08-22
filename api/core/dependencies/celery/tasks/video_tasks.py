@@ -86,7 +86,7 @@ def upload_video_task(video_id: str, base_url: str):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-    video_folder = os.path.join(app_settings.MEDIA_DIR, 'uploads', 'videos')
+    video_folder = os.path.join(app_settings.TEMP_DIR)
     video_filename = None
 
     for filename in os.listdir(video_folder):
@@ -100,7 +100,7 @@ def upload_video_task(video_id: str, base_url: str):
 
     video_path = os.path.join(video_folder, video_filename)
 
-    video_url = urljoin(base_url, f"media/uploads/videos/{video_filename}")
+    video_url = urljoin(base_url, f"tmp/media/{video_filename}")
 
     return json.dumps({"video_id": video_id, "video_url": video_url})
 
@@ -130,7 +130,7 @@ def process_youtube_video_task(youtube_url: str, base_url: str):
 
     video_id = os.path.basename(saved_path).split('.')[0]
     video_url = urljoin(
-        base_url, f"/media/downloads/videos/{os.path.basename(saved_path)}")
+        base_url, f"/tmp/media/{os.path.basename(saved_path)}")
 
     return json.dumps({"video_id": video_id, "video_url": video_url})
 
