@@ -42,7 +42,7 @@ async def upload_or_process_video(
         saved_path = await upload_file(
             file,
             allowed_extensions=settings.ALLOWED_EXTENSIONS,
-            upload_folder='videos',
+            upload_folder='',
             save_extension=file.filename.split('.')[-1].lower(),
         )
 
