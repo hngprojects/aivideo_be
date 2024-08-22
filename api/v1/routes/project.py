@@ -1,9 +1,9 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status,Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-
+from typing import Optional
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.v1.models.user import User
@@ -37,10 +37,21 @@ async def create_project(
 
 
 @project.get("", response_model=success_response, status_code=200)
-async def get_all_projects(db: Session = Depends(get_db)):
-    """Endpoint to get all projects"""
+async def get_all_projects(
+    description : Optional[str] = Query(None),
+    title : Optional[str] = Query(None),
+    type : Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+     ):
+    """Endpoint to get all projects With Search Funtctionality"""
 
-    projects = project_service.fetch_all_projects(db=db)
+    query_params = {
+        'description': description,
+        'project_type': type,
+        'title': title
+    }
+
+    projects = project_service.fetch_all_projects(db=db, **query_params)
     projects_filtered = list(
         map(lambda x: ProjectCreateResponseSchema.model_validate(x), projects)
     )
