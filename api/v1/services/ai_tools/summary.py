@@ -4,6 +4,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from api.utils.settings import settings
 import pytesseract
+from typing import Optional 
 from PIL import Image
 from io import BytesIO
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -53,7 +54,7 @@ class SummaryService():
                 text += pytesseract.image_to_string(image)
         return text
 
-    def summarize_pdf(self, pdf_file_path: str):
+    def summarize_pdf(self, pdf_file_path: str, summary_length: str = "medium"):
         """Returns a summarized version of the PDF file located at pdf_file_path."""
         try:
             doc = fitz.open(pdf_file_path)
@@ -70,9 +71,20 @@ class SummaryService():
 
         if not text.strip():
             return "The PDF contains images but no text could be extracted."
+        
+        
+        if summary_length == "brief":
+            chunk_size = 1500
+            chunk_overlap = 500
+        elif summary_length == "detailed":
+            chunk_size = 500
+            chunk_overlap = 100
+        else:  # default to "medium"
+            chunk_size = 1000
+            chunk_overlap = 300
 
         # Summarize Text
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         documents = text_splitter.create_documents([text])
 
         llm_chain = self.init_chain()

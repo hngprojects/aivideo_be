@@ -11,11 +11,11 @@ db = next(get_db())
 
 
 @worker.task()
-def generate_pdf_summary_task(pdf_file_path):
+def generate_pdf_summary_task(pdf_file_path, summary_length):
     """Background task to summarize a pdf and save to the database"""
     try:
         # Summarize the PDF
-        summary = summary_service.summarize_pdf(pdf_file_path)
+        summary = summary_service.summarize_pdf(pdf_file_path, summary_length)
 
         # Process the PDF to extract page and text information
         pdf_reader = PdfReader(pdf_file_path)

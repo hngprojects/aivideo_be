@@ -8,6 +8,7 @@ from fastapi import (
     UploadFile,
 )
 from sqlalchemy.orm import Session
+from typing import Optional
 import requests
 import io
 
@@ -28,8 +29,10 @@ summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 # Set a maximum file size (e.g., 10 MB)
 MAX_FILE_SIZE = 15 * 1024 * 1024  # 10 MB
 
-@summary.post('/pdf-summarizer-test', status_code=status.HTTP_200_OK, response_model=success_response)
-async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
+@summary.post('/pdf-summarizer-test', 
+              status_code=status.HTTP_200_OK, 
+              response_model=success_response)
+async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db),summary_length: Optional[str] = "medium"):
     '''Endpoint to summarize PDF'''
     
     pdf_file = await upload_file_to_current_dir(
