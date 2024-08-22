@@ -30,8 +30,16 @@ async def google_login(background_tasks: BackgroundTasks, token_request: OAuthTo
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token or failed to fetch user info")
 
     profile_data = profile_response.json()
-    user = google_oauth_service.create(background_tasks=background_tasks, db=db, google_response=profile_data)
 
+    # Check if the user exists
+    email = profile_data.get('email')
+    user = user_service.get_user_by_email(email=email, db=db)
+    
+    if not user:
+        # Create a new user if they don't exist
+        user = google_oauth_service.create(background_tasks=background_tasks, db=db, google_response=profile_data)
+    
+    # Generate tokens
     access_token = user_service.create_access_token(user_id=user.id)
     refresh_token = user_service.create_refresh_token(user_id=user.id)
 
@@ -76,6 +84,10 @@ async def initiate_google_auth():
 @google_auth.get("/google/callback")
 async def google_callback(request: Request):
     code = request.query_params.get("code")
+
+    if not code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Authorization code is missing")
+    
     # Exchange the authorization code for an access token
     token_url = "https://oauth2.googleapis.com/token"
     token_response = requests.post(
@@ -89,24 +101,33 @@ async def google_callback(request: Request):
             "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
         },
     )
+
+    if token_response.status_code != 200:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to exchange authorization code")
+    
     token_data = token_response.json()
     id_token = token_data.get("id_token")
+    
     # Validate the ID token
     profile_endpoint = f"https://www.googleapis.com/oauth2/v3/tokeninfo?id_token={id_token}"
     profile_response = requests.get(profile_endpoint)
+
+    if profile_response.status_code != 200:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid ID token")
+    
     profile_data = profile_response.json()
-    # Authenticate the user using the profile data
-    # Print all profile information from Google
-    print("Profile Information:")
-    print("-------------------")
-    print(f"Email: {profile_data.get('email')}")
-    print(f"Name: {profile_data.get('name')}")
-    print(f"Family Name: {profile_data.get('family_name')}")
-    print(f"Given Name: {profile_data.get('given_name')}")
-    print(f"Picture: {profile_data.get('picture')}")
-    print(f"Locale: {profile_data.get('locale')}")
-    print(f"Verified Email: {profile_data.get('email_verified')}")
-    print(f"Id Token: {id_token}")
-    print("-------------------")
-    # ...
-    return JSONResponse(content={"message": "Authenticated successfully"}, status_code=200)
+    
+    # Collect all profile information from Google
+    profile_info = {
+        "email": profile_data.get("email"),
+        "name": profile_data.get("name"),
+        "family_name": profile_data.get("family_name"),
+        "given_name": profile_data.get("given_name"),
+        "picture": profile_data.get("picture"),
+        "locale": profile_data.get("locale"),
+        "email_verified": profile_data.get("email_verified"),
+        "id_token": id_token
+    }
+
+    # Return the profile information in the response body
+    return JSONResponse(content={"message": "Authenticated successfully", "profile_info": profile_info}, status_code=200)
