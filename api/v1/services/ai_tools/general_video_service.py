@@ -15,7 +15,6 @@ from deepgram import (
     FileSource,
 )
 
-from api.utils.files import delete_file
 from api.utils.settings import settings
 
 
@@ -56,12 +55,11 @@ class GeneralVideoService:
         - bitrate: Desired bitrate for the output video (e.g., '1000k' for 1000 kbps).
         """
 
-        output_file = os.path.join('media', 'downloads', 'video', f'video-{str(uuid4())}.mp4')
+        output_file = os.path.join(settings.STORAGE_DIR, 'video', f'video-{str(uuid4())}.mp4')
         try:
             clip = VideoFileClip(input_file)
             clip.write_videofile(output_file, bitrate=f"{bitrate}k")
             print(f"Video compressed successfully: {output_file}")
-            delete_file(input_file)
             return output_file
         except Exception as e:
             print(f"Error compressing video: {e}")

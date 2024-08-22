@@ -65,7 +65,7 @@ class TalkingAvatarService:
 		print(result)
 		url = result['output']['output_video']
 
-		video_dir = os.path.join('media', 'downloads', 'video')
+		video_dir = os.path.join(settings.STORAGE_DIR, 'video')
 		os.makedirs(video_dir, exist_ok=True)
 
 		# Download video file to the current directory
