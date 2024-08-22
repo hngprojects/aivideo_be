@@ -13,8 +13,8 @@ async def generate_thumbnails_service(video_id: str, base_url: str, aspect_ratio
     '''Generate thumbnails for a video'''
     base_name = video_id
     video_dirs = [
-        os.path.join(settings.MEDIA_DIR, 'uploads', 'videos'),
-        os.path.join(settings.MEDIA_DIR, 'downloads', 'videos')
+        os.path.join(settings.TEMP_DIR),
+        os.path.join(settings.TEMP_DIR)
     ]
 
     video_path = None
