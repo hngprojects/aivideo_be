@@ -1,3 +1,4 @@
+import mimetypes
 from typing import List, Optional, Union
 import os
 from typing import Optional
@@ -36,7 +37,7 @@ async def upload_file(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid file format')
 
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'media', 'uploads')
+    UPLOAD_FOLDER = os.path.join(settings.TEMP_DIR)
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
 
@@ -312,7 +313,8 @@ async def contains_face(image_path):
     image = cv2.imread(image_path)
 
     if image is None:
-        raise HTTPException(status_code=404,detail=f"Image not found or unable to load.",)
+        raise HTTPException(
+            status_code=404, detail=f"Image not found or unable to load.",)
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(
@@ -320,6 +322,13 @@ async def contains_face(image_path):
 
     if len(faces) > 0:
         return True
-    
-    raise HTTPException(status_code=400,detail=f"Image does not contain a face.",) 
+      
+    raise HTTPException(
+        status_code=400, detail=f"Image does not contain a face.",)
 
+async def get_media_type_from_extension(file_extension):
+    """
+    Given a file extension (e.g., 'mp4', 'jpg', 'pdf'), return the corresponding media type (MIME type).
+    """
+    media_type, _ = mimetypes.guess_type(f"dummy.{file_extension}")
+    return media_type
