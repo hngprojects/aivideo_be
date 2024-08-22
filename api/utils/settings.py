@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     FLUTTERWAVE_SECRET: str = config("FLUTTERWAVE_SECRET")
     STRIPE_SECRET: str = config("STRIPE_SECRET")
+    FLW_SECRET_HASH: str = config("FLW_SECRET_HASH")
 
     TWILIO_ACCOUNT_SID: str = config("TWILIO_ACCOUNT_SID")
     TWILIO_AUTH_TOKEN: str = config("TWILIO_AUTH_TOKEN")
