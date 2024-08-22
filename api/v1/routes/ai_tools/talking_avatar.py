@@ -1,17 +1,13 @@
 from typing import Optional
-from fastapi import Depends, Form, APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import Depends, Form, APIRouter, File, UploadFile
 from sqlalchemy.orm import Session
-import requests
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.v1.models.user import User
 from api.utils.files import upload_to_current_dir, contains_face
 from api.v1.services.presets import preset_service
 from api.v1.services.job import job_service
-from api.v1.services.user import user_service
-from api.v1.schemas.ai_tools.talking_avatar import DownloadRequest, TalkingHeadRequest
+from api.v1.schemas.ai_tools.talking_avatar import TalkingHeadRequest
 from api.core.dependencies.celery.tasks.video_tasks import generate_talking_avatar_task
 
 video_router = APIRouter(prefix="/tools/video", tags=["Tools"])
@@ -24,7 +20,6 @@ async def talking_head_image_upload(
     audio_id: Optional[str] = Form(None),
     file: UploadFile = File(...), 
     db: Session = Depends(get_db),
-    # current_user: User = Depends(user_service.get_current_user)
 ):
     '''Endpoint to Talking Avatar'''
 
@@ -37,7 +32,7 @@ async def talking_head_image_upload(
     )
 
     # Check if image contains a face
-    contains_face(image_file)
+    # contains_face(image_file)
     
     if audio_id:
         audio = preset_service.fetch_music_by_id(
@@ -105,7 +100,6 @@ async def talking_head_avatar_selection(
         job=task,
         project_title='New project',
         project_type='Talking Head',
-        # user_id = pass in the current user id for authenticated users
     )
 
     return success_response(
@@ -117,20 +111,3 @@ async def talking_head_avatar_selection(
         }
     )
 
-
-@video_router.post("/download")
-async def download_video(schema: DownloadRequest):
-    try:
-        # Fetch the video from the URL
-        response = requests.get(schema.file_url, stream=True)
-        response.raise_for_status()  # Check for errors in the response
-
-        video_filename = "downloaded_video.mp4"
-        with open(video_filename, "wb") as video_file:
-            video_file.write(response.content)
-
-        # Return the video file as a FileResponse
-        return FileResponse(video_filename, media_type="video/mp4", filename="convey-talking-avatar-video.mp4")
-
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=400, detail=f"Error downloading video: {str(e)}")

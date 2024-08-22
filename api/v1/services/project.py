@@ -1,6 +1,7 @@
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
 from api.core.base.services import Service
 from api.v1.models.project import Project
 from api.v1.schemas.project import (
@@ -81,8 +82,15 @@ class ProjectService(Service):
         project.archived = True
         db.commit()
 
-    def fetch_all_user_projects(self, user: User):
-        all_projects = user.projects
+    def fetch_all_user_projects(self, user: User, db: Session):
+        all_projects = (
+            db.query(Project)
+            .filter(
+                Project.user_id == user.id,
+            )
+            .order_by(Project.updated_at.desc())
+            .all()
+        )
 
         return all_projects
 
@@ -187,6 +195,23 @@ class ProjectService(Service):
                 youtube_summarizer=0,
             ),
         )
+
+    def fetch_user_projects_by_keywords(self, db: Session, user: User, keywords: str):
+        query = db.query(Project).filter(
+            and_(
+                Project.user_id == user.id,
+                or_(
+                    Project.title.ilike(f"%{keywords}%"),
+                    Project.description.ilike(f"%{keywords}%"),
+                    Project.project_type.ilike(f"%{keywords}%"),
+                ),
+            )
+        )
+
+        # Order from newest to oldest
+        project_search_results = query.order_by(Project.updated_at.desc()).all()
+
+        return project_search_results
 
 
 project_service = ProjectService()

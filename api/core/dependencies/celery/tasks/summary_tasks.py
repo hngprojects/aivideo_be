@@ -54,17 +54,6 @@ def generate_pdf_summary_task(pdf_file_path):
 
 
 @worker.task()
-def generate_pdf_summary_task(pdf_file):
-    """BAckground task to summarize a pdf and save to database"""
-
-    summary = summary_service.summarize_pdf(pdf_file)
-
-    # Delete file from file system
-    delete_file(pdf_file)
-    
-    return summary
-
-@worker.task()
 def generate_yt_transcript(video_pth):
     """background task generates a transcript based off yt video"""
 
