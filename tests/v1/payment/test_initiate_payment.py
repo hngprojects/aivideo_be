@@ -76,7 +76,6 @@ def test_payment(test_user):
 @pytest.fixture()
 def mock_initiate_payment_schema(test_user, test_bill_plan):
     return InitiatePaymentSchema(
-        email=test_user.email,
         billing_plan_id=test_bill_plan.id,
         payment_gateway="flutterwave",
         redirect_url="http://example.com"
@@ -86,7 +85,6 @@ def mock_initiate_payment_schema(test_user, test_bill_plan):
 @pytest.fixture()
 def mock_initiate_payment_schema_stripe(test_user, test_bill_plan):
     return InitiatePaymentSchema(
-        email=test_user.email,
         billing_plan_id=test_bill_plan.id,
         payment_gateway="stripe",
         redirect_url="http://example.com"
@@ -145,7 +143,6 @@ def test_initiate_payment_unsuccessful(
     mock_db_session.query().get.return_value = test_bill_plan
     post_url = "/api/v1/payments/initiate"
     data = {
-        'email': test_user.email,
         'billing_plan_id': test_bill_plan.id,
         'payment_gateway': "anothergateway",
         'redirect_url': "example.com"

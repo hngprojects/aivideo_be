@@ -95,16 +95,25 @@ async def export_jobs_as_csv(
     return response
 
 
-@job.get("/sse")
-async def get_sse_job_activity(
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(user_service.get_current_super_admin),
-):
+@job.get("/activity/sse", summary="Get job activity via SSE")
+async def get_sse_job_activity(db: Session = Depends(get_db)):
     """
     Retrieve a server-sent event stream for job activity updates.
     """
 
     return StreamingResponse(
         job_service.stream_job_activity(db=db),
+        media_type="text/event-stream",
+    )
+
+
+@job.get("/statistics/sse", summary="Get job statistics via SSE")
+async def get_sse_job_statistics(db: Session = Depends(get_db)):
+    """
+    Retrieve a server-sent event stream for job statistics updates.
+    """
+
+    return StreamingResponse(
+        job_service.stream_job_statistics(db=db),
         media_type="text/event-stream",
     )

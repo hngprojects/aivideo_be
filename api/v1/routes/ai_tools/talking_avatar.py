@@ -6,9 +6,11 @@ import requests
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.utils.files import upload_file_to_current_dir, contains_face
+from api.v1.models.user import User
+from api.utils.files import upload_to_current_dir, contains_face
 from api.v1.services.presets import preset_service
 from api.v1.services.job import job_service
+from api.v1.services.user import user_service
 from api.v1.schemas.ai_tools.talking_avatar import DownloadRequest, TalkingHeadRequest
 from api.core.dependencies.celery.tasks.video_tasks import generate_talking_avatar_task
 
@@ -16,23 +18,27 @@ video_router = APIRouter(prefix="/tools/video", tags=["Tools"])
 
 @video_router.post('/talking-head/image-upload', status_code=202, response_model=success_response)
 async def talking_head_image_upload(
-    script: str = Form(...),
+    script: str = Form(..., max_length=2500),
     aspect_ratio: str = Form(...),
     voice_over: str = Form(...),
     audio_id: Optional[str] = Form(None),
     file: UploadFile = File(...), 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(user_service.get_current_user)
 ):
     '''Endpoint to Talking Avatar'''
 
     file_extension = file.filename.split(".")[-1]
-    image_file = await upload_file_to_current_dir(
+    image_file = await upload_to_current_dir(
         file, 
         allowed_extensions=['jpg', 'jpeg', 'png'],
         save_extension=file_extension,
         max_file_size=10 * 1024 * 1024
     )
+
+    # Check if image contains a face
     contains_face(image_file)
+    
     if audio_id:
         audio = preset_service.fetch_music_by_id(
             db=db, music_id=audio_id

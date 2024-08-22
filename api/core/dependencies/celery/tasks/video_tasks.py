@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 from typing import List, Optional
 import json
 from sqlalchemy.orm import Session
@@ -12,6 +13,7 @@ from api.utils.files import delete_file
 from api.db.database import get_db
 import os
 import asyncio
+import yt_dlp
 from urllib.parse import urljoin
 
 db: Session = next(get_db())
@@ -24,7 +26,7 @@ def generate_talking_avatar_task(
     script: str,
     voice_over,
     default: bool,
-    audio_file: Optional[str]=None,
+    audio_file: Optional[str] = None,
 ):
     # def generate_talking_avatar_task():
     '''Background task to generate talking avatar and save to database'''
@@ -84,7 +86,7 @@ def upload_video_task(video_id: str, base_url: str):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-    video_folder = os.path.join(app_settings.MEDIA_DIR, 'uploads', 'videos')
+    video_folder = os.path.join(app_settings.TEMP_DIR)
     video_filename = None
 
     for filename in os.listdir(video_folder):
@@ -98,13 +100,29 @@ def upload_video_task(video_id: str, base_url: str):
 
     video_path = os.path.join(video_folder, video_filename)
 
-    video_url = urljoin(base_url, f"media/uploads/videos/{video_filename}")
+    video_url = urljoin(base_url, f"tmp/media/{video_filename}")
 
     return json.dumps({"video_id": video_id, "video_url": video_url})
 
 
 @worker.task()
 def process_youtube_video_task(youtube_url: str, base_url: str):
+    # Validate video size before downloading
+    max_size_mb = 100  #
+
+    ydl_opts = {'skip_download': True}
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(youtube_url, download=False)
+
+    video_size_bytes = info.get('filesize') or info.get('filesize_approx', 0)
+    video_size_mb = video_size_bytes / (1024 * 1024)
+
+    if video_size_mb > max_size_mb:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"The video exceeds the maximum allowed size of {max_size_mb} MB."
+        )
 
     saved_path = yts_service.download_video(youtube_url)
 
@@ -112,29 +130,27 @@ def process_youtube_video_task(youtube_url: str, base_url: str):
 
     video_id = os.path.basename(saved_path).split('.')[0]
     video_url = urljoin(
-        base_url, f"/media/downloads/videos/{os.path.basename(saved_path)}")
+        base_url, f"/tmp/media/{os.path.basename(saved_path)}")
 
     return json.dumps({"video_id": video_id, "video_url": video_url})
 
 
 @worker.task()
-def generate_thumbnails_task(video_id: str, base_url: str, timestamp: float = None):
+def generate_thumbnails_task(video_id: str, base_url: str, aspect_ratio: str, timestamp: float = None):
     '''Background task to generate thumbnails'''
-
     thumbnails = asyncio.run(
         generate_thumbnails_service(
-            video_id, base_url, timestamp)
+            video_id, base_url, aspect_ratio, timestamp)
     )
-
     return json.dumps({'video_id': video_id, 'thumbnails': thumbnails})
 
 
 @worker.task()
-def select_and_download_thumbnail_task(video_id: str, thumbnail_id: str, resolution: str, base_url: str):
+def select_and_download_thumbnail_task(thumbnail_id: str, base_url: str):
     '''Background task to select and download a thumbnail'''
 
     thumbnail = asyncio.run(
         select_and_download_thumbnail_service(
-            video_id, thumbnail_id, resolution, base_url)
+            thumbnail_id, base_url)
     )
     return thumbnail

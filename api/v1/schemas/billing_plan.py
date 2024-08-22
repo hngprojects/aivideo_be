@@ -2,6 +2,8 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import List
 
+from api.v1.schemas.base_schema import ResponseBase
+
 
 class CreateBillingPlanSchema(BaseModel):
     plan_name: str
@@ -20,10 +22,7 @@ class CreateBillingPlanReturnData(CreateBillingPlanSchema):
         from_attributes = True
 
 
-class CreateBillingPlanResponse(BaseModel):
-    status_code: int = 200
-    success: bool
-    message: str
+class CreateBillingPlanResponse(ResponseBase):
     data: CreateBillingPlanReturnData
 
 
@@ -31,8 +30,5 @@ class GetBillingPlanData(BaseModel):
     billing_plans: List[CreateBillingPlanReturnData]
 
 
-class GetBillingPlanListResponse(BaseModel):
-    status_code: int = 200
-    success: bool
-    message: str
+class GetBillingPlanListResponse(ResponseBase):
     data: GetBillingPlanData

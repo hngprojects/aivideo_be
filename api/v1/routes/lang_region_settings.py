@@ -14,50 +14,41 @@ from api.v1.services.user import user_service
 
 regions = APIRouter(prefix="/regions", tags=["Regions, Timezone and Language"])
 
-# Region Endpoints
-@regions.post("", response_model=RegionOut, status_code=status.HTTP_201_CREATED)
-def create_region(region: RegionCreate, db: Session = Depends(get_db),
-                  current_user: User = Depends(user_service.get_current_user)):
-    region = region_service.create(db, region, current_user.id)
 
-    return success_response(
-        status_code=status.HTTP_201_CREATED,
-        message='Region created successfully',
-        data=region
-    )
 
-@regions.get("", response_model=List[RegionOut])
-def get_regions(db: Session = Depends(get_db)):
-    """Get All Regions"""
-    regions = region_service.fetch_all(db)
+@regions.put("", response_model=RegionOut, status_code=status.HTTP_200_OK)
+def create_or_update_region(
+    region: RegionCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user)
+):
+    region_data = region_service.create_or_update(db, region, current_user.id)
     
     return success_response(
-        status_code=200,
-        message='Regions retrieved successfully',
-        data=regions
+        status_code=status.HTTP_200_OK,
+        message='Region created or updated successfully',
+        data=region_data['data']
     )
 
-@regions.get("/{region_id}", response_model=RegionOut)
-def get_region_by_user(region_id: str, db: Session = Depends(get_db)):
-    region = region_service.fetch(db, region_id)
+
+@regions.get("", response_model=RegionOut)
+def get_region_by_user(
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(user_service.get_current_user)
+):
+    region_data = region_service.fetch(db, current_user.id)
     
-    return success_response (
+    if not region_data:
+        return success_response(
+            status_code=404,
+            message='Region not found',
+            data=None
+        )
+        
+        
+    
+    return success_response(
         status_code=200,
         message='Region retrieved successfully',
-        data=region
+        data=region_data['data']
     )
-
-@regions.put("/{region_id}", response_model=RegionOut)
-def update_region(region_id: str, region: RegionUpdate, db: Session = Depends(get_db)):
-    db_region = region_service.update(db, region_id, region)
-    return success_response(
-        status_code=200,
-        message='Region updated successfully',
-        data=db_region
-    )
-
-@regions.delete("/{region_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_region(region_id: str, db: Session = Depends(get_db)):
-    region = region_service.delete(db, region_id)
-    return
-

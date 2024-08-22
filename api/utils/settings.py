@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings
 from decouple import config
 from pathlib import Path
@@ -51,6 +52,7 @@ class Settings(BaseSettings):
     ASSEMBLYAI_API_KEY: str = config("ASSEMBLYAI_API_KEY")
     OPENROUTER_API_KEY: str = config("OPENROUTER_API_KEY")
     GOOEY_API_KEY: str = config("GOOEY_API_KEY")
+    DEEPGRAM_API_KEY: str = config("DEEPGRAM_API_KEY")
     UNREAL_SPEECH_API_KEY: str = config("UNREAL_SPEECH_API_KEY")
 
     MEDIA_DIR: str = config("MEDIA_DIR")
@@ -59,6 +61,8 @@ class Settings(BaseSettings):
     X_RAPIDAPI_KEY: str = config("X_RAPIDAPI_KEY")
     X_RAPIDAPI_HOST: str = config("X_RAPIDAPI_HOST")
 
+    TEMP_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent, 'tmp', 'media')
+    
     @property
     def ALLOWED_EXTENSIONS(self) -> set[str]:
         raw_extensions = config("ALLOWED_EXTENSIONS", default="")
