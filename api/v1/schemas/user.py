@@ -139,7 +139,7 @@ class ChangePasswordSchema(BaseModel):
     confirm_new_password: str
 
 
-class UserStatData(BaseModel):
+class UserStatResponse(BaseModel):
     total_users: int
     active_users: int
     inactive_users: int
@@ -149,12 +149,6 @@ class UserStatData(BaseModel):
     inactive_in_last_hour: int
     deleted_in_last_hour: int
 
-
-class UserStatResponse(BaseModel):
-    status: str
-    message: str
-    data: UserStatData
-    status_code: int
 
 
 class UserRestoreResponse(BaseModel):

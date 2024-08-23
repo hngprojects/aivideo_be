@@ -163,16 +163,21 @@ async def event_generator(request: Request, db: Session):
 
 
 @user_router.get(
-    "/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
+    "/statistics",
+    status_code=status.HTTP_200_OK,
+    response_model=UserStatResponse,
+    summary="Get user statistics data via SSE",
 )
 def get_user_statistics(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
 ):
-    """Endpoint to fetch all user statistics"""
+    """Endpoint to fetch all user statistics via SSE"""
     return EventSourceResponse(event_generator(request, db))
 
+
 #########################################
+
 
 @user_router.get("/export/csv", status_code=status.HTTP_200_OK)
 def export_csv(
