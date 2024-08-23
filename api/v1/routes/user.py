@@ -18,6 +18,7 @@ from api.v1.schemas.user import (
     UserStatResponse,
     UserRestoreResponse,
     UserActivityResponse,
+    UserUpdateResponse
 )
 from api.db.database import get_db
 from api.v1.services.user import user_service, UserService
@@ -207,7 +208,7 @@ def get_user_activity(
     )
 
 
-@user_router.patch("/{user_id}", status_code=status.HTTP_200_OK)
+@user_router.patch("/{user_id}", status_code=status.HTTP_200_OK, response_model=UserUpdateResponse)
 def update_user(
     user_id: str,
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],

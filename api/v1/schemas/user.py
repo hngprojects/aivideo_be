@@ -183,3 +183,16 @@ class UserActivityResponse(BaseModel):
     total_pages: int
     data: Union[List[UserActivityData], List[None]]
     status_code: int
+
+class UserUpdateResponseData(BaseModel):
+    id: str
+    email: EmailStr
+    first_name: str
+    last_name: str
+    last_login: Union[datetime, None]
+
+class UserUpdateResponse(BaseModel):
+    status: str = "success"
+    message: str = "User Updated Successfully"
+    data: UserUpdateResponseData
+    status_code: int = 200
