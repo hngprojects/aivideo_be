@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, status, BackgroundTasks
-from typing import List
+from typing import List, Annotated
 from api.v1.schemas.job import JobResponse
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import event
+from sse_starlette import EventSourceResponse
 from api.db.database import get_db
 from api.utils.pagination import paginated_response
 from api.utils.success_response import success_response
@@ -12,6 +14,8 @@ from api.v1.models.job import Job
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.job import job_service
+import json
+import asyncio
 
 job = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -105,3 +109,89 @@ async def get_sse_job_statistics(db: Session = Depends(get_db)):
         job_service.stream_job_statistics(db=db),
         media_type="text/event-stream",
     )
+
+################ SSE ENDPOINT FOR USER STATISTICS ###################
+
+# total number of connected clients
+connections = 0
+# {"connection": ["state", "active_status"]}
+state_map = {}
+
+
+def reset_connection_active_status():
+    """reset the active status for each open connection tracked by the state_map"""
+    if state_map:
+        for key, value in state_map.items():
+            state_map[key][1] = 0
+
+
+def remove_inactive_connections():
+    """remove all inactive connections from the state_map"""
+    connections_to_remove = []
+    if state_map:
+        for key, value in state_map.items():
+            if state_map[key][1] == 0:
+                connections_to_remove.append(key)
+        for connection in connections_to_remove:
+            del state_map[connection]
+
+
+@event.listens_for(Job, "after_insert")
+@event.listens_for(Job, "after_update")
+def orm_event_listener(mapper, connection, target):
+    """listen for db updates and update the state_map"""
+
+    # once a change in the db is detected
+    # clear all inactive connections from state_map
+    # fill each connection in the state_map with [1, 1]
+    # [update_state, active_state]
+
+    remove_inactive_connections()
+
+    if state_map:
+        for key, value in state_map.items():
+            state_map[key] = [1, 1]
+
+
+async def event_generator(db: Session):
+    global connections, state_map
+    connection_index = connections
+    connections += 1
+    map_key = f"connection_{connection_index}"
+
+    reset_connection_active_status()
+
+    # initialize current connection state
+    state_map[map_key] = [1, 1]
+
+    while True:
+        # mark the current connection as active
+        try:
+            state_map[map_key][1] = 1
+        except KeyError:
+            # if connection is already deleted
+            break
+        # check if state map is non empty
+        if state_map[map_key][0] == 1:
+            # send a message if update_state is 1
+            data = json.dumps(jsonable_encoder(job_service.fetch_recent_job_activity(db)))
+
+            # reset current connection update_state to 0
+            state_map[map_key][0] = 0
+
+            yield {"event": "recentActivityUpdate", "data": data}
+        await asyncio.sleep(1)
+
+
+@job.get(
+    "/recent-activity", status_code=status.HTTP_200_OK
+)
+def get_user_statistics(
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Endpoint to fetch all user statistics"""
+    return EventSourceResponse(event_generator(db))
+
+#########################################
+
+

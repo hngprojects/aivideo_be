@@ -349,5 +349,20 @@ class JobService:
 
             await asyncio.sleep(1)
 
+    def fetch_recent_job_activity(self, db: Session):
+        query = db.query(Project, Job).outerjoin(Job, Project.id == Job.project_id)
+        query_result = query.order_by(desc(Job.created_at)).limit(10).all()
+        all_tasks = [
+            {
+                "id": project.id,
+                "created_at": project.created_at,
+                "status": job.status,
+                "tool_used": project.project_type,
+            }
+            for project, job in query_result
+        ]
+
+        return all_tasks
+
 
 job_service = JobService()
