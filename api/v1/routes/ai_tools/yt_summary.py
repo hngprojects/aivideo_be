@@ -39,7 +39,22 @@ async def summarize_up_vid(
     """Endpoint to summarize a single video"""
 
     video = await upload_files(
-        file, allowed_extensions=[".mp4", ".mp3"], upload_folder="video_summary"
+        file,
+        allowed_extensions=[
+            ".mp4",
+            ".avi",
+            ".mkv",
+            ".mov",
+            ".wmv",
+            ".flv",
+            ".webm",
+            ".m4v",
+            ".3gp",
+            ".mpeg",
+            ".mpg",
+        ],
+        upload_folder="video_summary",
+        max_file_size=50 * 1024 * 1024,
     )
 
     task = generate_video_summary_task.delay(video[0])

@@ -87,3 +87,15 @@ async def update_billing_plan(
         message="Billing plan updated successfully",
         data=bill_plan.to_dict(),
     )
+
+@billing_plan.delete('/{billing_plan_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_a_billing_plan(
+    billing_plan_id: str,
+    current_user: User = Depends(user_service.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Endpoint to delete a billing plan by ID
+    """
+
+    bp_service.delete(db=db, plan_id=billing_plan_id)

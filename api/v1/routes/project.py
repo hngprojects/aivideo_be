@@ -126,7 +126,11 @@ async def event_generator(request: Request, db: Session):
 
     while True:
         # mark the current connection as active
-        state_map[map_key][1] = 1
+        try:
+            state_map[map_key][1] = 1
+        except KeyError:
+            # if connection is already deleted
+            break
         # check if state map is non empty
         if state_map[map_key][0] == 1:
             # send a message if update_state is 1
