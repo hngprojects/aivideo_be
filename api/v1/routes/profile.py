@@ -41,7 +41,7 @@ def get_current_user_profile(
 
 
 
-@profile.put('', status_code=status.HTTP_200_OK, response_model=ProfileBase)
+@profile.patch('', status_code=status.HTTP_200_OK, response_model=ProfileBase)
 def update_user_profile(
     username: Optional[str] = Form(None),
     job_title: Optional[str] = Form(None),

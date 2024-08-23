@@ -124,7 +124,7 @@ def test_update_profile_success(client, db_session_mock):
     mock_profile_instance = mock_profile()
     temp_file_path = create_temp_file()
     with patch("api.v1.services.profile.profile_service.update", return_value=mock_profile_instance) as mock_update:
-        response = client.put(
+        response = client.patch(
             "/api/v1/profile",
             data={
                 "username": "mary",
@@ -158,7 +158,7 @@ def test_update_profile_success(client, db_session_mock):
 # Test for unauthorized access
 def test_update_profile_unauthorized(client):
     '''Test unauthorized access when no token is provided'''
-    response = client.put(
+    response = client.patch(
         "/api/v1/profile",  
         json={}
     )
@@ -178,7 +178,7 @@ def test_update_profile_email_in_use(client, db_session_mock):
     
     temp_file_path = create_temp_file()
     with patch("api.v1.services.profile.profile_service.update", side_effect=HTTPException(status_code=409, detail="Email address already in use")) as mock_update:
-        response = client.put(
+        response = client.patch(
             "/api/v1/profile",  
             data={
                 "username": "mary",
@@ -218,7 +218,7 @@ def test_update_profile_custom_error(client, db_session_mock):
     # Use a custom service function that raises an HTTPException
     temp_file_path = create_temp_file()
     with patch("api.v1.services.profile.profile_service.update", side_effect=custom_service_function):
-        response = client.put(
+        response = client.patch(
             "/api/v1/profile",
             data={
                 "username": "mary",
