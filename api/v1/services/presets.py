@@ -158,7 +158,7 @@ class PresetService:
         avatar = Avatar(
             file_url=file_url,
             file_name=file_name,
-            file_path=AVATAR_FOLDER/{file_name}
+            file_path=f'{AVATAR_FOLDER}/{file_name}'
         )
 
         db.add(avatar)
