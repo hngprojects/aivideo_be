@@ -1,5 +1,20 @@
 import json
 from pypdf import PdfReader
+import os
+import secrets 
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ListStyle
+from reportlab.platypus import ListFlowable, ListItem
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from io import BytesIO
+from reportlab.lib.enums import TA_CENTER
+from io import BytesIO
 from api.core.dependencies.celery.celery_app import worker
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.summary import summary_service
@@ -11,7 +26,7 @@ db = next(get_db())
 
 
 @worker.task()
-def generate_pdf_summary_task(pdf_file_path, summary_length):
+def generate_pdf_summary_task(pdf_file_path, summary_length, use_bullets=False, custom_filename=None):
     """Background task to summarize a pdf and save to the database"""
     try:
         # Summarize the PDF
@@ -34,7 +49,47 @@ def generate_pdf_summary_task(pdf_file_path, summary_length):
 
         time_saved = estimated_read_time - summary_read_time
 
-        # Create the result dictionary
+        # Create the PDF with better formatting
+        pdf_buffer = BytesIO()
+        pdf_filename = os.path.join("media/uploads/pdf", f"{custom_filename or f'summary_{secrets.token_hex(8)}'}.pdf")
+        os.makedirs(os.path.dirname(pdf_filename), exist_ok=True)
+
+        # Set up the document
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Title
+        title_style = styles['Title']
+        story.append(Paragraph("Summary Report", title_style))
+        story.append(Spacer(1, 12))
+
+        # Format the summary into paragraphs and apply bullets if enabled
+        normal_style = styles['Normal']
+        paragraphs = summary.split("\n\n")  # Split by double newlines for paragraphs
+
+        if use_bullets:
+            # Use bullet points for summarizing key points
+            bullet_style = styles['Bullet']
+            for paragraph in paragraphs:
+                story.append(Paragraph(paragraph, bullet_style))
+                story.append(Spacer(1, 6))  # Adjust the spacing for bullets
+        else:
+            for paragraph in paragraphs:
+                story.append(Paragraph(paragraph, normal_style))
+                story.append(Spacer(1, 12))  # Adjust the spacing for paragraphs
+
+        # Build the PDF
+        doc.build(story)
+
+        # Save the PDF content to a file
+        pdf_buffer.seek(0)
+        with open(pdf_filename, "wb") as f:
+            f.write(pdf_buffer.read())
+
+        pdf_buffer.close()
+
+        # Remove binary data from the result dictionary
         result = {
             "number_of_pages": number_of_pages,
             "number_of_words": number_of_words,
@@ -43,9 +98,11 @@ def generate_pdf_summary_task(pdf_file_path, summary_length):
             "summary_read_time": f"{summary_read_time:.2f} minutes",
             "time_saved": f"{time_saved:.2f} minutes",
             "summary": summary,
+            "pdf_file_path": pdf_filename  # Provide the file path in the response instead of the actual file content
         }
 
-        result_json = json.dumps(result)
+        # Convert result to JSON safely
+        result_json = json.dumps(result, default=str)
 
         return result_json
 
