@@ -12,6 +12,7 @@ from api.v1.schemas.project import (
 )
 from api.utils.db_validators import check_model_existence
 from api.v1.models.user import User
+from api.v1.schemas.project import ProjectToolsEnum
 
 
 class ProjectService(Service):
@@ -115,69 +116,36 @@ class ProjectService(Service):
         total_projects = db.query(Project).all()
         total_count = len(total_projects)
 
-        pdf_summarizer = sum(
-            [
-                1
-                for project in total_projects
-                if project.project_type == "PDF Summarizer"
-            ]
-        )
-        podcast_summarizer = sum(
-            [
-                1
-                for project in total_projects
-                if project.project_type == "Podcast Summarizer"
-            ]
-        )
-        youtube_summarizer = sum(
-            [
-                1
-                for project in total_projects
-                if project.project_type == "Youtube Summarizer"
-            ]
-        )
-        audio_transcriber = sum(
-            [
-                1
-                for project in total_projects
-                if project.project_type == "Audio transcriber"
-            ]
-        )
-        text_to_video = sum(
-            [1 for project in total_projects if project.project_type == "Text To Video"]
-        )
-        image_to_video = sum(
-            [1 for project in total_projects if project.project_type == "Talking Head"]
-        )
-        thumbnail_generator = sum(
-            [
-                1
-                for project in total_projects
-                if project.project_type == "Video Thumbnail Generator"
-            ]
-        )
+        all_project_count_dict = {}
 
+        # Dict should look like {"podcast_summarizer": 2, ...} once iteration completes
+        # Code can further be optimized to use single for-loop to count as well as calculate percentages
+        for p in total_projects:
+            # Map Enum value stored in db to Enum's name, for use as key in the `all_project_count_dict`
+            # Catch errors that would occur when an unknown project_type is encountered
+            try:
+                project_type_name = ProjectToolsEnum(p.project_type).name
+            except ValueError:
+                continue
+
+            # Increment count for each tool if already present in all_project_count_dict else intialise it to 1
+            prev_count_value = all_project_count_dict.get(project_type_name)
+            all_project_count_dict[project_type_name] = 1 if prev_count_value is None else prev_count_value + 1
+
+
+        # Store percentage stats for projects in a dictionary
+        all_project_percentage_dict = {}
+
+        for project_name, project_count in all_project_count_dict.items():
+            all_project_percentage_dict[project_name] = (project_count / total_count) * 100
+        
         if total_count:
-            pdf_summarizer_percentage = (pdf_summarizer / total_count) * 100
-            podcast_summarizer_percentage = (podcast_summarizer / total_count) * 100
-            youtube_summarizer_percentage = (youtube_summarizer / total_count) * 100
-            audio_transcriber_percentage = (audio_transcriber / total_count) * 100
-            text_to_video_percentage = (text_to_video / total_count) * 100
-            image_to_video_percentage = (image_to_video / total_count) * 100
-            thumbnail_generator_percentage = (thumbnail_generator / total_count) * 100
-
             return ToolStatsResponse(
                 status="success",
                 status_code=200,
                 message="Tool Usage data successfully retrieved!",
                 data=ToolStatsData(
-                    pdf_summarizer=pdf_summarizer_percentage,
-                    podcast_summarizer=podcast_summarizer_percentage,
-                    audio_transcriber=audio_transcriber_percentage,
-                    text_to_video=text_to_video_percentage,
-                    image_to_video=image_to_video_percentage,
-                    thumbnail_generator=thumbnail_generator_percentage,
-                    youtube_summarizer=youtube_summarizer_percentage,
+                    **all_project_percentage_dict,
                 ),
             )
 
@@ -185,15 +153,7 @@ class ProjectService(Service):
             status="success",
             status_code=200,
             message="No Tool Usage data recorded!",
-            data=ToolStatsData(
-                pdf_summarizer=0,
-                podcast_summarizer=0,
-                audio_transcriber=0,
-                text_to_video=0,
-                image_to_video=0,
-                thumbnail_generator=0,
-                youtube_summarizer=0,
-            ),
+            data=ToolStatsData(),       # Default values will be used
         )
 
     def fetch_user_projects_by_keywords(self, db: Session, user: User, keywords: str):
