@@ -101,6 +101,6 @@ async def delete_a_billing_plan(
     bp_service.delete(db=db, plan_id=billing_plan_id)
 
     return success_response(
-        status_code=status.HTTP_200_OK,
-        message="Plan deleted successfully",
+        status_code=status.HTTP_204_NO_CONTENT,
+        message="",
     )
