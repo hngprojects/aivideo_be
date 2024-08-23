@@ -60,6 +60,14 @@ class UserData(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class UserDetailData(UserData):
+    most_used_tool: str
+
+class UserDetailResponse(BaseModel):
+    status: str
+    message: str
+    data: UserDetailData
+    status_code: int
 
 class AllUsersResponse(BaseModel):
     """

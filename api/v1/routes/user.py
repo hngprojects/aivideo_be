@@ -18,6 +18,7 @@ from api.v1.schemas.user import (
     UserStatResponse,
     UserRestoreResponse,
     UserActivityResponse,
+    UserDetailResponse
 )
 from api.db.database import get_db
 from api.v1.services.user import user_service, UserService
@@ -148,7 +149,7 @@ async def event_generator(request: Request, db: Session):
         try:
             state_map[map_key][1] = 1
         except KeyError:
-            # if connection is already deleted
+            ""
             break
         # check if state map is non empty
         if state_map[map_key][0] == 1:
@@ -343,26 +344,13 @@ def admin_registers_user(
     return user_service.super_admin_create_user(db, user_request)
 
 
-@user_router.get("/{user_id}", status_code=status.HTTP_200_OK)
+@user_router.get("/{user_id}", status_code=status.HTTP_200_OK, response_model=UserDetailResponse)
 def get_user_by_id(
     user_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user),
 ):
-    user = user_service.get_user_by_id(db=db, id=user_id)
-
-    return success_response(
-        status_code=status.HTTP_200_OK,
-        message="User retrieved successfully",
-        data=jsonable_encoder(
-            user,
-            exclude=[
-                "password",
-                "updated_at",
-            ],
-        ),
-    )
-
+    return user_service.get_user_by_id(db=db, id=user_id)
 
 @user_router.put(
     "/update/password", status_code=status.HTTP_200_OK, response_model=success_response
