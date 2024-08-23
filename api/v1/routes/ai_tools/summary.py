@@ -30,8 +30,7 @@ from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summar
 
 summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
-# Set a maximum file size (e.g., 10 MB)
-MAX_FILE_SIZE = 15 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE = 15 * 1024 * 1024
 
 @summary.post('/pdf-summarizer-test', 
               status_code=status.HTTP_200_OK, 
