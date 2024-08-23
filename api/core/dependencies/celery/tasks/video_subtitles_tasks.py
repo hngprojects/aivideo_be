@@ -1,6 +1,6 @@
 import json
 from api.utils.files import delete_file
-from api.v1.services.ai_tools.video_subtitles import convert_video_to_audio, transcribe_audio, translate_text, generate_subtitles
+from api.v1.services.ai_tools.video_subtitles import convert_video_to_audio, translate_text, generate_subtitles
 from api.v1.services.ai_tools.summary import summary_service
 
 from api.core.dependencies.celery.celery_app import worker
@@ -27,8 +27,8 @@ def transcribe_video_task(video_file_path):
         audio_file_path = convert_video_to_audio(video_file_path)
 
         # Transcribe audio to text
-        # transcription = summary_service.transcribe_audio(audio_file_path)
-        transcription = transcribe_audio(audio_file_path)
+        transcription = summary_service.transcribe_audio(audio_file_path)
+        # transcription = transcribe_audio(audio_file_path)
 
         # Delete the audio file and video file after transcription
         delete_file(audio_file_path)

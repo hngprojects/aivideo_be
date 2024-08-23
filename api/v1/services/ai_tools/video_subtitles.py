@@ -8,7 +8,6 @@ from typing import List, Dict, Optional
 from deep_translator import GoogleTranslator
 import ffmpeg
 from api.utils.files import delete_file
-from api.v1.services.ai_tools.summary import summary_service
 from openai import OpenAI
 import time
 
@@ -50,12 +49,12 @@ def convert_video_to_audio(video_path: str) -> str:
     except subprocess.CalledProcessError as e:
         raise Exception(f"Error converting video to audio: {e}")
 
-def transcribe_audio(audio_path: str) -> list:
+def transcribe_audio(file_path: str) -> list:
     """
     Transcribe audio using OpenAI Whisper API.
 
     Args:
-        audio_path (str): Path to the audio file.
+        file_path (str): Path to the audio file.
 
     Returns:
         list: List of transcription segments with text and timestamps.
@@ -64,21 +63,23 @@ def transcribe_audio(audio_path: str) -> list:
         Exception: If transcription fails.
     """
     try:
-
-        with open(audio_path, "rb") as audio_file:
+        with open(file_path, "rb") as audio_file:
             transcript = client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
                 response_format="verbose_json",
                 language="en"  # Specify language if known; otherwise, auto-detect
             )
+            # print(transcript)
 
-        segments = transcript.get('segments', [])
+            # Correctly access the segments attribute or method
+            segments = transcript.segments  # Access the segments attribute
+            # print(segments)
+            
+            if not segments:
+                raise Exception("No transcription segments received from OpenAI Whisper API.")
 
-        if not segments:
-            raise Exception("No transcription segments received from OpenAI Whisper API.")
-
-        return segments
+            return segments
 
     except Exception as e:
         raise Exception(f"Error during transcription: {e}")
@@ -161,7 +162,6 @@ def save_subtitles_to_file(srt_content: str, output_path: str) -> None:
     except Exception as e:
         raise Exception(f"Error saving subtitles to file: {e}")
 
-import os
 
 def generate_subtitles(video_path: str) -> dict:
     """
@@ -183,13 +183,17 @@ def generate_subtitles(video_path: str) -> dict:
         # Transcribe audio to get segments with timestamps
         transcription_segments = transcribe_audio(audio_path)
 
+        # Ensure segments is a list of dictionaries
+        if isinstance(transcription_segments, dict):
+            transcription_segments = transcription_segments.get('segments', [])
+
         # Generate SRT formatted subtitles
         srt_content = generate_srt_subtitles(transcription_segments)
 
         # Define SRT file path
         base_filename = os.path.splitext(os.path.basename(video_path))[0]
         srt_filename = f"{base_filename}_{uuid.uuid4()}.srt"
-        srt_path = os.path.join(settings.TEMP_DIR, srt_filename)
+        srt_path = os.path.join(settings.STORAGE_DIR, 'subtitles', srt_filename)
 
         # Save SRT content to file
         save_subtitles_to_file(srt_content, srt_path)
