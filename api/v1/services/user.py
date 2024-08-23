@@ -487,7 +487,6 @@ class UserService(Service):
         if not user:
             raise credentials_exception
 
-        user.update_last_login()
         return user
 
     def change_password(

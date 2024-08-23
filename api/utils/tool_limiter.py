@@ -15,47 +15,52 @@ TIME_WINDOW = timedelta(days=1)
 
 # Middleware to track and enforce access limits
 def track_tool_usage(
-    current_tool: str,
+    current_tool: 'str',
     request: Request,
     db: Session = Depends(get_db),
     user: User | None = Depends(user_service.get_current_user_optional),
 ):
-    if not user:
-        client_ip = get_ip_address(request)
-        now = datetime.utcnow()
+    if user:
+        return user
+    
+    client_ip = get_ip_address(request)
+    now = datetime.utcnow()
 
-        # Retrieve user tracking record by IP
-        tracking_record = db.query(UsageStore).filter_by(ip_address=client_ip).first()
-        if tracking_record:
-            tracking_record.last_accessed = now
-            tracking_record.tool_access_count += 1
+    # Retrieve user tracking record by IP
+    tracking_record = db.query(UsageStore).filter_by(ip_address=client_ip).first()
+    if tracking_record:
+        tracking_record.last_accessed = now
+        tracking_record.tool_access_count += 1
 
-            if current_tool in tracking_record.tools_accessed:
-                raise HTTPException(
-                    status_code=429,
-                    detail="Too many requests, please log in to continue using this tool.",
-                )
-            else:
-                tracking_record.tools_accessed.append(current_tool)
-        else:
-            # Create a new record for the IP
-            tracking_record = UsageStore(
-                ip_address=client_ip,
-                tool_access_count=1,
-                last_accessed=now,
-                tools_accessed=[current_tool]
+        if current_tool in tracking_record.tools_accessed:
+            raise HTTPException(
+                status_code=429,
+                detail="Too many requests, please log in to continue using this tool.",
             )
+        else:
+            tracking_record.tools_accessed = tracking_record.tools_accessed + [current_tool]                
 
-            db.add(tracking_record)
+    else:
+        # Create a new record for the IP
+        tracking_record = UsageStore(
+            ip_address=client_ip,
+            tool_access_count=1,
+            last_accessed=now,
+            tools_accessed=[current_tool]
+        )
 
-        db.commit()
+        db.add(tracking_record)
+
+    db.commit()
+    return None
    
 class TrackToolUsage:
-    """Class based dependency to allow passing parameters to dependencies
+    """Class based dependency to allow passing current_tool parameter to dependencies
     """
-
     def __init__(self, current_tool: str):
         self.current_tool = current_tool
     
-    def __call__(self, req: Request, db: Session, user: User):
-        track_tool_usage(self.current_tool, request=req, db=db, user=user)
+    def __call__(self, req: Request, db: Session = Depends(get_db),
+                 user=Depends(user_service.get_current_user_optional)):
+        user = track_tool_usage(self.current_tool, request=req, db=db, user=user)
+        return user
