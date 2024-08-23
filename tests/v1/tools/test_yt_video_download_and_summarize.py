@@ -12,6 +12,7 @@ from main import app
 from api.utils.tool_limiter import TrackToolUsage
 from api.v1.schemas.project import ProjectToolsEnum
 from sqlalchemy.orm import Session
+from api.utils.tool_limiter import ACCESS_LIMIT
 
 # Create a test client
 client = TestClient(app)
@@ -98,20 +99,20 @@ def test_youtube_summarize_job_limiting(
     
     app.dependency_overrides[get_db] = lambda: mocked_db
 
-    # app.dependency_overrides[TrackToolUsage(ProjectToolsEnum.youtube_summarizer.value)] = override_limiting_dep
 
-    # Send a POST request to the summarize
-    response = client.post(
-        "/api/v1/tools/summary/youtube",
-        json=link,
-    )
+    for i in range(ACCESS_LIMIT):
+        # Send a POST request to the summarize multiple times to test limiter
+        response = client.post(
+            "/api/v1/tools/summary/youtube",
+            json=link,
+        )
 
-    # Assertions
-    assert response.status_code == 202
-    assert response.json()["message"] == "Summary generation job initiated successfully"
-    assert "job_id" in response.json()["data"]
+        # Assertions
+        assert response.status_code == 202
+        assert response.json()["message"] == "Summary generation job initiated successfully"
+        assert "job_id" in response.json()["data"]
 
-    # Request should be blovked on second try
+    # Request should be blocked once limit is reached
     response = client.post(
         "/api/v1/tools/summary/youtube",
         json=link,

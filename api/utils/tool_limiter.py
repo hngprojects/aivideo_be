@@ -9,7 +9,7 @@ from api.v1.models.usage_store import UsageStore
 from api.v1.services.user import user_service
 from api.v1.models.user import User
 
-ACCESS_LIMIT = 1
+ACCESS_LIMIT = 3
 TIME_WINDOW = timedelta(days=1)
 
 
@@ -32,7 +32,8 @@ def track_tool_usage(
         tracking_record.last_accessed = now
         tracking_record.tool_access_count += 1
 
-        if current_tool in tracking_record.tools_accessed:
+
+        if tracking_record.tools_accessed.count(current_tool) == ACCESS_LIMIT:
             raise HTTPException(
                 status_code=429,
                 detail="Too many requests, please log in to continue using this tool.",
