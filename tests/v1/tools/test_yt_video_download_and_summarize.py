@@ -51,35 +51,31 @@ def override_get_db(mock_db):
     yield
     app.dependency_overrides = {}
 
-count = 0
-def override_limiting_dep():
-    global count
-    count += 1
-
 
 # Test the endpoint
+def test_enqueue_summarize_batch_job(
+    moch_download_and_generate_video_summmary_task,
+    mock_create_project_with_job,
+    override_get_db,
+):
+    # Prepare test files
+    link = {"link": "https://www.youtube.com/watch?v=testvideo"}
 
+    mocked_db = mock_db_session()
+    
+    app.dependency_overrides[get_db] = lambda: mocked_db
 
-# def test_enqueue_summarize_batch_job(
-#     moch_download_and_generate_video_summmary_task,
-#     mock_create_project_with_job,
-#     override_get_db,
-# ):
-#     # Prepare test files
-#     link = {"link": "https://www.youtube.com/watch?v=testvideo"}
+    # Send a POST request to the summarize_batch endpoint
+    response = client.post(
+        "/api/v1/tools/summary/youtube",
+        json=link,
+        cookies={"refresh_token": "random_token"},
+    )
 
-#     # Send a POST request to the summarize_batch endpoint
-#     response = client.post(
-#         "/api/v1/tools/summary/youtube",
-#         json=link,
-#         headers={"Authorization": "Bearer random_token"},
-#         cookies={"refresh_token": "random_token"},
-#     )
-
-#     # Assertions
-#     assert response.status_code == 202
-#     assert response.json()["message"] == "Summary generation job initiated successfully"
-#     assert "job_id" in response.json()["data"]
+    # Assertions
+    assert response.status_code == 202
+    assert response.json()["message"] == "Summary generation job initiated successfully"
+    assert "job_id" in response.json()["data"]
 
 def test_youtube_summarize_job_limiting(
     moch_download_and_generate_video_summmary_task,
