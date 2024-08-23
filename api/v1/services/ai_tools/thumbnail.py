@@ -9,9 +9,9 @@ from urllib.parse import urljoin
 from api.v1.services.ai_tools.general_video_service import GeneralVideoService
 
 
-async def generate_thumbnails_service(video_id: str, base_url: str, aspect_ratio: str, timestamp: float = None):
+async def generate_thumbnails_service(video_id: str, base_url: str, aspect_ratio: str, timestamp: float = None, title: str = None):
     '''Generate thumbnails for a video'''
-    base_name = video_id
+    base_name = video_id if title is None else title
     video_dirs = [
         os.path.join(settings.TEMP_DIR),
         os.path.join(settings.TEMP_DIR)

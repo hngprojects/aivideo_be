@@ -11,6 +11,7 @@ from api.utils.files import upload_file
 from api.v1.services.job import job_service
 from api.v1.schemas.ai_tools.thumbnail import ThumbnailSelectionRequest
 from urllib.parse import urljoin
+from typing import Optional
 import os
 import json
 
@@ -99,7 +100,8 @@ async def generate_thumbnails(
     request: Request,
     video_id: str = Form(...),
     aspect_ratio: str = Form(...),
-    timestamp: float = Form(None)
+    timestamp: float = Form(None),
+    title: Optional[str] = Form(None)
 ):
     base_url = str(request.base_url)
 
@@ -112,9 +114,11 @@ async def generate_thumbnails(
 
     if timestamp is not None:
         task = generate_thumbnails_task.delay(
-            video_id, base_url, aspect_ratio, timestamp=timestamp)
+            video_id, base_url, aspect_ratio, timestamp=timestamp, title=title
+        )
     else:
-        task = generate_thumbnails_task.delay(video_id, base_url, aspect_ratio)
+        task = generate_thumbnails_task.delay(
+            video_id, base_url, aspect_ratio, title=title)
 
     project = job_service.create_project_with_job(
         job=task,
@@ -132,7 +136,7 @@ async def generate_thumbnails(
     )
 
 
-@thumbnail_router.post("/select-thumbnail")
+@ thumbnail_router.post("/select-thumbnail")
 async def select_and_download_thumbnail(
     request: Request,
     body: ThumbnailSelectionRequest
