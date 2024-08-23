@@ -159,6 +159,7 @@ class SummaryService():
         intent_data = data[0].get('data', {})
         shelves = intent_data.get('shelves', [])
 
+        stream_url = None
         for shelf in shelves:
             items = shelf.get('items', [])
             for item in items:
@@ -166,10 +167,9 @@ class SummaryService():
                 episode_offer = context_action.get('episodeOffer', {})
                 stream_url = episode_offer.get('streamUrl')
                 if stream_url:
-                    break
-            if stream_url:
-                break
-        return stream_url
+                    return stream_url
+        if not stream_url:
+            raise HTTPException(status_code=404, detail="Unable to retrieve audio from the provided URL")
 
     def summarize_audio(self, audio_file_path):
         """Summarizes an audio file by transcribing and then summarizing the transcript."""
