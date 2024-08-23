@@ -3,7 +3,6 @@ from typing import List
 import uuid
 
 from openai.types.audio.transcription import Transcription
-from transformers import pipeline
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from api.utils.settings import settings
