@@ -28,6 +28,7 @@ def transcribe_video_task(video_file_path):
 
         # Transcribe audio to text
         transcription = summary_service.transcribe_audio(audio_file_path)
+        # transcription = transcribe_audio(audio_file_path)
 
         # Delete the audio file and video file after transcription
         delete_file(audio_file_path)
@@ -43,7 +44,7 @@ def generate_subtitles_task(video_file_path, interval_seconds: int = 10):
     """Background task to generate subtitles from a video"""
     try:
         # Generate subtitles with dynamic timestamps
-        result = generate_subtitles(video_file_path, interval_seconds)
+        result = generate_subtitles(video_file_path)
 
         # Clean up the video file after processing
         delete_file(video_file_path)

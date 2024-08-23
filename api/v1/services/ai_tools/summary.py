@@ -7,6 +7,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from api.utils.settings import settings
 import pytesseract
+from typing import Optional
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.units import inch
+from reportlab.lib import colors
 from PIL import Image
 from io import BytesIO
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -44,6 +50,12 @@ class SummaryService():
                          api_key=settings.OPENAI_API_KEY)
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         return llm_chain
+    
+    
+    def advanced_summarize(self, text, model_name="facebook/bart-large-cnn"):
+        summarizer = pipeline("summarization", model=model_name)
+        summary = summarizer(text, max_length=150, min_length=30, do_sample=False)
+        return summary[0]['summary_text']
 
     def apply_ocr_to_images(self, doc):
         """Extract text from images in the PDF using OCR."""
@@ -58,7 +70,7 @@ class SummaryService():
                 text += pytesseract.image_to_string(image)
         return text
 
-    def summarize_pdf(self, pdf_file_path: str):
+    def summarize_pdf(self, pdf_file_path: str, summary_length: str = "medium"):
         """Returns a summarized version of the PDF file located at pdf_file_path."""
         try:
             doc = fitz.open(pdf_file_path)
@@ -76,8 +88,20 @@ class SummaryService():
 
         if not text.strip():
             return "The PDF contains images but no text could be extracted."
+        
+        
+        if summary_length == "brief":
+            chunk_size = 1500
+            chunk_overlap = 500
+        elif summary_length == "detailed":
+            chunk_size = 500
+            chunk_overlap = 100
+        else:  # default to "medium"
+            chunk_size = 1000
+            chunk_overlap = 300
 
         # Summarize Text
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000, chunk_overlap=100)
         documents = text_splitter.create_documents([text])
@@ -97,6 +121,8 @@ class SummaryService():
         final_summary = final_summary.replace(
             '\n', ' ').replace('\r', ' ').strip()
         return final_summary
+    
+
 
     def transcribe_audio(self, file_path) -> Transcription:
         transcript = self.client.audio.transcriptions.create(
