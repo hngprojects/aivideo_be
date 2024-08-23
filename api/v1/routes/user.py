@@ -9,6 +9,7 @@ import json
 
 from api.utils.success_response import success_response
 from api.v1.models.user import User
+from api.v1.models.project import Project
 from api.v1.schemas.user import (
     ChangePasswordSchema,
     AllUsersResponse,
@@ -174,12 +175,75 @@ def get_user_statistics(
 
 #########################################
 
+################ SSE ENDPOINT FOR USER ACTIVITY STATISTICS ###################
+
+@event.listens_for(Project, "after_insert")
+@event.listens_for(Project, "after_update")
+def orm_event_listener_for_project(mapper, connection, target):
+    """listen for db updates and update the state_map"""
+
+    # once a change in the db is detected
+    # clear all inactive connections from state_map
+    # fill each connection in the state_map with [1, 1]
+    # [update_state, active_state]
+
+    remove_inactive_connections()
+
+    if state_map:
+        for key, value in state_map.items():
+            state_map[key] = [1, 1]
+
+
+async def activity_event_generator(db: Session, user_id: str):
+    global connections, state_map
+    connection_index = connections
+    connections += 1
+    map_key = f"connection_{connection_index}"
+
+    reset_connection_active_status()
+
+    # initialize current connection state
+    state_map[map_key] = [1, 1]
+
+    while True:
+        # mark the current connection as active
+        try:
+            state_map[map_key][1] = 1
+        except KeyError:
+            # if connection is already deleted
+            break
+        # check if state map is non empty
+        if state_map[map_key][0] == 1:
+            # send a message if update_state is 1
+            data = json.dumps(user_service.fetch_user_activity_statistics(db, user_id))
+
+            # reset current connection update_state to 0
+            state_map[map_key][0] = 0
+
+            yield {"event": "acticityStatsUpdate", "data": data}
+        await asyncio.sleep(1)
+
+#########################################
+
+
+
 @user_router.get("/export/csv", status_code=status.HTTP_200_OK)
 def export_csv(
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
     return user_service.export_to_csv(db)
+
+
+@user_router.get(
+    "/{user_id}/activity/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
+)
+def get_user_activity_statistics(
+    db: Annotated[Session, Depends(get_db)],
+    user_id: str,
+):
+    """Endpoint to fetch all user activity statistics"""
+    return EventSourceResponse(activity_event_generator(db, user_id))
 
 
 @user_router.get(

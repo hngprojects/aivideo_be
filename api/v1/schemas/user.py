@@ -169,17 +169,23 @@ class UserActivityData(BaseModel):
     tool_used: str
     status: str
 
+class UserActivityStatisticsResponse(BaseModel):
+    status: str
+    message: str
+    total_jobs_created: int
+    total_jobs_retrieved: int
+    total_jobs_completed: int
+    total_jobs_pending: int
+    total_jobs_in_progress: int
+    status_code: int
+
 
 class UserActivityResponse(BaseModel):
     status: str
     message: str
     page: int
     per_page: int
-    total_jobs_created: int
     total_jobs_retrieved: int
-    total_jobs_completed: int
-    total_jobs_pending: int
-    total_jobs_in_progress: int
     total_pages: int
     data: Union[List[UserActivityData], List[None]]
     status_code: int
