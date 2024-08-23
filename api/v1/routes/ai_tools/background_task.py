@@ -8,6 +8,7 @@ from celery.result import AsyncResult
 from api.core.dependencies.celery.celery_app import worker
 from api.db.database import get_db
 from api.v1.services.job import job_service
+from api.v1.services.project import project_service
 from api.v1.services.user import user_service
 from api.v1.services.notification import notification_service
 
@@ -29,14 +30,14 @@ async def event_generator(job_id: str, db: Session, request: Request):
         status = task_result.state
         result = None
 
-        try:
-            project.is_active = False
-            db.commit()
-        except Exception as e:
-            print(f"Error saving project {e}")
-            db.rollback()
-            raise HTTPException(status_code=500, detail=f"Failed to update project status {e}")
-
+        if project.is_active:
+            project_service.update_project_status(
+                db=db,
+                project_id=project.id,
+                result=None,
+                is_active=False
+            )
+        
         job_service.update_job(job_id, status.capitalize())
 
         event_name = 'other'
@@ -68,7 +69,6 @@ async def event_generator(job_id: str, db: Session, request: Request):
             job_service.update_job(job_id, 'Progress', json.dumps(result))
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
-            await asyncio.sleep(1)
 
         elif status == 'SUCCESS':
             result = task_result.result
@@ -76,7 +76,6 @@ async def event_generator(job_id: str, db: Session, request: Request):
             job_service.update_job(job_id, 'Success', result)
             
             if user:
-                print('I sent notification')
                 # Send notification to user
                 notification_service.send_notification(
                     db=db,
@@ -84,24 +83,21 @@ async def event_generator(job_id: str, db: Session, request: Request):
                     title="Project created",
                     message=f"The project '{project.title}' has been created successfully."
                 )
-                project.user_id=user.id
-                db.commit()
-                print(user.email)
 
-            # Save project result
+            # Save project result and link project to user
             try:
-                print('I entered here saving project results')
-                project.is_active = True
-                project.result = json.loads(result)
-                db.commit()
-                print("Project result saved successfully.")
+                project_service.update_project_status(
+                    db=db,
+                    project_id=project.id,
+                    result=result,
+                    is_active=True,
+                    user=user
+                )
             except Exception as e:
                 print(f"Error saving project {e}")
                 db.rollback()
-                raise HTTPException(
-                    status_code=500, detail="Failed to update project status")
             finally:
-                # db.close()
+                db.close()
                 print('Session closed')
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": json.loads(result)})}\n\n'
@@ -140,7 +136,7 @@ async def event_generator_for_job(job_id: str):
             job_service.update_job(job_id, 'Progress', json.dumps(result))
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
-            await asyncio.sleep(1)
+            # await asyncio.sleep(1)
 
         elif status == 'SUCCESS':
             result = task_result.result

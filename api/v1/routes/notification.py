@@ -27,7 +27,7 @@ async def get_notifications(
 
 @notification.get("/{id}", response_model=success_response, status_code=200)
 async def get_single_notification(
-    id: int,
+    id: str,
     db: Session = Depends(get_db),
     user: User = Depends(user_service.get_current_user),
 ):
@@ -44,7 +44,7 @@ async def get_single_notification(
 
 @notification.patch('/{id}/mark-as-read', status_code=200)
 async def mark_notification_as_read(
-    id: int,
+    id: str,
     db: Session = Depends(get_db),
     user: User = Depends(user_service.get_current_user),
 ):
@@ -60,7 +60,7 @@ async def mark_notification_as_read(
 
 @notification.delete("/{id}", status_code=204)
 async def delete_notification(
-    id: int,
+    id: str,
     db: Session = Depends(get_db),
     user: User = Depends(user_service.get_current_user),
 ):
@@ -71,7 +71,7 @@ async def delete_notification(
 
 @notification.delete("/{id}", status_code=204)
 async def delete_all_notifications(
-    id: int,
+    id: str,
     db: Session = Depends(get_db),
     user: User = Depends(user_service.get_current_user),
 ):

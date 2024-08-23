@@ -1,4 +1,6 @@
+import json
 from typing import Any, Optional
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
@@ -74,6 +76,7 @@ class ProjectService(Service):
 
         project = self.fetch(db=db, project_id=project_id)
         project.archived = True
+        project.archived_at=datetime.now()
         db.commit()
 
     def fetch_all_user_projects(self, user: User, db: Session):
@@ -102,7 +105,7 @@ class ProjectService(Service):
 
     def fetch_project_by_id(self, db: Session, project_id: str):
         """Fetches a project by id"""
-        
+
         return check_model_existence(db, Project, project_id)
 
     def fetch_all(self, db: Session):
@@ -113,9 +116,8 @@ class ProjectService(Service):
     def add_user_to_project(self, db: Session, project: Project, user: User):
         """Add a user to a project"""
 
-        project.user = user
+        project.user_id = user.id
         db.commit()
-        db.refresh(project)
         return project
 
     def fetch_user_projects_by_keywords(self, db: Session, user: User, keywords: str):
@@ -140,5 +142,29 @@ class ProjectService(Service):
         
         return project_search_results
     
+    def update_project_status(
+        self, 
+        db: Session, 
+        project_id: str, 
+        is_active: bool, 
+        result,
+        user: Optional[User] = None
+    ):
+        '''Update project status'''
+
+        project = check_model_existence(db, Project, project_id)
+
+        project.is_active = is_active
+        # print(project.is_active)
+
+        project.result = result
+        # print(project.result)
+
+        if user:
+            project.user_id = user.id
+            # print('user is set')
+
+        db.commit()
+
 
 project_service = ProjectService()
