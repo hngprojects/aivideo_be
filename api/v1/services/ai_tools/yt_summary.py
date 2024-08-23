@@ -73,9 +73,7 @@ class YoutubeSummary:
                 detail=f"An Error occurred: {e}",
             )
 
-    def pdf_transform(
-        self, transcript: str, summary: str, video_title: str = "video.mp4"
-    ):
+    def pdf_transform(self, request, video_title: str = "video.mp4"):
         # Save file using BASE_DIR
         pdf_filename = f"{uuid4()}.pdf"
         video_dir = settings.TEMP_DIR
@@ -101,14 +99,16 @@ class YoutubeSummary:
         elements.append(main_heading)
 
         # Add the Transcript heading and text
-        transcript_heading = Paragraph("Transcript", subheading_style)
-        elements.append(transcript_heading)
-        elements.append(Paragraph(transcript, body_style))
+        if request.transcript:
+            transcript_heading = Paragraph("Transcript", subheading_style)
+            elements.append(transcript_heading)
+            elements.append(Paragraph(request.transcript, body_style))
 
-        # Add the Summary heading and text
-        summary_heading = Paragraph("Summary", subheading_style)
-        elements.append(summary_heading)
-        elements.append(Paragraph(summary, body_style))
+        if request.summary:
+            # Add the Summary heading and text
+            summary_heading = Paragraph("Summary", subheading_style)
+            elements.append(summary_heading)
+            elements.append(Paragraph(request.summary, body_style))
 
         # Build the PDF
         pdf.build(elements)
