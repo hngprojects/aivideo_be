@@ -18,7 +18,7 @@ MUSIC_FOLDER = 'presets/audio'
 class PresetService:
     '''Preset service functionality'''
     
-    def load_avatars_in_db(db: Session):
+    def load_avatars_in_db(self, db: Session):
         '''Function to load all avatar presets as static files in the database'''
 
         for root, dir, files in os.walk(AVATAR_FOLDER):
@@ -40,9 +40,8 @@ class PresetService:
                     db.refresh(avatar)
 
 
-    def load_audio_in_db(db: Session):
+    def load_audio_in_db(self, db: Session):
         '''Function to load all audio presets as static files in the database'''
-
 
         for root, dir, files in os.walk(MUSIC_FOLDER):
             for file_name in files:
@@ -62,6 +61,7 @@ class PresetService:
                     db.commit()
                     db.refresh(audio)
 
+
     def fetch_all_avatars(self, db: Session, **query_params: Optional[Any]):
         """Fetch all avatars with option to search using query parameters"""
 
@@ -74,6 +74,7 @@ class PresetService:
                     query = query.filter(getattr(Avatar, column).ilike(f"%{value}%"))
 
         return query.all()
+    
 
     def fetch_avatar_by_id(self, db: Session, avatar_id: str):
         """Fetches an avatar by id"""
@@ -81,12 +82,14 @@ class PresetService:
         avatar = check_model_existence(db, Avatar, avatar_id)
         return avatar
 
+
     def delete_avatar(self, db: Session, avatar_id: str):
         """Deletes an avatar"""
 
         avatar = self.fetch_avatar_by_id(db, avatar_id)
         db.delete(avatar)
         db.commit()
+
 
     def delete_all_avatars(self, db: Session):
         """Deletes all avatars from the db"""
