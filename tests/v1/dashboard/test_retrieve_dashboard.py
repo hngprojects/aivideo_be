@@ -71,6 +71,28 @@ class TestCodeUnderTest:
             assert response.json()['data'][0]['title'] == mock_data[0].title
             assert response.json()['data'][1]['project_type'] == mock_data[1].project_type
 
+    def test_get_all_project_by_keywords(self, client):
+        """Test to verify response for getting all projects."""
+    
+        mock_data = [
+            Project(id='user_id', user_id=str(uuid7()), title="Summarize Joe Rogan",
+                    project_type="Podcast Summarizer", created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                    ),
+            Project(id='user_id', user_id=str(uuid7()), title="Summarize YT Video",
+                    project_type="Video Summarizer", created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                    )
+        ]
+
+        app.dependency_overrides[project_service.fetch_user_projects_by_keywords] = lambda: mock_data
+
+        with patch("api.v1.services.project.ProjectService.fetch_user_projects_by_keywords", return_value=mock_data):
+            response = client.get(f'{ENDPOINT}?keywords=summarize')
+            assert response.status_code == 200
+            assert response.json()['data'][0]['title'] == mock_data[0].title
+            assert response.json()['data'][1]['project_type'] == mock_data[1].project_type
+
 
     def test_get_all_projects_empty(self, client):
         """Test to verify response for getting empty list of projects."""

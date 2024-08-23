@@ -1,7 +1,8 @@
 from pydantic import BaseModel
+from typing import Union
 
 class TranslationRequest(BaseModel):
-    text: str
+    text: Union[str, dict]
     target_language: str
 
 class PodcastRequest(BaseModel):

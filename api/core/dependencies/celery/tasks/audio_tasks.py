@@ -27,6 +27,10 @@ def transcribe_audio_task(audio_data):
 @worker.task()
 def translate_text_task(text: str, target_language: str):
     """Celery task for translating text."""
+    try:
+        parsed_text = json.loads(text)
+    except json.JSONDecodeError:
+        parsed_text = text
     
-    translation =  translate_text(text, target_language)
+    translation = translate_text(parsed_text, target_language)
     return json.dumps({'translation': translation})

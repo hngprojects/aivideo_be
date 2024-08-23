@@ -43,6 +43,7 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 # Load up media static files
 app.mount('/media', StaticFiles(directory=MEDIA_DIR), name='media')
+app.mount('/tmp/media', StaticFiles(directory=TEMP_DIR), name='tmp-media')
 app.mount('/presets', StaticFiles(directory='./presets'), name='presets')
 
 origins = [

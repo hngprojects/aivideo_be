@@ -1,11 +1,18 @@
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
 from api.core.base.services import Service
 from api.v1.models.project import Project
-from api.v1.schemas.project import CreateProject, UpdateProject
+from api.v1.schemas.project import (
+    CreateProject,
+    UpdateProject,
+    ToolStatsData,
+    ToolStatsResponse,
+)
 from api.utils.db_validators import check_model_existence
 from api.v1.models.user import User
+from api.v1.schemas.project import ProjectToolsEnum
 
 
 class ProjectService(Service):
@@ -38,8 +45,9 @@ class ProjectService(Service):
 
     def fetch_user_project(self, user: User, project_id: str):
         """Fetch a project by user and project ID."""
-        project = next((p for p in user.projects if p.id ==
-                       project_id and not p.is_deleted), None)
+        project = next(
+            (p for p in user.projects if p.id == project_id and not p.is_deleted), None
+        )
         return project
 
     def fetch(self, db: Session, project_id: str):
@@ -75,8 +83,15 @@ class ProjectService(Service):
         project.archived = True
         db.commit()
 
-    def fetch_all_user_projects(self, user: User):
-        all_projects = user.projects
+    def fetch_all_user_projects(self, user: User, db: Session):
+        all_projects = (
+            db.query(Project)
+            .filter(
+                Project.user_id == user.id,
+            )
+            .order_by(Project.updated_at.desc())
+            .all()
+        )
 
         return all_projects
 
@@ -94,6 +109,69 @@ class ProjectService(Service):
         db.commit()
         db.refresh(project)
         return project
+
+    def fetch_statistics(self, db: Session):
+        """Fetch tool usage statistics"""
+
+        total_projects = db.query(Project).all()
+        total_count = len(total_projects)
+
+        all_project_count_dict = {}
+
+        # Dict should look like {"podcast_summarizer": 2, ...} once iteration completes
+        # Code can further be optimized to use single for-loop to count as well as calculate percentages
+        for p in total_projects:
+            # Map Enum value stored in db to Enum's name, for use as key in the `all_project_count_dict`
+            # Catch errors that would occur when an unknown project_type is encountered
+            try:
+                project_type_name = ProjectToolsEnum(p.project_type).name
+            except ValueError:
+                continue
+
+            # Increment count for each tool if already present in all_project_count_dict else intialise it to 1
+            prev_count_value = all_project_count_dict.get(project_type_name)
+            all_project_count_dict[project_type_name] = 1 if prev_count_value is None else prev_count_value + 1
+
+
+        # Store percentage stats for projects in a dictionary
+        all_project_percentage_dict = {}
+
+        for project_name, project_count in all_project_count_dict.items():
+            all_project_percentage_dict[project_name] = (project_count / total_count) * 100
+        
+        if total_count:
+            return ToolStatsResponse(
+                status="success",
+                status_code=200,
+                message="Tool Usage data successfully retrieved!",
+                data=ToolStatsData(
+                    **all_project_percentage_dict,
+                ),
+            )
+
+        return ToolStatsResponse(
+            status="success",
+            status_code=200,
+            message="No Tool Usage data recorded!",
+            data=ToolStatsData(),       # Default values will be used
+        )
+
+    def fetch_user_projects_by_keywords(self, db: Session, user: User, keywords: str):
+        query = db.query(Project).filter(
+            and_(
+                Project.user_id == user.id,
+                or_(
+                    Project.title.ilike(f"%{keywords}%"),
+                    Project.description.ilike(f"%{keywords}%"),
+                    Project.project_type.ilike(f"%{keywords}%"),
+                ),
+            )
+        )
+
+        # Order from newest to oldest
+        project_search_results = query.order_by(Project.updated_at.desc()).all()
+
+        return project_search_results
 
 
 project_service = ProjectService()

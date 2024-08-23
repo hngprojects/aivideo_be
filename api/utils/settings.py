@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     X_RAPIDAPI_HOST: str = config("X_RAPIDAPI_HOST")
 
     TEMP_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent, 'tmp', 'media')
+    STORAGE_DIR: str = os.path.join('media', 'downloads')
     
     @property
     def ALLOWED_EXTENSIONS(self) -> set[str]:
