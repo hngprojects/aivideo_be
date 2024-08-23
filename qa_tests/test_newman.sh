@@ -8,6 +8,6 @@
 # mkdir -p $OUTPUT_DIR
 
 # Run Newman with HTML reporter for status page
-newman run aivideo_be/qa_tests/regression/Core Product.postman_collection.json -r htmlextra
+newman run aivideo_be/qa_tests/regression/Core_Product.postman_collection.json -r htmlextra
 
 
