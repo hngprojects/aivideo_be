@@ -20,17 +20,20 @@ project = APIRouter(prefix="/projects", tags=["Projects"])
 async def create_project(
     schema: CreateFullProjectSchema,
     db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user)
 ):
     """Endpoint to create a new project"""
+
     full_project = AddFullProjectSchema(
-        user_id="default_user_id", **schema.model_dump())
+        user_id=current_user.id,
+        **schema.model_dump()
+    )
 
     new_project = project_service.create(db, full_project)
 
     logging.info(f'Creating new Project. ID: {new_project.id}.')
     return success_response(
-        data=jsonable_encoder(
-            ProjectCreateResponseSchema.model_validate(new_project)),
+        data=jsonable_encoder(project),
         message="Successfully created project",
         status_code=status.HTTP_201_CREATED,
     )
@@ -41,16 +44,43 @@ async def get_all_projects(db: Session = Depends(get_db)):
     """Endpoint to get all projects"""
 
     projects = project_service.fetch_all_projects(db=db)
-    projects_filtered = list(
-        map(lambda x: ProjectCreateResponseSchema.model_validate(x), projects)
-    )
-    if len(projects_filtered) == 0:
-        projects_filtered = None
 
     return success_response(
         status_code=200,
         message="Projects retrieved successfully",
-        data=jsonable_encoder(projects_filtered),
+        data=jsonable_encoder(projects),
+    )
+
+
+@project.get("/user", response_model=success_response, status_code=200)
+async def get_user_projects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user)
+):
+    '''Endpoint to get all projects of the current logged in user'''
+
+    projects = project_service.fetch_all_user_projects(db=db, user=current_user)
+
+    return success_response(
+        data=jsonable_encoder(projects),
+        message="Projects retrieved successfully",
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@project.get("/user/archive", response_model=success_response, status_code=200)
+async def get_user_archived_projects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user)
+):
+    '''Endpoint to get all projects of the current logged in user'''
+
+    projects = project_service.fetch_all_user_archived_projects(db=db, user=current_user)
+
+    return success_response(
+        data=jsonable_encoder(projects),
+        message="Projects retrieved successfully",
+        status_code=status.HTTP_200_OK,
     )
 
 
@@ -59,9 +89,6 @@ async def get_single_project(id: str, db: Session = Depends(get_db)):
     """Endpoint to get a single project"""
 
     project = project_service.fetch_project_by_id(project_id=id, db=db)
-
-    if project is None:
-        raise HTTPException(status_code=404, detail="Project not found")
 
     return success_response(
         data=jsonable_encoder(
@@ -78,6 +105,7 @@ async def save_project(
     current_user: User = Depends(user_service.get_current_user)
 ):
     """Endpoint to save a project"""
+
     project = project_service.fetch_project_by_id(project_id=id, db=db)
 
     if project.user_id is not None:
@@ -86,8 +114,7 @@ async def save_project(
     project_service.add_user_to_project(db, project=project, user=current_user)
 
     return success_response(
-        data=jsonable_encoder(
-            ProjectCreateResponseSchema.model_validate(project)),
+        data=jsonable_encoder(project),
         message="Project saved successfully",
         status_code=status.HTTP_200_OK,
     )

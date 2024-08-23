@@ -69,8 +69,8 @@ class ProjectService(Service):
         project.is_deleted = True
         db.commit()
 
-    def archive(self, db: Session, project_id: str):
-        """Archives anproject"""
+    def archive_project(self, db: Session, project_id: str):
+        """Archives a project"""
 
         project = self.fetch(db=db, project_id=project_id)
         project.archived = True
@@ -79,22 +79,40 @@ class ProjectService(Service):
     def fetch_all_user_projects(self, user: User, db: Session):
         all_projects = db.query(Project).filter(
             Project.user_id == user.id,
-            ).order_by(
-                Project.updated_at.desc()
-                ).all()
+            Project.is_active == True,
+            Project.archived == False,
+            Project.is_deleted == False,
+        ).order_by(
+            Project.updated_at.desc()
+        ).all()
+        
+        return all_projects
+    
+    def fetch_all_user_archived_projects(self, user: User, db: Session):
+        all_projects = db.query(Project).filter(
+            Project.user_id == user.id,
+            Project.is_active == True,
+            Project.archived == True,
+            Project.is_deleted == False,
+        ).order_by(
+            Project.updated_at.desc()
+        ).all()
         
         return all_projects
 
     def fetch_project_by_id(self, db: Session, project_id: str):
         """Fetches a project by id"""
+        
         return check_model_existence(db, Project, project_id)
 
     def fetch_all(self, db: Session):
         """Fetch all projects"""
+
         return db.query(Project).all()
 
     def add_user_to_project(self, db: Session, project: Project, user: User):
         """Add a user to a project"""
+
         project.user = user
         db.commit()
         db.refresh(project)
@@ -104,6 +122,9 @@ class ProjectService(Service):
         query = db.query(Project).filter(
             and_(
                 Project.user_id == user.id,
+                Project.is_active == True,
+                Project.archived == False,
+                Project.is_deleted == False,
                 or_(
                     Project.title.ilike(f"%{keywords}%"),
                     Project.description.ilike(f"%{keywords}%"),
@@ -115,9 +136,9 @@ class ProjectService(Service):
         # Order from newest to oldest
         project_search_results = query.order_by(
             Project.updated_at.desc()
-            ).all()
+        ).all()
         
-
         return project_search_results
+    
 
 project_service = ProjectService()

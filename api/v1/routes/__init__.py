@@ -17,6 +17,7 @@ from api.v1.routes.data_privacy import privacy
 from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
+from api.v1.routes.notification import notification
 from api.v1.routes.user_subscription import user_subs
 
 from api.v1.routes.ai_tools.talking_avatar import video_router
@@ -54,10 +55,10 @@ api_version_one.include_router(project)
 api_version_one.include_router(google_auth)
 api_version_one.include_router(pwd_reset)
 api_version_one.include_router(job)
+api_version_one.include_router(notification)
 api_version_one.include_router(preset_router)
 api_version_one.include_router(regions)
 api_version_one.include_router(privacy)
-api_version_one.include_router(test_rout)
 api_version_one.include_router(background_router)
 api_version_one.include_router(save_summary)
 api_version_one.include_router(job)
@@ -69,3 +70,4 @@ api_version_one.include_router(video_subtitles_router)
 api_version_one.include_router(download)
 api_version_one.include_router(user_subs)
 api_version_one.include_router(downloader)
+api_version_one.include_router(test_rout)
