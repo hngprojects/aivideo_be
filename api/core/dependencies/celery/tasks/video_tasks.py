@@ -144,7 +144,7 @@ def generate_thumbnails_task(video_id: str, base_url: str, aspect_ratio: str, ti
             video_id, base_url, aspect_ratio, timestamp, title
         )
     )
-    return json.dumps({'video_id': video_id, 'thumbnails': thumbnails})
+    return json.dumps({'video_id': video_id, 'thumbnails': thumbnails, 'title': title})
 
 
 @worker.task()
