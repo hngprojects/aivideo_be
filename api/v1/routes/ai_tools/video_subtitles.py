@@ -71,16 +71,18 @@ async def transcribe(
         raise HTTPException(status_code=500, detail=str(e))
 
 @video_subtitles_router.post("/generate_subtitles", status_code=status.HTTP_200_OK, response_model=success_response)
-async def generate_subtitle(
-    file: UploadFile = File(...),
-    interval_seconds: Optional[int] = Form(10),
-):
+async def generate_subtitle( file: UploadFile = File(...)):
     try:
-        # Upload and save the video file
-        video_file_path = await upload_file(file, allowed_extensions=['mp4', 'mov', 'avi', 'mkv', 'wmv'], upload_folder="videos")
+        # Save uploaded video file
+        video_file_path = await upload_file(
+            file=file,
+            allowed_extensions=['mp4', 'mov', 'avi', 'mkv', 'wmv'],
+            upload_folder="videos",
+            save_extension=file.filename.split('.')[-1]
+        )
 
-        # Call the subtitle generation task
-        task = generate_subtitles_task.delay(video_file_path, interval_seconds)
+        # Initiate Celery task
+        task = generate_subtitles_task.delay(video_file_path)
 
         # Create project with job
         project = job_service.create_project_with_job(
