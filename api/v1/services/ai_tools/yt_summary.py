@@ -73,8 +73,13 @@ class YoutubeSummary:
                 detail=f"An Error occurred: {e}",
             )
 
-    def pdf_transform(self, request, video_title: str = "video.mp4"):
+    def pdf_transform(self, request):
         # Save file using BASE_DIR
+
+        if request.video_title:
+            video_title = request.video_title
+        else:
+            video_title = "video.mp4"
         pdf_filename = f"{uuid4()}.pdf"
         video_dir = settings.TEMP_DIR
         os.makedirs(video_dir, exist_ok=True)
