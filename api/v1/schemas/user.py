@@ -183,3 +183,21 @@ class UserActivityResponse(BaseModel):
     total_pages: int
     data: Union[List[UserActivityData], List[None]]
     status_code: int
+
+class RegisterUserData(BaseModel):
+    id: str
+    email: EmailStr
+    first_name: str
+    last_name: str
+    is_active: bool
+    is_superadmin: bool
+    created_at: datetime
+    last_login: Union[datetime, None]
+
+class RegisterUserResponse(BaseModel):
+    status: str
+    status_code: int
+    message: str
+    access_token: str
+    data: RegisterUserData
+
