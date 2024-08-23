@@ -7,6 +7,8 @@ class CreateProject(BaseModel):
 
     title: str
     project_type: str
+    description: Optional[str] = None
+    user_id: Optional[str] = None
 
 
 class UpdateProject(BaseModel):
@@ -16,7 +18,6 @@ class UpdateProject(BaseModel):
 
 
 class CreateFullProjectSchema(CreateProject):
-    description: Optional[str] = None
     file_url: Optional[str] = None
     result: Optional[str] = None
 
@@ -30,7 +31,7 @@ class UpdateProjectSchema(BaseModel):
 
 
 class AddFullProjectSchema(CreateFullProjectSchema):
-    user_id: str
+    pass
 
 
 class ProjectCreateResponseSchema(CreateFullProjectSchema):

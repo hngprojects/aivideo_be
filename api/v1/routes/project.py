@@ -30,9 +30,7 @@ async def create_project(
     db: Session = Depends(get_db),
 ):
     """Endpoint to create a new project"""
-    full_project = AddFullProjectSchema(
-        user_id="default_user_id", **schema.model_dump()
-    )
+    full_project = AddFullProjectSchema(**schema.model_dump())
 
     new_project = project_service.create(db, full_project)
 

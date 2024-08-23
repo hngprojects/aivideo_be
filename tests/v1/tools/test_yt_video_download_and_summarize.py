@@ -4,11 +4,14 @@
 
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
 from api.v1.routes.ai_tools.youtube_summarizer import video_summary
 from api.db.database import get_db
 from main import app
+from api.utils.tool_limiter import TrackToolUsage
+from api.v1.schemas.project import ProjectToolsEnum
+from sqlalchemy.orm import Session
 
 # Create a test client
 client = TestClient(app)
@@ -20,6 +23,8 @@ client = TestClient(app)
 def mock_db():
     yield AsyncMock()
 
+def mock_db_session():
+    return MagicMock()
 
 # Mock the upload_files function and the Celery task
 
@@ -46,11 +51,37 @@ def override_get_db(mock_db):
     yield
     app.dependency_overrides = {}
 
+count = 0
+def override_limiting_dep():
+    global count
+    count += 1
+
 
 # Test the endpoint
 
 
-def test_enqueue_summarize_batch_job(
+# def test_enqueue_summarize_batch_job(
+#     moch_download_and_generate_video_summmary_task,
+#     mock_create_project_with_job,
+#     override_get_db,
+# ):
+#     # Prepare test files
+#     link = {"link": "https://www.youtube.com/watch?v=testvideo"}
+
+#     # Send a POST request to the summarize_batch endpoint
+#     response = client.post(
+#         "/api/v1/tools/summary/youtube",
+#         json=link,
+#         headers={"Authorization": "Bearer random_token"},
+#         cookies={"refresh_token": "random_token"},
+#     )
+
+#     # Assertions
+#     assert response.status_code == 202
+#     assert response.json()["message"] == "Summary generation job initiated successfully"
+#     assert "job_id" in response.json()["data"]
+
+def test_youtube_summarize_job_limiting(
     moch_download_and_generate_video_summmary_task,
     mock_create_project_with_job,
     override_get_db,
@@ -58,15 +89,37 @@ def test_enqueue_summarize_batch_job(
     # Prepare test files
     link = {"link": "https://www.youtube.com/watch?v=testvideo"}
 
-    # Send a POST request to the summarize_batch endpoint
+    mocked_db = mock_db_session()
+    
+    mock_filter = mock_db_session()
+    mock_first = mock_db_session()
+    mock_data = mock_db_session()
+
+    mocked_db.query.return_value = mock_filter
+    mock_filter.filter_by.return_value = mock_first
+    mock_first.first.return_value = mock_data
+    mock_data.tools_accessed = []
+    
+    app.dependency_overrides[get_db] = lambda: mocked_db
+
+    # app.dependency_overrides[TrackToolUsage(ProjectToolsEnum.youtube_summarizer.value)] = override_limiting_dep
+
+    # Send a POST request to the summarize
     response = client.post(
         "/api/v1/tools/summary/youtube",
         json=link,
-        headers={"Authorization": "Bearer random_token"},
-        cookies={"refresh_token": "random_token"},
     )
 
     # Assertions
     assert response.status_code == 202
     assert response.json()["message"] == "Summary generation job initiated successfully"
     assert "job_id" in response.json()["data"]
+
+    # Request should be blovked on second try
+    response = client.post(
+        "/api/v1/tools/summary/youtube",
+        json=link,
+    )
+    assert response.status_code == 429
+    assert response.json()['message'] == 'Too many requests, please log in to continue using this tool.'
+
