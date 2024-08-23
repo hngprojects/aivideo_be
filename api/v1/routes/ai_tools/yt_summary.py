@@ -124,9 +124,7 @@ def download_pdf(
 ):
     try:
         # Generate PDF
-        pdf_path = yts_service.pdf_transform(
-            request.transcript, request.summary, request.video_title
-        )
+        pdf_path = yts_service.pdf_transform(request)
         # Read the PDF file content
         with open(str(pdf_path), "rb") as pdf_file:
             pdf_content = pdf_file.read()
