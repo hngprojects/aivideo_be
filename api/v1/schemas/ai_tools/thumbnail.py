@@ -9,6 +9,7 @@ class YouTubeVideoRequest(BaseModel):
 class ThumbnailRequest(BaseModel):
     video_id: str
     timestamp: Optional[float] = None
+    title: Optional[str] = None
 
 
 class ThumbnailSelectionRequest(BaseModel):

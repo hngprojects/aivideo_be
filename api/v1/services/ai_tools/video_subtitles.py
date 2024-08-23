@@ -1,63 +1,88 @@
 import logging
+import subprocess
 import os
+import uuid
+from api.utils.settings import settings
 from datetime import timedelta
 from typing import List, Dict, Optional
 from deep_translator import GoogleTranslator
 import ffmpeg
 from api.utils.files import delete_file
-from api.v1.services.ai_tools.summary import summary_service
+from openai import OpenAI
+import time
 
+# Initialize OpenAI client
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-def convert_video_to_audio(
-    input_path: str,
-    output_path: Optional[str] = None,
-    audio_format: str = 'mp3',
-    audio_bitrate: str = '192k'
-) -> str:
+def convert_video_to_audio(video_path: str) -> str:
     """
-    Convert a video file to an audio file using FFmpeg.
+    Convert video file to audio file using ffmpeg.
 
     Args:
-    input_path (str): Path to the input video file.
-    output_path (Optional[str]): Path for the output audio file. If not
-                                 provided, it will be derived from the
-                                 input path.
-    audio_format (str): Output audio format (default is 'mp3').
-    audio_bitrate (str): Output audio bitrate (default is '192k').
+        video_path (str): Path to the input video file.
 
     Returns:
-    str: Path to the output audio file.
+        str: Path to the output audio file.
 
     Raises:
-    FileNotFoundError: If the input file doesn't exist.
-    ffmpeg.Error: If FFmpeg encounters an error during conversion.
+        Exception: If conversion fails.
     """
-    if not os.path.exists(input_path):
-        raise FileNotFoundError(f"Input file not found: {input_path}")
-
-    if output_path is None:
-        base_name = os.path.splitext(input_path)[0]
-        output_path = f"{base_name}.{audio_format}"
-
     try:
-        stream = ffmpeg.input(input_path)
+        audio_filename = f"{uuid.uuid4()}.wav"
+        audio_path = os.path.join(settings.TEMP_DIR, audio_filename)
 
-        stream = ffmpeg.output(
-            stream,
-            output_path,
-            acodec=audio_format,
-            audio_bitrate=audio_bitrate,
-            vn=None
-        )
+        command = [
+            "ffmpeg",
+            "-i", video_path,
+            "-vn",
+            "-acodec", "pcm_s16le",
+            "-ar", "44100",
+            "-ac", "2",
+            audio_path,
+            "-y"  # Overwrite output files without asking
+        ]
 
-        ffmpeg.run(stream, overwrite_output=True)
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
-        return output_path
+        return audio_path
 
-    except ffmpeg.Error:
-        logging.error("FFmpeg error occurred")
-        raise
+    except subprocess.CalledProcessError as e:
+        raise Exception(f"Error converting video to audio: {e}")
 
+def transcribe_audio(file_path: str) -> list:
+    """
+    Transcribe audio using OpenAI Whisper API.
+
+    Args:
+        file_path (str): Path to the audio file.
+
+    Returns:
+        list: List of transcription segments with text and timestamps.
+
+    Raises:
+        Exception: If transcription fails.
+    """
+    try:
+        with open(file_path, "rb") as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+                response_format="verbose_json",
+                language="en"  # Specify language if known; otherwise, auto-detect
+            )
+            # print(transcript)
+
+            # Correctly access the segments attribute or method
+            segments = transcript.segments  # Access the segments attribute
+            # print(segments)
+            
+            if not segments:
+                raise Exception("No transcription segments received from OpenAI Whisper API.")
+
+            return segments
+
+    except Exception as e:
+        raise Exception(f"Error during transcription: {e}")
 
 def save_subtitles_to_file(subtitles: str, file_path: str) -> None:
     """Saves subtitles to a file.
@@ -81,77 +106,102 @@ def translate_text(text: str, target_language: str) -> str:
     except Exception as e:
         raise Exception(f"Error during translation: {str(e)}")
 
-def generate_subtitles(video_url: str, interval_seconds: int = 10) -> dict:
-    """Generate subtitles for a video by dynamically creating timestamps every few seconds."""
+
+def generate_srt_subtitles(transcription_segments: list) -> str:
+    """
+    Generate SRT formatted subtitles from transcription segments.
+
+    Args:
+        transcription_segments (list): List of transcription segments with timestamps.
+
+    Returns:
+        str: SRT formatted subtitle content.
+    """
+    srt_entries = []
+
+    for idx, segment in enumerate(transcription_segments, start=1):
+        start_time = format_timestamp(segment['start'])
+        end_time = format_timestamp(segment['end'])
+        text = segment['text'].strip()
+
+        srt_entry = f"{idx}\n{start_time} --> {end_time}\n{text}\n"
+        srt_entries.append(srt_entry)
+
+    return "\n".join(srt_entries)
+
+def format_timestamp(seconds: float) -> str:
+    """
+    Format timestamp in seconds to SRT time format.
+
+    Args:
+        seconds (float): Time in seconds.
+
+    Returns:
+        str: Formatted time string in 'HH:MM:SS,mmm' format.
+    """
+    milliseconds = int((seconds - int(seconds)) * 1000)
+    time_struct = time.gmtime(seconds)
+    time_formatted = time.strftime("%H:%M:%S", time_struct)
+    return f"{time_formatted},{milliseconds:03d}"
+
+
+def save_subtitles_to_file(srt_content: str, output_path: str) -> None:
+    """
+    Save SRT content to a file.
+
+    Args:
+        srt_content (str): SRT formatted subtitle content.
+        output_path (str): Path to save the SRT file.
+
+    Raises:
+        Exception: If saving fails.
+    """
+    try:
+        with open(output_path, 'w', encoding='utf-8') as srt_file:
+            srt_file.write(srt_content)
+    except Exception as e:
+        raise Exception(f"Error saving subtitles to file: {e}")
+
+
+def generate_subtitles(video_path: str) -> dict:
+    """
+    Generate subtitles for a video file.
+
+    Args:
+        video_path (str): Path to the input video file.
+
+    Returns:
+        dict: Dictionary containing the path to the generated SRT file.
+
+    Raises:
+        Exception: If any step fails.
+    """
     try:
         # Convert video to audio
-        audio_file_path = convert_video_to_audio(video_url)
-        video_filename = os.path.splitext(os.path.basename(video_url))[0]
-        subtitle_file_path = f"{video_filename}.srt"
-        
-        # Transcribe audio to text
-        transcription = summary_service.transcribe_audio(audio_file_path)['transcription']
-        
-        # Generate dynamic timestamps
-        duration_seconds = len(transcription.split())  # Assuming one word per second
-        timestamps = generate_timestamps(transcription, duration_seconds, interval_seconds)
-        
-        # Generate subtitles with dynamically generated timestamps
-        subtitles = generate_subtitles_from_transcription(transcription, timestamps)
-        
-        # Save subtitles to file
-        save_subtitles_to_file(subtitles, subtitle_file_path)
-        
-        # Clean up the audio file
-        delete_file(audio_file_path)
-        
-        return {"subtitles": subtitle_file_path}
+        audio_path = convert_video_to_audio(video_path)
+
+        # Transcribe audio to get segments with timestamps
+        transcription_segments = transcribe_audio(audio_path)
+
+        # Ensure segments is a list of dictionaries
+        if isinstance(transcription_segments, dict):
+            transcription_segments = transcription_segments.get('segments', [])
+
+        # Generate SRT formatted subtitles
+        srt_content = generate_srt_subtitles(transcription_segments)
+
+        # Define SRT file path
+        base_filename = os.path.splitext(os.path.basename(video_path))[0]
+        srt_filename = f"{base_filename}_{uuid.uuid4()}.srt"
+        srt_path = os.path.join(settings.STORAGE_DIR, 'subtitles', srt_filename)
+
+        # Save SRT content to file
+        save_subtitles_to_file(srt_content, srt_path)
+
+        # Clean up intermediate audio file
+        delete_file(audio_path)
+
+        return {"srt_file_path": srt_path}
+
     except Exception as e:
-        raise Exception(f"Error generating subtitles: {str(e)}")
-
-def generate_timestamps(transcription: str, duration: int, interval_seconds: int) -> List[Dict[str, str]]:
-    """Generate timestamps every few seconds"""
-    timestamps = []
-    start_time = 0
-    words = transcription.split()
-    word_count = len(words)
-    
-    for i in range(0, word_count, interval_seconds):
-        end_time = min(start_time + interval_seconds, word_count)
-        paragraph = " ".join(words[i:end_time])
-        print(f"Timestamp: start={start_time}, end={end_time}, paragraph='{paragraph}'")  # Debug print
-        timestamps.append({
-            "start_time": str(start_time),
-            "end_time": str(end_time),
-            "paragraph": paragraph
-        })
-        start_time = end_time
-    
-    return timestamps
-
-def generate_subtitles_from_transcription(transcription: str, timestamps: List[Dict[str, str]]) -> str:
-    """Generate SRT formatted subtitles from transcription text with timestamps"""
-    
-    def format_timedelta(seconds: float) -> str:
-        """Format seconds as SRT timecode"""
-        total_seconds = int(seconds)
-        hours, remainder = divmod(total_seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        milliseconds = int((seconds % 1) * 1000)
-        return f"{hours:02}:{minutes:02}:{int(seconds):02},{milliseconds:03}"
-
-    srt_content = []
-    
-    for idx, item in enumerate(timestamps):
-        start_time = float(item["start_time"])
-        end_time = float(item["end_time"])
-        text = item["paragraph"]
-        
-        print(f"Subtitle block {idx + 1}: start={start_time}, end={end_time}, text='{text}'")  # Debug print
-        
-        srt_content.append(f"{idx + 1}")
-        srt_content.append(f"{format_timedelta(start_time)} --> {format_timedelta(end_time)}")
-        srt_content.append(text)
-        srt_content.append("")  # Blank line after each subtitle block
-
-    return "\n".join(srt_content)
+        raise Exception(f"Error generating subtitles: {e}")
