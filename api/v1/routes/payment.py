@@ -231,7 +231,7 @@ async def flutterwave_webhook(
     """
 
     secret_hash = settings.FLW_SECRET_HASH
-    signature = request.headers.get("verifi-hash")
+    signature = req.headers.get("verifi-hash")
     if signature == None or (signature != secret_hash):
         return success_response(
             status_code=status.HTTP_400_BAD_REQUEST,
