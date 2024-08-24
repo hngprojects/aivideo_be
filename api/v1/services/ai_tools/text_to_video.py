@@ -34,8 +34,20 @@ class TextToVideoService:
             max_tokens=500
         )
         scenes = response.choices[0].text.strip().split('\n')
-        print(scenes)
         return scenes
+    
+
+    def recompose_script(self, script: str):
+
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": f"I will add a script for you to recompose. Do not say anything else than the recomposition:\n\n{script}"}
+            ]
+        )
+        recomposed_script = response.choices[0].message.content
+        return recomposed_script
     
 
     def generate_images_for_scenes(self, scenes: List[str]):
