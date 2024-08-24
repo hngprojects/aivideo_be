@@ -32,8 +32,8 @@ async def get_all_jobs():
 async def get_managed_jobs(
     current_admin: User = Depends(user_service.get_current_super_admin),
     db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 30,
+    page: int = 1,
+    per_page: int = 10,
     search: str = "",
     status: str = "",
     project_type: str = "",
@@ -65,8 +65,8 @@ async def get_managed_jobs(
 
     return job_service.fetch_job_activity(
         db=db,
-        skip=skip,
-        limit=limit,
+        page=page,
+        per_page=per_page,
         search=search,
         status=status,
         project_type=project_type,

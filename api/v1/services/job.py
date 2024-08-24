@@ -36,14 +36,22 @@ class JobService:
         return task_result.state
 
     def create_project_with_job(
-        self, job, project_title: str, project_type: str,
-        user_id: Optional[str] = None, description: Optional[str] = None
+        self,
+        job,
+        project_title: str,
+        project_type: str,
+        user_id: Optional[str] = None,
+        description: Optional[str] = None,
     ):
         """FUnction to create a project alongside a task or job"""
 
         # Create project based on task run
-        project_schema = CreateProject(title=project_title, project_type=project_type,
-                                       user_id=user_id, description=description)
+        project_schema = CreateProject(
+            title=project_title,
+            project_type=project_type,
+            user_id=user_id,
+            description=description,
+        )
         project = project_service.create(db=db, schema=project_schema)
 
         # Create celery task
@@ -125,8 +133,8 @@ class JobService:
     def fetch_job_activity(
         self,
         db: Session,
-        skip: int,
-        limit: int,
+        page: int = 1,
+        per_page: int = 10,
         search: str = "",
         status: Optional[list[str]] = None,
         project_type: Optional[list[str]] = None,
@@ -156,8 +164,6 @@ class JobService:
             joinedload(Job.project),
             joinedload(Job.user),
         )
-
-        total: int = query.count()
 
         # search by job_id, User first name and last name
 
@@ -192,10 +198,19 @@ class JobService:
             query = query.filter(or_(*project_type_conditions))
 
         # paginate response
+        total: int = query.count()
 
-        jobs = query.order_by(desc(Job.created_at)).offset(skip).limit(limit).all()
+        jobs = (
+            query.order_by(desc(Job.created_at))
+            .limit(per_page)
+            .offset((page - 1) * per_page)
+            .all()
+        )
+
 
         jobs = jsonable_encoder(jobs)
+
+        total_pages = int(total / per_page) + (total % per_page > 0)
 
         # Remove the password field from user data
 
@@ -213,8 +228,9 @@ class JobService:
             "status_code": HTTPStatus.HTTP_200_OK,
             "message": "Successfully fetched jobs",
             "data": {
-                "skip": skip,
-                "limit": limit,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": total_pages,
                 "jobs": jobs,
                 "stats": stats,
             },
@@ -324,34 +340,41 @@ class JobService:
 
         initial: str = ""
 
-        while True:
-            query = (
-                db.query(Job)
-                .options(
-                    joinedload(Job.project),
-                    joinedload(Job.user),
+        try:
+            while True:
+                query = (
+                    db.query(Job)
+                    .options(
+                        joinedload(Job.project),
+                        joinedload(Job.user),
+                    )
+                    .order_by(Job.created_at.desc())
+                    .all()
                 )
-                .order_by(Job.created_at.desc())
-                .all()
-            )
 
-            jobs = jsonable_encoder(query)
+                jobs = jsonable_encoder(query)
 
-            # Remove the password field from user data
+                # Remove the password field from user data
 
-            for job in jobs:
-                if job.get("user"):
-                    user_data = job.get("user")
-                    if "password" in user_data:
-                        del user_data["password"]
+                for job in list(jobs):
+                    if job.get("user"):
+                        user_data = job.get("user")
 
-            data = json.dumps(jobs)
+                        for key, _ in list(user_data.items()):
+                            if key == "password":
+                                del user_data[key]
+                                break
 
-            if data != initial:
-                yield f"data: {data}\n\n"
-                initial = data
+                data = json.dumps(jobs)
 
-            await asyncio.sleep(1)
+                if data != initial:
+                    yield f"data: {data}\n\n"
+                    initial = data
+
+                await asyncio.sleep(1)
+                
+        except Exception as e:
+            pass
 
     def fetch_recent_job_activity(self, db: Session):
         query = db.query(Project, Job).outerjoin(Job, Project.id == Job.project_id)

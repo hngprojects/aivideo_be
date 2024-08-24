@@ -34,3 +34,14 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           source: "result.json"
           target: "/home/${{ secrets.USERNAME }}/aivideo_be/staging"
+          
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          script: |
+            cd aivideo_be/staging
+            python3 update_api_status.py
+

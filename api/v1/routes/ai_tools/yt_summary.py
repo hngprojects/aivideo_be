@@ -116,7 +116,6 @@ async def summarize_yt_vid(
 )
 def download_pdf(
     request: PdfDownloadRequest,
-    current_user: User = Depends(user_service.get_current_user),
 ):
     try:
         # Generate PDF

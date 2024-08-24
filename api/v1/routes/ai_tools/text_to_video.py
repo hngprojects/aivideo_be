@@ -4,12 +4,31 @@ from sqlalchemy.orm import Session
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.v1.services.job import job_service
+from api.v1.services.ai_tools.text_to_video import ttv_service
 from api.v1.services.presets import preset_service
 from api.v1.schemas.ai_tools.text_to_video import SceneGeneration, TTVSchema
 from api.core.dependencies.celery.tasks.video_tasks import geenerate_video_from_script_task, generate_video_scenes_task
 
 
 ttv_router = APIRouter(prefix='/tools/video', tags=['Tools'])
+
+
+@ttv_router.post('/text-to-video/recompose-script', status_code=200, response_model=success_response)
+async def recompose_script(
+    schema: SceneGeneration,
+    db: Session = Depends(get_db)
+):
+    '''Endpoint to generate video scenes'''
+
+    script = ttv_service.recompose_script(schema.script)
+
+    return success_response(
+        status_code=200,
+        message="Script recomposed successfully",
+        data={
+            "script": script,
+        }
+    )
 
 
 @ttv_router.post('/text-to-video/generate-scenes', status_code=202, response_model=success_response)

@@ -26,7 +26,9 @@ from api.v1.schemas.project import ProjectToolsEnum
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
-oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
+oauth2_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl="/api/v1/auth/login", auto_error=False
+)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -322,13 +324,17 @@ class UserService(Service):
         db.refresh(user)
         return user
 
-    def delete(self, db: Session, id=None, 
-               access_token: str = Depends(oauth2_scheme),
-               user: User | None = None):
+    def delete(
+        self,
+        db: Session,
+        id=None,
+        access_token: str = Depends(oauth2_scheme),
+        user: User | None = None,
+    ):
         """Function to soft delete a user"""
 
         if not user:
-        # Get user from access token if provided, otherwise fetch user by id
+            # Get user from access token if provided, otherwise fetch user by id
             user = (
                 self.get_current_user(access_token, db)
                 if id is None
@@ -456,9 +462,8 @@ class UserService(Service):
 
             return access, refresh
 
-    
     def get_user_from_refresh_token(self, refresh_token: str, db: Session):
-        '''Return s thwe id of the user embedded in the refresh token'''
+        """Return s thwe id of the user embedded in the refresh token"""
 
         credentials_exception = HTTPException(
             status_code=401,
@@ -469,7 +474,6 @@ class UserService(Service):
         token = self.verify_refresh_token(refresh_token, credentials_exception)
         user = self.fetch(db, token.id)
         return user
-    
 
     def get_current_user(
         self, access_token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
@@ -491,9 +495,9 @@ class UserService(Service):
         return user
 
     def get_current_user_optional(
-        self, 
-        access_token: Optional[str] = Depends(oauth2_scheme_optional), 
-        db: Session = Depends(get_db)
+        self,
+        access_token: Optional[str] = Depends(oauth2_scheme_optional),
+        db: Session = Depends(get_db),
     ) -> Optional[User]:
         """Used to optionally check for a user. This will be used for tracking unauthenticated users"""
 
@@ -667,7 +671,6 @@ class UserService(Service):
             headers={"Content-Disposition": "attachment; filename=all_user_data.csv"},
         )
 
-
     def fetch_user_activity_statistics(self, db: Session, user_id: str):
         user_check = check_model_existence(db, User, user_id)
         query = (
@@ -677,7 +680,6 @@ class UserService(Service):
         )
         stats = {}
         one_hour_ago = datetime.now(timezone(timedelta(hours=1))) - timedelta(hours=1)
-
 
         total_tasks = query.count()
         in_progress_tasks = query.filter(
@@ -712,7 +714,7 @@ class UserService(Service):
         }
 
         return stats
-      
+
     def fetch_most_used_tool(self, db: Session, user_id: str):
         total_projects = db.query(Project).filter(Project.user_id == user_id).all()
 
@@ -734,8 +736,12 @@ class UserService(Service):
                 1 if prev_count_value is None else prev_count_value + 1
             )
 
-        max_project_count = max(all_project_count_dict.values())
-        most_used_tool = None
+        try:
+            max_project_count = max(all_project_count_dict.values())
+        except ValueError:
+            return "null"
+
+        most_used_tool = "null"
 
         for project_type, project_count in all_project_count_dict.items():
             if project_count == max_project_count:
@@ -771,15 +777,18 @@ class UserService(Service):
 
         query_result = query.limit(per_page).offset((page - 1) * per_page).all()
 
-        all_tasks = [
-            user.UserActivityData(
-                id=project.id,
-                created_at=project.created_at,
-                status=job.status,
-                tool_used=project.project_type,
-            )
-            for project, job in query_result
-        ]
+        all_tasks = []
+
+        if query_result:
+            all_tasks = [
+                user.UserActivityData(
+                    id=project.id,
+                    created_at=project.created_at,
+                    status=job.status,
+                    tool_used=project.project_type,
+                )
+                for project, job in query_result
+            ]
 
         if len(all_tasks) == 0:
             return user.UserActivityResponse(
