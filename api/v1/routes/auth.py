@@ -15,12 +15,15 @@ from sqlalchemy.orm import Session
 from api.core.dependencies.email_sender import send_email
 from api.utils.success_response import success_response
 from api.v1.models import User
+
 from api.v1.schemas.user import (
     LoginRequest,
     UserCreate,
     RegisterUserResponse,
     RefreshAccessTokenResponse,
+    LogoutResponse
 )
+
 from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.v1.schemas.request_password_reset import RequestEmail
@@ -168,7 +171,7 @@ def login(login_request: LoginRequest, db: Session = Depends(get_db)):
     return response
 
 
-@auth.post("/logout", status_code=status.HTTP_200_OK)
+@auth.post("/logout", status_code=status.HTTP_200_OK, response_model=LogoutResponse)
 def logout(
     response: Response,
     db: Session = Depends(get_db),
