@@ -30,7 +30,9 @@ async def create_project(
     Returns:
         success_response
     """
-    full_project = AddFullProjectSchema(**schema.model_dump())
+    schema_dump = schema.model_dump()
+    schema_dump['user_id'] = current_user.id
+    full_project = AddFullProjectSchema(**schema_dump)
     
     new_project = project_service.create(db, full_project)
 
