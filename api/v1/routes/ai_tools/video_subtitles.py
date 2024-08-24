@@ -49,7 +49,7 @@ async def transcribe(
         video_file_path = await upload_file(file, allowed_extensions=['mp4', 'mov', 'avi'], upload_folder="videos")
 
         # Call the transcription task
-        task = transcribe_video_task.delay(video_file_path)
+        task = transcribe_video_task.s(video_file_path, srt_format=True).delay()
 
         # Create project with job
         project = job_service.create_project_with_job(
