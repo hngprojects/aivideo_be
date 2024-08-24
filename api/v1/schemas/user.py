@@ -60,6 +60,14 @@ class UserData(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class UserDetailData(UserData):
+    most_used_tool: str
+
+class UserDetailResponse(BaseModel):
+    status: str
+    message: str
+    data: UserDetailData
+    status_code: int
 
 class AllUsersResponse(BaseModel):
     """
@@ -139,7 +147,7 @@ class ChangePasswordSchema(BaseModel):
     confirm_new_password: str
 
 
-class UserStatData(BaseModel):
+class UserStatResponse(BaseModel):
     total_users: int
     active_users: int
     inactive_users: int
@@ -149,12 +157,6 @@ class UserStatData(BaseModel):
     inactive_in_last_hour: int
     deleted_in_last_hour: int
 
-
-class UserStatResponse(BaseModel):
-    status: str
-    message: str
-    data: UserStatData
-    status_code: int
 
 
 class UserRestoreResponse(BaseModel):
@@ -189,3 +191,21 @@ class UserActivityResponse(BaseModel):
     total_pages: int
     data: Union[List[UserActivityData], List[None]]
     status_code: int
+
+class RegisterUserData(BaseModel):
+    id: str
+    email: EmailStr
+    first_name: str
+    last_name: str
+    is_active: bool
+    is_superadmin: bool
+    created_at: datetime
+    last_login: Union[datetime, None]
+
+class RegisterUserResponse(BaseModel):
+    status: str
+    status_code: int
+    message: str
+    access_token: str
+    data: RegisterUserData
+

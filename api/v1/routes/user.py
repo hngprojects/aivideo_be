@@ -19,6 +19,7 @@ from api.v1.schemas.user import (
     UserStatResponse,
     UserRestoreResponse,
     UserActivityResponse,
+    UserDetailResponse
 )
 from api.db.database import get_db
 from api.v1.services.user import user_service, UserService
@@ -149,7 +150,7 @@ async def event_generator(request: Request, db: Session):
         try:
             state_map[map_key][1] = 1
         except KeyError:
-            # if connection is already deleted
+            ""
             break
         # check if state map is non empty
         if state_map[map_key][0] == 1:
@@ -164,14 +165,18 @@ async def event_generator(request: Request, db: Session):
 
 
 @user_router.get(
-    "/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
+    "/statistics",
+    status_code=status.HTTP_200_OK,
+    response_model=UserStatResponse,
+    summary="Get user statistics data via SSE",
 )
 def get_user_statistics(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
 ):
-    """Endpoint to fetch all user statistics"""
+    """Endpoint to fetch all user statistics via SSE"""
     return EventSourceResponse(event_generator(request, db))
+
 
 #########################################
 
@@ -224,7 +229,6 @@ async def activity_event_generator(db: Session, user_id: str):
         await asyncio.sleep(1)
 
 #########################################
-
 
 
 @user_router.get("/export/csv", status_code=status.HTTP_200_OK)
@@ -407,26 +411,13 @@ def admin_registers_user(
     return user_service.super_admin_create_user(db, user_request)
 
 
-@user_router.get("/{user_id}", status_code=status.HTTP_200_OK)
+@user_router.get("/{user_id}", status_code=status.HTTP_200_OK, response_model=UserDetailResponse)
 def get_user_by_id(
     user_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user),
 ):
-    user = user_service.get_user_by_id(db=db, id=user_id)
-
-    return success_response(
-        status_code=status.HTTP_200_OK,
-        message="User retrieved successfully",
-        data=jsonable_encoder(
-            user,
-            exclude=[
-                "password",
-                "updated_at",
-            ],
-        ),
-    )
-
+    return user_service.get_user_by_id(db=db, id=user_id)
 
 @user_router.put(
     "/update/password", status_code=status.HTTP_200_OK, response_model=success_response

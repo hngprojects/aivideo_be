@@ -22,6 +22,7 @@ from api.v1.models.project import Project
 from api.v1.models.job import Job
 from api.v1.models.data_privacy import DataPrivacySetting
 from api.v1.schemas import user
+from api.v1.schemas.project import ProjectToolsEnum
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -161,9 +162,20 @@ class UserService(Service):
     def get_user_by_id(self, db: Session, id: str):
         """Fetches a user by their id"""
 
-        user: User = check_model_existence(db, User, id)
-        user.update_active_status()
-        return user
+        user_instance: User = check_model_existence(db, User, id)
+        user_instance.update_active_status()
+
+        data_dict = user_instance.to_dict()
+        data_dict["most_used_tool"] = self.fetch_most_used_tool(db, id)
+
+        data = user.UserDetailData(**data_dict)
+
+        return user.UserDetailResponse(
+            status="success",
+            status_code=status.HTTP_200_OK,
+            message="User retrieved successfully",
+            data=data,
+        )
 
     def fetch_by_email(self, db: Session, email):
         """Fetches a user by their email"""
@@ -174,15 +186,15 @@ class UserService(Service):
             raise HTTPException(status_code=404, detail="User not found")
 
         return user
-    
+
     def get_user_by_email(self, db: Session, email: str) -> Optional[User]:
         """
         Fetches a user by their email address.
-        
+
         Args:
             db: The database session.
             email: The email address of the user.
-        
+
         Returns:
             The user object if found, otherwise None.
         """
@@ -347,12 +359,6 @@ class UserService(Service):
         user.update_last_login()
         return user
 
-    # def perform_user_check(self, user: User):
-    #     """This checks if a user is active and verified and not a deleted user"""
-    #
-    #     if not user.is_active:
-    #         raise HTTPException(detail="User is not active", status_code=403)
-
     def hash_password(self, password: str) -> str:
         """Function to hash a password"""
 
@@ -446,6 +452,21 @@ class UserService(Service):
 
             return access, refresh
 
+    
+    def get_user_from_refresh_token(self, refresh_token: str, db: Session):
+        '''Return s thwe id of the user embedded in the refresh token'''
+
+        credentials_exception = HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+        token = self.verify_refresh_token(refresh_token, credentials_exception)
+        user = self.fetch(db, token.id)
+        return user
+    
+
     def get_current_user(
         self, access_token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
     ) -> User:
@@ -464,13 +485,13 @@ class UserService(Service):
         user.update_last_login()
 
         return user
-    
+
     def get_current_user_optional(
-        self, 
-        access_token: Optional[str] = Depends(oauth2_scheme), 
-        db: Session = Depends(get_db)
+        self,
+        access_token: Optional[str] = Depends(oauth2_scheme),
+        db: Session = Depends(get_db),
     ) -> Optional[User]:
-        '''Used to optionally check for a user. This will be used for tracking unauthenticated users'''
+        """Used to optionally check for a user. This will be used for tracking unauthenticated users"""
 
         if access_token is None:
             return None
@@ -688,6 +709,37 @@ class UserService(Service):
         }
 
         return stats
+      
+    def fetch_most_used_tool(self, db: Session, user_id: str):
+        total_projects = db.query(Project).filter(Project.user_id == user_id).all()
+
+        all_project_count_dict = {}
+
+        # Dict should look like {"podcast_summarizer": 2, ...} once iteration completes
+        # Code can further be optimized to use single for-loop to count as well as calculate percentages
+        for p in total_projects:
+            # Map Enum value stored in db to Enum's name, for use as key in the `all_project_count_dict`
+            # Catch errors that would occur when an unknown project_type is encountered
+            try:
+                project_type_name = ProjectToolsEnum(p.project_type).name
+            except ValueError:
+                continue
+
+            # Increment count for each tool if already present in all_project_count_dict else intialise it to 1
+            prev_count_value = all_project_count_dict.get(project_type_name)
+            all_project_count_dict[project_type_name] = (
+                1 if prev_count_value is None else prev_count_value + 1
+            )
+
+        max_project_count = max(all_project_count_dict.values())
+        most_used_tool = None
+
+        for project_type, project_count in all_project_count_dict.items():
+            if project_count == max_project_count:
+                most_used_tool = project_type
+                break
+
+        return most_used_tool
 
     def fetch_user_activity(
         self,
@@ -761,7 +813,7 @@ class UserService(Service):
                 detail="You do not have permission to access this resource",
             )
         return True
-    
+
     def get_fullname(self, user_):
         return f"{user_.first_name} {user_.last_name}"
 

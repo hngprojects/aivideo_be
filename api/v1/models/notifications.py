@@ -23,9 +23,7 @@ class NotificationSetting(BaseTableModel):
     email_notification_always_send_email_notifications = Column(Boolean, server_default='true')
     email_notification_email_digest = Column(Boolean, server_default='false')
     email_notification_announcement_and_update_emails = Column(Boolean, server_default='false')
-    slack_notifications_activity_on_your_workspace = Column(Boolean, server_default='false')
-    slack_notifications_always_send_email_notifications = Column(Boolean, server_default='false')
-    slack_notifications_announcement_and_update_emails = Column(Boolean, server_default='false')
+  
 
     user_id = Column(String, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
     user = relationship("User", back_populates="notification_setting")
