@@ -64,21 +64,18 @@ async def test_text_to_video_success(
     assert response.status_code == 202
 
 
-@pytest.mark.asyncio
-@patch('api.db.database.get_db')
-@patch('api.v1.services.ai_tools.text_to_video.ttv_service')
-def test_recompose_script(mock_db, mock_ttv_service):
+@patch("api.v1.services.ai_tools.text_to_video.ttv_service.recompose_script")
+def test_recompose_script(mock_recompose_script):
     # Arrange
-    sample_script = "This is a sample script."
-    recomposed_script = "This is the recomposed script."
-    mock_ttv_service.recompose_script.return_value = recomposed_script
-
-    schema = {
-        "script": sample_script
-    }
-
+    mock_script = "This is an example script."
+    mock_recomposed_script = "This is the recomposed version of the example script."
+    mock_recompose_script.return_value = mock_recomposed_script
+    
     # Act
-    response = client.post("/api/v1/tools/video/text-to-video/recompose-script", json=schema)
-
+    response = client.post(
+        "/api/v1/tools/video/text-to-video/recompose-script",
+        json={"script": mock_script}
+    )
+    
     # Assert
     assert response.status_code == 200
