@@ -185,6 +185,9 @@ class SummaryService():
         else:
             intent_data = {}
 
+        if not data:
+            raise HTTPException(status_code=404, detail="Unable to retrieve audio from the provided URL")
+        intent_data = data[0].get('data', {})
         shelves = intent_data.get('shelves', [])
 
         stream_url = None

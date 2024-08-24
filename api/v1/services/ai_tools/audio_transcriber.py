@@ -6,6 +6,7 @@ from io import BytesIO
 from pydub import AudioSegment
 from typing import Union
 import json
+from deep_translator.exceptions import LanguageNotSupportedException
 
 def format_time(ms):
     """Convert milliseconds to mm:ss format."""
@@ -80,21 +81,33 @@ def transcribe_audio_file_with_timestamps(audio_file_path):
 
 
 
-def translate_text(text: Union[str, dict], target_language: str) -> str:
+def translate_text(text: Union[str, dict], target_language: str):
     """Translate text or JSON using Google Translator."""
-    if isinstance(text, dict):
-        def translate_json(obj):
-            if isinstance(obj, dict):
-                return {k: translate_json(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [translate_json(i) for i in obj]
-            elif isinstance(obj, str):
-                return GoogleTranslator(target=target_language).translate(obj)
-            else:
-                return obj
-        
-        translated_text = translate_json(text)
-        return json.dumps(translated_text)
-    else:
-        translated_text = GoogleTranslator(target=target_language).translate(text)
-        return translated_text
+    try:
+        if isinstance(text, dict):
+            def translate_json(obj):
+                if isinstance(obj, dict):
+                    return {k: translate_json(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [translate_json(i) for i in obj]
+                elif isinstance(obj, str):
+                    return GoogleTranslator(target=target_language).translate(obj)
+                else:
+                    return obj
+
+            translated_text = translate_json(text)
+            return json.dumps(translated_text)
+        else:
+            translated_text = GoogleTranslator(target=target_language).translate(text)
+            return translated_text
+    
+    except LanguageNotSupportedException:
+        supported_languages = GoogleTranslator().supported_languages
+        return {
+            'error': f"Target language '{target_language}' is not supported.",
+            'supported_languages': supported_languages
+        }
+    except Exception as e:
+        return {
+            'error': f"An error occurred during translation: {str(e)}"
+        }
