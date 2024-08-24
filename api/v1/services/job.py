@@ -340,34 +340,41 @@ class JobService:
 
         initial: str = ""
 
-        while True:
-            query = (
-                db.query(Job)
-                .options(
-                    joinedload(Job.project),
-                    joinedload(Job.user),
+        try:
+            while True:
+                query = (
+                    db.query(Job)
+                    .options(
+                        joinedload(Job.project),
+                        joinedload(Job.user),
+                    )
+                    .order_by(Job.created_at.desc())
+                    .all()
                 )
-                .order_by(Job.created_at.desc())
-                .all()
-            )
 
-            jobs = jsonable_encoder(query)
+                jobs = jsonable_encoder(query)
 
-            # Remove the password field from user data
+                # Remove the password field from user data
 
-            for job in jobs:
-                if job.get("user"):
-                    user_data = job.get("user")
-                    if "password" in user_data:
-                        del user_data["password"]
+                for job in list(jobs):
+                    if job.get("user"):
+                        user_data = job.get("user")
 
-            data = json.dumps(jobs)
+                        for key, _ in list(user_data.items()):
+                            if key == "password":
+                                del user_data[key]
+                                break
 
-            if data != initial:
-                yield f"data: {data}\n\n"
-                initial = data
+                data = json.dumps(jobs)
 
-            await asyncio.sleep(1)
+                if data != initial:
+                    yield f"data: {data}\n\n"
+                    initial = data
+
+                await asyncio.sleep(1)
+                
+        except Exception as e:
+            pass
 
     def fetch_recent_job_activity(self, db: Session):
         query = db.query(Project, Job).outerjoin(Job, Project.id == Job.project_id)
