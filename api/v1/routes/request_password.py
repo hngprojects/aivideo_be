@@ -11,7 +11,7 @@ pwd_reset = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 # generate password reset link
-@pwd_reset.post("/request-forget-password", response_model=ResetPasswordResponse)
+@pwd_reset.post("/request-forget-password")
 async def request_forget_password(
     reset_schema: RequestEmail,
     request: Request,
@@ -47,7 +47,7 @@ async def forget_password(
 # change the password
 
 
-@pwd_reset.post("/reset-password")
+@pwd_reset.post("/reset-password", response_model=ResetPasswordResponse)
 async def reset_password(
     data: ResetPassword,
     session: Session = Depends(get_session),
