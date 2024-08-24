@@ -30,7 +30,7 @@ async def create_project(
     Returns:
         success_response
     """
-    full_project = AddFullProjectSchema(user_id=current_user.id, **schema.model_dump())
+    full_project = AddFullProjectSchema(**schema.model_dump())
     
     new_project = project_service.create(db, full_project)
 
@@ -101,7 +101,7 @@ async def get_all_notifications(db: Session = Depends(get_db),
                                 current_user: User = Depends(user_service.get_current_user)):
     """Endpoint to get all projects"""
     
-    notifications = notification_service.fetch_all(current_user)
+    notifications = notification_service.fetch_all_user_notifications(current_user)
     notifications_filtered = list(
         map(lambda x: RetrieveNotificationSchema.model_validate(x), notifications)
     )
@@ -120,7 +120,7 @@ async def get_single_notification(id: str, db: Session = Depends(get_db),
 
     """Endpoint to get a single notification"""
 
-    notification = notification_service.fetch(current_user, notification_id=id)
+    notification = notification_service.fetch(db, current_user, notification_id=id)
 
     if notification == None:
         raise HTTPException(status_code=404, detail="Notification not found")

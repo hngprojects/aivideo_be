@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request,Query
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from typing import Optional
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
@@ -21,56 +21,88 @@ from api.v1.schemas.project import (
 from api.v1.services.project import project_service
 from api.v1.services.user import user_service
 
-project = APIRouter(prefix="/projects", tags=["Projects"])
+project_router = APIRouter(prefix="/projects", tags=["Projects"])
 
 
-@project.post("", response_model=success_response, status_code=201)
+@project_router.post("", response_model=success_response, status_code=201)
 async def create_project(
     schema: CreateFullProjectSchema,
     db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user),
 ):
     """Endpoint to create a new project"""
+
+    schema_dump = schema.model_dump()
+    schema_dump.pop('user_id')
+
     full_project = AddFullProjectSchema(
-        user_id="default_user_id", **schema.model_dump()
+        user_id=current_user.id,
+        **schema_dump
     )
 
     new_project = project_service.create(db, full_project)
 
     logging.info(f"Creating new Project. ID: {new_project.id}.")
     return success_response(
-        data=jsonable_encoder(ProjectCreateResponseSchema.model_validate(new_project)),
+        data=jsonable_encoder(new_project),
         message="Successfully created project",
         status_code=status.HTTP_201_CREATED,
     )
 
 
-@project.get("", response_model=success_response, status_code=200)
+@project_router.get("", response_model=success_response, status_code=200)
 async def get_all_projects(
-    description : Optional[str] = Query(None),
-    title : Optional[str] = Query(None),
-    type : Optional[str] = Query(None),
-    db: Session = Depends(get_db)
-     ):
+    description: Optional[str] = Query(None),
+    title: Optional[str] = Query(None),
+    type: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
     """Endpoint to get all projects With Search Funtctionality"""
 
-    query_params = {
-        'description': description,
-        'project_type': type,
-        'title': title
-    }
+    query_params = {"description": description, "project_type": type, "title": title}
 
     projects = project_service.fetch_all_projects(db=db, **query_params)
-    projects_filtered = list(
-        map(lambda x: ProjectCreateResponseSchema.model_validate(x), projects)
-    )
-    if len(projects_filtered) == 0:
-        projects_filtered = None
 
     return success_response(
         status_code=200,
         message="Projects retrieved successfully",
-        data=jsonable_encoder(projects_filtered),
+        data=jsonable_encoder(projects),
     )
+
+
+@project_router.get("/user", response_model=success_response, status_code=200)
+async def get_user_projects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user),
+):
+    """Endpoint to get all projects of the current logged in user"""
+
+    projects = project_service.fetch_all_user_projects(db=db, user=current_user)
+
+    return success_response(
+        data=jsonable_encoder(projects),
+        message="Projects retrieved successfully",
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@project_router.get("/user/archive", response_model=success_response, status_code=200)
+async def get_user_archived_projects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user),
+):
+    """Endpoint to get all projects of the current logged in user"""
+
+    projects = project_service.fetch_all_user_archived_projects(
+        db=db, user=current_user
+    )
+
+    return success_response(
+        data=jsonable_encoder(projects),
+        message="Projects retrieved successfully",
+        status_code=status.HTTP_200_OK,
+    )
+
 
 ################ SSE ENDPOINT FOR TOOL USAGE STATISTICS ###################
 
@@ -145,37 +177,34 @@ async def event_generator(request: Request, db: Session):
         await asyncio.sleep(1)
 
 
-
-@project.get("/statistics", response_model=ToolStatsResponse, status_code=200)
+@project_router.get("/statistics", response_model=ToolStatsResponse, status_code=200)
 def get_statistics(request: Request, db: Session = Depends(get_db)):
     """Endpoint to get tool usage data"""
 
     return EventSourceResponse(event_generator(request, db))
 
 
-@project.get("/{id}", response_model=success_response, status_code=200)
+@project_router.get("/{id}", response_model=success_response, status_code=200)
 async def get_single_project(id: str, db: Session = Depends(get_db)):
     """Endpoint to get a single project"""
 
     project = project_service.fetch_project_by_id(project_id=id, db=db)
 
-    if project is None:
-        raise HTTPException(status_code=404, detail="Project not found")
-
     return success_response(
-        data=jsonable_encoder(ProjectCreateResponseSchema.model_validate(project)),
+        data=jsonable_encoder(project),
         message="Project retrieved successfully",
         status_code=status.HTTP_200_OK,
     )
 
 
-@project.put("/{id}", response_model=success_response, status_code=200)
+@project_router.put("/{id}", response_model=success_response, status_code=200)
 async def save_project(
     id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user),
 ):
     """Endpoint to save a project"""
+
     project = project_service.fetch_project_by_id(project_id=id, db=db)
 
     if project.user_id is not None:
@@ -184,7 +213,7 @@ async def save_project(
     project_service.add_user_to_project(db, project=project, user=current_user)
 
     return success_response(
-        data=jsonable_encoder(ProjectCreateResponseSchema.model_validate(project)),
+        data=jsonable_encoder(project),
         message="Project saved successfully",
         status_code=status.HTTP_200_OK,
     )
