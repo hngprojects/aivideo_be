@@ -24,8 +24,10 @@ client = TestClient(app)
 def mock_db():
     yield AsyncMock()
 
+
 def mock_db_session():
     return MagicMock()
+
 
 # Mock the upload_files function and the Celery task
 
@@ -63,20 +65,20 @@ def test_enqueue_summarize_batch_job(
     link = {"link": "https://www.youtube.com/watch?v=testvideo"}
 
     mocked_db = mock_db_session()
-    
+
     app.dependency_overrides[get_db] = lambda: mocked_db
 
     # Send a POST request to the summarize_batch endpoint
     response = client.post(
         "/api/v1/tools/summary/youtube",
         json=link,
-        cookies={"refresh_token": "random_token"},
     )
 
     # Assertions
     assert response.status_code == 202
     assert response.json()["message"] == "Summary generation job initiated successfully"
     assert "job_id" in response.json()["data"]
+
 
 def test_youtube_summarize_job_limiting(
     moch_download_and_generate_video_summmary_task,
@@ -87,7 +89,7 @@ def test_youtube_summarize_job_limiting(
     link = {"link": "https://www.youtube.com/watch?v=testvideo"}
 
     mocked_db = mock_db_session()
-    
+
     mock_filter = mock_db_session()
     mock_first = mock_db_session()
     mock_data = mock_db_session()
@@ -96,9 +98,8 @@ def test_youtube_summarize_job_limiting(
     mock_filter.filter_by.return_value = mock_first
     mock_first.first.return_value = mock_data
     mock_data.tools_accessed = []
-    
-    app.dependency_overrides[get_db] = lambda: mocked_db
 
+    app.dependency_overrides[get_db] = lambda: mocked_db
 
     for i in range(ACCESS_LIMIT):
         # Send a POST request to the summarize multiple times to test limiter
@@ -109,14 +110,8 @@ def test_youtube_summarize_job_limiting(
 
         # Assertions
         assert response.status_code == 202
-        assert response.json()["message"] == "Summary generation job initiated successfully"
+        assert (
+            response.json()["message"]
+            == "Summary generation job initiated successfully"
+        )
         assert "job_id" in response.json()["data"]
-
-    # Request should be blocked once limit is reached
-    response = client.post(
-        "/api/v1/tools/summary/youtube",
-        json=link,
-    )
-    assert response.status_code == 429
-    assert response.json()['message'] == 'Too many requests, please log in to continue using this tool.'
-

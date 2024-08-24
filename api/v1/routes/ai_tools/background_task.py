@@ -20,7 +20,8 @@ async def event_generator(job_id: str, db: Session, request: Request):
     '''Generates events for SSE'''
 
     user = None
-
+    if not job_id:
+        return 
     refresh_token = request.cookies.get('refresh_token')
     if refresh_token:
         user = user_service.get_user_from_refresh_token(refresh_token=refresh_token, db=db)
@@ -66,7 +67,6 @@ async def event_generator(job_id: str, db: Session, request: Request):
 
         elif status == 'PROGRESS':
             result = task_result.result
-            print(task_result.info)
             event_name = 'progress'
             job_service.update_job(job_id, 'Progress', json.dumps(result))
 
@@ -133,7 +133,6 @@ async def event_generator_for_job(job_id: str):
 
         elif status == 'PROGRESS':
             result = task_result.result
-            print(task_result.info)
             event_name = 'progress'
             job_service.update_job(job_id, 'Progress', json.dumps(result))
 
@@ -163,6 +162,8 @@ async def send_job_status_updates_over_sse(
     Function to send job status over server sent events and this updates the project associated with the job.
     Set save_project to True if a project is to be saved after job execution. If not set it to false
     '''
+    if not job_id:
+        raise HTTPException(status_code=400, detail="job_id is required")
 
     try:
         event_stream = event_generator(job_id, db, request) if save_project else event_generator_for_job(job_id)

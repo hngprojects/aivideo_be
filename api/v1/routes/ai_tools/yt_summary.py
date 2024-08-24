@@ -33,9 +33,9 @@ download = APIRouter(prefix="/tools/download", tags=["Download"])
 )
 async def summarize_up_vid(
     request: Request,
-    user: User | None = Depends(TrackToolUsage(ProjectToolsEnum.youtube_summarizer.value)),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)):
+    db: Session = Depends(get_db),
+):
     """Endpoint to summarize a single video"""
 
     video = await upload_files(
@@ -60,13 +60,11 @@ async def summarize_up_vid(
     task = generate_video_summary_task.delay(video[0])
     logging.info(f"Background task started {task.id}")
 
-    user_id = user.id if user is not None else None
     # Create project with job
     project = job_service.create_project_with_job(
-        job=task, project_title=file.filename,
-        project_type=ProjectToolsEnum.youtube_summarizer.value,
-        description="New YT Summarizer Project",
-        user_id=user_id
+        job=task,
+        project_title="video upload project",
+        project_type="Youtube summarizer",
     )
 
     return success_response(
@@ -84,23 +82,21 @@ async def summarize_up_vid(
     status_code=status.HTTP_200_OK,
     response_model=success_response,
 )
-async def summarize_yt_vid(vid_request: VideoLinkRequest,
-                           request: Request,
-                           user: User | None = Depends(TrackToolUsage(ProjectToolsEnum.youtube_summarizer.value)),
-                           db: Session = Depends(get_db)):
+async def summarize_yt_vid(
+    request: VideoLinkRequest,
+    db: Session = Depends(get_db),
+):
     """Endpoint to download and summarize a single youtube video"""
 
-    task = download_and_generate_video_summmary_task.delay(vid_request.link)
+    task = download_and_generate_video_summmary_task.delay(request.link)
     logging.info(f"Background task started {task.id}")
 
-    user_id = user.id if user is not None else None
     # Create project with job
     project = job_service.create_project_with_job(
         job=task,
         project_title="Youtube URL Summary",
-        project_type=ProjectToolsEnum.youtube_summarizer.value,
+        project_type="Youtube Summariser",
         description="New YT Summarizer Project",
-        user_id=user_id
     )
 
     return success_response(
@@ -120,7 +116,6 @@ async def summarize_yt_vid(vid_request: VideoLinkRequest,
 )
 def download_pdf(
     request: PdfDownloadRequest,
-    current_user: User = Depends(user_service.get_current_user),
 ):
     try:
         # Generate PDF
@@ -142,19 +137,3 @@ def download_pdf(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@download.get(
-    "/test",
-    status_code=status.HTTP_200_OK,
-    response_model=success_response,
-)
-def test_tool_limiter(
-    request: Request,
-    user: User | None = Depends(TrackToolUsage(ProjectToolsEnum.youtube_summarizer.value)),
-):
-    return success_response(
-        status_code=200,
-        message="request success",
-        data={},
-    )
