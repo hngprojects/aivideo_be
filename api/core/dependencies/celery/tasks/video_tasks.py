@@ -148,11 +148,11 @@ def generate_thumbnails_task(video_id: str, base_url: str, aspect_ratio: str, ti
 
 
 @worker.task()
-def select_and_download_thumbnail_task(thumbnail_id: str, base_url: str):
+def select_and_download_thumbnail_task(thumbnail_url: str):
     '''Background task to select and download a thumbnail'''
 
     thumbnail = asyncio.run(
         select_and_download_thumbnail_service(
-            thumbnail_id, base_url)
+            thumbnail_url)
     )
     return json.dumps({"thumbnail": thumbnail})
