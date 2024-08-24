@@ -1,6 +1,7 @@
 from api.v1.models.activity_logs import ActivityLog
 from api.v1.models.billing_plan import BillingPlan
 from api.v1.models.contact_us import ContactUs
+from api.v1.models.help_topics import HelpTopics
 from api.v1.models.profile import Profile
 from api.v1.models.notifications import Notification, NotificationSetting
 from api.v1.models.resource import Resource

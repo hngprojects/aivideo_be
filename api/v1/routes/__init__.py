@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from api.v1.routes.ai_tools.youtube_summarizer import video_summary
 from api.v1.routes.auth import auth
+from api.v1.routes.help_topics import help_topics
 from api.v1.routes.user import user_router
 from api.v1.routes.payment import payments
 from api.v1.routes.billing_plan import billing_plan
@@ -36,6 +37,7 @@ from api.v1.routes.file_downloader import downloader
 api_version_one = APIRouter(prefix="/api/v1")
 
 api_version_one.include_router(auth)
+api_version_one.include_router(help_topics)
 api_version_one.include_router(google_auth)
 api_version_one.include_router(user_router)
 api_version_one.include_router(summary)
