@@ -8,8 +8,7 @@ from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
 from api.v1.services.ai_tools.text_to_video import ttv_service
 from api.v1.services.ai_tools.thumbnail import generate_thumbnails_service, select_and_download_thumbnail_service
-from api.utils.settings import settings as app_settings
-from api.utils.files import delete_file
+from api.utils.settings import settings
 from api.db.database import get_db
 import os
 import asyncio
@@ -86,7 +85,8 @@ def upload_video_task(video_id: str, base_url: str):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-    video_folder = os.path.join(app_settings.TEMP_DIR)
+    video_folder = os.path.join(settings.TEMP_DIR)
+    print(f"video_folder: {video_folder}")
     video_filename = None
 
     for filename in os.listdir(video_folder):
@@ -99,6 +99,7 @@ def upload_video_task(video_id: str, base_url: str):
             f"Video with ID {video_id} not found in {video_folder}")
 
     video_path = os.path.join(video_folder, video_filename)
+    print(f"video_path: {video_path}")
 
     video_url = urljoin(base_url, f"tmp/media/{video_filename}")
 
@@ -136,13 +137,14 @@ def process_youtube_video_task(youtube_url: str, base_url: str):
 
 
 @worker.task()
-def generate_thumbnails_task(video_id: str, base_url: str, aspect_ratio: str, timestamp: float = None):
+def generate_thumbnails_task(video_id: str, base_url: str, aspect_ratio: str, timestamp: float = None, title: str = None):
     '''Background task to generate thumbnails'''
     thumbnails = asyncio.run(
         generate_thumbnails_service(
-            video_id, base_url, aspect_ratio, timestamp)
+            video_id, base_url, aspect_ratio, timestamp, title
+        )
     )
-    return json.dumps({'video_id': video_id, 'thumbnails': thumbnails})
+    return json.dumps({'video_id': video_id, 'thumbnails': thumbnails, 'title': title})
 
 
 @worker.task()

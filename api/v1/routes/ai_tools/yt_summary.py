@@ -29,13 +29,28 @@ download = APIRouter(prefix="/tools/download", tags=["Download"])
     "/video",
     status_code=status.HTTP_200_OK,
     response_model=success_response,
-    dependencies=[Depends(track_tool_usage)],
+    # dependencies=[Depends(track_tool_usage)],
 )
 async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Endpoint to summarize a single video"""
 
     video = await upload_files(
-        file, allowed_extensions=[".mp4", ".mp3"], upload_folder="video_summary"
+        file,
+        allowed_extensions=[
+            ".mp4",
+            ".avi",
+            ".mkv",
+            ".mov",
+            ".wmv",
+            ".flv",
+            ".webm",
+            ".m4v",
+            ".3gp",
+            ".mpeg",
+            ".mpg",
+        ],
+        upload_folder="video_summary",
+        max_file_size=50 * 1024 * 1024,
     )
 
     task = generate_video_summary_task.delay(video[0])
@@ -60,7 +75,7 @@ async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(g
     "/youtube",
     status_code=status.HTTP_200_OK,
     response_model=success_response,
-    dependencies=[Depends(track_tool_usage)],
+    # dependencies=[Depends(track_tool_usage)],
 )
 async def summarize_yt_vid(request: VideoLinkRequest, db: Session = Depends(get_db)):
     """Endpoint to download and summarize a single youtube video"""
@@ -94,9 +109,7 @@ def download_pdf(
 ):
     try:
         # Generate PDF
-        pdf_path = yts_service.pdf_transform(
-            request.transcript, request.summary, request.video_title
-        )
+        pdf_path = yts_service.pdf_transform(request)
         # Read the PDF file content
         with open(str(pdf_path), "rb") as pdf_file:
             pdf_content = pdf_file.read()

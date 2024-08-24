@@ -40,7 +40,7 @@ def mock_create_project_with_job(mocker):
     return mocker.patch("api.v1.services.job.job_service.create_project_with_job", return_value=MagicMock(id='project-id'))
 
 
-@patch('api.utils.files.upload_file', return_value='./media/uploads/videos/video-mocked.mov')
+@patch('api.utils.files.upload_file', return_value='./tmp/media/video-mocked.mov')
 @patch('os.path.exists', return_value=True)
 @patch('os.makedirs')
 @patch('builtins.open', new_callable=mock_open)

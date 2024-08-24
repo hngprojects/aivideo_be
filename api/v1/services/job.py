@@ -264,6 +264,7 @@ class JobService:
         query = db.query(Job)
 
         total_tasks = query.count()
+        active_users = db.query(User).filter(User.is_active == True)
         failed_tasks = query.filter(Job.status.icontains("FAILED"))
         in_progress_tasks = query.filter(
             or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
@@ -287,6 +288,7 @@ class JobService:
 
         stats = {
             "total_tasks": total_tasks,
+            "active_users": active_users.count(),
             "failed_tasks": failed_tasks.count(),
             "in_progress_tasks": in_progress_tasks.count(),
             "pending_tasks": pending_tasks.count(),
@@ -348,6 +350,21 @@ class JobService:
                 initial = data
 
             await asyncio.sleep(1)
+
+    def fetch_recent_job_activity(self, db: Session):
+        query = db.query(Project, Job).outerjoin(Job, Project.id == Job.project_id)
+        query_result = query.order_by(desc(Job.created_at)).limit(10).all()
+        all_tasks = [
+            {
+                "id": project.id,
+                "created_at": project.created_at,
+                "status": job.status,
+                "tool_used": project.project_type,
+            }
+            for project, job in query_result
+        ]
+
+        return all_tasks
 
 
 job_service = JobService()
