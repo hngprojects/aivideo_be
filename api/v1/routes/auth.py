@@ -257,7 +257,7 @@ async def request_magic_link(
 @auth.get(
     "/magic-link/verify",
     status_code=status.HTTP_200_OK,
-    response_model=success_response,
+    response_model=RegisterUserResponse,
 )
 def verify_magic_link(token: str = Query(...), db: Session = Depends(get_db)):
     """Endpoint to verify a magic link"""
