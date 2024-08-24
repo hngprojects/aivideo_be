@@ -19,7 +19,8 @@ from api.v1.schemas.user import (
     UserStatResponse,
     UserRestoreResponse,
     UserActivityResponse,
-    UserDetailResponse
+    UserUpdateResponse,
+    UserDetailResponse,
 )
 from api.db.database import get_db
 from api.v1.services.user import user_service, UserService
@@ -182,6 +183,7 @@ def get_user_statistics(
 
 ################ SSE ENDPOINT FOR USER ACTIVITY STATISTICS ###################
 
+
 @event.listens_for(Project, "after_insert")
 @event.listens_for(Project, "after_update")
 def orm_event_listener_for_project(mapper, connection, target):
@@ -228,6 +230,7 @@ async def activity_event_generator(db: Session, user_id: str):
             yield {"event": "acticityStatsUpdate", "data": data}
         await asyncio.sleep(1)
 
+
 #########################################
 
 
@@ -240,7 +243,9 @@ def export_csv(
 
 
 @user_router.get(
-    "/{user_id}/activity/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
+    "/{user_id}/activity/statistics",
+    status_code=status.HTTP_200_OK,
+    response_model=UserStatResponse,
 )
 def get_user_activity_statistics(
     db: Annotated[Session, Depends(get_db)],
@@ -275,7 +280,9 @@ def get_user_activity(
     )
 
 
-@user_router.patch("/{user_id}", status_code=status.HTTP_200_OK)
+@user_router.patch(
+    "/{user_id}", status_code=status.HTTP_200_OK, response_model=UserUpdateResponse
+)
 def update_user(
     user_id: str,
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
@@ -411,13 +418,16 @@ def admin_registers_user(
     return user_service.super_admin_create_user(db, user_request)
 
 
-@user_router.get("/{user_id}", status_code=status.HTTP_200_OK, response_model=UserDetailResponse)
+@user_router.get(
+    "/{user_id}", status_code=status.HTTP_200_OK, response_model=UserDetailResponse
+)
 def get_user_by_id(
     user_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user),
 ):
     return user_service.get_user_by_id(db=db, id=user_id)
+
 
 @user_router.put(
     "/update/password", status_code=status.HTTP_200_OK, response_model=success_response
