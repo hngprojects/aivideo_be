@@ -136,13 +136,13 @@ async def generate_thumbnails(
     )
 
 
-@ thumbnail_router.post("/select-thumbnail")
+@thumbnail_router.post("/select-thumbnail")
 async def select_and_download_thumbnail(
     request: Request,
-    body: ThumbnailSelectionRequest
+    thumbnail_url: str = Form(...)
 ):
     task = select_and_download_thumbnail_task.delay(
-        body.thumbnail_id, str(request.url)
+        thumbnail_url
     )
 
     project = job_service.create_project_with_job(

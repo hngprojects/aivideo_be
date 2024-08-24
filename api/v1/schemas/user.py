@@ -60,14 +60,17 @@ class UserData(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class UserDetailData(UserData):
     most_used_tool: str
+
 
 class UserDetailResponse(BaseModel):
     status: str
     message: str
     data: UserDetailData
     status_code: int
+
 
 class AllUsersResponse(BaseModel):
     """
@@ -158,7 +161,6 @@ class UserStatResponse(BaseModel):
     deleted_in_last_hour: int
 
 
-
 class UserRestoreResponse(BaseModel):
     status: str
     message: str
@@ -170,6 +172,7 @@ class UserActivityData(BaseModel):
     created_at: datetime
     tool_used: str
     status: str
+
 
 class UserActivityStatisticsResponse(BaseModel):
     status: str
@@ -192,7 +195,25 @@ class UserActivityResponse(BaseModel):
     data: Union[List[UserActivityData], List[None]]
     status_code: int
 
+
+class UserUpdateResponseData(BaseModel):
+    id: str
+    email: EmailStr
+    first_name: str
+    last_name: str
+    last_login: Union[datetime, None]
+
+
+class UserUpdateResponse(BaseModel):
+    status: str = "success"
+    message: str = "User Updated Successfully"
+    data: UserUpdateResponseData
+    status_code: int = 200
+
+
 class RegisterUserData(BaseModel):
+    """Registration schema"""
+
     id: str
     email: EmailStr
     first_name: str
@@ -202,10 +223,22 @@ class RegisterUserData(BaseModel):
     created_at: datetime
     last_login: Union[datetime, None]
 
+
 class RegisterUserResponse(BaseModel):
     status: str
     status_code: int
     message: str
     access_token: str
     data: RegisterUserData
+
+class RefreshAccessTokenResponse(BaseModel):
+    status: str
+    status_code: int
+    message: str
+    data: Token
+
+class LogoutResponse(BaseModel):
+    status: str = "success"
+    status_code: int = 200
+    message: str
 

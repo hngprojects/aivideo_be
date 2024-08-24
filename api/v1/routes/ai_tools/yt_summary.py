@@ -1,6 +1,6 @@
 import base64
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Request
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -13,10 +13,11 @@ from api.utils.files import delete_file, upload_files
 from api.utils.logger import logging
 from api.utils.success_response import success_response
 from api.v1.schemas.ai_tools.youtube import PdfDownloadRequest, VideoLinkRequest
+from api.v1.schemas.project import ProjectToolsEnum
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.job import job_service
 from api.v1.services.user import user_service
-from api.utils.tool_limiter import track_tool_usage
+from api.utils.tool_limiter import TrackToolUsage
 
 from api.v1.services.user import user_service
 from api.v1.models.user import User
@@ -29,9 +30,12 @@ download = APIRouter(prefix="/tools/download", tags=["Download"])
     "/video",
     status_code=status.HTTP_200_OK,
     response_model=success_response,
-    # dependencies=[Depends(track_tool_usage)],
 )
-async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def summarize_up_vid(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
     """Endpoint to summarize a single video"""
 
     video = await upload_files(
@@ -58,7 +62,9 @@ async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(g
 
     # Create project with job
     project = job_service.create_project_with_job(
-        job=task, project_title="New project", project_type="YT video Summarizer"
+        job=task,
+        project_title="video upload project",
+        project_type="Youtube summarizer",
     )
 
     return success_response(
@@ -75,9 +81,11 @@ async def summarize_up_vid(file: UploadFile = File(...), db: Session = Depends(g
     "/youtube",
     status_code=status.HTTP_200_OK,
     response_model=success_response,
-    # dependencies=[Depends(track_tool_usage)],
 )
-async def summarize_yt_vid(request: VideoLinkRequest, db: Session = Depends(get_db)):
+async def summarize_yt_vid(
+    request: VideoLinkRequest,
+    db: Session = Depends(get_db),
+):
     """Endpoint to download and summarize a single youtube video"""
 
     task = download_and_generate_video_summmary_task.delay(request.link)
@@ -85,7 +93,10 @@ async def summarize_yt_vid(request: VideoLinkRequest, db: Session = Depends(get_
 
     # Create project with job
     project = job_service.create_project_with_job(
-        job=task, project_title="New project", project_type="YT video Summarizer"
+        job=task,
+        project_title="Youtube URL Summary",
+        project_type="Youtube Summariser",
+        description="New YT Summarizer Project",
     )
 
     return success_response(
@@ -127,17 +138,3 @@ def download_pdf(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@download.get(
-    "/test",
-    status_code=status.HTTP_200_OK,
-    response_model=success_response,
-    dependencies=[Depends(track_tool_usage)],
-)
-def test_tool_limiter():
-    return success_response(
-        status_code=200,
-        message="request success",
-        data={},
-    )

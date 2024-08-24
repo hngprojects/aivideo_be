@@ -36,12 +36,14 @@ class JobService:
         return task_result.state
 
     def create_project_with_job(
-        self, job, project_title: str, project_type: str, user_id: Optional[str] = None
+        self, job, project_title: str, project_type: str,
+        user_id: Optional[str] = None, description: Optional[str] = None
     ):
         """FUnction to create a project alongside a task or job"""
 
         # Create project based on task run
-        project_schema = CreateProject(title=project_title, project_type=project_type)
+        project_schema = CreateProject(title=project_title, project_type=project_type,
+                                       user_id=user_id, description=description)
         project = project_service.create(db=db, schema=project_schema)
 
         # Create celery task

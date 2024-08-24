@@ -15,7 +15,15 @@ from sqlalchemy.orm import Session
 from api.core.dependencies.email_sender import send_email
 from api.utils.success_response import success_response
 from api.v1.models import User
-from api.v1.schemas.user import LoginRequest, UserCreate, RegisterUserResponse
+
+from api.v1.schemas.user import (
+    LoginRequest,
+    UserCreate,
+    RegisterUserResponse,
+    RefreshAccessTokenResponse,
+    LogoutResponse
+)
+
 from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.v1.schemas.request_password_reset import RequestEmail
@@ -25,7 +33,9 @@ auth = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @auth.post(
-    "/register", status_code=status.HTTP_201_CREATED, response_model=success_response
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+    response_model=RegisterUserResponse,
 )
 def register(
     background_tasks: BackgroundTasks,
@@ -119,7 +129,9 @@ def register_as_super_admin(user: UserCreate, db: Session = Depends(get_db)):
     return response
 
 
-@auth.post("/login", status_code=status.HTTP_200_OK, response_model=success_response)
+@auth.post(
+    "/login", status_code=status.HTTP_200_OK, response_model=RegisterUserResponse
+)
 def login(login_request: LoginRequest, db: Session = Depends(get_db)):
     """Endpoint to log in a user"""
 
@@ -159,7 +171,7 @@ def login(login_request: LoginRequest, db: Session = Depends(get_db)):
     return response
 
 
-@auth.post("/logout", status_code=status.HTTP_200_OK)
+@auth.post("/logout", status_code=status.HTTP_200_OK, response_model=LogoutResponse)
 def logout(
     response: Response,
     db: Session = Depends(get_db),
@@ -175,7 +187,7 @@ def logout(
     return response
 
 
-@auth.post("/refresh-access-token", status_code=status.HTTP_200_OK)
+@auth.post("/refresh-access-token", status_code=status.HTTP_200_OK, response_model=RefreshAccessTokenResponse)
 def refresh_access_token(
     request: Request, response: Response, db: Session = Depends(get_db)
 ):

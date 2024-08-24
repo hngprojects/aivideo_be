@@ -5,19 +5,14 @@ from main import app
 
 client = TestClient(app)
 
-# Mocked settings and data
-mock_video_id = 'mock-video-id'
-mock_thumbnail_id = 'mock-thumbnail-id'
-mock_resolution = '720p'
-mock_base_url = 'http://testserver'
-mock_thumbnail_url = f"{mock_base_url}/media/downloads/thumbnails/{mock_video_id}_thumbnail_{mock_thumbnail_id}_{mock_resolution}.jpg"
+
+mock_thumbnail_url = 'http://testserver/media/downloads/thumbnails/mock-video-id_thumbnail_mock-thumbnail-id_720p.jpg'
 
 
 @pytest.fixture
 def mock_select_and_download_thumbnail_task(mocker):
     mock_task = MagicMock()
     mock_task.id = 'mock-task-id'
-
     return mocker.patch("api.core.dependencies.celery.tasks.video_tasks.select_and_download_thumbnail_task.delay", return_value=mock_task)
 
 
@@ -31,10 +26,9 @@ def test_select_thumbnail_success(
     mock_create_project_with_job
 ):
     response = client.post(
-        f'/api/v1/tools/thumbnail-generator/select-thumbnail',
-        json={
-            'thumbnail_id': mock_thumbnail_id,
-            
+        '/api/v1/tools/thumbnail-generator/select-thumbnail',
+        data={
+            'thumbnail_url': mock_thumbnail_url
         }
     )
 
