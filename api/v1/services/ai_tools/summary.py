@@ -50,12 +50,6 @@ class SummaryService():
                          api_key=settings.OPENAI_API_KEY)
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         return llm_chain
-    
-    
-    def advanced_summarize(self, text, model_name="facebook/bart-large-cnn"):
-        summarizer = pipeline("summarization", model=model_name)
-        summary = summarizer(text, max_length=150, min_length=30, do_sample=False)
-        return summary[0]['summary_text']
 
     def apply_ocr_to_images(self, doc):
         """Extract text from images in the PDF using OCR."""
@@ -182,7 +176,15 @@ class SummaryService():
 
     def get_audio_url(self, podcast_url: str):
         data = self.extract_scripts_with_asseturl(podcast_url)
-        intent_data = data[0].get('data', {})
+        if data and isinstance(data, list) and len(data) > 0:
+            first_item = data[0]
+            if isinstance(first_item, dict):
+                intent_data = first_item.get('data', {})
+            else:
+                intent_data = {}
+        else:
+            intent_data = {}
+
         shelves = intent_data.get('shelves', [])
 
         stream_url = None
