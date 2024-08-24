@@ -230,3 +230,10 @@ class RegisterUserResponse(BaseModel):
     message: str
     access_token: str
     data: RegisterUserData
+
+
+class RefreshAccessTokenResponse(BaseModel):
+    status: str
+    status_code: int
+    message: str
+    data: Token
