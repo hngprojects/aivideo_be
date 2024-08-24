@@ -1,4 +1,5 @@
 import os
+import requests
 import uuid
 import random
 from fastapi import HTTPException, status
@@ -114,30 +115,30 @@ async def generate_thumbnails_service(video_id: str, base_url: str, aspect_ratio
     return thumbnail_urls
 
 
-async def select_and_download_thumbnail_service(thumbnail_id: str, base_url: str) -> str:
+async def select_and_download_thumbnail_service(thumbnail_url: str) -> str:
     try:
-        possible_thumbnail_dir = os.path.join(
-            settings.MEDIA_DIR, 'downloads', 'thumbnails')
-
-        thumbnail_files = os.listdir(possible_thumbnail_dir)
-        thumbnail_file = next(
-            (file for file in thumbnail_files if thumbnail_id in file), None)
-
-        if not thumbnail_file:
+        # Fetch the thumbnail from the given URL
+        response = requests.get(thumbnail_url)
+        if response.status_code != 200:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Thumbnail not found."
+                detail="Thumbnail URL not reachable."
             )
 
-        input_path = os.path.join(possible_thumbnail_dir, thumbnail_file)
+        # Extract the filename from the thumbnail URL
+        thumbnail_filename = thumbnail_url.split('/')[-1]
 
-        absolute_output_path = os.path.abspath(input_path)
-        relative_path = os.path.relpath(
-            absolute_output_path, settings.MEDIA_DIR)
-        relative_path = relative_path.replace(os.path.sep, '/')
+        # Define the directory to save the thumbnail
+        thumbnail_dir = os.path.join(
+            settings.MEDIA_DIR, 'downloads', 'thumbnails')
+        os.makedirs(thumbnail_dir, exist_ok=True)
 
-        thumbnail_url = urljoin(base_url, f"/media/{relative_path}")
+        # Save the downloaded thumbnail to the specified directory
+        output_path = os.path.join(thumbnail_dir, thumbnail_filename)
+        with open(output_path, 'wb') as thumbnail_file:
+            thumbnail_file.write(response.content)
 
+        # Return the original thumbnail URL or you can return the local path if needed
         return thumbnail_url
 
     except Exception as e:
