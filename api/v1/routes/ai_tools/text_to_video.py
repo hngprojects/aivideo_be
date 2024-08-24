@@ -61,14 +61,15 @@ async def convert_text_to_video(
 ):
     '''Endpoint to convert a script to video'''
     
-    audio = preset_service.fetch_music_by_id(
-        db=db, music_id=schema.audio_id
-    )
+    if schema.audio_id:
+        audio = preset_service.fetch_music_by_id(
+            db=db, music_id=schema.audio_id
+        )
 
-    audio_file = audio.file_path
+        audio_file = audio.file_path
 
     task = geenerate_video_from_script_task.apply_async(kwargs={
-        'background_audio': audio_file,
+        'background_audio': audio_file if schema.audio_id else None,
         'scenes': schema.scenes,
         'aspect_ratio': schema.aspect_ratio,
         'script': schema.script,
