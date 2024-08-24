@@ -117,7 +117,7 @@ async def generate_thumbnails_service(video_id: str, base_url: str, aspect_ratio
 
 async def select_and_download_thumbnail_service(thumbnail_url: str) -> str:
     try:
-        # Fetch the thumbnail from the given URL
+
         response = requests.get(thumbnail_url)
         if response.status_code != 200:
             raise HTTPException(
@@ -125,20 +125,16 @@ async def select_and_download_thumbnail_service(thumbnail_url: str) -> str:
                 detail="Thumbnail URL not reachable."
             )
 
-        # Extract the filename from the thumbnail URL
         thumbnail_filename = thumbnail_url.split('/')[-1]
 
-        # Define the directory to save the thumbnail
         thumbnail_dir = os.path.join(
             settings.MEDIA_DIR, 'downloads', 'thumbnails')
         os.makedirs(thumbnail_dir, exist_ok=True)
 
-        # Save the downloaded thumbnail to the specified directory
         output_path = os.path.join(thumbnail_dir, thumbnail_filename)
         with open(output_path, 'wb') as thumbnail_file:
             thumbnail_file.write(response.content)
 
-        # Return the original thumbnail URL or you can return the local path if needed
         return thumbnail_url
 
     except Exception as e:
