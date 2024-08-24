@@ -178,7 +178,7 @@ def generate_subtitles(video_path: str) -> dict:
         # Ensure segments is a list of dictionaries
         if isinstance(transcription_data, dict):
             transcription_segments = transcription_data.get('segments', [])
-            detected_language = transcription_data = transcription_data.get('language', [])
+            detected_language = transcription_data.get('language', [])
 
         # Generate SRT formatted subtitles
         srt_content = generate_srt_subtitles(transcription_segments)
@@ -189,9 +189,8 @@ def generate_subtitles(video_path: str) -> dict:
         srt_dir = os.path.join(settings.STORAGE_DIR, 'subtitles')
         srt_path = os.path.join(srt_dir, srt_filename)
 
-        # Create the directory if it doesn't exist
-        if not os.path.exists(srt_dir):
-            os.makedirs(srt_dir)
+        # Ensure the directory exists
+        os.makedirs(srt_dir, exist_ok=True)
 
         # Save SRT content to file
         save_subtitles_to_file(srt_content, srt_path)
