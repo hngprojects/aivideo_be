@@ -25,7 +25,7 @@ auth = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @auth.post(
-    "/register", status_code=status.HTTP_201_CREATED, response_model=success_response
+    "/register", status_code=status.HTTP_201_CREATED, response_model=RegisterUserResponse
 )
 def register(
     background_tasks: BackgroundTasks,
