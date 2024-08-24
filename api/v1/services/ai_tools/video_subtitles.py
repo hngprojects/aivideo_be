@@ -49,15 +49,16 @@ def convert_video_to_audio(video_path: str) -> str:
     except subprocess.CalledProcessError as e:
         raise Exception(f"Error converting video to audio: {e}")
 
-def transcribe_audio(file_path: str) -> list:
+def transcribe_audio(file_path: str, srt_format: bool = False) -> dict:
     """
     Transcribe audio using OpenAI Whisper API.
 
     Args:
         file_path (str): Path to the audio file.
+        srt_format (bool): Whether to return the transcription in SRT format.
 
     Returns:
-        list: List of transcription segments with text and timestamps.
+        dict: Dictionary containing transcription segments or SRT formatted text.
 
     Raises:
         Exception: If transcription fails.
@@ -68,34 +69,25 @@ def transcribe_audio(file_path: str) -> list:
                 model="whisper-1",
                 file=audio_file,
                 response_format="verbose_json",
-                language="en"  # Specify language if known; otherwise, auto-detect
             )
-            # print(transcript)
 
-            # Correctly access the segments attribute or method
-            segments = transcript.segments  # Access the segments attribute
-            # print(segments)
+            segments = transcript.segments
+            detected_language = transcript.language
             
             if not segments:
                 raise Exception("No transcription segments received from OpenAI Whisper API.")
 
-            return segments
+            if srt_format:
+                srt_content = generate_srt_subtitles(segments)
+                return {"srt": srt_content}
+
+            return {
+                "language": detected_language,
+                "segments": segments
+            }
 
     except Exception as e:
         raise Exception(f"Error during transcription: {e}")
-
-def save_subtitles_to_file(subtitles: str, file_path: str) -> None:
-    """Saves subtitles to a file.
-    
-    Args:
-        subtitles (str): The subtitle content to be saved.
-        file_path (str): The path where the subtitle file should be saved.
-    """
-    try:
-        with open(file_path, 'w') as file:
-            file.write(subtitles)
-    except Exception as e:
-        raise Exception(f"Error saving subtitles to file: {str(e)}")
     
 
 def translate_text(text: str, target_language: str) -> str:
@@ -181,11 +173,12 @@ def generate_subtitles(video_path: str) -> dict:
         audio_path = convert_video_to_audio(video_path)
 
         # Transcribe audio to get segments with timestamps
-        transcription_segments = transcribe_audio(audio_path)
+        transcription_data = transcribe_audio(audio_path)
 
         # Ensure segments is a list of dictionaries
-        if isinstance(transcription_segments, dict):
-            transcription_segments = transcription_segments.get('segments', [])
+        if isinstance(transcription_data, dict):
+            transcription_segments = transcription_data.get('segments', [])
+            detected_language = transcription_data = transcription_data.get('language', [])
 
         # Generate SRT formatted subtitles
         srt_content = generate_srt_subtitles(transcription_segments)
@@ -193,7 +186,12 @@ def generate_subtitles(video_path: str) -> dict:
         # Define SRT file path
         base_filename = os.path.splitext(os.path.basename(video_path))[0]
         srt_filename = f"{base_filename}_{uuid.uuid4()}.srt"
-        srt_path = os.path.join(settings.STORAGE_DIR, 'subtitles', srt_filename)
+        srt_dir = os.path.join(settings.STORAGE_DIR, 'subtitles')
+        srt_path = os.path.join(srt_dir, srt_filename)
+
+        # Create the directory if it doesn't exist
+        if not os.path.exists(srt_dir):
+            os.makedirs(srt_dir)
 
         # Save SRT content to file
         save_subtitles_to_file(srt_content, srt_path)
@@ -201,7 +199,7 @@ def generate_subtitles(video_path: str) -> dict:
         # Clean up intermediate audio file
         delete_file(audio_path)
 
-        return {"srt_file_path": srt_path}
+        return {"srt_file_path": srt_path, "detected_language": detected_language}
 
     except Exception as e:
         raise Exception(f"Error generating subtitles: {e}")
