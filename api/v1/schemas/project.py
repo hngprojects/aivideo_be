@@ -41,6 +41,24 @@ class ProjectCreateResponseSchema(CreateFullProjectSchema):
     class Config:
         from_attributes = True
 
+class BaseResponseSchema(BaseModel):
+    message: str
+    status_code: int
+    status: str
+
+class SingleProjectResponse(BaseResponseSchema):
+    """
+    Schema for all Project Response
+    """
+    data: ProjectCreateResponseSchema | None
+
+
+class AllProjectResponse(BaseResponseSchema):
+    """
+    Schema for all Project Response
+    """
+    data: Union[list[ProjectCreateResponseSchema], list[None]]
+
 class ToolStatsData(BaseModel):
     pdf_summarizer: float = 0
     podcast_summarizer: float = 0
