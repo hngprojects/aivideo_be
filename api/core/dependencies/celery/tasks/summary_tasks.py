@@ -26,11 +26,11 @@ db = next(get_db())
 
 
 @worker.task()
-def generate_pdf_summary_task(pdf_file_path, summary_length, use_bullets=False, custom_filename=None):
+def generate_pdf_summary_task(pdf_file_path):
     """Background task to summarize a pdf and save to the database"""
     try:
         # Summarize the PDF
-        summary = summary_service.summarize_pdf(pdf_file_path, summary_length)
+        summary = summary_service.summarize_pdf(pdf_file_path)
 
         # Process the PDF to extract page and text information
         pdf_reader = PdfReader(pdf_file_path)
@@ -51,7 +51,7 @@ def generate_pdf_summary_task(pdf_file_path, summary_length, use_bullets=False, 
 
         # Create the PDF with better formatting
         pdf_buffer = BytesIO()
-        pdf_filename = os.path.join("media/uploads/pdf", f"{custom_filename or f'summary_{secrets.token_hex(8)}'}.pdf")
+        pdf_filename = os.path.join("media/uploads/pdf", f"summary_{secrets.token_hex(8)}.pdf")
         os.makedirs(os.path.dirname(pdf_filename), exist_ok=True)
 
         # Set up the document
@@ -64,22 +64,15 @@ def generate_pdf_summary_task(pdf_file_path, summary_length, use_bullets=False, 
         story.append(Paragraph("Summary Report", title_style))
         story.append(Spacer(1, 12))
 
-        # Format the summary into paragraphs and apply bullets if enabled
+        
         normal_style = styles['Normal']
-        paragraphs = summary.split("\n\n")  # Split by double newlines for paragraphs
+        paragraphs = summary.split("\n\n") 
 
-        if use_bullets:
-            # Use bullet points for summarizing key points
-            bullet_style = styles['Bullet']
-            for paragraph in paragraphs:
-                story.append(Paragraph(paragraph, bullet_style))
-                story.append(Spacer(1, 6))  # Adjust the spacing for bullets
-        else:
-            for paragraph in paragraphs:
-                story.append(Paragraph(paragraph, normal_style))
-                story.append(Spacer(1, 12))  # Adjust the spacing for paragraphs
-
-        # Build the PDF
+    
+        for paragraph in paragraphs:
+            story.append(Paragraph(paragraph, normal_style))
+            story.append(Spacer(1, 12))
+    
         doc.build(story)
 
         # Save the PDF content to a file
@@ -98,12 +91,10 @@ def generate_pdf_summary_task(pdf_file_path, summary_length, use_bullets=False, 
             "summary_read_time": f"{summary_read_time:.2f} minutes",
             "time_saved": f"{time_saved:.2f} minutes",
             "summary": summary,
-            "pdf_file_path": pdf_filename  # Provide the file path in the response instead of the actual file content
+            "pdf_file_path": pdf_filename
         }
 
-        # Convert result to JSON safely
         result_json = json.dumps(result, default=str)
-
         return result_json
 
     except Exception as e:
