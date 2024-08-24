@@ -120,7 +120,7 @@ async def get_single_notification(id: str, db: Session = Depends(get_db),
 
     """Endpoint to get a single notification"""
 
-    notification = notification_service.fetch(current_user, notification_id=id)
+    notification = notification_service.fetch(db, current_user, notification_id=id)
 
     if notification == None:
         raise HTTPException(status_code=404, detail="Notification not found")
