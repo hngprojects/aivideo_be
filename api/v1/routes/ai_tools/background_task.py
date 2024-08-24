@@ -19,6 +19,8 @@ async def event_generator(job_id: str, db: Session, request: Request):
 # async def event_generator(job_id: str, db: Session):
     '''Generates events for SSE'''
 
+    user = None
+
     refresh_token = request.cookies.get('refresh_token')
     if refresh_token:
         user = user_service.get_user_from_refresh_token(refresh_token=refresh_token, db=db)
@@ -164,7 +166,6 @@ async def send_job_status_updates_over_sse(
 
     try:
         event_stream = event_generator(job_id, db, request) if save_project else event_generator_for_job(job_id)
-        # event_stream = event_generator(job_id, db) if save_project else event_generator_for_job(job_id)
         return StreamingResponse(event_stream, media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
