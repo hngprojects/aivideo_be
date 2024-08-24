@@ -23,7 +23,7 @@ from api.v1.routes.user_subscription import user_subs
 from api.v1.routes.ai_tools.talking_avatar import video_router
 from api.v1.routes.ai_tools.background_task import background_router
 from api.v1.routes.testimonial import testimonial
-from api.v1.routes.project import project
+from api.v1.routes.project import project_router
 from api.v1.routes.job import job
 from api.v1.routes.ai_tools.audio_transcriber import audio
 from api.v1.routes.dashboard import dashboard
@@ -51,7 +51,7 @@ api_version_one.include_router(notification_setting)
 api_version_one.include_router(faq)
 api_version_one.include_router(resource)
 api_version_one.include_router(testimonial)
-api_version_one.include_router(project)
+api_version_one.include_router(project_router)
 api_version_one.include_router(google_auth)
 api_version_one.include_router(pwd_reset)
 api_version_one.include_router(job)

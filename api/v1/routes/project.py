@@ -21,10 +21,10 @@ from api.v1.schemas.project import (
 from api.v1.services.project import project_service
 from api.v1.services.user import user_service
 
-project = APIRouter(prefix="/projects", tags=["Projects"])
+project_router = APIRouter(prefix="/projects", tags=["Projects"])
 
 
-@project.post("", response_model=success_response, status_code=201)
+@project_router.post("", response_model=success_response, status_code=201)
 async def create_project(
     schema: CreateFullProjectSchema,
     db: Session = Depends(get_db),
@@ -41,13 +41,13 @@ async def create_project(
 
     logging.info(f"Creating new Project. ID: {new_project.id}.")
     return success_response(
-        data=jsonable_encoder(project),
+        data=jsonable_encoder(new_project),
         message="Successfully created project",
         status_code=status.HTTP_201_CREATED,
     )
 
 
-@project.get("", response_model=success_response, status_code=200)
+@project_router.get("", response_model=success_response, status_code=200)
 async def get_all_projects(
     description : Optional[str] = Query(None),
     title : Optional[str] = Query(None),
@@ -71,7 +71,7 @@ async def get_all_projects(
     )
 
 
-@project.get("/user", response_model=success_response, status_code=200)
+@project_router.get("/user", response_model=success_response, status_code=200)
 async def get_user_projects(
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user)
@@ -87,7 +87,7 @@ async def get_user_projects(
     )
 
 
-@project.get("/user/archive", response_model=success_response, status_code=200)
+@project_router.get("/user/archive", response_model=success_response, status_code=200)
 async def get_user_archived_projects(
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user)
@@ -103,20 +103,20 @@ async def get_user_archived_projects(
     )
 
 
-@project.get("/{id}", response_model=success_response, status_code=200)
+@project_router.get("/{id}", response_model=success_response, status_code=200)
 async def get_single_project(id: str, db: Session = Depends(get_db)):
     """Endpoint to get a single project"""
 
     project = project_service.fetch_project_by_id(project_id=id, db=db)
 
     return success_response(
-        data=jsonable_encoder(ProjectCreateResponseSchema.model_validate(project)),
+        data=jsonable_encoder(project),
         message="Project retrieved successfully",
         status_code=status.HTTP_200_OK,
     )
 
 
-@project.put("/{id}", response_model=success_response, status_code=200)
+@project_router.put("/{id}", response_model=success_response, status_code=200)
 async def save_project(
     id: str,
     db: Session = Depends(get_db),
@@ -212,9 +212,8 @@ async def event_generator(request: Request, db: Session):
 
 
 
-@project.get("/statistics", response_model=ToolStatsResponse, status_code=200)
+@project_router.get("/statistics", response_model=ToolStatsResponse, status_code=200)
 def get_statistics(request: Request, db: Session = Depends(get_db)):
     """Endpoint to get tool usage data"""
 
     return EventSourceResponse(event_generator(request, db))
-
