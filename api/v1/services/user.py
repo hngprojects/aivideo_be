@@ -359,12 +359,6 @@ class UserService(Service):
         user.update_last_login()
         return user
 
-    # def perform_user_check(self, user: User):
-    #     """This checks if a user is active and verified and not a deleted user"""
-    #
-    #     if not user.is_active:
-    #         raise HTTPException(detail="User is not active", status_code=403)
-
     def hash_password(self, password: str) -> str:
         """Function to hash a password"""
 
@@ -457,6 +451,21 @@ class UserService(Service):
             refresh = self.create_refresh_token(user_id=token.id)
 
             return access, refresh
+
+    
+    def get_user_from_refresh_token(self, refresh_token: str, db: Session):
+        '''Return s thwe id of the user embedded in the refresh token'''
+
+        credentials_exception = HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+        token = self.verify_refresh_token(refresh_token, credentials_exception)
+        user = self.fetch(db, token.id)
+        return user
+    
 
     def get_current_user(
         self, access_token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
@@ -655,6 +664,52 @@ class UserService(Service):
             headers={"Content-Disposition": "attachment; filename=all_user_data.csv"},
         )
 
+
+    def fetch_user_activity_statistics(self, db: Session, user_id: str):
+        user_check = check_model_existence(db, User, user_id)
+        query = (
+            db.query(Project, Job)
+            .outerjoin(Job, Project.id == Job.project_id)
+            .filter(Project.user_id == user_id)
+        )
+        stats = {}
+        one_hour_ago = datetime.now(timezone(timedelta(hours=1))) - timedelta(hours=1)
+
+
+        total_tasks = query.count()
+        in_progress_tasks = query.filter(
+            or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
+        )
+        pending_tasks = query.filter(Job.status.icontains("PENDING"))
+        completed_tasks = query.filter(Job.status.icontains("SUCCESS"))
+
+        created_in_last_hour = query.filter(Job.created_at >= one_hour_ago).count()
+
+        in_progress_in_last_hour = in_progress_tasks.filter(
+            Job.created_at >= one_hour_ago
+        ).count()
+
+        pending_in_last_hour = pending_tasks.filter(
+            Job.created_at >= one_hour_ago
+        ).count()
+
+        completed_in_last_hour = completed_tasks.filter(
+            Job.created_at >= one_hour_ago
+        ).count()
+
+        stats = {
+            "total_tasks": total_tasks,
+            "in_progress_tasks": in_progress_tasks.count(),
+            "pending_tasks": pending_tasks.count(),
+            "completed_tasks": completed_tasks.count(),
+            "created_in_last_hour": created_in_last_hour,
+            "in_progress_in_last_hour": in_progress_in_last_hour,
+            "pending_in_last_hour": pending_in_last_hour,
+            "completed_in_last_hour": completed_in_last_hour,
+        }
+
+        return stats
+      
     def fetch_most_used_tool(self, db: Session, user_id: str):
         total_projects = db.query(Project).filter(Project.user_id == user_id).all()
 
@@ -702,13 +757,6 @@ class UserService(Service):
             .filter(Project.user_id == user_id)
         )
 
-        total_jobs_created = query.count()
-        total_jobs_completed = query.filter(Job.status.icontains("SUCCESS")).count()
-        total_jobs_pending = query.filter(Job.status.icontains("PENDING")).count()
-        total_jobs_in_progress = query.filter(
-            or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
-        ).count()
-
         if job:
             query = query.filter(Project.project_type.icontains(job))
 
@@ -736,11 +784,7 @@ class UserService(Service):
                 message="No User activity found for this query",
                 page=page,
                 per_page=per_page,
-                total_jobs_created=total_jobs_created,
                 total_jobs_retrieved=total_count,
-                total_jobs_completed=total_jobs_completed,
-                total_jobs_pending=total_jobs_pending,
-                total_jobs_in_progress=total_jobs_in_progress,
                 total_pages=total_pages,
                 data=[],
                 status_code=200,
@@ -751,11 +795,7 @@ class UserService(Service):
             message="User activity data retrieved successfully!",
             page=page,
             per_page=per_page,
-            total_jobs_created=total_jobs_created,
             total_jobs_retrieved=total_count,
-            total_jobs_completed=total_jobs_completed,
-            total_jobs_pending=total_jobs_pending,
-            total_jobs_in_progress=total_jobs_in_progress,
             total_pages=total_pages,
             data=all_tasks,
             status_code=200,
