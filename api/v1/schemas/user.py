@@ -212,6 +212,8 @@ class UserUpdateResponse(BaseModel):
 
 
 class RegisterUserData(BaseModel):
+    """Registration schema"""
+
     id: str
     email: EmailStr
     first_name: str
