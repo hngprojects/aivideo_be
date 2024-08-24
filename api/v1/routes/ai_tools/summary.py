@@ -69,9 +69,7 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
     status_code=status.HTTP_202_ACCEPTED,
     response_model=success_response,
 )
-async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db), summary_length: Optional[str] = "medium",
-use_bullets: Optional[bool] = False,
-custom_filename: Optional[str] = None
+async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
 ):
     """Endpoint to summarize PDF"""
 
@@ -98,10 +96,7 @@ custom_filename: Optional[str] = None
     )
     
     # Run task
-    task = generate_pdf_summary_task.delay(pdf_file_path, summary_length,
-                                           use_bullets=use_bullets, 
-        custom_filename=custom_filename or file.filename
-    )
+    task = generate_pdf_summary_task.delay(pdf_file_path)
 
     # Create project with job
     project = job_service.create_project_with_job(
