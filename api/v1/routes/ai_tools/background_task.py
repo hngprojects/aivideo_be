@@ -47,7 +47,6 @@ async def event_generator(job_id: str, db: Session):
 
         elif status == 'PROGRESS':
             result = task_result.result
-            print(task_result.info)
             event_name = 'progress'
             job_service.update_job(job_id, 'Progress', json.dumps(result))
 
@@ -102,7 +101,6 @@ async def event_generator_for_job(job_id: str):
 
         elif status == 'PROGRESS':
             result = task_result.result
-            print(task_result.info)
             event_name = 'progress'
             job_service.update_job(job_id, 'Progress', json.dumps(result))
 

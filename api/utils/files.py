@@ -1,7 +1,6 @@
 import mimetypes
 from typing import List, Optional, Union
 import os
-from typing import Optional
 from secrets import token_hex
 from fastapi import HTTPException, status, UploadFile
 from pydub import AudioSegment
@@ -9,6 +8,7 @@ from pathlib import Path
 from api.utils.settings import settings
 import aiofiles
 import asyncio
+import yt_dlp as youtube_dl
 import cv2
 
 
@@ -216,7 +216,6 @@ async def upload_files(
         file_name = str(file.filename).lower()
         file_extension = os.path.splitext(file_name)[1]
         name = os.path.splitext(file_name)[0]
-        print(file_extension, name)
 
         if not file:
             raise HTTPException(
@@ -322,9 +321,10 @@ async def contains_face(image_path):
 
     if len(faces) > 0:
         return True
-      
+
     raise HTTPException(
         status_code=400, detail=f"Image does not contain a face.",)
+
 
 async def get_media_type_from_extension(file_extension):
     """
@@ -332,3 +332,29 @@ async def get_media_type_from_extension(file_extension):
     """
     media_type, _ = mimetypes.guess_type(f"dummy.{file_extension}")
     return media_type
+
+
+def download_audio_yt(link):
+    """
+    Download audio from a youtube video link
+    """
+    try:
+        ydl_opts = {
+            'format': 'worstaudio/worst',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'wav',
+                'preferredquality': '192',
+            }],
+            'outtmpl': f'{settings.TEMP_DIR}/%(title)s.%(ext)s',
+        }
+
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(link, download=False)
+            video_title = info_dict.get('title', None)
+            ydl.download([link])
+
+        return f"{settings.TEMP_DIR}/{video_title}.wav"
+    except Exception as e:
+        print(f"Error in download_audio_yt: {e}")
+        raise
