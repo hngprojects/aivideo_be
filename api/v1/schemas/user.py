@@ -231,6 +231,11 @@ class RegisterUserResponse(BaseModel):
     access_token: str
     data: RegisterUserData
 
+class CurrentUserDetailResponse(BaseModel):
+    status: str
+    status_code: int
+    message: str
+    data: RegisterUserData
 
 class RefreshAccessTokenResponse(BaseModel):
     status: str
@@ -243,3 +248,12 @@ class LogoutResponse(BaseModel):
     status: str = "success"
     status_code: int = 200
     message: str
+
+class MagicLinkData(BaseModel):
+    magic_link: str
+
+class MagicLinkResponse(BaseModel):
+    status: str
+    status_code: int
+    message: str
+    data: MagicLinkData

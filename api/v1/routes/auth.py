@@ -21,7 +21,8 @@ from api.v1.schemas.user import (
     UserCreate,
     RegisterUserResponse,
     RefreshAccessTokenResponse,
-    LogoutResponse
+    LogoutResponse,
+    MagicLinkResponse
 )
 
 from api.db.database import get_db
@@ -223,7 +224,7 @@ def refresh_access_token(
     return response
 
 
-@auth.post("/magic-link", status_code=status.HTTP_200_OK)
+@auth.post("/magic-link", status_code=status.HTTP_200_OK, response_model=MagicLinkResponse)
 async def request_magic_link(
     reset_schema: RequestEmail,
     request: Request,
@@ -256,7 +257,7 @@ async def request_magic_link(
 @auth.get(
     "/magic-link/verify",
     status_code=status.HTTP_200_OK,
-    response_model=success_response,
+    response_model=RegisterUserResponse,
 )
 def verify_magic_link(token: str = Query(...), db: Session = Depends(get_db)):
     """Endpoint to verify a magic link"""

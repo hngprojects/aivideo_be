@@ -20,14 +20,13 @@ def translate_text_task(text, target_language):
         raise
 
 @worker.task()
-def transcribe_video_task(video_file_path, srt_format: bool = False):
+def transcribe_video_task(video_file_path, srt_format=False):
     """Background task to transcribe audio from a video"""
     try:
         # Convert video to audio
         audio_file_path = convert_video_to_audio(video_file_path)
 
         # Transcribe audio to text
-        # transcription = summary_service.transcribe_audio(audio_file_path)
         transcription = transcribe_audio(audio_file_path, srt_format=srt_format)
 
         # Delete the audio file and video file after transcription
