@@ -26,6 +26,7 @@ from api.v1.schemas.project import ProjectToolsEnum
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -490,9 +491,9 @@ class UserService(Service):
         return user
 
     def get_current_user_optional(
-        self,
-        access_token: Optional[str] = Depends(oauth2_scheme),
-        db: Session = Depends(get_db),
+        self, 
+        access_token: Optional[str] = Depends(oauth2_scheme_optional), 
+        db: Session = Depends(get_db)
     ) -> Optional[User]:
         """Used to optionally check for a user. This will be used for tracking unauthenticated users"""
 
@@ -510,7 +511,6 @@ class UserService(Service):
         if not user:
             raise credentials_exception
 
-        user.update_last_login()
         return user
 
     def change_password(

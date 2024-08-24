@@ -8,6 +8,7 @@ from uuid_extensions import uuid7
 
 from api.db.database import get_db
 from api.v1.models.project import Project
+from api.v1.services.user import user_service
 from main import app
 
 def mock_project():
@@ -39,6 +40,11 @@ ENDPOINT = '/api/v1/projects'
 
 class TestCodeUnderTest:
 
+    
+    @classmethod
+    def setup_class(cls):
+        app.dependency_overrides[user_service.get_current_user] = lambda: MagicMock(id='user_id')
+
     @classmethod
     def teardown_class(cls):
         app.dependency_overrides = {}
@@ -53,6 +59,7 @@ class TestCodeUnderTest:
                 ENDPOINT,
                 json=test_project_req_body
             )
+            print(response.json())
             assert response.status_code == 201
 
     def test_create_project_missing_field(self, client, db_session_mock):
