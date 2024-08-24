@@ -9,7 +9,7 @@ from api.utils.settings import settings
 from api.utils.success_response import success_response
 from api.utils.files import upload_file
 from api.v1.services.job import job_service
-from api.v1.schemas.ai_tools.thumbnail import ThumbnailSelectionRequest
+from api.v1.schemas.ai_tools.thumbnail import ThumbnailSelectionRequest, ThumbnailResponse
 from urllib.parse import urljoin
 from typing import Optional
 import os
@@ -20,7 +20,7 @@ thumbnail_router = APIRouter(
 max_file_size = 100 * 1024 * 1024  # 100 MB
 
 
-@thumbnail_router.post("/upload-or-process")
+@thumbnail_router.post("/upload-or-process", response_model=ThumbnailResponse)
 async def upload_or_process_video(
     request: Request,
     file: UploadFile = File(None),
@@ -95,7 +95,7 @@ async def upload_or_process_video(
     )
 
 
-@thumbnail_router.post("/generate-thumbnails")
+@thumbnail_router.post("/generate-thumbnails", response_model=ThumbnailResponse)
 async def generate_thumbnails(
     request: Request,
     video_id: str = Form(...),
@@ -136,7 +136,7 @@ async def generate_thumbnails(
     )
 
 
-@thumbnail_router.post("/select-thumbnail")
+@thumbnail_router.post("/select-thumbnail", response_model=ThumbnailResponse)
 async def select_and_download_thumbnail(
     request: Request,
     thumbnail_url: str = Form(...)
