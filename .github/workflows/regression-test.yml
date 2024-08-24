@@ -43,8 +43,5 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           script: |
             cd aivideo_be/staging
-            git add .
-            git stash
-            git pull origin staging
             python3 update_api_status.py
 
