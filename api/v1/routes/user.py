@@ -9,6 +9,7 @@ import json
 
 from api.utils.success_response import success_response
 from api.v1.models.user import User
+from api.v1.models.project import Project
 from api.v1.schemas.user import (
     ChangePasswordSchema,
     AllUsersResponse,
@@ -18,6 +19,7 @@ from api.v1.schemas.user import (
     UserStatResponse,
     UserRestoreResponse,
     UserActivityResponse,
+    UserDetailResponse
 )
 from api.db.database import get_db
 from api.v1.services.user import user_service, UserService
@@ -148,7 +150,7 @@ async def event_generator(request: Request, db: Session):
         try:
             state_map[map_key][1] = 1
         except KeyError:
-            # if connection is already deleted
+            ""
             break
         # check if state map is non empty
         if state_map[map_key][0] == 1:
@@ -163,16 +165,71 @@ async def event_generator(request: Request, db: Session):
 
 
 @user_router.get(
-    "/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
+    "/statistics",
+    status_code=status.HTTP_200_OK,
+    response_model=UserStatResponse,
+    summary="Get user statistics data via SSE",
 )
 def get_user_statistics(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
 ):
-    """Endpoint to fetch all user statistics"""
+    """Endpoint to fetch all user statistics via SSE"""
     return EventSourceResponse(event_generator(request, db))
 
+
 #########################################
+
+################ SSE ENDPOINT FOR USER ACTIVITY STATISTICS ###################
+
+@event.listens_for(Project, "after_insert")
+@event.listens_for(Project, "after_update")
+def orm_event_listener_for_project(mapper, connection, target):
+    """listen for db updates and update the state_map"""
+
+    # once a change in the db is detected
+    # clear all inactive connections from state_map
+    # fill each connection in the state_map with [1, 1]
+    # [update_state, active_state]
+
+    remove_inactive_connections()
+
+    if state_map:
+        for key, value in state_map.items():
+            state_map[key] = [1, 1]
+
+
+async def activity_event_generator(db: Session, user_id: str):
+    global connections, state_map
+    connection_index = connections
+    connections += 1
+    map_key = f"connection_{connection_index}"
+
+    reset_connection_active_status()
+
+    # initialize current connection state
+    state_map[map_key] = [1, 1]
+
+    while True:
+        # mark the current connection as active
+        try:
+            state_map[map_key][1] = 1
+        except KeyError:
+            # if connection is already deleted
+            break
+        # check if state map is non empty
+        if state_map[map_key][0] == 1:
+            # send a message if update_state is 1
+            data = json.dumps(user_service.fetch_user_activity_statistics(db, user_id))
+
+            # reset current connection update_state to 0
+            state_map[map_key][0] = 0
+
+            yield {"event": "acticityStatsUpdate", "data": data}
+        await asyncio.sleep(1)
+
+#########################################
+
 
 @user_router.get("/export/csv", status_code=status.HTTP_200_OK)
 def export_csv(
@@ -180,6 +237,17 @@ def export_csv(
     db: Annotated[Session, Depends(get_db)],
 ):
     return user_service.export_to_csv(db)
+
+
+@user_router.get(
+    "/{user_id}/activity/statistics", status_code=status.HTTP_200_OK, response_model=UserStatResponse
+)
+def get_user_activity_statistics(
+    db: Annotated[Session, Depends(get_db)],
+    user_id: str,
+):
+    """Endpoint to fetch all user activity statistics"""
+    return EventSourceResponse(activity_event_generator(db, user_id))
 
 
 @user_router.get(
@@ -343,26 +411,13 @@ def admin_registers_user(
     return user_service.super_admin_create_user(db, user_request)
 
 
-@user_router.get("/{user_id}", status_code=status.HTTP_200_OK)
+@user_router.get("/{user_id}", status_code=status.HTTP_200_OK, response_model=UserDetailResponse)
 def get_user_by_id(
     user_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user),
 ):
-    user = user_service.get_user_by_id(db=db, id=user_id)
-
-    return success_response(
-        status_code=status.HTTP_200_OK,
-        message="User retrieved successfully",
-        data=jsonable_encoder(
-            user,
-            exclude=[
-                "password",
-                "updated_at",
-            ],
-        ),
-    )
-
+    return user_service.get_user_by_id(db=db, id=user_id)
 
 @user_router.put(
     "/update/password", status_code=status.HTTP_200_OK, response_model=success_response

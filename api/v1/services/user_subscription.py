@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
+from typing import Any, Optional, Union
 from sqlalchemy.orm import Session
-from typing import Any, Optional
 
 from api.v1.services.user import user_service
 from api.utils.pagination import get_pagination_details
@@ -50,6 +50,23 @@ class UserSubscriptionService:
             user_subs = query.all()
 
         return user_subs
+
+    @staticmethod
+    def dynamic_user_subscription_dict(user_sub: UserSubscription):
+        """Return `UserSubscription.to_dict()` with extra dynamic details, 
+        eg: `'plan_name'`, `'user_name'`, `'is_active'` etc
+        """
+
+        user_sub_dict = {
+            **user_sub.to_dict(),
+            "is_active": user_sub.is_active(),
+            "price": user_sub.billing_plan.price,
+            "currency": user_sub.billing_plan.currency,
+            "plan_name": user_sub.billing_plan.plan_name,
+            "user_name": user_service.get_fullname(user_sub.user)
+        } 
+
+        return user_sub_dict
     
     def dictize_user_subscriptions_and_pagination(
             self, user_subscriptions: list, offset: 0, limit: 0):
@@ -57,14 +74,7 @@ class UserSubscriptionService:
         `user_subscriptions` and details of pagination for the list"""
         data = {
             "user_subscriptions": [
-                {
-                    **user_sub.to_dict(),
-                    "is_active": user_sub.is_active(),
-                    "price": user_sub.billing_plan.price,
-                    "currency": user_sub.billing_plan.currency,
-                    "plan_name": user_sub.billing_plan.plan_name,
-                    "user_name": user_service.get_fullname(user_sub.user)
-                } 
+                self.dynamic_user_subscription_dict(user_sub)
                 for user_sub in user_subscriptions
             ],
             "pagination": get_pagination_details(len(user_subscriptions), offset, limit)

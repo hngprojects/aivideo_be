@@ -101,7 +101,7 @@ async def get_all_notifications(db: Session = Depends(get_db),
                                 current_user: User = Depends(user_service.get_current_user)):
     """Endpoint to get all projects"""
     
-    notifications = notification_service.fetch_all(current_user)
+    notifications = notification_service.fetch_all_user_notifications(current_user)
     notifications_filtered = list(
         map(lambda x: RetrieveNotificationSchema.model_validate(x), notifications)
     )

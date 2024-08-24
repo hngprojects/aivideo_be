@@ -61,10 +61,7 @@ def test_create_user_notification_settings(client, db_session_mock):
             "email_notification_activity_in_workspace": False,
             "email_notification_always_send_email_notifications": False,
             "email_notification_email_digest": False,
-            "email_notification_announcement_and_update_emails": False,
-            "slack_notifications_activity_on_your_workspace": True,
-            "slack_notifications_always_send_email_notifications": False,
-            "slack_notifications_announcement_and_update_emails": False
+            "email_notification_announcement_and_update_emails": False
         }
     )
 
