@@ -1,4 +1,6 @@
+import json
 from typing import Any, Optional
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
@@ -76,38 +78,53 @@ class ProjectService(Service):
         project.is_deleted = True
         db.commit()
 
-    def archive(self, db: Session, project_id: str):
-        """Archives anproject"""
+    def archive_project(self, db: Session, project_id: str):
+        """Archives a project"""
 
         project = self.fetch(db=db, project_id=project_id)
         project.archived = True
+        project.archived_at=datetime.now()
         db.commit()
 
     def fetch_all_user_projects(self, user: User, db: Session):
-        all_projects = (
-            db.query(Project)
-            .filter(
-                Project.user_id == user.id,
-            )
-            .order_by(Project.updated_at.desc())
-            .all()
-        )
+        all_projects = db.query(Project).filter(
+            Project.user_id == user.id,
+            Project.is_active == True,
+            Project.archived == False,
+            Project.is_deleted == False,
+        ).order_by(
+            Project.updated_at.desc()
+        ).all()
+        
+        return all_projects
+    
+    def fetch_all_user_archived_projects(self, user: User, db: Session):
+        all_projects = db.query(Project).filter(
+            Project.user_id == user.id,
+            Project.is_active == True,
+            Project.archived == True,
+            Project.is_deleted == False,
+        ).order_by(
+            Project.updated_at.desc()
+        ).all()
 
         return all_projects
 
     def fetch_project_by_id(self, db: Session, project_id: str):
         """Fetches a project by id"""
+
         return check_model_existence(db, Project, project_id)
 
     def fetch_all(self, db: Session):
         """Fetch all projects"""
+
         return db.query(Project).all()
 
     def add_user_to_project(self, db: Session, project: Project, user: User):
         """Add a user to a project"""
-        project.user = user
+
+        project.user_id = user.id
         db.commit()
-        db.refresh(project)
         return project
 
     def fetch_statistics(self, db: Session):
@@ -160,6 +177,9 @@ class ProjectService(Service):
         query = db.query(Project).filter(
             and_(
                 Project.user_id == user.id,
+                Project.is_active == True,
+                Project.archived == False,
+                Project.is_deleted == False,
                 or_(
                     Project.title.ilike(f"%{keywords}%"),
                     Project.description.ilike(f"%{keywords}%"),
@@ -169,9 +189,38 @@ class ProjectService(Service):
         )
 
         # Order from newest to oldest
+        project_search_results = query.order_by(
+            Project.updated_at.desc()
+        ).all()
+        
         project_search_results = query.order_by(Project.updated_at.desc()).all()
 
         return project_search_results
+    
+    def update_project_status(
+        self, 
+        db: Session, 
+        project_id: str, 
+        is_active: bool, 
+        result,
+        user: Optional[User] = None
+    ):
+        '''Update project status'''
+
+        project = check_model_existence(db, Project, project_id)
+
+        project.is_active = is_active
+        # print(project.is_active)
+
+        project.result = result
+        # print(project.result)
+
+        if user:
+            project.user_id = user.id
+            # print('user is set')
+
+        db.commit()
+
 
 
 project_service = ProjectService()

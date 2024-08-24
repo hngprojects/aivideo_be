@@ -67,7 +67,7 @@ class TestCodeUnderTest:
                 )
         ]
 
-        with patch("api.v1.services.notification.notification_service.fetch_all", return_value=mock_data):
+        with patch("api.v1.services.notification.notification_service.fetch_all_user_notifications", return_value=mock_data):
             response = client.get(ENDPOINT)
 
             assert response.status_code == 200
@@ -79,7 +79,7 @@ class TestCodeUnderTest:
 
         mock_data = []
 
-        with patch("api.v1.services.notification.notification_service.fetch_all", return_value=mock_data):
+        with patch("api.v1.services.notification.notification_service.fetch_all_user_notifications", return_value=mock_data):
             response = client.get(ENDPOINT)
 
             assert response.status_code == 200
