@@ -69,9 +69,8 @@ async def delete_notification(
     notification_service.delete(db, user=user, notification_id=id)
 
 
-@notification.delete("/{id}", status_code=204)
+@notification.delete("", status_code=204)
 async def delete_all_notifications(
-    id: str,
     db: Session = Depends(get_db),
     user: User = Depends(user_service.get_current_user),
 ):
