@@ -21,6 +21,28 @@ class ProfileBase(BaseModel):
     class Config:
         extra = 'allow'
 
+class UserData(BaseModel):
+    id: str
+    email: str
+    avatar_url: str
+
+class ProfileData(BaseModel):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+    username: str
+    pronouns: str
+    job_title: str
+    social: str
+    bio: str
+    phone_number: str
+    user: UserData
+
+class CurrentProfileResponse(BaseModel):
+    status: str = "success"
+    message: str
+    data: ProfileData
+    status_code: int = 200
 
 
 class ProfileCreateUpdate(BaseModel):

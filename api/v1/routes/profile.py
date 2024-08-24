@@ -6,7 +6,7 @@ from typing import Optional, Dict
 
 
 from api.v1.models.user import User
-from api.v1.schemas.profile import ProfileBase, ProfileCreateUpdate
+from api.v1.schemas.profile import ProfileBase, ProfileCreateUpdate, CurrentProfileResponse
 from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.v1.services.profile import profile_service
@@ -23,7 +23,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 
-@profile.get("/me", response_model=success_response)
+@profile.get("/me", response_model=CurrentProfileResponse)
 def get_current_user_profile(
     db: Session = Depends(get_db), 
     current_user: User = Depends(user_service.get_current_user)
