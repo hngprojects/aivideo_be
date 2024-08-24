@@ -70,12 +70,9 @@ def test_update_user_notification_settings(client, db_session_mock):
             json={
                 "mobile_push_notifications": True,
                 "email_notification_email_digest": False,
-                "slack_notifications_activity_on_your_workspace": True,
-                "slack_notifications_announcement_and_update_emails": False,
                 "email_notification_activity_in_workspace": False,
                 "email_notification_always_send_email_notifications": False,
                 "email_notification_announcement_and_update_emails": False,
-                "slack_notifications_always_send_email_notifications": True
             }
         )
 
@@ -102,11 +99,8 @@ def test_missing_field_user_notification_settings(client, db_session_mock):
             json={
                 "mobile_push_notifications": True,
                 "email_notification_email_digest": False,
-                "slack_notifications_announcement_and_update_emails": False,
-                "email_notification_activity_in_workspace": False,
                 "email_notification_always_send_email_notifications": False,
                 "email_notification_announcement_and_update_emails": False,
-                "slack_notifications_always_send_email_notifications": True
             }
         )
 

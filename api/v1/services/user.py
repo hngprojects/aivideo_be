@@ -360,12 +360,6 @@ class UserService(Service):
         user.update_last_login()
         return user
 
-    # def perform_user_check(self, user: User):
-    #     """This checks if a user is active and verified and not a deleted user"""
-    #
-    #     if not user.is_active:
-    #         raise HTTPException(detail="User is not active", status_code=403)
-
     def hash_password(self, password: str) -> str:
         """Function to hash a password"""
 
@@ -458,6 +452,21 @@ class UserService(Service):
             refresh = self.create_refresh_token(user_id=token.id)
 
             return access, refresh
+
+    
+    def get_user_from_refresh_token(self, refresh_token: str, db: Session):
+        '''Return s thwe id of the user embedded in the refresh token'''
+
+        credentials_exception = HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+        token = self.verify_refresh_token(refresh_token, credentials_exception)
+        user = self.fetch(db, token.id)
+        return user
+    
 
     def get_current_user(
         self, access_token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)

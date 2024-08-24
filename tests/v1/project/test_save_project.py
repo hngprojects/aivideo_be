@@ -4,7 +4,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
-from api.v1.routes.project import project
+from api.v1.routes.project import project_router
 from api.v1.models.user import User
 from api.db.database import get_db
 from api.v1.services.project import project_service
