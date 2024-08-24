@@ -26,6 +26,7 @@ from api.v1.schemas.project import ProjectToolsEnum
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -321,15 +322,18 @@ class UserService(Service):
         db.refresh(user)
         return user
 
-    def delete(self, db: Session, id=None, access_token: str = Depends(oauth2_scheme)):
+    def delete(self, db: Session, id=None, 
+               access_token: str = Depends(oauth2_scheme),
+               user: User | None = None):
         """Function to soft delete a user"""
 
+        if not user:
         # Get user from access token if provided, otherwise fetch user by id
-        user = (
-            self.get_current_user(access_token, db)
-            if id is None
-            else check_model_existence(db, User, id)
-        )
+            user = (
+                self.get_current_user(access_token, db)
+                if id is None
+                else check_model_existence(db, User, id)
+            )
 
         user.is_deleted = True
         db.commit()
@@ -487,9 +491,9 @@ class UserService(Service):
         return user
 
     def get_current_user_optional(
-        self,
-        access_token: Optional[str] = Depends(oauth2_scheme),
-        db: Session = Depends(get_db),
+        self, 
+        access_token: Optional[str] = Depends(oauth2_scheme_optional), 
+        db: Session = Depends(get_db)
     ) -> Optional[User]:
         """Used to optionally check for a user. This will be used for tracking unauthenticated users"""
 
@@ -507,7 +511,6 @@ class UserService(Service):
         if not user:
             raise credentials_exception
 
-        user.update_last_login()
         return user
 
     def change_password(

@@ -32,7 +32,13 @@ async def create_project(
 ):
     """Endpoint to create a new project"""
 
-    full_project = AddFullProjectSchema(user_id=current_user.id, **schema.model_dump())
+    schema_dump = schema.model_dump()
+    schema_dump.pop('user_id')
+
+    full_project = AddFullProjectSchema(
+        user_id=current_user.id,
+        **schema_dump
+    )
 
     new_project = project_service.create(db, full_project)
 
