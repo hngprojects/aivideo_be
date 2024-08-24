@@ -150,19 +150,13 @@ class ProjectService(Service):
             all_project_count_dict[project_type_name] = 1 if prev_count_value is None else prev_count_value + 1
 
 
-        # Store percentage stats for projects in a dictionary
-        all_project_percentage_dict = {}
-
-        for project_name, project_count in all_project_count_dict.items():
-            all_project_percentage_dict[project_name] = (project_count / total_count) * 100
-        
         if total_count:
             return ToolStatsResponse(
                 status="success",
                 status_code=200,
                 message="Tool Usage data successfully retrieved!",
                 data=ToolStatsData(
-                    **all_project_percentage_dict,
+                    **all_project_count_dict,
                 ),
             )
 
