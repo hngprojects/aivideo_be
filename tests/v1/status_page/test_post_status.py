@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -7,7 +6,6 @@ from sqlalchemy.orm import Session
 from uuid_extensions import uuid7
 
 from api.db.database import get_db
-from api.v1.models.contact_us import ContactUs
 from api.v1.models.api_status import APIStatus
 from main import app
 
