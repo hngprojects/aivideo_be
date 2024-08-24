@@ -322,15 +322,18 @@ class UserService(Service):
         db.refresh(user)
         return user
 
-    def delete(self, db: Session, id=None, access_token: str = Depends(oauth2_scheme)):
+    def delete(self, db: Session, id=None, 
+               access_token: str = Depends(oauth2_scheme),
+               user: User | None = None):
         """Function to soft delete a user"""
 
+        if not user:
         # Get user from access token if provided, otherwise fetch user by id
-        user = (
-            self.get_current_user(access_token, db)
-            if id is None
-            else check_model_existence(db, User, id)
-        )
+            user = (
+                self.get_current_user(access_token, db)
+                if id is None
+                else check_model_existence(db, User, id)
+            )
 
         user.is_deleted = True
         db.commit()
@@ -433,7 +436,7 @@ class UserService(Service):
 
             token_data = user.TokenData(id=user_id)
 
-        except JWTError:
+        except (JWTError, AttributeError):
             raise credentials_exception
 
         return token_data
