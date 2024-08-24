@@ -242,3 +242,11 @@ class LogoutResponse(BaseModel):
     status_code: int = 200
     message: str
 
+class MagicLinkData(BaseModel):
+    magic_link: str
+
+class MagicLinkResponse(BaseModel):
+    status: str
+    status_code: int
+    message: str
+    data: MagicLinkData
