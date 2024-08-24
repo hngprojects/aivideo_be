@@ -432,7 +432,7 @@ class UserService(Service):
 
             token_data = user.TokenData(id=user_id)
 
-        except JWTError:
+        except (JWTError, AttributeError):
             raise credentials_exception
 
         return token_data
