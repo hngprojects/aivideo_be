@@ -15,7 +15,8 @@ from api.v1.routes.presets import preset_router
 from api.v1.routes.google_auth import google_auth
 from api.v1.routes.lang_region_settings import regions
 from api.v1.routes.data_privacy import privacy
-from tests.run_all_test import test_rout
+
+# from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
 from api.v1.routes.notification import notification
@@ -72,4 +73,4 @@ api_version_one.include_router(video_subtitles_router)
 api_version_one.include_router(download)
 api_version_one.include_router(user_subs)
 api_version_one.include_router(downloader)
-api_version_one.include_router(test_rout)
+# api_version_one.include_router(test_rout)
