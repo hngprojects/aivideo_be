@@ -182,6 +182,8 @@ class SummaryService():
 
     def get_audio_url(self, podcast_url: str):
         data = self.extract_scripts_with_asseturl(podcast_url)
+        if not data:
+            raise HTTPException(status_code=404, detail="Unable to retrieve audio from the provided URL")
         intent_data = data[0].get('data', {})
         shelves = intent_data.get('shelves', [])
 
