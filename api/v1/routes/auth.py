@@ -159,7 +159,7 @@ def login(login_request: LoginRequest, db: Session = Depends(get_db)):
     return response
 
 
-@auth.post("/logout", status_code=status.HTTP_200_OK)
+@auth.post("/logout", status_code=status.HTTP_200_OK, response_model=RegisterUserResponse)
 def logout(
     response: Response,
     db: Session = Depends(get_db),
