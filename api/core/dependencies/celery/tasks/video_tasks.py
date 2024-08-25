@@ -59,8 +59,8 @@ def geenerate_video_from_script_task(
     script: str,
     scenes: List[str],
     voice_over: str,
-    aspect_ratio: str,
-    background_audio: Optional[str] = None,
+    background_audio: str,
+    aspect_ratio: str
 ):
     '''Background task to generate video from text'''
 

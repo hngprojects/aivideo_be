@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordBearer
 from api.db.database import get_db
 from api.v1.services.google_oauth import GoogleOauthServices
 from api.utils.success_response import success_response
-from api.v1.schemas.google_oauth import OAuthToken, GoogleUserResponse
+from api.v1.schemas.google_oauth import OAuthToken
 from api.v1.services.user import user_service
 from fastapi.encoders import jsonable_encoder
 import requests
@@ -128,7 +128,7 @@ async def initiate_google_auth():
     return RedirectResponse(url=auth_url, status_code=302)
 
 
-@google_auth.get("/google/callback", status_code=status.HTTP_200_OK, response_model=GoogleUserResponse)
+@google_auth.get("/google/callback")
 async def google_callback(background_tasks: BackgroundTasks, request: Request, db: Session = Depends(get_db)):
     code = request.query_params.get("code")
 
