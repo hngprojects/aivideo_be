@@ -227,6 +227,7 @@ async def summarize_audio(
         save_extension='mp3' 
     )
     await check_file_size(file)
+    
     task_transcribe = transcribe_audio_task.delay(audio_file)
 
 
