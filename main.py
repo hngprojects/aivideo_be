@@ -17,14 +17,13 @@ from api.utils.logger import logger
 from api.utils.success_response import success_response
 from api.v1.routes import api_version_one
 from api.utils.settings import settings
-from scripts.presets import load_avatars_in_db, load_audio_in_db, load_billing_plans_in_db
+from scripts.presets import load_avatars_in_db, load_audio_in_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_avatars_in_db()
     load_audio_in_db()
-    load_billing_plans_in_db()
     yield
 
 
