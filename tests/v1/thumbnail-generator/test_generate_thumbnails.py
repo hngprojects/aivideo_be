@@ -44,6 +44,7 @@ def test_generate_thumbnails_success(
         data={
             'video_id': mock_video_id,
             'timestamp': 0,
+            'title': 'first thumbnail',
             'aspect_ratio': 'square'
         }
     )

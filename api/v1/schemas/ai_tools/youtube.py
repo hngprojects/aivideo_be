@@ -7,11 +7,12 @@ class VideoLinkRequest(BaseModel):
 
 
 class PdfDownloadRequest(BaseModel):
-    transcript: str
-    summary: str
+    transcript: Optional[str] = None
+    summary: Optional[str] = None
     video_title: Optional[str] = None
 
 
 class YTLinksRequest(BaseModel):
-    """Youtube batch upload request body """
+    """Youtube batch upload request body"""
+
     links: List[str]

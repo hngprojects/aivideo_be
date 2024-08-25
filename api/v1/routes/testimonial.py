@@ -7,6 +7,7 @@ from api.utils.success_response import success_response
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.testimonial import testimonial_service
+from api.utils.tool_limiter import track_tool_usage
 from api.v1.schemas.testimonial import CreateTestimonialSchema, UpdateTestimonialSchema, TestimonialBase
 import logging
 
@@ -36,7 +37,7 @@ async def create_testimonial(
         status_code=status.HTTP_201_CREATED,
     )
 
-@testimonial.get("", response_model=success_response, status_code=200)
+@testimonial.get("", response_model=success_response, status_code=200,)
 async def get_all_testimonials(db: Session = Depends(get_db),):
     """Endpoint to get all testimonials
 

@@ -1,7 +1,9 @@
 """Tasks that handle video transcription and summarization"""
-from api.utils.files import delete_file
+from api.utils.files import delete_file, download_audio_yt
 from api.core.dependencies.celery.celery_app import worker
 import json
+from api.utils.transcripts import get_paragraphs
+from api.v1.services.ai_tools.video_subtitles import convert_video_to_audio, transcribe_audio
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.ai_tools.summary import summary_service
 
@@ -10,33 +12,46 @@ from api.v1.services.ai_tools.summary import summary_service
 def generate_video_summary_task(self, video_file):
     """Background task to summarize a video and save to database"""
 
+    audio_file = None
     try:
         self.update_state(state='PROGRESS', meta={
-            'status': 'Transcribing video', 'meta': {
+            'status': 'Converting video to audio', 'meta': {
                 'current': 0,
                 'total': 100
             }
         })
-        transcription = summary_service.transcribe_audio(video_file)
+
+        audio_file = convert_video_to_audio(video_file)
 
         self.update_state(state='PROGRESS', meta={
-            'status': 'Transcribing video', 'meta': {
+            'status': 'Transcribing audio to text', 'meta': {
+                'current': 10,
+                'total': 100
+            }
+        })
+
+        transcription = transcribe_audio(audio_file)
+
+        self.update_state(state='PROGRESS', meta={
+            'status': 'Creating document from text', 'meta': {
                 'current': 50,
                 'total': 100
             }
         })
-        documents = summary_service.create_documents(transcription)
+
+        documents = summary_service.create_documents(transcription["text"])
 
         self.update_state(state='PROGRESS', meta={
-            'status': 'Transcribing video', 'meta': {
-                'current': 55,
+            'status': 'Summarizing transcript', 'meta': {
+                'current': 80,
                 'total': 100
             }
         })
 
         summary = summary_service.summarize_transcript(documents)
+
         self.update_state(state='PROGRESS', meta={
-            'status': 'Transcribing video', 'meta': {
+            'status': 'Transciption and summarization completed', 'meta': {
                 'current': 100,
                 'total': 100
             }
@@ -45,7 +60,7 @@ def generate_video_summary_task(self, video_file):
         result = {
             "summary": summary,
             "summary_word_count": summary_service.calculate_word_count(summary),
-            "transcript": transcription,
+            "transcript": get_paragraphs(transcription),
             "transcript_word_count": summary_service.calculate_word_count(transcription)
         }
         return json.dumps(result)
@@ -54,6 +69,8 @@ def generate_video_summary_task(self, video_file):
     finally:
         try:
             delete_file(video_file)
+            if audio_file:
+                delete_file(audio_file)
         except Exception as deletion_error:
             print(str(deletion_error))
 
@@ -62,41 +79,45 @@ def generate_video_summary_task(self, video_file):
 def download_and_generate_video_summmary_task(self, link):
     """Background task to download youtube video and
     summarize it and save to db"""
+    audio_file = None
     try:
         self.update_state(state='PROGRESS', meta={
-            'status': 'Downloading video', 'meta': {
+            'status': 'Downloading Audio From Youtube', 'meta': {
                 'current': 0,
                 'total': 100
             }
         })
-        video_file = yts_service.download_video(link)
-
+        audio_file = download_audio_yt(link)
+        print(audio_file)
         self.update_state(state='PROGRESS', meta={
-            'status': 'Transcribing video', 'meta': {
+            'status': 'Transcribing audio to text', 'meta': {
                 'current': 10,
                 'total': 100
             }
         })
 
-        transcription = summary_service.transcribe_audio(video_file)
+        transcription = transcribe_audio(audio_file)
+
         self.update_state(state='PROGRESS', meta={
-            'status': 'Converting To Text For Summarizing', 'meta': {
+            'status': 'Creating document from text', 'meta': {
                 'current': 50,
                 'total': 100
             }
         })
 
-        documents = summary_service.create_documents(transcription)
+        documents = summary_service.create_documents(transcription["text"])
+
         self.update_state(state='PROGRESS', meta={
-            'status': 'Summarizing video', 'meta': {
-                'current': 55,
+            'status': 'Summarizing transcript', 'meta': {
+                'current': 80,
                 'total': 100
             }
         })
 
         summary = summary_service.summarize_transcript(documents)
+
         self.update_state(state='PROGRESS', meta={
-            'status': 'Completed Summary and Transcription', 'meta': {
+            'status': 'Transciption and summarization completed', 'meta': {
                 'current': 100,
                 'total': 100
             }
@@ -105,7 +126,7 @@ def download_and_generate_video_summmary_task(self, link):
         result = {
             "summary": summary,
             "summary_word_count": summary_service.calculate_word_count(summary),
-            "transcript": transcription,
+            "transcript": get_paragraphs(transcription),
             "transcript_word_count": summary_service.calculate_word_count(transcription)
         }
         return json.dumps(result)
@@ -113,10 +134,10 @@ def download_and_generate_video_summmary_task(self, link):
         raise e
     finally:
         try:
-            delete_file(video_file)
+            if audio_file:
+                delete_file(audio_file)
         except Exception as deletion_error:
             print(str(deletion_error))
-        # Re-raise the exception after handling cleanup
 
 
 @worker.task()

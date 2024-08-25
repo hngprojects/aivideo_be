@@ -15,7 +15,16 @@ from sqlalchemy.orm import Session
 from api.core.dependencies.email_sender import send_email
 from api.utils.success_response import success_response
 from api.v1.models import User
-from api.v1.schemas.user import LoginRequest, UserCreate
+
+from api.v1.schemas.user import (
+    LoginRequest,
+    UserCreate,
+    RegisterUserResponse,
+    RefreshAccessTokenResponse,
+    LogoutResponse,
+    MagicLinkResponse
+)
+
 from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.v1.schemas.request_password_reset import RequestEmail
@@ -25,7 +34,9 @@ auth = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @auth.post(
-    "/register", status_code=status.HTTP_201_CREATED, response_model=success_response
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+    response_model=RegisterUserResponse,
 )
 def register(
     background_tasks: BackgroundTasks,
@@ -78,7 +89,11 @@ def register(
     return response
 
 
-@auth.post(path="/register-super-admin", status_code=status.HTTP_201_CREATED)
+@auth.post(
+    path="/register-super-admin",
+    status_code=status.HTTP_201_CREATED,
+    response_model=RegisterUserResponse,
+)
 def register_as_super_admin(user: UserCreate, db: Session = Depends(get_db)):
     """Endpoint for super admin creation"""
 
@@ -115,7 +130,9 @@ def register_as_super_admin(user: UserCreate, db: Session = Depends(get_db)):
     return response
 
 
-@auth.post("/login", status_code=status.HTTP_200_OK, response_model=success_response)
+@auth.post(
+    "/login", status_code=status.HTTP_200_OK, response_model=RegisterUserResponse
+)
 def login(login_request: LoginRequest, db: Session = Depends(get_db)):
     """Endpoint to log in a user"""
 
@@ -155,7 +172,7 @@ def login(login_request: LoginRequest, db: Session = Depends(get_db)):
     return response
 
 
-@auth.post("/logout", status_code=status.HTTP_200_OK)
+@auth.post("/logout", status_code=status.HTTP_200_OK, response_model=LogoutResponse)
 def logout(
     response: Response,
     db: Session = Depends(get_db),
@@ -171,7 +188,7 @@ def logout(
     return response
 
 
-@auth.post("/refresh-access-token", status_code=status.HTTP_200_OK)
+@auth.post("/refresh-access-token", status_code=status.HTTP_200_OK, response_model=RefreshAccessTokenResponse)
 def refresh_access_token(
     request: Request, response: Response, db: Session = Depends(get_db)
 ):
@@ -207,7 +224,7 @@ def refresh_access_token(
     return response
 
 
-@auth.post("/magic-link", status_code=status.HTTP_200_OK)
+@auth.post("/magic-link", status_code=status.HTTP_200_OK, response_model=MagicLinkResponse)
 async def request_magic_link(
     reset_schema: RequestEmail,
     request: Request,
@@ -240,7 +257,7 @@ async def request_magic_link(
 @auth.get(
     "/magic-link/verify",
     status_code=status.HTTP_200_OK,
-    response_model=success_response,
+    response_model=RegisterUserResponse,
 )
 def verify_magic_link(token: str = Query(...), db: Session = Depends(get_db)):
     """Endpoint to verify a magic link"""

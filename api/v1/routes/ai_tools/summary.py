@@ -8,8 +8,12 @@ from fastapi import (
     UploadFile,
 )
 from sqlalchemy.orm import Session
+from typing import Optional
 import requests
 import io
+import os
+import json
+from fastapi.responses import FileResponse
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
@@ -25,8 +29,38 @@ from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summar
 
 summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
-# Set a maximum file size (e.g., 10 MB)
-MAX_FILE_SIZE = 15 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE = 15 * 1024 * 1024
+
+@summary.post('/pdf-summarizer-test', 
+              status_code=status.HTTP_200_OK, 
+              response_model=success_response)
+async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    '''Endpoint to summarize PDF'''
+    
+    pdf_file = await upload_file_to_current_dir(
+        file, 
+        allowed_extensions=['pdf'], 
+        save_extension='pdf'
+    )
+
+    task = generate_pdf_summary_task.delay(pdf_file)
+
+    # Create project with job
+    project = job_service.create_project_with_job(
+        job=task,
+        project_title='New project',
+        project_type='Talking Head',
+        # user_id = pass in the current user id for authenticated users
+    )
+
+    return success_response(
+        status_code=202,
+        message="Summary generation job initiated successfully",
+        data={
+            "job_id": task.id,
+            "project_id": project.id,
+        },
+    )
 
 
 @summary.post(
@@ -34,7 +68,8 @@ MAX_FILE_SIZE = 15 * 1024 * 1024  # 10 MB
     status_code=status.HTTP_202_ACCEPTED,
     response_model=success_response,
 )
-async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
+):
     """Endpoint to summarize PDF"""
 
     # Read the file content to determine its size
@@ -116,6 +151,26 @@ async def translate_summary(translation_request: TranslationRequest):
         raise HTTPException(
             status_code=500, detail=f"An error occurred during translation: {str(e)}"
         )
+    
+
+@summary.get("/download-summary/{job_id}", response_class=FileResponse)
+async def download_summary(job_id: str, db: Session = Depends(get_db)):
+    """Download the generated summary as a PDF file"""
+    task_result = job_service.fetch_by_job_id(job_id)
+    if not task_result or not task_result.result:
+        job_service.update_job_result(job_id)
+        task_result = job_service.fetch_by_job_id(job_id)
+        if not task_result or not task_result.result:
+            raise HTTPException(status_code=404, detail="Summary not found")
+    try:
+        task_result_data = json.loads(task_result.result)
+        pdf_file_path = task_result_data.get('pdf_file_path')
+        if not pdf_file_path or not os.path.exists(pdf_file_path):
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        return FileResponse(pdf_file_path, filename=f"summary_{job_id}.pdf")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to export summary: {str(e)}")
+
 
 
 @summary.post("/summarize-podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)

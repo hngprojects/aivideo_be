@@ -6,18 +6,20 @@ from api.core.dependencies.celery.tasks.audio_tasks import translate_text_task
 from api.v1.services.job import job_service
 from api.utils.success_response import success_response
 
- 
+
 audio = APIRouter(prefix="/tools/audio-transcribe", tags=["Tools"])
 
 
-@audio.post("/translate/")
+@audio.post("/translate/", response_model=success_response)
 async def translate_text_endpoint(request: TranslationRequest):
     """Translate text to the specified language."""
     try:
         # If the text is a dictionary, serialize it to a string for the task
-        text_to_translate = json.dumps(request.text) if isinstance(request.text, dict) else request.text
+        text_to_translate = json.dumps(request.text) if isinstance(
+            request.text, dict) else request.text
 
-        task = translate_text_task.delay(text_to_translate, request.target_language)
+        task = translate_text_task.delay(
+            text_to_translate, request.target_language)
 
         project = job_service.create_project_with_job(
             job=task,

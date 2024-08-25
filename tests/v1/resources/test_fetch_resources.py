@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from api.db.database import get_db
 from api.v1.models.user import User
+from api.v1.models.resource import Resource
 from api.v1.services.user import user_service, UserService
 
 
@@ -70,6 +71,16 @@ def override_get_current_super_admin():
         updated_at=datetime.now(timezone.utc),
     )
 
+def mock_resource():
+    return Resource(
+        id=str(uuid7()),
+        title="TTest title?",
+        content="TAnswer",
+        image_url="random.com",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+
 
 mock_users = [
     User(
@@ -118,3 +129,12 @@ def test_non_admin_access(
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
+def test_get_a_resource_by_id(mock_db_session):
+    resource = mock_resource()
+    mock_db_session.get.return_value = resource
+    
+    response = client.get(f'api/v1/resources/{resource.id}')
+
+    assert response.status_code == 200
+    

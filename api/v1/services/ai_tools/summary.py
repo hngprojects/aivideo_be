@@ -7,6 +7,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from api.utils.settings import settings
 import pytesseract
+from typing import Optional
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.units import inch
+from reportlab.lib import colors
 from PIL import Image
 from io import BytesIO
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -58,7 +64,7 @@ class SummaryService():
                 text += pytesseract.image_to_string(image)
         return text
 
-    def summarize_pdf(self, pdf_file_path: str):
+    def summarize_pdf(self, pdf_file_path: str, summary_length: str = "medium"):
         """Returns a summarized version of the PDF file located at pdf_file_path."""
         try:
             doc = fitz.open(pdf_file_path)
@@ -76,8 +82,20 @@ class SummaryService():
 
         if not text.strip():
             return "The PDF contains images but no text could be extracted."
+        
+        
+        if summary_length == "brief":
+            chunk_size = 1500
+            chunk_overlap = 500
+        elif summary_length == "detailed":
+            chunk_size = 500
+            chunk_overlap = 100
+        else:  # default to "medium"
+            chunk_size = 1000
+            chunk_overlap = 300
 
         # Summarize Text
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000, chunk_overlap=100)
         documents = text_splitter.create_documents([text])
@@ -97,6 +115,8 @@ class SummaryService():
         final_summary = final_summary.replace(
             '\n', ' ').replace('\r', ' ').strip()
         return final_summary
+    
+
 
     def transcribe_audio(self, file_path) -> Transcription:
         transcript = self.client.audio.transcriptions.create(
@@ -156,9 +176,21 @@ class SummaryService():
 
     def get_audio_url(self, podcast_url: str):
         data = self.extract_scripts_with_asseturl(podcast_url)
+        if data and isinstance(data, list) and len(data) > 0:
+            first_item = data[0]
+            if isinstance(first_item, dict):
+                intent_data = first_item.get('data', {})
+            else:
+                intent_data = {}
+        else:
+            intent_data = {}
+
+        if not data:
+            raise HTTPException(status_code=404, detail="Unable to retrieve audio from the provided URL")
         intent_data = data[0].get('data', {})
         shelves = intent_data.get('shelves', [])
 
+        stream_url = None
         for shelf in shelves:
             items = shelf.get('items', [])
             for item in items:
@@ -166,10 +198,9 @@ class SummaryService():
                 episode_offer = context_action.get('episodeOffer', {})
                 stream_url = episode_offer.get('streamUrl')
                 if stream_url:
-                    break
-            if stream_url:
-                break
-        return stream_url
+                    return stream_url
+        if not stream_url:
+            raise HTTPException(status_code=404, detail="Unable to retrieve audio from the provided URL")
 
     def summarize_audio(self, audio_file_path):
         """Summarizes an audio file by transcribing and then summarizing the transcript."""

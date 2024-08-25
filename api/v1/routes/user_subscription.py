@@ -7,7 +7,7 @@ from api.v1.models import User
 from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.utils.success_response import success_response
-from api.v1.schemas.user_subscription import UserSubscriptionListResponse
+from api.v1.schemas.user_subscription import UserSubscriptionListResponse, ViewUserSubReturnData
 from api.v1.services.user_subscription import user_subscription_service as user_sub_service
 
 
@@ -44,4 +44,29 @@ def get_all_user_subscriptions(
         status_code=status.HTTP_200_OK,
         message="User subscriptions fetched successfully",
         data=data
+    )
+
+
+@user_subs.get("/{subscription_id}", 
+              status_code=status.HTTP_200_OK, response_model=ViewUserSubReturnData)
+def get_single_user_subscription(
+    subscription_id: str,
+    current_user: User = Depends(user_service.get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint to retrieve a single user subscription detail by
+    ``superadmin`` OR ``user who owns the subscription``.
+    """
+    # get the user sub object
+    user_sub = user_sub_service.fetch(db, subscription_id)
+
+    # check that current user is superadmin OR owns the subscription 
+    user_service.check_superadmin_or_user_in_object(current_user, user_sub)
+
+    # return success and data
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="User subscription fetched successfully",
+        data=user_sub_service.dynamic_user_subscription_dict(user_sub)
     )

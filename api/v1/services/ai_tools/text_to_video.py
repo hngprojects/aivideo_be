@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import random
-from typing import List
+from typing import List, Optional
 from uuid import uuid4
 import openai
 import ffmpeg
@@ -34,8 +34,20 @@ class TextToVideoService:
             max_tokens=500
         )
         scenes = response.choices[0].text.strip().split('\n')
-        print(scenes)
         return scenes
+    
+
+    def recompose_script(self, script: str):
+
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": f"I will add a script for you to recompose. Do not say anything else than the recomposition:\n\n{script}"}
+            ]
+        )
+        recomposed_script = response.choices[0].message.content
+        return recomposed_script
     
 
     def generate_images_for_scenes(self, scenes: List[str]):
@@ -97,8 +109,8 @@ class TextToVideoService:
         script: str, 
         scenes: List[str], 
         voice_over: str, 
-        background_audio: str, 
-        aspect_ratio: str
+        aspect_ratio: str,
+        background_audio: Optional[str] = None,
     ):
 
         audio_file = video_service.generate_audio_from_script(script, voice_over)
@@ -115,22 +127,23 @@ class TextToVideoService:
             output_video=video_with_subtitles_path
         )
 
-        # Add background music to video
-        video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
-        video_with_audio = video_service.add_background_audio(
-            video_path=video_with_subtitles, 
-            audio_path=background_audio, 
-            output_path=video_with_bg_music_path
-        )
+        if background_audio:
+            # Add background music to video
+            video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
+            video_with_bg_audio = video_service.add_background_audio(
+                video_path=video_with_subtitles, 
+                audio_path=background_audio, 
+                output_path=video_with_bg_music_path
+            )
 
         # Set up for final result
-        video_dir = os.path.join('media', 'downloads', 'video')
+        video_dir = os.path.join(settings.STORAGE_DIR, 'video')
         os.makedirs(video_dir, exist_ok=True)
         output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
         # Adjust aspect ratio
         final_result_file = video_service.change_aspect_ratio(
-            input_file=video_with_audio, 
-            output_file=output_video_file, 
+            input_file=video_with_subtitles if background_audio is None else video_with_bg_audio,
+            output_file=output_video_file,
             aspect_ratio=aspect_ratio
         )
 
@@ -139,7 +152,8 @@ class TextToVideoService:
         delete_file(subtitle_file)
         delete_file(video_file)
         delete_file(video_with_subtitles_path)
-        delete_file(video_with_bg_music_path)
+        if background_audio:
+            delete_file(video_with_bg_music_path)
         for img in images:
             delete_file(img)
         

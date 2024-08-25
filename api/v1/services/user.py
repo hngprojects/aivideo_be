@@ -22,9 +22,13 @@ from api.v1.models.project import Project
 from api.v1.models.job import Job
 from api.v1.models.data_privacy import DataPrivacySetting
 from api.v1.schemas import user
+from api.v1.schemas.project import ProjectToolsEnum
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl="/api/v1/auth/login", auto_error=False
+)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -161,9 +165,20 @@ class UserService(Service):
     def get_user_by_id(self, db: Session, id: str):
         """Fetches a user by their id"""
 
-        user: User = check_model_existence(db, User, id)
-        user.update_active_status()
-        return user
+        user_instance: User = check_model_existence(db, User, id)
+        user_instance.update_active_status()
+
+        data_dict = user_instance.to_dict()
+        data_dict["most_used_tool"] = self.fetch_most_used_tool(db, id)
+
+        data = user.UserDetailData(**data_dict)
+
+        return user.UserDetailResponse(
+            status="success",
+            status_code=status.HTTP_200_OK,
+            message="User retrieved successfully",
+            data=data,
+        )
 
     def fetch_by_email(self, db: Session, email):
         """Fetches a user by their email"""
@@ -172,6 +187,24 @@ class UserService(Service):
 
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
+
+        return user
+
+    def get_user_by_email(self, db: Session, email: str) -> Optional[User]:
+        """
+        Fetches a user by their email address.
+
+        Args:
+            db: The database session.
+            email: The email address of the user.
+
+        Returns:
+            The user object if found, otherwise None.
+        """
+        user = db.query(User).filter(User.email == email).first()
+
+        if not user:
+            return None
 
         return user
 
@@ -291,15 +324,22 @@ class UserService(Service):
         db.refresh(user)
         return user
 
-    def delete(self, db: Session, id=None, access_token: str = Depends(oauth2_scheme)):
+    def delete(
+        self,
+        db: Session,
+        id=None,
+        access_token: str = Depends(oauth2_scheme),
+        user: User | None = None,
+    ):
         """Function to soft delete a user"""
 
-        # Get user from access token if provided, otherwise fetch user by id
-        user = (
-            self.get_current_user(access_token, db)
-            if id is None
-            else check_model_existence(db, User, id)
-        )
+        if not user:
+            # Get user from access token if provided, otherwise fetch user by id
+            user = (
+                self.get_current_user(access_token, db)
+                if id is None
+                else check_model_existence(db, User, id)
+            )
 
         user.is_deleted = True
         db.commit()
@@ -328,12 +368,6 @@ class UserService(Service):
 
         user.update_last_login()
         return user
-
-    # def perform_user_check(self, user: User):
-    #     """This checks if a user is active and verified and not a deleted user"""
-    #
-    #     if not user.is_active:
-    #         raise HTTPException(detail="User is not active", status_code=403)
 
     def hash_password(self, password: str) -> str:
         """Function to hash a password"""
@@ -408,7 +442,7 @@ class UserService(Service):
 
             token_data = user.TokenData(id=user_id)
 
-        except JWTError:
+        except (JWTError, AttributeError):
             raise credentials_exception
 
         return token_data
@@ -428,6 +462,19 @@ class UserService(Service):
 
             return access, refresh
 
+    def get_user_from_refresh_token(self, refresh_token: str, db: Session):
+        """Return s thwe id of the user embedded in the refresh token"""
+
+        credentials_exception = HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+        token = self.verify_refresh_token(refresh_token, credentials_exception)
+        user = self.fetch(db, token.id)
+        return user
+
     def get_current_user(
         self, access_token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
     ) -> User:
@@ -446,13 +493,13 @@ class UserService(Service):
         user.update_last_login()
 
         return user
-    
+
     def get_current_user_optional(
-        self, 
-        access_token: Optional[str] = Depends(oauth2_scheme), 
-        db: Session = Depends(get_db)
+        self,
+        access_token: Optional[str] = Depends(oauth2_scheme_optional),
+        db: Session = Depends(get_db),
     ) -> Optional[User]:
-        '''Used to optionally check for a user. This will be used for tracking unauthenticated users'''
+        """Used to optionally check for a user. This will be used for tracking unauthenticated users"""
 
         if access_token is None:
             return None
@@ -468,7 +515,6 @@ class UserService(Service):
         if not user:
             raise credentials_exception
 
-        user.update_last_login()
         return user
 
     def change_password(
@@ -625,6 +671,85 @@ class UserService(Service):
             headers={"Content-Disposition": "attachment; filename=all_user_data.csv"},
         )
 
+    def fetch_user_activity_statistics(self, db: Session, user_id: str):
+        user_check = check_model_existence(db, User, user_id)
+        query = (
+            db.query(Project, Job)
+            .outerjoin(Job, Project.id == Job.project_id)
+            .filter(Project.user_id == user_id)
+        )
+        stats = {}
+        one_hour_ago = datetime.now(timezone(timedelta(hours=1))) - timedelta(hours=1)
+
+        total_tasks = query.count()
+        in_progress_tasks = query.filter(
+            or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
+        )
+        pending_tasks = query.filter(Job.status.icontains("PENDING"))
+        completed_tasks = query.filter(Job.status.icontains("SUCCESS"))
+
+        created_in_last_hour = query.filter(Job.created_at >= one_hour_ago).count()
+
+        in_progress_in_last_hour = in_progress_tasks.filter(
+            Job.created_at >= one_hour_ago
+        ).count()
+
+        pending_in_last_hour = pending_tasks.filter(
+            Job.created_at >= one_hour_ago
+        ).count()
+
+        completed_in_last_hour = completed_tasks.filter(
+            Job.created_at >= one_hour_ago
+        ).count()
+
+        stats = {
+            "total_tasks": total_tasks,
+            "in_progress_tasks": in_progress_tasks.count(),
+            "pending_tasks": pending_tasks.count(),
+            "completed_tasks": completed_tasks.count(),
+            "created_in_last_hour": created_in_last_hour,
+            "in_progress_in_last_hour": in_progress_in_last_hour,
+            "pending_in_last_hour": pending_in_last_hour,
+            "completed_in_last_hour": completed_in_last_hour,
+        }
+
+        return stats
+
+    def fetch_most_used_tool(self, db: Session, user_id: str):
+        total_projects = db.query(Project).filter(Project.user_id == user_id).all()
+
+        all_project_count_dict = {}
+
+        # Dict should look like {"podcast_summarizer": 2, ...} once iteration completes
+        # Code can further be optimized to use single for-loop to count as well as calculate percentages
+        for p in total_projects:
+            # Map Enum value stored in db to Enum's name, for use as key in the `all_project_count_dict`
+            # Catch errors that would occur when an unknown project_type is encountered
+            try:
+                project_type_name = ProjectToolsEnum(p.project_type).name
+            except ValueError:
+                continue
+
+            # Increment count for each tool if already present in all_project_count_dict else intialise it to 1
+            prev_count_value = all_project_count_dict.get(project_type_name)
+            all_project_count_dict[project_type_name] = (
+                1 if prev_count_value is None else prev_count_value + 1
+            )
+
+        try:
+            max_project_count = max(all_project_count_dict.values())
+        except ValueError:
+            return "null"
+
+        most_used_tool = "null"
+
+        for project_type, project_count in all_project_count_dict.items():
+            if project_count == max_project_count:
+                most_used_tool = project_type
+                break
+
+        return most_used_tool
+
     def fetch_user_activity(
         self,
         db: Session,
@@ -641,13 +766,6 @@ class UserService(Service):
             .filter(Project.user_id == user_id)
         )
 
-        total_jobs_created = query.count()
-        total_jobs_completed = query.filter(Job.status.icontains("SUCCESS")).count()
-        total_jobs_pending = query.filter(Job.status.icontains("PENDING")).count()
-        total_jobs_in_progress = query.filter(
-            or_(Job.status.icontains("STARTED"), Job.status.icontains("RUNNING"))
-        ).count()
-
         if job:
             query = query.filter(Project.project_type.icontains(job))
 
@@ -659,15 +777,18 @@ class UserService(Service):
 
         query_result = query.limit(per_page).offset((page - 1) * per_page).all()
 
-        all_tasks = [
-            user.UserActivityData(
-                id=project.id,
-                created_at=project.created_at,
-                status=job.status,
-                tool_used=project.project_type,
-            )
-            for project, job in query_result
-        ]
+        all_tasks = []
+
+        if query_result:
+            all_tasks = [
+                user.UserActivityData(
+                    id=project.id,
+                    created_at=project.created_at,
+                    status=job.status,
+                    tool_used=project.project_type,
+                )
+                for project, job in query_result
+            ]
 
         if len(all_tasks) == 0:
             return user.UserActivityResponse(
@@ -675,11 +796,7 @@ class UserService(Service):
                 message="No User activity found for this query",
                 page=page,
                 per_page=per_page,
-                total_jobs_created=total_jobs_created,
                 total_jobs_retrieved=total_count,
-                total_jobs_completed=total_jobs_completed,
-                total_jobs_pending=total_jobs_pending,
-                total_jobs_in_progress=total_jobs_in_progress,
                 total_pages=total_pages,
                 data=[],
                 status_code=200,
@@ -690,11 +807,7 @@ class UserService(Service):
             message="User activity data retrieved successfully!",
             page=page,
             per_page=per_page,
-            total_jobs_created=total_jobs_created,
             total_jobs_retrieved=total_count,
-            total_jobs_completed=total_jobs_completed,
-            total_jobs_pending=total_jobs_pending,
-            total_jobs_in_progress=total_jobs_in_progress,
             total_pages=total_pages,
             data=all_tasks,
             status_code=200,
@@ -712,7 +825,7 @@ class UserService(Service):
                 detail="You do not have permission to access this resource",
             )
         return True
-    
+
     def get_fullname(self, user_):
         return f"{user_.first_name} {user_.last_name}"
 
