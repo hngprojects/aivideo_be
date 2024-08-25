@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 
 from api.db.database import get_db
 from api.utils.client_helpers import get_ip_address
-from api.v1.models.usage_store import UsageStore, UserUsageStore
+from api.v1.models.usage_store import UsageStore
 from api.v1.services.user import user_service
 from api.v1.models.user import User
+from api.v1.services.usage import usage_store_service
 from api.v1.services.user_usage import user_usage_store_service
 
 ACCESS_LIMIT = 3
@@ -24,6 +25,7 @@ def track_tool_usage(
     if user:
         tracking_record = user_usage_store_service.fetch_by_user(db, user.id)
         if tracking_record:
+            tracking_record.last_accessed = now
             tracking_record.tool_access_count += 1
             tool_count = user_usage_store_service.get_or_create_tool_value(
                 db,
@@ -33,7 +35,7 @@ def track_tool_usage(
             if tool_count > ACCESS_LIMIT:
                 raise HTTPException(
                     status_code=429,
-                    detail="Please upgrade you plan to get more access",
+                    detail="Too many requests, Please upgrade you plan to get more access or wait for tomorrow.",
                 )
             else:
                 user_usage_store_service.update_tool_usage(
@@ -43,13 +45,16 @@ def track_tool_usage(
                     tool_count + 1
                 )
         else:
-            # Create a new record for the user
-            tracking_record = user_usage_store_service.create_usage_store_and_assign_tool(
-                db,
-                client_ip,
-                current_tool,
-                1,1
+            # Create a new record for the IP
+            tracking_record = UserUsageStore(
+                user_id=user.id,
+                tool_access_count=1,
+                last_accessed=now,
+                tools_accessed={current_tool: 1}
             )
+
+            db.add(tracking_record)
+            db.commit()
 
         return user
     
