@@ -8,7 +8,7 @@ on:
 
 jobs:
   run-newman-test:
-    runs-on: pyrunner
+    runs-on: pytest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
