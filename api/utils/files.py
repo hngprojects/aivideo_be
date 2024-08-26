@@ -291,20 +291,6 @@ async def check_file_size(file, max_file_size_mb=10):
         )
 
 
-async def audio_scan(file_path: str) -> bool:
-    '''Basic scan to validate the audio file'''
-    try:
-        if not os.path.getsize(file_path):
-            return False
-        audio = AudioSegment.from_file(file_path)
-        if len(audio) < 1000:
-            return False
-
-        return True
-    except Exception as e:
-        print(f"Audio scan error: {e}")
-        return False
-
 
 async def contains_face(image_path):
     face_cascade = cv2.CascadeClassifier(
