@@ -1,5 +1,6 @@
 from datetime import timedelta
 import json
+from uuid import uuid4
 from minio import Minio
 from minio.error import S3Error
 
@@ -36,7 +37,32 @@ class MinioService:
         self.minio_client.set_bucket_policy(bucket_name, json.dumps(policy))
 
     
-    def upload_to_minio(self, bucket_name: str, source_file: str, destination_file: str, content_type: str):
+    def generate_presigned_url(
+        self, 
+        bucket_name: str, 
+        object_name: str, 
+        response_content_disposition: str = None
+    ):
+        try:
+            url = self.minio_client.presigned_get_object(
+                bucket_name=bucket_name,
+                object_name=object_name,
+                response_headers={
+                    "response-content-disposition": response_content_disposition
+                } if response_content_disposition else None
+            )
+            return url
+        except S3Error as s3_error:
+            print(f'An error occured: {s3_error}')
+
+    
+    def upload_to_minio(
+        self, 
+        bucket_name: str, 
+        source_file: str, 
+        destination_file: str = str(uuid4()),
+        content_type: str = 'application/octet-stream'
+    ):
         """This function saves a file to a minio bucket
 
         Args:
@@ -59,12 +85,18 @@ class MinioService:
                 content_type=content_type
             )
 
-            preview_url = self.minio_client.presigned_get_object(
+            preview_url = self.generate_presigned_url(
                 bucket_name=bucket_name,
                 object_name=destination_file,
+                response_content_disposition="inline"
             ).split('?')[0]
 
-            download_url = self.download_from_minio(bucket_name, destination_file)
+            # Generate download URL (attachment content disposition)
+            download_url = self.generate_presigned_url(
+                bucket_name=bucket_name,
+                object_name=destination_file,
+                response_content_disposition=f"attachment; filename={destination_file}"
+            )
 
             return preview_url, download_url
 
@@ -72,7 +104,7 @@ class MinioService:
             print(f'An error occured: {s3_error}')
     
 
-    def download_from_minio(self, bucket_name: str, destination_file: str):
+    def download_from_minio(self, bucket_name: str, source_file: str, destination_file: str):
         """This function gets an object from minio and downloads it
 
         Args:
