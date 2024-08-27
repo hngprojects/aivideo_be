@@ -98,7 +98,7 @@ def test_create_billing_plan_successful(
 ):
     mock_uuid7.return_value = test_billing_plan.id
     mock_db_session.query().filter().first.return_value = test_user
-    mock_billing_plan_service.create.return_value = test_billing_plan
+    
 
     resp = make_request(access_token_user)
     resp_d = resp.json()
@@ -113,7 +113,7 @@ def test_create_billing_plan_successful(
     assert bp_data['features'] == test_billing_plan.features
     assert bp_data['plan_name'] == test_billing_plan.plan_name
     assert bp_data['plan_interval'] == test_billing_plan.plan_interval
-    print(resp_d)
+
 
 # Test for unsuccessful creation
 def test_create_billing_plan_unsuccessful(
