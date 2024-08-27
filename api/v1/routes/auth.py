@@ -32,6 +32,7 @@ from api.v1.services.user import user_service
 from api.v1.schemas.request_password_reset import RequestEmail
 from api.v1.services.request_pwd import reset_service as magic_link_service
 from slowapi import Limiter
+from api.v1.services.billing_plan import billing_plan_service
 
 
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -58,6 +59,8 @@ def register(
     # Create user account
     user = user_service.create(db=db, schema=user_schema)
 
+    user_subscription = billing_plan_service.subscribe_user_to_free_plan(db=db, user=user)
+
     # Create access and refresh tokens
     access_token = user_service.create_access_token(user_id=user.id)
     refresh_token = user_service.create_refresh_token(user_id=user.id)
@@ -80,6 +83,9 @@ def register(
             "data": {
                 "user": jsonable_encoder(
                     user, exclude=["password", "is_deleted", "updated_at"]
+                ),
+                "user_subscription" : jsonable_encoder(
+                    user_subscription , exclude=["user_id"]
                 )
             },
         },
