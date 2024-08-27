@@ -25,9 +25,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi.middleware import SlowAPIMiddleware
 from collections import defaultdict
 from slowapi.errors import RateLimitExceeded
-from scripts.presets import load_avatars_in_db, load_audio_in_db, load_billing_plans_in_db
 from scripts.presets import load_avatars_in_db, load_audio_in_db
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
