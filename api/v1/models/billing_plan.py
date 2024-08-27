@@ -10,7 +10,7 @@ class BillingPlan(BaseTableModel):
     plan_name = Column(String, nullable=False)
     price = Column(DECIMAL, nullable=False)
     plan_interval = Column(
-        Enum('monthly', 'yearly', 'one-off', name='plan_interval_name'), 
+        Enum('monthly', 'yearly', 'one-off', name='plan_interval'), 
         nullable=False, 
         server_default='monthly'
     )
