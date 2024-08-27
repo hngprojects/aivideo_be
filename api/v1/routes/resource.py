@@ -12,7 +12,8 @@ from api.v1.schemas.resource import (
     CreateResource,
     ResourceBase,
     AllResourcesResponse,
-    UpdateResource
+    UpdateResource,
+    CreateResourceResponse
 )
 import logging
 
@@ -20,7 +21,7 @@ import logging
 resource = APIRouter(prefix="/resources", tags=["Resources"])
 
 
-@resource.post("", response_model=success_response, status_code=201)
+@resource.post("", response_model=CreateResourceResponse, status_code=201)
 async def create_resource(
     schema: CreateResource,
     db: Session = Depends(get_db),
