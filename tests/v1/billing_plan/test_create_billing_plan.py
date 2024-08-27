@@ -113,7 +113,7 @@ def test_create_billing_plan_successful(
     assert bp_data['features'] == test_billing_plan.features
     assert bp_data['plan_name'] == test_billing_plan.plan_name
     assert bp_data['plan_interval'] == test_billing_plan.plan_interval
-
+    print(resp_d)
 
 # Test for unsuccessful creation
 def test_create_billing_plan_unsuccessful(
