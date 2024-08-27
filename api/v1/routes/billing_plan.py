@@ -65,7 +65,7 @@ async def get_single_billing_plan(
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Billing plan fetched successfully",
-        data=bill_plan.to_dict()
+        data=bp_service.dynamic_billing_plan_dict(bill_plan)
     )
 
 
