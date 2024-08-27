@@ -40,7 +40,12 @@ class ResourceService(Service):
         return new_resource
 
     def fetch_all(
-        self, db: Session, page: int, per_page: int, **query_params: Optional[Any]
+        self,
+        db: Session,
+        page: int,
+        per_page: int,
+        search: str,
+        **query_params: Optional[Any],
     ):
         """
         Fetch all resources
@@ -48,9 +53,16 @@ class ResourceService(Service):
             db: database Session object
             page: page number
             per_page: max number of resources in a page
+            search: search query
             query_params: params to filter by
         """
         per_page = min(per_page, 10)
+
+        if not isinstance(search, str) and search is not None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid value for search parameter. Must be a non empty string.",
+            )
 
         # Enable filter by query parameter
         filters = []
@@ -66,7 +78,12 @@ class ResourceService(Service):
                     continue
                 if hasattr(Resource, param):
                     filters.append(getattr(Resource, param) == value)
+
         query = db.query(Resource)
+
+        if search:
+            query = self.search_resources(db=db, search_query=search)
+
         total_resources = query.count()
         if filters:
             query = query.filter(*filters)
@@ -233,44 +250,27 @@ class ResourceService(Service):
         resource.is_published = False
         db.commit()
 
-    def search_resources(self, db: Session, keywords: str, page: int, per_page: int):
-        """Search resources by keywords
+    def search_resources(self, db: Session, search_query: str):
+        """Search resources"""
 
-        Args:
-            db: database Session object
-            keywords: the search keywords provided by the user
-            page: page number for pagination
-            per_page: max number of resources in a page
-
-        Returns:
-            AllResourcesResponse: Pydantic model containing the search results
-        """
-        per_page = min(per_page, 10)
+        tokens = search_query.split()
 
         query = db.query(Resource).filter(
             or_(
-                Resource.title.ilike(f"%{keywords}%"),
-                Resource.content.ilike(f"%{keywords}%"),
+                *[
+                    or_(
+                        Resource.title.ilike(f"%{token}%"),
+                        Resource.content.ilike(f"%{token}%"),
+                        Resource.tags.any(token),
+                    )
+                    for token in tokens
+                ]
             )
         )
 
-        total_resources = query.count()
-        total_pages = (total_resources // per_page) + (total_resources % per_page > 0)
+        search_results = query.order_by(desc(Resource.created_at))
 
-        search_results = (
-            query.order_by(desc(Resource.created_at))
-            .limit(per_page)
-            .offset((page - 1) * per_page)
-            .all()
-        )
-
-        return self.all_resources_response(
-            resources=search_results,
-            total_resources=total_resources,
-            page=page,
-            per_page=per_page,
-            total_pages=total_pages,
-        )
+        return search_results
 
 
 resource_service = ResourceService()

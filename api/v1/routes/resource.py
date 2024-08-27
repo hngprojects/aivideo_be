@@ -14,7 +14,7 @@ from api.v1.schemas.resource import (
     AllResourcesResponse,
     UpdateResource,
     CreateResourceResponse,
-    SuccessResponse
+    SuccessResponse,
 )
 import logging
 
@@ -54,6 +54,7 @@ async def get_resources(
     db: Annotated[Session, Depends(get_db)],
     page: int = 1,
     per_page: int = 10,
+    search: Optional[str] = Query(None),
     is_published: Optional[bool] = Query(None),
     is_deleted: Optional[bool] = Query(None),
 ):
@@ -73,14 +74,17 @@ async def get_resources(
         "is_published": is_published,
         "is_deleted": is_deleted,
     }
-    return resource_service.fetch_all(db, page, per_page, **query_params)
+    return resource_service.fetch_all(db, page, per_page, search, **query_params)
 
 
 @resource.get(
     "/public", status_code=status.HTTP_200_OK, response_model=AllResourcesResponse
 )
 async def get_public_resources(
-    db: Annotated[Session, Depends(get_db)], page: int = 1, per_page: int = 10
+    db: Annotated[Session, Depends(get_db)],
+    page: int = 1,
+    per_page: int = 10,
+    search: Optional[str] = Query(None),
 ):
     """
     Retrieves all public resources.
@@ -92,7 +96,14 @@ async def get_public_resources(
         ResourceData
     """
 
-    return resource_service.fetch_all_public(db, page, per_page)
+    return resource_service.fetch_all(
+        db=db,
+        page=page,
+        per_page=per_page,
+        search=search,
+        is_published=True,
+        is_deleted=False,
+    )
 
 
 @resource.get(
@@ -193,7 +204,7 @@ async def get_resource_by_id(resource_id: str, db: Annotated[Session, Depends(ge
     "/{resource_id}/publish",
     status_code=status.HTTP_200_OK,
     summary="Publish a resource",
-    response_model=SuccessResponse
+    response_model=SuccessResponse,
 )
 async def publish_resource(
     resource_id: str,
@@ -211,7 +222,7 @@ async def publish_resource(
     "/{resource_id}/unpublish",
     status_code=status.HTTP_200_OK,
     summary="Unpublish a resource",
-    response_model=SuccessResponse
+    response_model=SuccessResponse,
 )
 async def unpublish_resource(
     resource_id: str,
