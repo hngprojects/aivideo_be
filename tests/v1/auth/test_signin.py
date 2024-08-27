@@ -9,6 +9,9 @@ from uuid_extensions import uuid7
 from api.db.database import get_db
 from fastapi import status
 from datetime import datetime, timezone
+import uuid
+import time
+
 
 client = TestClient(app)
 
@@ -54,3 +57,26 @@ def test_user_login(db_session_mock):
     })
     response = login.json()
     assert response.get("status_code") == status.HTTP_200_OK
+
+def test_rate_limiting(db_session_mock):
+    db_session_mock.query(User).filter().first.return_value = None
+    db_session_mock.add.return_value = None
+    db_session_mock.commit.return_value = None
+    
+    unique_email = f"rate.limit.{uuid.uuid4()}@gmail.com"
+    user = {
+        "password": "ValidP@ssw0rd!",
+        "first_name": "Rate",
+        "last_name": "Limit",
+        "email": unique_email
+    }
+
+
+    response = client.post("/api/v1/auth/register", json=user)
+    assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
+    
+    time.sleep(5)  # Adjust this delay to see if it prevents rate limiting
+
+    for _ in range(5):
+        response = client.post("/api/v1/auth/register", json=user)
+        assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
