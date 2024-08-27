@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from collections import defaultdict
 from fastapi.responses import JSONResponse
+from api.utils.success_response import success_response
 
 audit = APIRouter(prefix="/audit", tags=["audit"])
 
@@ -22,4 +23,4 @@ class RequestCountMiddleware(BaseHTTPMiddleware):
 # Endpoint to get request stats
 @audit.get("/request-stats", response_class=JSONResponse)
 async def get_request_stats():
-    return {"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}}
+    return success_response(status_code=status.HTTP_200_OK, message="endpoints request retreived successfully", data={"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}})
