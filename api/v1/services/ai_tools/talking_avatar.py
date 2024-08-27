@@ -97,24 +97,41 @@ class TalkingAvatarService:
 		delete_file(initial_save_path)
 		delete_file(audio)
 
-		save_url = minio_service.upload_to_minio(
+		minio_save_file = f'tavtr-{str(uuid4())}.mp4'
+		save_url, download_url = minio_service.upload_to_minio(
 			bucket_name='videos',
 			source_file=final_save_path,
-			destination_file=f'tavtr-{str(uuid4())}.mp4'
+			destination_file=minio_save_file,
+			content_type='video/mp4'
 		)
 
-		# Compress video
+		# Compress video and save to minio as well
 		low_quality = video_service.compress_video(input_file=final_save_path, bitrate=500)
+		low_quality_vid_preview, low_quality_vid_download = minio_service.upload_to_minio(
+			bucket_name='videos',
+			source_file=low_quality,
+			destination_file=f'tavtr-{str(uuid4())}.mp4',
+			content_type='video/mp4'
+		)
 		medium_quality = video_service.compress_video(input_file=final_save_path, bitrate=1080)
+		medium_quality_vid_preview, medium_quality_vid_download = minio_service.upload_to_minio(
+			bucket_name='videos',
+			source_file=medium_quality,
+			destination_file=f'tavtr-{str(uuid4())}.mp4',
+			content_type='video/mp4'
+		)
+
+		delete_file(final_save_path)
+		delete_file(medium_quality)
+		delete_file(low_quality)
 		
-		# save_url = f'{settings.APP_URL}/{final_save_path}'
 		return {
 			'app_url': save_url,
 			'source': url,
 			'quality': {
-				"low_quality": f'{settings.APP_URL}/{low_quality}',
-				"medium_quality": f'{settings.APP_URL}/{medium_quality}',
-				"high_quality": f'{settings.APP_URL}/{final_save_path}',
+				"low_quality": low_quality_vid_download,
+				"medium_quality": medium_quality_vid_download,
+				"high_quality": download_url,
 			}
 		}
 

@@ -36,7 +36,7 @@ class MinioService:
         self.minio_client.set_bucket_policy(bucket_name, json.dumps(policy))
 
     
-    def upload_to_minio(self, bucket_name: str, source_file: str, destination_file: str):
+    def upload_to_minio(self, bucket_name: str, source_file: str, destination_file: str, content_type: str):
         """This function saves a file to a minio bucket
 
         Args:
@@ -56,21 +56,17 @@ class MinioService:
                 bucket_name=bucket_name,
                 object_name=destination_file,
                 file_path=source_file,
+                content_type=content_type
             )
 
-            # Get upload url
-            # url = self.minio_client.get_presigned_url(
-            #     method='GET',
-            #     bucket_name=bucket_name,
-            #     object_name=destination_file,
-            # )
-
-            url = self.minio_client.presigned_get_object(
+            preview_url = self.minio_client.presigned_get_object(
                 bucket_name=bucket_name,
                 object_name=destination_file,
-            )
+            ).split('?')[0]
 
-            return url
+            download_url = self.download_from_minio(bucket_name, destination_file)
+
+            return preview_url, download_url
 
         except S3Error as s3_error:
             print(f'An error occured: {s3_error}')
@@ -92,11 +88,10 @@ class MinioService:
             self.__make_public(bucket_name)
 
             # Upload file
-            url = self.minio_client.get_presigned_url(
-                method='GET',
+            url = self.minio_client.presigned_get_object(
                 bucket_name=bucket_name,
                 object_name=destination_file,
-            )
+            ).split('?')[0]
 
             return url
 
