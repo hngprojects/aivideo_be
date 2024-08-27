@@ -127,7 +127,7 @@ class BillingPlanService:
         
         all_plans = query.all()
         if len(all_plans) == 0:
-            all_plans = self.load_billing_plans_in_db()
+            all_plans = self.load_billing_plans_in_db(db)
             
         return all_plans
 
