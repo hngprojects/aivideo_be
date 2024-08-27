@@ -51,7 +51,7 @@ def test_user():
 def test_billing_plan():
     return BillingPlan(
         id=str(uuid7()),
-        plan_name="one",
+        plan_name="Free",
         price=5000,
         plan_interval="monthly",
         currency="NGN",
@@ -71,7 +71,7 @@ def random_access_tokenr():
 
 def make_request(token):
     data = {
-        "plan_name": "one",
+        "plan_name": "Free",
         "price": 5000,
         "access_limit": 100,
         "plan_interval": "monthly",
