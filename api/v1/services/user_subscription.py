@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 
 from api.v1.services.user import user_service
 from api.utils.pagination import get_pagination_details
-from api.utils.db_validators import check_model_existence
 from api.v1.models.user_subscription import UserSubscription
 from api.v1.schemas.user_subscription import CreateUserSubSchema
+from api.utils.db_validators import check_model_existence, get_model_by_params
 
 
 class UserSubscriptionService:
@@ -30,6 +30,19 @@ class UserSubscriptionService:
     def fetch(self, db: Session, user_sub_id: str):
         """Fetch a single user subscription by id"""
         return check_model_existence(db, UserSubscription, user_sub_id) 
+
+    def fetch_by_params(self, db: Session, query_params: dict):
+        """Fetches a user subscription by one or more query params"""
+        user_sub = get_model_by_params(db, UserSubscription, query_params)
+        return user_sub
+
+    def fetch_by_user_and_plan(self, db: Session, user_id: str, billing_plan_id: str):
+        """Fetches a user subscription by user_id and billing_plan_id"""
+        user_sub = db.query(UserSubscription).filter(
+            UserSubscription.user_id == user_id, 
+            UserSubscription.billing_plan_id == billing_plan_id
+            ).first()
+        return user_sub
 
     def fetch_all(self, db: Session, offset: int = 0, limit: int = 0, **query_params: Optional[Any]):
         """Fetch all user subscriptions with option to search using query parameters"""
@@ -91,10 +104,11 @@ class UserSubscriptionService:
         db.commit()
     
     @staticmethod
-    def get_sub_start_and_end_datetime(amount_paid, bill_amount):
+    def get_sub_start_and_end_datetime(amount_paid, bill_amount, free_plan=False):
         """Compute and return subcription end datetiem, with start datetime"""
         start_datetime = datetime.now(tz=timezone.utc)
-        num_of_months = int(amount_paid // bill_amount)
+        # If the plan if free_plan, set the duration to 12-months
+        num_of_months = 12 if free_plan else int(amount_paid // bill_amount)
         num_of_days = num_of_months * 30
         end_datetime = start_datetime + timedelta(days=num_of_days)
         return start_datetime, end_datetime
