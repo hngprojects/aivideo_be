@@ -1,4 +1,6 @@
 from datetime import timedelta
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from fastapi import (
     BackgroundTasks,
     Depends,
@@ -29,17 +31,23 @@ from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.v1.schemas.request_password_reset import RequestEmail
 from api.v1.services.request_pwd import reset_service as magic_link_service
+from main import Limiter
+
 
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 @auth.post(
     "/register",
     status_code=status.HTTP_201_CREATED,
     response_model=RegisterUserResponse,
 )
+@limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
 def register(
     background_tasks: BackgroundTasks,
+    request: Request,
     response: Response,
     user_schema: UserCreate,
     db: Session = Depends(get_db),
@@ -94,7 +102,8 @@ def register(
     status_code=status.HTTP_201_CREATED,
     response_model=RegisterUserResponse,
 )
-def register_as_super_admin(user: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
+def register_as_super_admin(user: UserCreate, request: Request, db: Session = Depends(get_db)):
     """Endpoint for super admin creation"""
 
     user = user_service.create_admin(db=db, schema=user)
@@ -129,11 +138,11 @@ def register_as_super_admin(user: UserCreate, db: Session = Depends(get_db)):
 
     return response
 
-
 @auth.post(
     "/login", status_code=status.HTTP_200_OK, response_model=RegisterUserResponse
 )
-def login(login_request: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
+def login(login_request: LoginRequest, request: Request, db: Session = Depends(get_db)):
     """Endpoint to log in a user"""
 
     # Authenticate the user
@@ -189,6 +198,7 @@ def logout(
 
 
 @auth.post("/refresh-access-token", status_code=status.HTTP_200_OK, response_model=RefreshAccessTokenResponse)
+@limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
 def refresh_access_token(
     request: Request, response: Response, db: Session = Depends(get_db)
 ):
@@ -225,6 +235,7 @@ def refresh_access_token(
 
 
 @auth.post("/magic-link", status_code=status.HTTP_200_OK, response_model=MagicLinkResponse)
+@limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
 async def request_magic_link(
     reset_schema: RequestEmail,
     request: Request,
