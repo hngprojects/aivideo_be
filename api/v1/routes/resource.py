@@ -13,7 +13,6 @@ from api.v1.schemas.resource import (
     ResourceBase,
     AllResourcesResponse,
     UpdateResource,
-    CreateResourceResponse,
 )
 import logging
 
@@ -120,6 +119,7 @@ async def search_resources(
         page: Page number for pagination.
         per_page: Max number of resources per page.
 
+
     Returns:
         Search results in a paginated format.
     """
@@ -193,4 +193,21 @@ async def get_resource_by_id(resource_id: str, db: Annotated[Session, Depends(ge
         status_code=status.HTTP_200_OK,
         message="Resource fetched successfully",
         data=jsonable_encoder(resource),
+    )
+
+
+@resource.put(
+    "/{resource_id}/publish",
+    status_code=status.HTTP_200_OK,
+    summary="Publish a resource",
+)
+async def publish_resource(
+    resource_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_admin: Annotated[User, Depends(user_service.get_current_super_admin)],
+):
+    resource_service.publish(db=db, Resource_id=resource_id)
+
+    return success_response(
+        status_code=status.HTTP_200_OK, message="Resource successfully published!"
     )

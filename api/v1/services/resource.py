@@ -33,7 +33,6 @@ class ResourceService(Service):
             raise HTTPException(status_code=400, detail="Invalid request body")
 
         new_resource = Resource(**schema.model_dump())
-        new_resource.is_published = publish
         db.add(new_resource)
         db.commit()
         db.refresh(new_resource)
