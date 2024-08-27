@@ -73,7 +73,6 @@ def make_request(token):
     data = {
         "plan_name": "Free",
         "price": 5000,
-        "access_limit": 100,
         "plan_interval": "monthly",
         "currency": "NGN",
         "features": [
