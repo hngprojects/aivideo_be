@@ -51,7 +51,7 @@ def test_user():
 def test_billing_plan():
     return BillingPlan(
         id=str(uuid7()),
-        plan_name="Free",
+        plan_name="one",
         price=5000,
         plan_interval="monthly",
         currency="NGN",
@@ -71,8 +71,9 @@ def random_access_tokenr():
 
 def make_request(token):
     data = {
-        "plan_name": "Free",
+        "plan_name": "one",
         "price": 5000,
+        "access_limit": 100,
         "plan_interval": "monthly",
         "currency": "NGN",
         "features": [
@@ -96,7 +97,7 @@ def test_create_billing_plan_successful(
     mock_billing_plan_service
 ):
     mock_uuid7.return_value = test_billing_plan.id
-    app.dependency_overrides[user_service.get_current_super_admin] = lambda : test_user
+    mock_db_session.query().filter().first.return_value = test_user
     mock_billing_plan_service.create.return_value = test_billing_plan
 
     resp = make_request(access_token_user)
@@ -123,7 +124,6 @@ def test_create_billing_plan_unsuccessful(
     mock_billing_plan_service
 ):
     mock_db_session.query().filter().first.return_value = test_user
-    app.dependency_overrides[user_service.get_current_super_admin] = user_service.get_current_super_admin
 
     # NON-SUPERADMIN
     test_user.is_superadmin = False
