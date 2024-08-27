@@ -61,7 +61,7 @@ def test_user_login(db_session_mock):
 
 def test_rate_limiting(db_session_mock):
     db_session_mock.query(User).filter().first.return_value = None
-    billing_plan =  BillingPlan(id=str(uuid7()),plan_name='Free', price='5.00',currency='dollars', features=['testfeature1', 'testfeature2'])
+    billing_plan =  BillingPlan(id=str(uuid7()),plan_name='Free', price='5.00',currency='dollars', features=['testfeature1', 'testfeature2'], access_limit=15)
     db_session_mock.add.return_value = None
     db_session_mock.commit.return_value = None
     

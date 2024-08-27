@@ -53,6 +53,7 @@ def test_billing_plan():
         id=str(uuid7()),
         plan_name="one",
         price=5000,
+        access_limit=15,
         plan_interval="monthly",
         currency="NGN",
         features=["string", "string"]
@@ -74,6 +75,7 @@ def make_request(token):
         "plan_name": "one",
         "price": 5000,
         "plan_interval": "monthly",
+        "access_limit":15,
         "currency": "NGN",
         "features": [
             "string", "string"
