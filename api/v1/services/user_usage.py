@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
-from api.v1.models.usage_store import UsageStore, ToolAccess
+from api.v1.models.usage_store import UserUsageStore, ToolAccess
 
 class UserUsageStoreService:
     
@@ -108,5 +108,36 @@ class UserUsageStoreService:
 
         return value
 
+    def create_usage_store_and_assign_tool(db: Session, ip_address: str, tool_name: str, access_count: int, tool_access_count: int) -> UsageStore:
+        """
+        Create a new UsageStore record and assign a ToolAccess to it.
+
+        :param db: SQLAlchemy session
+        :param tool_name: The name of the tool to assign
+        :param access_count: The initial access count for the tool
+        :return: The created UsageStore record
+        """
+        # Create a new UsageStore instance
+        new_usage_store =  UserUsageStore(
+            ip_address=ip_address,
+            tool_access_count=access_count,
+        )
+        
+        # Add the UsageStore record to the session
+        db.add(new_usage_store)
+        db.commit()  # Commit to generate the ID for the UsageStore
+        
+        # Create a new ToolAccess instance
+        new_tool_access = ToolAccess(
+            usage_store_id=new_usage_store.id,
+            tool_name=tool_name,
+            access_count=tool_access_count
+        )
+        
+        # Add the ToolAccess record to the session
+        db.add(new_tool_access)
+        db.commit()  # Commit the ToolAccess record
+        
+        return new_usage_store
 
 user_usage_store_service = UserUsageStoreService()
