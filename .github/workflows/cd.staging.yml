@@ -15,7 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Server
+      - name: Deploy to Main Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -30,3 +30,17 @@ jobs:
             pip install -r requirements.txt --no-deps --use-deprecated=legacy-resolver
             alembic revision --autogenerate
             alembic upgrade head
+        
+      - name: Deploy to Worker Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.WORKER_HOST }}
+          username: ${{ secrets.WORKER_USERNAME }}
+          password: ${{ secrets.WORKER_PASSWORD }}
+          script: |
+            cd aivideo_be/staging
+            git add .
+            git stash
+            git pull origin staging
+            source venv/bin/activate
+            pip install -r requirements.txt --no-deps --use-deprecated=legacy-resolver

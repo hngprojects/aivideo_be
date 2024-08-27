@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 import stripe.error
 from sqlalchemy.orm import Session
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from decimal import Decimal
 import requests
 import stripe
@@ -125,6 +125,18 @@ class PaymentGatewayService:
                 detail=f"Only {self.PAYMENT_GATEWAYS} supported for now"
             )
         return gateway.lower()
+    
+    def check_payment_is_multiples_of_bill_per_interval(
+            self, payment_amount: Union[int, float, Decimal], 
+            bill_per_interval: Union[int, float, Decimal]
+        ):
+        """Make sure to pass the same datatype for 
+        `payment_amount` and `bill_per_interval` to avoid errors"""
+        if payment_amount % bill_per_interval:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Error - paid amount doesn't match billing plan price"
+            )
     
     def get_payment_url_for_flutterwave(self, user, bill_plan, schema):
         payment_data = {

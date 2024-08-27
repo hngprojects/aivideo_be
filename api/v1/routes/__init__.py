@@ -16,7 +16,6 @@ from api.v1.routes.presets import preset_router
 from api.v1.routes.google_auth import google_auth
 from api.v1.routes.lang_region_settings import regions
 from api.v1.routes.data_privacy import privacy
-
 from tests.run_all_test import test_rout
 from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
