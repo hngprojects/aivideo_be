@@ -18,7 +18,7 @@ from fastapi import HTTPException
 class ResourceService(Service):
     """Resource service functionality"""
 
-    def create(self, db: Session, schema: CreateResource) -> Resource:
+    def create(self, db: Session, schema: CreateResource, publish: bool) -> Resource:
         """Create a new Resource
 
         Returns:
@@ -33,7 +33,7 @@ class ResourceService(Service):
             raise HTTPException(status_code=400, detail="Invalid request body")
 
         new_resource = Resource(**schema.model_dump())
-        new_resource.is_published = True
+        new_resource.is_published = publish
         db.add(new_resource)
         db.commit()
         db.refresh(new_resource)
