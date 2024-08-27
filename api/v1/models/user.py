@@ -24,6 +24,7 @@ class User(BaseTableModel):
     notifications = relationship("Notification", back_populates="user")
     activity_logs = relationship("ActivityLog", back_populates="user")
     subscriptions = relationship("UserSubscription", back_populates="user")
+    usage_stored = relationship("UsageStore", back_populates="user")
     payments = relationship("Payment", back_populates="user")
     projects = relationship("Project", back_populates="user")
     reviews = relationship("Review", back_populates="user")

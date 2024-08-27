@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
-from api.v1.models.usage_store import UserUsageStore, ToolAccess
+from api.v1.models.usage_store import UsageStore, ToolAccess
 
 class UserUsageStoreService:
     
@@ -37,14 +37,14 @@ class UserUsageStoreService:
             print(f"An error occurred: {e}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-    def fetch_by_user(self, db: Session, user_id: str) -> UserUsageStore | None:     
-        usage = db.query(UserUsageStore).filter_by(user_id=user_id).first()
+    def fetch_by_user(self, db: Session, user_id: str) -> UsageStore | None:     
+        usage = db.query(UsageStore).filter_by(user_id=user_id).first()
         if not usage:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User usage not found")
         return usage    
     
     def fetch_by_id(self, db: Session, id: int):
-        usage = db.query(UserUsageStore).filter(UserUsageStore.id == id).one()
+        usage = db.query(UsageStore).filter(UsageStore.id == id).one()
         if not usage:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User usage not found")
         return usage
