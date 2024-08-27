@@ -16,6 +16,7 @@ from api.v1.schemas.project import (
     AddFullProjectSchema,
     CreateFullProjectSchema,
     ProjectCreateResponseSchema,
+    SaveProjectSchema,
     ToolStatsResponse,
 )
 from api.v1.services.project import project_service
@@ -200,6 +201,7 @@ async def get_single_project(id: str, db: Session = Depends(get_db)):
 @project_router.put("/{id}", response_model=success_response, status_code=200)
 async def save_project(
     id: str,
+    schema: SaveProjectSchema,
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user),
 ):
@@ -210,7 +212,12 @@ async def save_project(
     if project.user_id is not None:
         raise HTTPException(status_code=400, detail="Project is already saved")
 
-    project_service.add_user_to_project(db, project=project, user=current_user)
+    project_service.save_project(
+        db, 
+        project=project, 
+        user=current_user,
+        project_result=schema.result
+    )
 
     return success_response(
         data=jsonable_encoder(project),

@@ -30,6 +30,11 @@ class UpdateProjectSchema(BaseModel):
     result: Optional[str] = None
 
 
+class SaveProjectSchema(BaseModel):
+    
+    result: str
+
+
 class AddFullProjectSchema(CreateFullProjectSchema):
     pass
 
