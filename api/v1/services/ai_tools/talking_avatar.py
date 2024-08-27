@@ -1,6 +1,7 @@
 import os
 from typing import Optional
 from uuid import uuid4
+from api.utils.minio_service import minio_service
 from api.utils.settings import settings
 import json
 import os
@@ -96,11 +97,17 @@ class TalkingAvatarService:
 		delete_file(initial_save_path)
 		delete_file(audio)
 
+		save_url = minio_service.upload_to_minio(
+			bucket_name='videos',
+			source_file=final_save_path,
+			destination_file=f'tavtr-{str(uuid4())}.mp4'
+		)
+
 		# Compress video
 		low_quality = video_service.compress_video(input_file=final_save_path, bitrate=500)
 		medium_quality = video_service.compress_video(input_file=final_save_path, bitrate=1080)
 		
-		save_url = f'{settings.APP_URL}/{final_save_path}'
+		# save_url = f'{settings.APP_URL}/{final_save_path}'
 		return {
 			'app_url': save_url,
 			'source': url,
