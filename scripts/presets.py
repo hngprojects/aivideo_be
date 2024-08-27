@@ -66,6 +66,7 @@ def load_billing_plans_in_db():
         free_plan = BillingPlan(
             plan_name="Free",
             price=0,
+            access_limit=50,
             plan_interval='one-off',
             currency='USD',
             features=[
@@ -84,6 +85,7 @@ def load_billing_plans_in_db():
             plan_name="Premium Monthly",
             price=4.99,
             plan_interval='monthly',
+            access_limit=150,
             currency='USD',
             features=[
                 'Access to tools',
@@ -102,6 +104,7 @@ def load_billing_plans_in_db():
             plan_name="Premium Yearly",
             price=49.99,
             plan_interval='yearly',
+            access_limit=500,
             currency='USD',
             features=[
                 'Access to tools',
