@@ -6,7 +6,6 @@ from typing import Any, Optional
 from api.v1.services.user_subscription import user_subscription_service as user_sub_serviec
 from api.utils.db_validators import check_model_existence, get_model_by_params
 from api.v1.schemas.billing_plan import CreateBillingPlanSchema
-# from api.v1.models.user_subscription import UserSubscription
 from api.v1.models.billing_plan import BillingPlan
 from api.v1.models.user import User
 
@@ -83,12 +82,18 @@ class BillingPlanService:
     
     def subscribe_user_to_free_plan(self, db: Session, user: User):
         """Subscribe a user to free billing plan"""
+
         free_plan = self.fetch_by_params(db, {"plan_name": "Free"})
         if not free_plan:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Free billing plan not found. Please try again later"
             )
+        
+        # check if user is already on free subscription
+        user_sub = user_sub_serviec.fetch_by_user_and_plan(db, user.id, free_plan.id)
+        if user_sub:
+            return user_sub
         
         # create a user subscription plan
         start_date, end_date = user_sub_serviec.get_sub_start_and_end_datetime(0, 0, free_plan=True)
@@ -109,9 +114,9 @@ class BillingPlanService:
 
         user_sub = user_sub_serviec.fetch_by_user_and_plan(db, user.id, bill_plan.id)
         
-        if not user_sub:
-            # If noe existing subscription, put user on
-            # the free plan and check if `plan_name` is ""Free"
+        if user_sub is None:
+            # If no existing subscription, put user on the free 
+            # plan then check if `plan_name` being checked is "Free"
             _ = self.subscribe_user_to_free_plan(db, user)
 
             return plan_name == "Free"
