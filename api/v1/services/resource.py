@@ -27,6 +27,7 @@ class ResourceService(Service):
         if (
             schema.title.strip() == ""
             or schema.image_url.strip() == ""
+            or schema.cover_image_url.strip() == ""
             or schema.content.strip() == ""
         ):
             raise HTTPException(status_code=400, detail="Invalid request body")
@@ -163,8 +164,10 @@ class ResourceService(Service):
         # return resource if resource is not deleted
         if not resource.is_deleted:
             return resource
-        else :
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='No Such resource exists')
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="No Such resource exists"
+            )
 
     def get_resource_by_id(self, db: Session, id: str):
         """Fetches a resource by their id"""
@@ -223,17 +226,15 @@ class ResourceService(Service):
         resource.is_published = True
         db.commit()
 
-    def unpublish(self, db:Session, Resource_id: str):
-        """ Unpublish a Resource """
+    def unpublish(self, db: Session, Resource_id: str):
+        """Unpublish a Resource"""
 
         resource = check_model_existence(db, Resource, id=Resource_id)
 
         resource.is_published = False
         db.commit()
 
-    def search_resources(
-        self, db: Session, keywords: str, page: int, per_page: int
-    ):
+    def search_resources(self, db: Session, keywords: str, page: int, per_page: int):
         """Search resources by keywords
 
         Args:
@@ -250,7 +251,7 @@ class ResourceService(Service):
         query = db.query(Resource).filter(
             or_(
                 Resource.title.ilike(f"%{keywords}%"),
-                Resource.content.ilike(f"%{keywords}%")
+                Resource.content.ilike(f"%{keywords}%"),
             )
         )
 
