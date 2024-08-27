@@ -28,7 +28,7 @@ def override_get_db(db_session_mock):
 
 def test_status_code(db_session_mock, mock_send_email):
     db_session_mock.query(Newsletter).filter().first.return_value = None
-    billing_plan = BillingPlan(id=str(uuid7()),plan_name='Free', price='5.00',currency='dollars', features=['testfeature1', 'testfeature2'], access_limit=15)
+    billing_plan = BillingPlan(id=str(uuid7()),plan_name='Free', price='5.00',currency='dollars', features=['testfeature1', 'testfeature2'])
     db_session_mock.add.return_value = None
     db_session_mock.commit.return_value = None
 
@@ -47,7 +47,7 @@ def test_status_code(db_session_mock, mock_send_email):
 def test_user_fields(db_session_mock, mock_send_email):
 
     db_session_mock.query(Newsletter).filter().first.return_value = None
-    billing_plan = BillingPlan(id=str(uuid7()),plan_name='Free', price='5.00',currency='dollars', features=['testfeature1', 'testfeature2'], access_limit=15)
+    billing_plan = BillingPlan(id=str(uuid7()),plan_name='Free', price='5.00',currency='dollars', features=['testfeature1', 'testfeature2'])
     db_session_mock.add.return_value = None
     db_session_mock.commit.return_value = None
 
