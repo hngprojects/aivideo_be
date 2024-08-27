@@ -39,6 +39,7 @@ auth = APIRouter(prefix="/auth", tags=["Authentication"])
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+
 @auth.post(
     "/register",
     status_code=status.HTTP_201_CREATED,

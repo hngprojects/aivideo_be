@@ -23,8 +23,8 @@ from api.v1.routes import api_version_one
 from api.utils.settings import settings
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi.middleware import SlowAPIMiddleware
+from collections import defaultdict
 from slowapi.errors import RateLimitExceeded
-from api.v1.routes.audit import RequestCountMiddleware
 from scripts.presets import load_avatars_in_db, load_audio_in_db, load_billing_plans_in_db
 
 
@@ -41,7 +41,26 @@ app = FastAPI(
     title='Convey API'
 )
 
+# In-memory request counter by endpoint and IP address
+request_counter = defaultdict(lambda: defaultdict(int))
+
+# Middleware to track request counts and IP addresses
+class RequestCountMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        endpoint = request.url.path
+        ip_address = request.client.host
+        request_counter[endpoint][ip_address] += 1
+        response = await call_next(request)
+        return response
+
+
 app.add_middleware(RequestCountMiddleware)
+
+# Endpoint to get request stats
+@app.get("/request-stats", response_class=JSONResponse)
+async def get_request_stats():
+    return success_response(status_code=status.HTTP_200_OK, message="endpoints request retreived successfully", data={"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}})
+
 
 # Initialize the limiter
 limiter = Limiter(key_func=get_remote_address)
