@@ -198,7 +198,7 @@ async def get_single_project(id: str, db: Session = Depends(get_db)):
     )
 
 
-@project_router.put("/{id}", response_model=success_response, status_code=200)
+@project_router.put("/{id}/save", response_model=success_response, status_code=200)
 async def save_project(
     id: str,
     schema: SaveProjectSchema,

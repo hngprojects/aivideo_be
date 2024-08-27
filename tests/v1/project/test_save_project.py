@@ -63,7 +63,7 @@ def test_save_project_success(client, mocker, mock_project, mock_user):
 
     # Call the save_project endpoint
     response = client.put(
-        "/api/v1/projects/1", headers={"Authorization": "Bearer test_token"})
+        "/api/v1/projects/1/save", headers={"Authorization": "Bearer test_token"})
 
     # Assert the response and service calls
     assert response.status_code == 200
@@ -82,7 +82,11 @@ def test_save_project_already_saved(client, mocker, mock_project, mock_user):
 
     # Call the save_project endpoint
     response = client.put(
-        "/api/v1/projects/1", headers={"Authorization": "Bearer test_token"})
+        "/api/v1/projects/1/save", headers={"Authorization": "Bearer test_token"},
+        json={
+            "result": "test_result"
+        }
+    )
 
     # Assert the response and service calls
     assert response.status_code == 400
