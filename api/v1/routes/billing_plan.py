@@ -22,7 +22,7 @@ async def create_billing_plan(
     db: Session = Depends(get_db),
 ):
     """
-    Endpoint to create new billing plan by a `superadmin`
+    Endpoint to create new billing plan by a `superadmin`.
     """
 
     new_plan = bp_service.create(db=db, schema=billing_plan_schema)
