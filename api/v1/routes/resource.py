@@ -12,7 +12,7 @@ from api.v1.schemas.resource import (
     CreateResource,
     ResourceBase,
     AllResourcesResponse,
-    UpdateResource,
+    UpdateResource
 )
 import logging
 
@@ -210,4 +210,20 @@ async def publish_resource(
 
     return success_response(
         status_code=status.HTTP_200_OK, message="Resource successfully published!"
+    )
+
+@resource.put(
+    "/{resource_id}/unpublish",
+    status_code=status.HTTP_200_OK,
+    summary="Unpublish a resource",
+)
+async def unpublish_resource(
+    resource_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_admin: Annotated[User, Depends(user_service.get_current_super_admin)],
+):
+    resource_service.unpublish(db=db, Resource_id=resource_id)
+
+    return success_response(
+        status_code=status.HTTP_200_OK, message="Resource successfully unpublished!"
     )
