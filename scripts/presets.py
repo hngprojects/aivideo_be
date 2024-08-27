@@ -1,12 +1,11 @@
 import os
 from pathlib import Path
+from uuid_extensions import uuid7
 
 from api.utils.settings import settings
 from api.db.database import get_db
 from api.v1.models.presets import Avatar, BackgroundMusic
 from api.v1.models.billing_plan import BillingPlan
-from api.v1.services.billing_plan import billing_plan_service
-from api.v1.schemas.billing_plan import CreateBillingPlanSchema
 
 db = next(get_db())
 
@@ -91,10 +90,8 @@ def load_billing_plans_in_db():
     ]
 
     for plan_data in plans:
-        # if not db.query(BillingPlan).filter(BillingPlan.plan_name==plan_data["plan_name"]).first():
-        #     plan = BillingPlan(**plan_data)
-        #     db.add(plan)
-        #     db.commit()
-        if not billing_plan_service.fetch_by_params(db, {'plan_name': plan_data["plan_name"]}):
-            _ = billing_plan_service.create(db, CreateBillingPlanSchema(**plan_data))
+        if not db.query(BillingPlan).filter(BillingPlan.plan_name==plan_data["plan_name"]).first():
+            plan = BillingPlan(id=str(uuid7()), **plan_data)
+            db.add(plan)
+            db.commit()
 

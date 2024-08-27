@@ -37,11 +37,13 @@ class UserSubscriptionService:
         return user_sub
 
     def fetch_by_user_and_plan(self, db: Session, user_id: str, billing_plan_id: str):
-        """Fetches a user subscription by user_id and billing_plan_id"""
+        """Fetches user subscription by user_id and billing_plan_id"""
+
         user_sub = db.query(UserSubscription).filter(
-            UserSubscription.user_id == user_id, 
+            UserSubscription.user_id == user_id,
             UserSubscription.billing_plan_id == billing_plan_id
             ).first()
+        
         return user_sub
 
     def fetch_all(self, db: Session, offset: int = 0, limit: int = 0, **query_params: Optional[Any]):
