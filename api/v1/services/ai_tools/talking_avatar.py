@@ -36,6 +36,9 @@ class TalkingAvatarService:
 		Returns:
 			str: A string json for the save url and the source of the video
 		"""
+		
+
+		
 
 		audio = video_service.generate_audio_from_script(script=script, voice_over=voice_over)
 		files = [
@@ -44,14 +47,25 @@ class TalkingAvatarService:
 		]
 		payload = {
 			"functions": None,
-			"variables": None,
+			"variables": {},
 			"face_padding_top": 0,
 			"face_padding_bottom": 18,
 			"face_padding_left": 0,
 			"face_padding_right": 0,
-			"sadtalker_settings": None,
-			"selected_model": "Wav2Lip",
+			"sadtalker_settings": {
+				"still": True,
+				"ref_pose": None,
+				"input_yaw": None,
+				"input_roll": None,
+				"pose_style": 0,
+				"preprocess": "resize",
+				"input_pitch": None,
+				"ref_eyeblink": None,
+				"expression_scale": 1,
+			},
+			"selected_model": "SadTalker",
 		}
+
 		response = requests.post(
 			"https://api.gooey.ai/v2/Lipsync/form/",
 			headers={
