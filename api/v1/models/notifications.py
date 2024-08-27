@@ -8,8 +8,8 @@ class Notification(BaseTableModel):
 
     title = Column(String, nullable=False)
     message = Column(Text, nullable=False)
-    status = Column(Enum('read', 'unread', name='notification_status'), server_default='unread')
-    notification_type = Column(Enum('warning', 'info', 'success', name='notification_type'), server_default='success')
+    status = Column(Enum('read', 'unread', name='notification_status_name'), server_default='unread')
+    notification_type = Column(Enum('warning', 'info', 'success', name='notification_type_name'), server_default='success')
     receiver_id = Column(String, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
 
     user = relationship('User', back_populates='notifications')

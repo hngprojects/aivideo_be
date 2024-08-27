@@ -15,7 +15,7 @@ class Payment(BaseTableModel):
     transaction_id = Column(String, unique=True, nullable=False, default=generate_transaction_id)
     amount = Column(Numeric, nullable=False)
     currency = Column(String, nullable=False)
-    status = Column(Enum('pending', 'completed', 'canceled', name='payment_status'), nullable=False, server_default='pending')
+    status = Column(Enum('pending', 'completed', 'canceled', name='payment_status_name'), nullable=False, server_default='pending')
     method = Column(String, nullable=False)  # credit card, paypal, stripe, flutterwave
 
     user = relationship("User", back_populates="payments")
