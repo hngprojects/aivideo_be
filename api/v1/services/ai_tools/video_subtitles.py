@@ -1,18 +1,18 @@
-import logging
+from typing import List, Dict, Any
+import tempfile
+from pydub import AudioSegment
 import subprocess
 import os
 import uuid
 from api.utils.settings import settings
-from datetime import timedelta
-from typing import List, Dict, Optional
 from deep_translator import GoogleTranslator
-import ffmpeg
 from api.utils.files import delete_file
 from openai import OpenAI
 import time
 
 # Initialize OpenAI client
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
 
 def convert_video_to_audio(video_path: str) -> str:
     """
@@ -42,12 +42,14 @@ def convert_video_to_audio(video_path: str) -> str:
             "-y"  # Overwrite output files without asking
         ]
 
-        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        subprocess.run(command, check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
         return audio_path
 
     except subprocess.CalledProcessError as e:
         raise Exception(f"Error converting video to audio: {e}")
+
 
 def transcribe_audio(file_path: str, srt_format: bool = False) -> dict:
     """
@@ -73,9 +75,9 @@ def transcribe_audio(file_path: str, srt_format: bool = False) -> dict:
 
             segments = transcript.segments
             detected_language = transcript.language
-            
             if not segments:
-                raise Exception("No transcription segments received from OpenAI Whisper API.")
+                raise Exception(
+                    "No transcription segments received from OpenAI Whisper API.")
 
             if srt_format:
                 srt_content = generate_srt_subtitles(segments)
@@ -88,7 +90,21 @@ def transcribe_audio(file_path: str, srt_format: bool = False) -> dict:
 
     except Exception as e:
         raise Exception(f"Error during transcription: {e}")
-    
+
+
+def save_subtitles_to_file(subtitles: str, file_path: str) -> None:
+    """Saves subtitles to a file.
+
+    Args:
+        subtitles (str): The subtitle content to be saved.
+        file_path (str): The path where the subtitle file should be saved.
+    """
+    try:
+        with open(file_path, 'w') as file:
+            file.write(subtitles)
+    except Exception as e:
+        raise Exception(f"Error saving subtitles to file: {str(e)}")
+
 
 def translate_text(text: str, target_language: str) -> str:
     """Translate text using Deep Translator with Google Translator"""
@@ -120,6 +136,7 @@ def generate_srt_subtitles(transcription_segments: list) -> str:
         srt_entries.append(srt_entry)
 
     return "\n".join(srt_entries)
+
 
 def format_timestamp(seconds: float) -> str:
     """
@@ -202,3 +219,71 @@ def generate_subtitles(video_path: str) -> dict:
 
     except Exception as e:
         raise Exception(f"Error generating subtitles: {e}")
+
+
+def transcribe_audio_segments(file_path: str, max_segment_size: int = 24 * 1024 * 1024) -> List[Dict[str, Any]]:
+    """
+    Transcribe audio using OpenAI Whisper API, splitting the audio into segments based on file size.
+
+    Args:
+        file_path (str): Path to the audio file.
+        max_segment_size (int): Maximum size of each segment in bytes (default: 24MB)
+
+    Returns:
+        List[Dict[str, Any]]: List of transcription segments with text and timestamps.
+
+    Raises:
+        Exception: If transcription fails.
+    """
+    try:
+        # Load the audio file
+        audio = AudioSegment.from_file(file_path)
+
+        # Initialize variables
+        all_segments = []
+        total_duration = len(audio)
+        start = 0
+
+        while start < total_duration:
+            end = start + 60000  # Start with a 1-minute segment
+            segment = audio[start:end]
+
+            # Adjust segment length to fit within size limit
+            while len(segment.export(format="mp3").read()) > max_segment_size:
+                end -= 1000  # Reduce by 1 second and try again
+                segment = audio[start:end]
+
+            # Save segment to a temporary file
+            with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
+                segment.export(temp_file.name, format="mp3")
+                temp_file_path = temp_file.name
+
+            # Transcribe the segment
+            with open(temp_file_path, "rb") as audio_file:
+                transcript = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    response_format="verbose_json",
+                    language="en"
+                )
+
+            # Adjust timestamps and add to all_segments
+            for seg in transcript.segments:
+                seg['start'] += start / 1000.0  # Convert to seconds
+                seg['end'] += start / 1000.0
+                all_segments.append(seg)
+
+            # Clean up temporary file
+            os.unlink(temp_file_path)
+
+            # Move to next segment
+            start = end
+
+        if not all_segments:
+            raise Exception(
+                "No transcription segments received from OpenAI Whisper API.")
+
+        return all_segments
+
+    except Exception as e:
+        raise Exception(f"Error during transcription: {str(e)}")
