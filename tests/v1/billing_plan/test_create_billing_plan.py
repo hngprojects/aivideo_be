@@ -73,7 +73,6 @@ def make_request(token):
     data = {
         "plan_name": "one",
         "price": 5000,
-        "access_limit": 100,
         "plan_interval": "monthly",
         "currency": "NGN",
         "features": [
@@ -98,7 +97,7 @@ def test_create_billing_plan_successful(
 ):
     mock_uuid7.return_value = test_billing_plan.id
     mock_db_session.query().filter().first.return_value = test_user
-    
+    mock_billing_plan_service.create.return_value = test_billing_plan
 
     resp = make_request(access_token_user)
     resp_d = resp.json()
