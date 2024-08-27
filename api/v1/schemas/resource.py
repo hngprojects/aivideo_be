@@ -14,6 +14,7 @@ class CreateResource(BaseModel):
     title: str
     content: str
     image_url: str
+    cover_image_url: str
     tags: List[str]
 
 
@@ -41,6 +42,7 @@ class UpdateResource(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     image_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
     tags: Optional[List[str]] = None
 
 class CreateResourceResponse(SuccessResponse):
