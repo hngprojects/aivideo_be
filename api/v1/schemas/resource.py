@@ -3,12 +3,18 @@ from typing import Optional, Union, List
 from pydantic import BaseModel
 
 
+class SuccessResponse(BaseModel):
+    status: str = "success"
+    status_code: int = 201
+    message: str
+
 class CreateResource(BaseModel):
     """Schema for creating Resource"""
 
     title: str
     content: str
     image_url: str
+    tags: List[str]
 
 
 class ResourceBase(CreateResource):
@@ -25,8 +31,8 @@ class ResourceBase(CreateResource):
 class ResourceData(ResourceBase):
     """Data schema for resources"""
 
-    is_deleted: bool
-    is_published: bool
+    is_deleted: bool = False
+    is_published: bool = False
 
 
 class UpdateResource(BaseModel):
@@ -35,6 +41,10 @@ class UpdateResource(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     image_url: Optional[str] = None
+    tags: Optional[List[str]] = None
+
+class CreateResourceResponse(SuccessResponse):
+    data: ResourceData
 
 
 class AllResourcesResponse(BaseModel):

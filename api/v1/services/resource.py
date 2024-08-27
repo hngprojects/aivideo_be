@@ -32,7 +32,6 @@ class ResourceService(Service):
             raise HTTPException(status_code=400, detail="Invalid request body")
 
         new_resource = Resource(**schema.model_dump())
-        new_resource.is_published = True
         db.add(new_resource)
         db.commit()
         db.refresh(new_resource)
@@ -199,7 +198,7 @@ class ResourceService(Service):
         return resource
 
     def delete(self, db: Session, Resource_id: str) -> bool:
-        """Deletes an Resource
+        """Deletes a Resource
 
         Args:
             db (Session)

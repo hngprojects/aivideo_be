@@ -19,6 +19,7 @@ def mock_resource():
         title="TTest title?",
         content="TAnswer",
         image_url="random.com",
+        tags=["test"],
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
     )
@@ -40,6 +41,7 @@ test_resource_req_body = {
     "title": "TTest title?",
     "content": "TAnswer",
     "image_url": "random.com",
+    "tags": ["test"]
 }
 
 

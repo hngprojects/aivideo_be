@@ -12,7 +12,8 @@ from api.v1.schemas.resource import (
     CreateResource,
     ResourceBase,
     AllResourcesResponse,
-    UpdateResource
+    UpdateResource,
+    CreateResourceResponse,
 )
 import logging
 
@@ -20,13 +21,19 @@ import logging
 resource = APIRouter(prefix="/resources", tags=["Resources"])
 
 
-@resource.post("", response_model=success_response, status_code=201)
+@resource.post(
+    "",
+    response_model=CreateResourceResponse,
+    status_code=201,
+    summary="Create new resources",
+    description="Admin endpoint to create a new resource",
+)
 async def create_resource(
     schema: CreateResource,
     db: Session = Depends(get_db),
     current_admin: User = Depends(user_service.get_current_super_admin),
 ):
-    """Endpoint to create a new Resource. Only accessible to superadmins
+    """Endpoint to create a new Resource. Only accessible to superadmins"
 
     Args:
         schema (CreateResource): Request Body for creating resource
@@ -92,7 +99,10 @@ async def get_public_resources(
 
     return resource_service.fetch_all_public(db, page, per_page)
 
-@resource.get("/search", status_code=status.HTTP_200_OK, response_model=AllResourcesResponse)
+
+@resource.get(
+    "/search", status_code=status.HTTP_200_OK, response_model=AllResourcesResponse
+)
 async def search_resources(
     keywords: str,
     db: Session = Depends(get_db),
@@ -107,20 +117,23 @@ async def search_resources(
         db: Database session object.
         page: Page number for pagination.
         per_page: Max number of resources per page.
-    
+
     Returns:
         Search results in a paginated format.
     """
     search_results = resource_service.search_resources(db, keywords, page, per_page)
     return search_results
 
-@resource.patch('/{resource_id}',response_model=success_response, status_code=status.HTTP_200_OK)
+
+@resource.patch(
+    "/{resource_id}", response_model=success_response, status_code=status.HTTP_200_OK
+)
 async def update_resources(
     schema: UpdateResource,
-    resource_id : str,
+    resource_id: str,
     db: Annotated[Session, Depends(get_db)],
-    current_user : Annotated[User, Depends(user_service.get_current_super_admin)],
-    ):
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+):
     """
     Route to Update resources
 
@@ -139,16 +152,17 @@ async def update_resources(
     resource = resource_service.update(db=db, resource_id=resource_id, schema=schema)
     return success_response(
         status_code=status.HTTP_200_OK,
-        message='Resource updated Succesfully',
-        data = jsonable_encoder(ResourceBase.model_validate(resource))
+        message="Resource updated Succesfully",
+        data=jsonable_encoder(ResourceBase.model_validate(resource)),
     )
 
-@resource.delete('/{resource_id}', status_code=status.HTTP_204_NO_CONTENT)
+
+@resource.delete("/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_resources(
-    resource_id : str,
-    db : Annotated[Session, Depends(get_db)],
-    current_user : Annotated[User, Depends(user_service.get_current_super_admin)]
-    ) :
+    resource_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+):
     """
     Route to soft  delete Resources
 
@@ -159,22 +173,22 @@ async def delete_resources(
     """
     return resource_service.delete(db=db, Resource_id=resource_id)
 
-@resource.get('/{resource_id}', status_code=status.HTTP_200_OK, response_model=success_response)
-async def get_resource_by_id(
-    resource_id : str,
-    db : Annotated[Session, Depends(get_db)]
-) :
+
+@resource.get(
+    "/{resource_id}", status_code=status.HTTP_200_OK, response_model=success_response
+)
+async def get_resource_by_id(resource_id: str, db: Annotated[Session, Depends(get_db)]):
     """
-    Route to get resource by its id 
+    Route to get resource by its id
 
     Args:
         resource_id (str):the identifier of the resource to query
         db (Annotated[Session, Depends): database dependency
     """
-    
-    resource = resource_service.fetch(db=db , id=resource_id)
+
+    resource = resource_service.fetch(db=db, id=resource_id)
     return success_response(
         status_code=status.HTTP_200_OK,
-        message='Resource fetched successfully',\
-        data=jsonable_encoder(resource)
+        message="Resource fetched successfully",
+        data=jsonable_encoder(resource),
     )
