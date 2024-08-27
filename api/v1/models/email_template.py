@@ -8,4 +8,4 @@ class EmailTemplate(BaseTableModel):
     title = Column(Text, nullable=False)
     template = Column(Text, nullable=False)
     type = Column(String, nullable=False)
-    template_status = Column(Enum('online', 'offline', name='template_status_name'), server_default='online')
+    template_status = Column(Enum('online', 'offline', name='template_status'), server_default='online')
