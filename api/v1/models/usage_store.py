@@ -29,7 +29,7 @@ class UsageStore(BaseTableModel):
     
     tool_accesses = relationship('ToolAccess', back_populates='usage_store')
 
-class UserUsageStore(BaseTableModel):
+class UsageStore(BaseTableModel):
     __tablename__ = "user_usage_store"
     
     user_id = Column(String, ForeignKey('users.id', ondelete="CASCADE"))

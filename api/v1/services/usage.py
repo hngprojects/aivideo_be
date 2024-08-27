@@ -1,32 +1,64 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException, status
 
-from api.v1.models.usage_store import UsageStore
-
+from api.v1.models.usage_store import UsageStore, ToolAccess
 class UsageStoreService:
     
-    def fetch(self, db: Session, usage_id: str) -> UsageStore | None:     
-        usage = db.query(UsageStore).filter_by(id=usage_id).first()
-        return usage
-    def get_tools_usage_by_id(self, db: Session, id: int):
+    def create_tool_access(db: Session, usage_store_id: int, tool_name: str, access_count: int) -> ToolAccess:
+        """
+        Creates a new ToolAccess record in the database.
+
+        :param db: SQLAlchemy session
+        :param usage_store_id: The ID of the related UsageStore
+        :param tool_name: The name of the tool
+        :param access_count: The access count for the tool
+        :return: The created ToolAccess record
+        """
+        new_tool_access = ToolAccess(
+            usage_store_id=usage_store_id,
+            tool_name=tool_name,
+            access_count=access_count
+        )
+        
         try:
-            return db.query(UsageStore).filter(UsageStore.id == id).one()
-        except NoResultFound:
-            return None
+            db.add(new_tool_access)
+            db.commit()
+            db.refresh(new_tool_access)
+            return new_tool_access
+        except IntegrityError as e:
+            db.rollback()
+            print(f"Integrity error: {e}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+        except Exception as e:
+            db.rollback()
+            print(f"An error occurred: {e}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+    def fetch_by_user(self, db: Session, user_id: str) -> UsageStore | None:     
+        usage = db.query(UsageStore).filter_by(user_id=user_id).first()
+        if not usage:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User usage not found")
+        return usage    
+    
+    def fetch_by_id(self, db: Session, id: int):
+        usage = db.query(UsageStore).filter(UsageStore.id == id).one()
+        if not usage:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User usage not found")
+        return usage
 
     def update_tool_usage(self, db: Session, id: int, tool_name: str, value: int):
-        tools_usage = self.get_tools_usage_by_id(db, id)
+        tools_usage = self.fetch_by_id(db, id)
         if tools_usage is None:
-            raise ValueError("ToolsUsage record not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND ,detail="Tool Usage record not found")
 
         # Update the dictionary
-        tools = tools_usage.tools_accessed.copy()
-        tools[tool_name] = value        
-        tools_usage.tools_accessed = tools
-        db.add(tools_usage)
+        tool: ToolAccess  = next((tool for tool in tools_usage.tool_accesses if tool.tool_name == tool_name), None)
+        tool.access_count = value        
         db.commit()
-        return tools_usage
-
+        return tool
 
     def get_tool_value(self, db: Session, id: int, tool_name: str):
         """
@@ -39,11 +71,11 @@ class UsageStoreService:
         """
         tools_usage = self.get_tools_usage_by_id(db, id)
         if tools_usage is None:
-            raise ValueError("ToolsUsage record not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND ,detail="Tool Usage record not found")
 
         # Retrieve the tool value from the dictionary
-        tools = tools_usage.tools_accessed
-        return tools.get(tool_name, None)
+        tool: ToolAccess  = next((tool for tool in tools_usage.tool_accesses if tool.tool_name == tool_name), None)
+        return tool.access_count
     
     def get_or_create_tool_value(self, db: Session, id: int, tool_name: str):
         """
@@ -60,21 +92,20 @@ class UsageStoreService:
             raise ValueError("ToolsUsage record not found")
 
         # Retrieve the dictionary
-        tools = tools_usage.tools_accessed
+        tool: ToolAccess  = [tool.tool_name for tool in tools_usage.tool_accesses]
+
         # Check if the tool exists in the dictionary
-        if tool_name in tools:
-            value = tools[tool_name]
-            print(tools, "opopo")
+        if tool_name in tool:
+            value = tool.access_count
         else:
             # Tool does not exist, create it with a default value of 0
-            tools[tool_name] = 0
-            value = 0
-
-        # Update the record and commit changes
-        tools_usage.tools_accessed = tools
-        db.commit()
+            value = self.create_tool_access(
+                db,
+                id,
+                tool_name,
+                0
+            )
 
         return value
-
 
 usage_store_service = UsageStoreService()
