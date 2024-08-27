@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
-from uuid_extensions import uuid7
+from fastapi import HTTPException
+from api.v1.models.billing_plan import BillingPlan
 
 from api.utils.settings import settings
 from api.db.database import get_db
@@ -58,39 +59,72 @@ def load_audio_in_db():
                 db.refresh(audio)
 
 
-# def load_billing_plans_in_db():
-#     '''Function to load all billing plan presets in the database'''
 
-#     plans = [
-#         {
-#             "plan_name": "Free",
-#             "price": 0.00,
-#             "plan_interval": "monthly",
-#             "currency": "USD",
-#             "features": ["Basic support", "Access to community"],
-#             "access_limit": 30
-#         },
-#         {
-#             "plan_name": "Basic",
-#             "price": 9.99,
-#             "plan_interval": "monthly",
-#             "currency": "USD",
-#             "features": ["Email support", "Access to all features", "Basic analytics"],
-#             "access_limit": 100
-#         },
-#         {
-#             "plan_name": "Pro",
-#             "price": 29.99,
-#             "plan_interval": "monthly",
-#             "currency": "USD",
-#             "features": ["Priority support", "Access to all features", "Advanced analytics", "Custom reporting"],
-#             "access_limit": 300
-#         }
-#     ]
+def load_billing_plans_in_db():
 
-#     for plan_data in plans:
-#         if not db.query(BillingPlan).filter(BillingPlan.plan_name==plan_data["plan_name"]).first():
-#             plan = BillingPlan(**plan_data)
-#             db.add(plan)
-#             db.commit()
+    try:
+        free_plan = BillingPlan(
+            plan_name="Free",
+            price=0,
+            plan_interval='one-off',
+            currency='USD',
+            features=[
+                'Access to tools',
+                'Text to Video',
+                'Image to Video',
+                'Talking Avatar Generator',
+                'Youtube Summarizer',
+                'Podcast Summarizer',
+                'Limited Processing',
+                'Watermark on videos'
+            ]
+        )
 
+        premium_monthly_plan = BillingPlan(
+            plan_name="Premium Monthly",
+            price=4.99,
+            plan_interval='monthly',
+            currency='USD',
+            features=[
+                'Access to tools',
+                'Text to Video',
+                'Image to Video',
+                'Talking Avatar Generator',
+                'Youtube Summarizer',
+                'Podcast Summarizer',
+                'Watermark free videos',
+                'Early access to new features',
+                'Early access to future tools'
+            ]
+        )
+
+        premium_yearly_plan = BillingPlan(
+            plan_name="Premium Yearly",
+            price=49.99,
+            plan_interval='yearly',
+            currency='USD',
+            features=[
+                'Access to tools',
+                'Text to Video',
+                'Image to Video',
+                'Talking Avatar Generator',
+                'Youtube Summarizer',
+                'Podcast Summarizer',
+                'Watermark free videos',
+                'Early access to new features',
+                'Early access to future tools',
+                'Save 15% compared to monthly'
+            ]
+        )
+
+        db.add(free_plan)
+        db.add(premium_monthly_plan)
+        db.add(premium_yearly_plan)
+        db.commit()
+
+        return db.query(BillingPlan).all()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+    finally:
+        db.close()

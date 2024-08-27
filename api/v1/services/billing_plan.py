@@ -9,7 +9,7 @@ from api.utils.db_validators import check_model_existence, get_model_by_params
 from api.v1.schemas.billing_plan import CreateBillingPlanSchema
 from api.v1.models.billing_plan import BillingPlan
 from api.v1.models.user import User
-
+from scripts.presets import load_billing_plans_in_db
 
 class BillingPlanService:
     """Product service functionality"""
@@ -56,7 +56,9 @@ class BillingPlanService:
                     )
         
         all_plans = query.all()
-
+        if len(all_plans) == 0:
+            all_plans = load_billing_plans_in_db()
+            
         return all_plans
 
     def update(self, db: Session, plan_id: str, schema):
