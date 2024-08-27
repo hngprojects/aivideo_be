@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The Blog Post Model."""
 
-from sqlalchemy import Column, String, Boolean
+from sqlalchemy import Column, String, Boolean, ARRAY
 from api.v1.models.base_model import BaseTableModel
 
 
@@ -13,3 +13,4 @@ class Resource(BaseTableModel):
     image_url = Column(String)
     is_deleted = Column(Boolean, server_default="false")
     is_published = Column(Boolean, server_default="false")
+    tags = Column(ARRAY(String))
