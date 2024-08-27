@@ -13,8 +13,6 @@ from api.v1.schemas.resource import (
     ResourceBase,
     AllResourcesResponse,
     UpdateResource,
-    CreateResourceResponse,
-    SuccessResponse,
 )
 import logging
 
@@ -104,14 +102,7 @@ async def get_public_resources(
         ResourceData
     """
 
-    return resource_service.fetch_all(
-        db=db,
-        page=page,
-        per_page=per_page,
-        search=search,
-        is_published=True,
-        is_deleted=False,
-    )
+    return resource_service.fetch_all_public(db, page, per_page)
 
 
 @resource.get(
@@ -131,7 +122,6 @@ async def search_resources(
         db: Database session object.
         page: Page number for pagination.
         per_page: Max number of resources per page.
-
 
     Returns:
         Search results in a paginated format.
@@ -202,6 +192,8 @@ async def get_resource_by_id(resource_id: str, db: Annotated[Session, Depends(ge
     """
 
     resource = resource_service.fetch(db=db, id=resource_id)
+
+    resource = resource_service.fetch(db=db, id=resource_id)
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Resource fetched successfully",
@@ -213,7 +205,6 @@ async def get_resource_by_id(resource_id: str, db: Annotated[Session, Depends(ge
     "/{resource_id}/publish",
     status_code=status.HTTP_200_OK,
     summary="Publish a resource",
-    response_model=SuccessResponse,
 )
 async def publish_resource(
     resource_id: str,
@@ -224,21 +215,4 @@ async def publish_resource(
 
     return success_response(
         status_code=status.HTTP_200_OK, message="Resource successfully published!"
-    )
-
-@resource.put(
-    "/{resource_id}/unpublish",
-    status_code=status.HTTP_200_OK,
-    summary="Unpublish a resource",
-    response_model=SuccessResponse,
-)
-async def unpublish_resource(
-    resource_id: str,
-    db: Annotated[Session, Depends(get_db)],
-    current_admin: Annotated[User, Depends(user_service.get_current_super_admin)],
-):
-    resource_service.unpublish(db=db, Resource_id=resource_id)
-
-    return success_response(
-        status_code=status.HTTP_200_OK, message="Resource successfully unpublished!"
     )
