@@ -31,7 +31,7 @@ from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.v1.schemas.request_password_reset import RequestEmail
 from api.v1.services.request_pwd import reset_service as magic_link_service
-from main import Limiter
+from slowapi import Limiter
 
 
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
