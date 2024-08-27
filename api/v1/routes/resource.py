@@ -14,6 +14,7 @@ from api.v1.schemas.resource import (
     AllResourcesResponse,
     UpdateResource,
     CreateResourceResponse,
+    SuccessResponse
 )
 import logging
 
@@ -192,6 +193,7 @@ async def get_resource_by_id(resource_id: str, db: Annotated[Session, Depends(ge
     "/{resource_id}/publish",
     status_code=status.HTTP_200_OK,
     summary="Publish a resource",
+    response_model=SuccessResponse
 )
 async def publish_resource(
     resource_id: str,
@@ -209,6 +211,7 @@ async def publish_resource(
     "/{resource_id}/unpublish",
     status_code=status.HTTP_200_OK,
     summary="Unpublish a resource",
+    response_model=SuccessResponse
 )
 async def unpublish_resource(
     resource_id: str,
