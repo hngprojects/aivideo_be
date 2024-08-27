@@ -25,7 +25,6 @@ def track_tool_usage(
     if user:
         tracking_record = user_usage_store_service.fetch_by_user(db, user.id)
         if tracking_record:
-            tracking_record.last_accessed = now
             tracking_record.tool_access_count += 1
             tool_count = user_usage_store_service.get_or_create_tool_value(
                 db,
@@ -35,7 +34,7 @@ def track_tool_usage(
             if tool_count > ACCESS_LIMIT:
                 raise HTTPException(
                     status_code=429,
-                    detail="Too many requests, Please upgrade you plan to get more access or wait for tomorrow.",
+                    detail="Please upgrade you plan to get more access",
                 )
             else:
                 user_usage_store_service.update_tool_usage(
@@ -45,16 +44,13 @@ def track_tool_usage(
                     tool_count + 1
                 )
         else:
-            # Create a new record for the IP
-            tracking_record = UsageStore(
-                user_id=user.id,
-                tool_access_count=1,
-                last_accessed=now,
-                tools_accessed={current_tool: 1}
+            # Create a new record for the user
+            tracking_record = user_usage_store_service.create_usage_store_and_assign_tool(
+                db,
+                client_ip,
+                current_tool,
+                1,1
             )
-
-            db.add(tracking_record)
-            db.commit()
 
         return user
     
@@ -73,6 +69,9 @@ def track_tool_usage(
                 status_code=429,
                 detail="Too many requests, please log in to continue using this tool.",
             )
+        else:
+            tracking_record.tools_accessed = tracking_record.tools_accessed + [current_tool]                
+
         else:
             # Create a new record for the IP
             usage_store_service.create_usage_store_and_assign_tool(

@@ -37,16 +37,16 @@ class UsageStoreService:
             print(f"An error occurred: {e}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-    def fetch_by_user(self, db: Session, user_id: str) -> UsageStore | None:     
-        usage = db.query(UsageStore).filter_by(user_id=user_id).first()
+    def fetch_by_user(self, db: Session, ip_address: str) -> UsageStore | None:     
+        usage = db.query(UsageStore).filter_by(ip_address=ip_address).first()
         if not usage:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User usage not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Visitor usage not found")
         return usage    
     
     def fetch_by_id(self, db: Session, id: int):
         usage = db.query(UsageStore).filter(UsageStore.id == id).one()
         if not usage:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User usage not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Visitor usage not found")
         return usage
 
     def update_tool_usage(self, db: Session, id: int, tool_name: str, value: int):
@@ -99,13 +99,46 @@ class UsageStoreService:
             value = tool.access_count
         else:
             # Tool does not exist, create it with a default value of 0
-            value = self.create_tool_access(
+            new_tool = self.create_tool_access(
                 db,
                 id,
                 tool_name,
                 0
             )
+            value = new_tool.access_count
 
         return value
+
+    def create_usage_store_and_assign_tool(db: Session, ip_address: str, tool_name: str, access_count: int, tool_access_count: int) -> UsageStore:
+        """
+        Create a new UsageStore record and assign a ToolAccess to it.
+
+        :param db: SQLAlchemy session
+        :param tool_name: The name of the tool to assign
+        :param access_count: The initial access count for the tool
+        :return: The created UsageStore record
+        """
+        # Create a new UsageStore instance
+        new_usage_store =  UsageStore(
+            ip_address=ip_address,
+            tool_access_count=access_count,
+        )
+        
+        # Add the UsageStore record to the session
+        db.add(new_usage_store)
+        db.commit()  # Commit to generate the ID for the UsageStore
+        
+        # Create a new ToolAccess instance
+        new_tool_access = ToolAccess(
+            usage_store_id=new_usage_store.id,
+            tool_name=tool_name,
+            access_count=tool_access_count
+        )
+        
+        # Add the ToolAccess record to the session
+        db.add(new_tool_access)
+        db.commit()  # Commit the ToolAccess record
+        
+        return new_usage_store
 
 usage_store_service = UsageStoreService()
