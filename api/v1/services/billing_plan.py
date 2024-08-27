@@ -2,8 +2,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from uuid_extensions import uuid7
 from typing import Any, Optional
+import math
 
-from api.v1.services.user_subscription import user_subscription_service as user_sub_serviec
+from api.v1.services.user_subscription import user_subscription_service as user_sub_service
 from api.utils.db_validators import check_model_existence, get_model_by_params
 from api.v1.schemas.billing_plan import CreateBillingPlanSchema
 from api.v1.models.billing_plan import BillingPlan
@@ -12,6 +13,8 @@ from api.v1.models.user import User
 
 class BillingPlanService:
     """Product service functionality"""
+
+    YEARLY_PAYMENT_DISCOINT_PERCENT = 15
 
     def create(self, db: Session, schema: CreateBillingPlanSchema):
         """
@@ -81,7 +84,8 @@ class BillingPlanService:
         db.commit()
     
     def subscribe_user_to_free_plan(self, db: Session, user: User):
-        """Subscribe a user to free billing plan"""
+        """Subscribe a user to free billing plan irrespective 
+        of the plan they are currently on"""
 
         free_plan = self.fetch_by_params(db, {"plan_name": "Free"})
         if not free_plan:
@@ -89,30 +93,28 @@ class BillingPlanService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Free billing plan not found. Please try again later"
             )
-        
+
         # check if user is already on free subscription
-        user_sub = user_sub_serviec.fetch_by_user_and_plan(db, user.id, free_plan.id)
-        if user_sub:
+        user_sub = user.subscription
+        if user_sub == free_plan:
             return user_sub
         
         # create a user subscription plan
-        start_date, end_date = user_sub_serviec.get_sub_start_and_end_datetime(0, 0, free_plan=True)
+        start_date, end_date = user_sub_service.get_sub_start_and_end_datetime(0, 0, free_plan=True)
         user_subscription_data = {
             "user_id": user.id,
             "end_date": end_date,
             "start_date": start_date,
             "billing_plan_id": free_plan.id,
         }
-        user_sub = user_sub_serviec.create(db, user_subscription_data)
+        user_sub = user_sub_service.create(db, user_subscription_data)
 
         return user_sub
     
-    def confirm_user_is_on_plan(self, db: Session, user: User, plan_name: str):
+    def confirm_user_is_on_plan(self, db: Session, user: User, plan_name: str) -> bool:
         """Confirm that `user` is subscribed to billing plan with `plan_name`"""
 
-        bill_plan = self.fetch_by_params(db, {"plan_name": plan_name})
-
-        user_sub = user_sub_serviec.fetch_by_user_and_plan(db, user.id, bill_plan.id)
+        user_sub = user.subscription
         
         if user_sub is None:
             # If no existing subscription, put user on the free 
@@ -122,6 +124,29 @@ class BillingPlanService:
             return plan_name == "Free"
         
         return user_sub.billing_plan.plan_name == plan_name
+    
+    def dynamic_billing_plan_dict(self, bill_plan: BillingPlan):
+        """Return `BillingPlan.to_dict()` with extra dynamic details, 
+        eg: `'yearly_discount_percent'`, `'yearly_total'`, etc
+        """
+        yearly_discount_percent = 0
+        year_total = bill_plan.price
+        if year_total:
+            # get the 99.99 effect, instead of hardcoding it
+            year_total = math.ceil(bill_plan.price * 10) - 0.01
+
+            # reset percentage for plans other that free plan
+            yearly_discount_percent = self.YEARLY_PAYMENT_DISCOINT_PERCENT
+
+        user_sub_dict = {
+            **bill_plan.to_dict(),
+            "yearly_total": year_total,
+            "yearly_original": bill_plan.price * 12,
+            "yearly_discount_percent": yearly_discount_percent
+        }
+
+        return user_sub_dict
+
 
 
 billing_plan_service = BillingPlanService()
