@@ -97,7 +97,7 @@ def test_create_billing_plan_successful(
     mock_billing_plan_service
 ):
     mock_uuid7.return_value = test_billing_plan.id
-    mock_db_session.query().filter().first.return_value = test_user
+    app.dependency_overrides[user_service.get_current_super_admin] = lambda : test_user
     mock_billing_plan_service.create.return_value = test_billing_plan
 
     resp = make_request(access_token_user)
@@ -124,6 +124,7 @@ def test_create_billing_plan_unsuccessful(
     mock_billing_plan_service
 ):
     mock_db_session.query().filter().first.return_value = test_user
+    app.dependency_overrides[user_service.get_current_super_admin] = user_service.get_current_super_admin
 
     # NON-SUPERADMIN
     test_user.is_superadmin = False
