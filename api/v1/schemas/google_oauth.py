@@ -1,6 +1,5 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
-from typing import Union
 
 
 class UserData(BaseModel):
@@ -39,27 +38,5 @@ class StatusResponse(BaseModel):
     tokens: Tokens
     user: UserData
 
-
 class OAuthToken(BaseModel):
     id_token: str
-
-
-class GoogleUserData(BaseModel):
-    """Google Registration schema"""
-
-    id: str
-    email: EmailStr
-    first_name: str
-    last_name: str
-    is_active: bool
-    created_at: datetime
-    last_login: Union[datetime, None]
-
-
-class GoogleUserResponse(BaseModel):
-    status: str
-    status_code: int
-    message: str
-    access_token: str
-    id_token: str
-    data: GoogleUserData

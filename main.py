@@ -1,4 +1,7 @@
 import uvicorn
+import slowapi
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from fastapi.staticfiles import StaticFiles
 import uvicorn, os
 from sqlalchemy.exc import IntegrityError
@@ -12,19 +15,20 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware  # required by google oauth
-
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from api.utils.logger import logger
 from api.utils.success_response import success_response
 from api.v1.routes import api_version_one
 from api.utils.settings import settings
-from scripts.presets import load_avatars_in_db, load_audio_in_db
+from scripts.presets import load_avatars_in_db, load_audio_in_db, load_billing_plans_in_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_avatars_in_db()
     load_audio_in_db()
-    # load_billing_plans_in_db()
+    load_billing_plans_in_db()
     yield
 
 
@@ -32,6 +36,35 @@ app = FastAPI(
     lifespan=lifespan,
     title='Convey API'
 )
+
+# In-memory request counter by endpoint and IP address
+request_counter = defaultdict(lambda: defaultdict(int))
+
+# Middleware to track request counts and IP addresses
+class RequestCountMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        endpoint = request.url.path
+        ip_address = request.client.host
+        request_counter[endpoint][ip_address] += 1
+        response = await call_next(request)
+        return response
+
+
+app.add_middleware(RequestCountMiddleware)
+
+# Endpoint to get request stats
+@app.get("/request-stats", response_class=JSONResponse)
+async def get_request_stats():
+    return success_response(status_code=status.HTTP_200_OK, message="endpoints request retreived successfully", data={"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}})
+
+
+# Initialize the limiter
+limiter = Limiter(key_func=get_remote_address)
+
+# Register the rate limit exceeded handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, lambda request, exc: JSONResponse({"detail": "Rate limit exceeded"}, status_code=429))
+app.add_middleware(SlowAPIMiddleware)
 
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')

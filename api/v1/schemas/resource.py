@@ -8,7 +8,9 @@ class CreateResource(BaseModel):
 
     title: str
     content: str
-    image_url: str
+    image_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 
 class ResourceBase(CreateResource):
@@ -35,18 +37,30 @@ class UpdateResource(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     image_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 
-class AllResourcesResponse(BaseModel):
+class SuccessResponse(BaseModel):
+    message: str
+    status_code: int
+    status: str = "success"
+
+
+class AllResourcesResponse(SuccessResponse):
     """
     Schema for all resources
     """
 
-    message: str
-    status_code: int
-    status: str
     page: int
     per_page: int
     total_pages: int
     total: int
     data: Union[List[ResourceData], List[None]]
+
+class CreateResourceResponse(SuccessResponse):
+    """
+    Response schema for successfull creation of resources
+    """
+
+    data: ResourceData

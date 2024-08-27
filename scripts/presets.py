@@ -1,10 +1,10 @@
 import os
 from pathlib import Path
+from uuid_extensions import uuid7
 
 from api.utils.settings import settings
 from api.db.database import get_db
 from api.v1.models.presets import Avatar, BackgroundMusic
-from api.v1.models.billing_plan import BillingPlan
 
 db = next(get_db())
 
