@@ -1,9 +1,10 @@
 {
 	"info": {
-		"_postman_id": "1efc89e6-5d44-4b89-ba1c-03c55a34e420",
+		"_postman_id": "d3ddabdb-5b5c-403f-b3b7-886c00029121",
 		"name": "Core Product",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "37872005"
+		"_exporter_id": "20878764",
+		"_collection_link": "https://galactic-shadow-835409.postman.co/workspace/Team-Workspace~4a13918d-144e-4a20-8c3a-228c10c8bb3f/collection/20878764-d3ddabdb-5b5c-403f-b3b7-886c00029121?action=share&source=collection_link&creator=20878764"
 	},
 	"item": [
 		{
@@ -958,36 +959,6 @@
 					"response": []
 				},
 				{
-					"name": "BE-PY-007-Get Users Statistics",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{adminAccessToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/users/statistics",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"users",
-								"statistics"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "BE-PY-008-Export as csv",
 					"request": {
 						"auth": {
@@ -1618,142 +1589,6 @@
 								"v1",
 								"jobs",
 								"export"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "BE-PY-005-Get job with SSE",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{adminAccessToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/jobs/activity/sse",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"jobs",
-								"activity",
-								"sse"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "BE-PY-006-Get job statistic with SSE",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{adminToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/jobs/statistics/sse",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"jobs",
-								"statistics",
-								"sse"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "BE-PY-007-send job status  progress overs with SSE",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{adminAccessToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/jobs/{job_id}/sse/progress",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"jobs",
-								"{job_id}",
-								"sse",
-								"progress"
 							]
 						}
 					},
@@ -7143,45 +6978,6 @@
 			]
 		},
 		{
-			"name": "Tests - Spartacus",
-			"item": [
-				{
-					"name": "Run Tests",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"All Tests successfully Executed\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{host-k}}/all/run-tests",
-							"host": [
-								"{{host-k}}"
-							],
-							"path": [
-								"all",
-								"run-tests"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
 			"name": "Resources - Spartacus",
 			"item": [
 				{
@@ -9258,6 +9054,82 @@
 		},
 		{
 			"key": "project_id_podcast",
+			"value": ""
+		},
+		{
+			"key": "useremail-k",
+			"value": ""
+		},
+		{
+			"key": "userpwd-k",
+			"value": ""
+		},
+		{
+			"key": "xuser-k",
+			"value": ""
+		},
+		{
+			"key": "adminemail-k",
+			"value": ""
+		},
+		{
+			"key": "adminpwd-k",
+			"value": ""
+		},
+		{
+			"key": "xadmin-k",
+			"value": ""
+		},
+		{
+			"key": "token-k",
+			"value": ""
+		},
+		{
+			"key": "token2-k",
+			"value": ""
+		},
+		{
+			"key": "magic_link",
+			"value": ""
+		},
+		{
+			"key": "reset_link",
+			"value": ""
+		},
+		{
+			"key": "userpwd2-k",
+			"value": ""
+		},
+		{
+			"key": "tokenadmin-k",
+			"value": ""
+		},
+		{
+			"key": "plan_name-k",
+			"value": ""
+		},
+		{
+			"key": "billing_id",
+			"value": ""
+		},
+		{
+			"key": "new_plan-k",
+			"value": ""
+		},
+		{
+			"key": "title-k",
+			"value": ""
+		},
+		{
+			"key": "content-k",
+			"value": ""
+		},
+		{
+			"key": "resource_id",
+			"value": ""
+		},
+		{
+			"key": "dash_project_id",
 			"value": ""
 		}
 	]

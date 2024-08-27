@@ -5,7 +5,6 @@ from uuid_extensions import uuid7
 from api.utils.settings import settings
 from api.db.database import get_db
 from api.v1.models.presets import Avatar, BackgroundMusic
-from api.v1.models.billing_plan import BillingPlan
 
 db = next(get_db())
 
@@ -94,4 +93,3 @@ def load_billing_plans_in_db():
             plan = BillingPlan(id=str(uuid7()), **plan_data)
             db.add(plan)
             db.commit()
-
