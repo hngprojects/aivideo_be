@@ -10,6 +10,7 @@ class CreateBillingPlanSchema(BaseModel):
     price: float
     plan_interval: str
     currency: str
+    access_limit: int
     features: List[str]
 
 
