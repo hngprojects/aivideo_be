@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from uuid_extensions import uuid7
 
 from api.utils.settings import settings
 from api.db.database import get_db
@@ -90,7 +91,7 @@ def load_billing_plans_in_db():
 
     for plan_data in plans:
         if not db.query(BillingPlan).filter(BillingPlan.plan_name==plan_data["plan_name"]).first():
-            plan = BillingPlan(**plan_data)
+            plan = BillingPlan(id=str(uuid7()), **plan_data)
             db.add(plan)
             db.commit()
 
