@@ -150,11 +150,33 @@ class SummaryService():
         summary = chain.run(docs)
 
         return summary, transcribed_text
-
+    
     def fetch_page(self, url):
         response = requests.get(url)
         response.raise_for_status()
         return response.text
+    
+    def get_podcast_details(self, podcast_url: str):
+        """Get the transcript of a podcast episode from the provided URL."""
+        try:
+            content = self.fetch_page(podcast_url)
+            soup = BeautifulSoup(content, 'html.parser')
+            apple_title_meta = soup.find('meta', attrs={'name': 'apple:title'})
+
+            title = apple_title_meta['content']
+            li_tags = soup.select('ul.metadata li')
+            duration = li_tags[-2].text.strip()
+            host = soup.select('img', attrs={'class': 'artwork-component__contents artwork-component__image svelte-3e3mdo'})
+            host_name = host[1]['alt']
+            return {
+                "title": title,
+                "duration": duration,
+                "host": host_name
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to extract podcast details: {str(e)}")
+
 
     def string_to_dict(self, input_string):
         try:
