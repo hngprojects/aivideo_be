@@ -59,6 +59,8 @@ def load_audio_in_db():
                 db.commit()
                 db.refresh(audio)
 
+
+
 def load_billing_plans_in_db():
     free_plan = BillingPlan(
         id="free",
@@ -120,10 +122,10 @@ def load_billing_plans_in_db():
         ]
     )
     
-    plans = [free_plan,premium_monthly_plan, premium_yearly_plan]
+    plans = [free_plan, premium_monthly_plan, premium_yearly_plan]
     
-    for _ in plans:
-        if not db.query(BillingPlan).filter(BillingPlan.id == _.id).first():
+    for i in plans:
+        if not db.query(BillingPlan).filter(BillingPlan.id == i.id).first():
             db.query(BillingPlan).delete()
             db.commit()
             for plan in plans:
