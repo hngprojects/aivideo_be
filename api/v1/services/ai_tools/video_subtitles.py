@@ -282,7 +282,6 @@ def transcribe_audio_segments(file_path: str, max_segment_size: int = 24 * 1024 
         if not all_segments:
             raise Exception(
                 "No transcription segments received from OpenAI Whisper API.")
-
         return all_segments
 
     except Exception as e:

@@ -17,6 +17,7 @@ class Project(BaseTableModel):
     is_deleted = Column(Boolean, server_default='false')
     is_active = Column(Boolean, server_default='true')
     archived_at = Column(DateTime, nullable=True)
-
+    thumbnail = Column(String, nullable=True)
+    
     user = relationship('User', back_populates='projects')
     job = relationship("Job", back_populates="project", uselist=False)
