@@ -82,9 +82,6 @@ class ResourceService(Service):
         if schema.title.strip() == "" or schema.content.strip() == "":
             raise HTTPException(status_code=400, detail="Invalid request body")
 
-        UPLOAD_DIR = "media/uploads/resources"
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
-
         new_resource = Resource(**schema.model_dump())
         new_resource.is_published = publish
         db.add(new_resource)
@@ -258,7 +255,12 @@ class ResourceService(Service):
         return resource
 
     def update(
-        self, db: Session, resource_id: str, schema: UpdateResource
+        self,
+        db: Session,
+        resource_id: str,
+        schema: UpdateResource,
+        image: UploadFile,
+        cover_image: UploadFile,
     ) -> Resource | None:
         """Updates an Resource
 
@@ -278,6 +280,15 @@ class ResourceService(Service):
         update_data = schema.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(resource, key, value)
+
+        if cover_image:
+            resource.cover_image_url = self.get_image_url(
+                image=cover_image, resource_id=resource_id
+            )
+        if image:
+            resource.image_url = self.get_image_url(
+                image=image, resource_id=resource_id
+            )
 
         db.commit()
         db.refresh(resource)

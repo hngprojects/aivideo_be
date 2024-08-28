@@ -129,10 +129,14 @@ async def get_public_resources(
     "/{resource_id}", response_model=success_response, status_code=status.HTTP_200_OK
 )
 async def update_resources(
-    schema: UpdateResource,
-    resource_id: str,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    resource_id: str,
+    title: Optional[str] = Form(None),
+    content: Optional[str] = Form(None),
+    tags: Optional[str] = Form(None),
+    image: Optional[UploadFile] = File(None),
+    cover_image: Optional[UploadFile] = File(None),
 ):
     """
     Route to Update resources
@@ -149,7 +153,23 @@ async def update_resources(
                "data" : {}
                }
     """
-    resource = resource_service.update(db=db, resource_id=resource_id, schema=schema)
+
+    schema = UpdateResource()
+
+    if title:
+        schema.title = title
+    if content:
+        schema.content = content
+    if tags:
+        schema.tags = json.loads(tags)
+
+    resource = resource_service.update(
+        db=db,
+        resource_id=resource_id,
+        schema=schema,
+        cover_image=cover_image,
+        image=image,
+    )
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Resource updated Succesfully",
