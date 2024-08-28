@@ -32,8 +32,8 @@ resource = APIRouter(prefix="/resources", tags=["Resources"])
 )
 async def create_resource(
     # schema: CreateResource,
-    title: Optional[str] = Form(None),
-    content: Optional[str] = Form(None),
+    title: Annotated[str, Form()],
+    content: Annotated[str, Form()],
     tags: Optional[str] = Form(None),
     cover_image: Optional[UploadFile] = File(None),
     image: Optional[UploadFile] = File(None),
@@ -53,7 +53,10 @@ async def create_resource(
         success_response
     """
 
-    schema = CreateResource(title=title, content=content, tags=json.loads(tags))
+    schema = CreateResource(title=title, content=content)
+
+    if tags:
+        schema.tags = json.loads(tags)
 
     resource = resource_service.create(
         db, schema=schema, publish=publish, cover_image=cover_image, image=image
