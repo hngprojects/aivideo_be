@@ -42,11 +42,9 @@ class PaymentService:
                         getattr(Payment, column).ilike(f"%{value}%"))
 
         if limit and offset:
-            payments = query.offset(offset).limit(limit).all()
-        else:
-            payments = query.all()
-
-        return payments
+            return query.offset(offset).limit(limit).all()
+        
+        return query.all()
 
     def fetch(self, db: Session, payment_id: str):
         """Fetches a payment by id"""
@@ -76,9 +74,20 @@ class PaymentService:
 
         return payments
 
-    def dictize_payments_and_pagination(self, payments: list, offset: 0, limit: 0):
-        """Return a list of dicts of all Payment objs in `payments`
-        and details of pagination for the payment list"""
+    def dictize_payments_and_pagination(
+            self, payments: list, offset: int = 0, limit: int = 0):
+        """Return a list of dicts of all `Payment` objs with pagination
+        
+        Args:
+          payments: A list of `Payment` objects.
+          limit: For pagination: number of rows per page.
+          offset: For pagination: number of rows to omit.
+        
+        Returns:
+         A dictionary with two keys
+         - payments: The list of dicts containg payments details
+         - pagination: A dict containing pagination details
+        """
         data = {
             "payments": [p.to_dict() for p in payments],
             "pagination": get_pagination_details(len(payments), offset, limit)
@@ -132,13 +141,23 @@ class PaymentGatewayService:
         self, paid_amount: Union[int, float, Decimal], paid_currency: str, 
         bill_plan: BillingPlan, decimal_places: int = 2, enforce_one_interval=True
     ):
-        """Check that `paid_amount` is equal to, or represents exact multiples
-        of `bill_plan.price` without remenders when checked with `decimal_places`, 
-        and that `paid_currency` is same as `bill_plan.currency`. The 
-        `enforce_one_interval=True` makes sure that only payment for 
-        one billing plan interval is allowed. Set it to `False` to allow
-        payment for multiple billing plan interval"""
+        """Check that payment received is equal to (or represents exact 
+        multiples of) billing plan price per interval and checks currency accuracy.
+        
+        Args:
+          paid_amount: The payment amount received.
+          paid_currency: Currency of the payment received.
+          bill_plan: The billing plan object being paid for.
+          decimal_places: Number of decimal places to use in making the calculation.
+          enforce_one_interval: Indicates whether payment for more than one interval
+            should be allowed or not. Default is `True` meaning: Do Not Allow
+        
+        Returns:
+          None
 
+        Raises:
+          HTTPException: If payment amount or currency do not match.
+        """
         def invalid_pay_resp(message):
             return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
         
@@ -277,9 +296,8 @@ class PaymentGatewayService:
 
         if response.status_code == 200:
             response = response.json()
-            subscription_plan_id = response['data']['id']
 
-            return subscription_plan_id
+            return response['data']['id']
 
 
 payment_service = PaymentService()
