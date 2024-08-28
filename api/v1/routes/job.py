@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import event
 from sse_starlette import EventSourceResponse
 from api.db.database import get_db
-from api.utils.pagination import paginated_response
 from api.utils.success_response import success_response
 from api.v1.models.job import Job
 from api.v1.models.user import User

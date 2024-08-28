@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
+from api.utils.pagination import paginated_response
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.resource import resource_service
@@ -135,8 +136,23 @@ async def search_resources(
     Returns:
         Search results in a paginated format.
     """
-    search_results = resource_service.search_resources(db, keywords, page, per_page)
-    return search_results
+    skip = (page - 1) * per_page
+    results = resource_service.search_resources(db, keywords, skip, per_page)
+    total = results['total']
+    items = jsonable_encoder(results['items'])
+    total_pages = int(total / per_page) + (total % per_page > 0)
+
+    return success_response(
+        status_code=200,
+        message="Successfully fetched items",
+        data={
+            "pages": total_pages,
+            "total": total,
+            "skip": skip,
+            "limit": per_page,
+            "items": items,
+        },
+    )
 
 
 @resource.patch(
