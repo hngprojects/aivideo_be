@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, List
 from sqlalchemy import desc, or_
 from fastapi import status, UploadFile
 from uuid_extensions import uuid7
@@ -327,11 +327,22 @@ class ResourceService(Service):
         resource.is_published = False
         db.commit()
 
-    def search_resources(self, db: Session, search_query: str):
-        """Search resources"""
+    def search_resources(self, db: Session, search_query: str, skip: int, limit: int) -> List[Resource]:
+        """Search resources with pagination.
+
+        Args:
+            db: Database session object.
+            search_query: Search terms provided by the user.
+            skip: Number of items to skip (for pagination).
+            limit: Number of items to fetch per page (for pagination).
+
+        Returns:
+            Paginated search results.
+        """
 
         tokens = search_query.split()
 
+        # Build the query with filters
         query = db.query(Resource).filter(
             or_(
                 *[
@@ -345,9 +356,17 @@ class ResourceService(Service):
             )
         )
 
-        search_results = query.order_by(desc(Resource.created_at))
+        # Get the total number of results (for pagination metadata)
+        total = query.count()
 
-        return search_results
+        # Apply pagination to the query
+        search_results = query.order_by(desc(Resource.created_at)).offset(skip).limit(limit).all()
+
+        # Return the results
+        return {
+            "total": total,
+            "items": search_results
+        }
 
 
 resource_service = ResourceService()
