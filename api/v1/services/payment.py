@@ -15,6 +15,7 @@ from api.utils.settings import settings
 
 stripe.api_key = settings.STRIPE_SECRET
 
+
 class PaymentService:
     """Payment service functionality"""
 
@@ -37,13 +38,14 @@ class PaymentService:
         if query_params:
             for column, value in query_params.items():
                 if hasattr(Payment, column) and value:
-                    query = query.filter(getattr(Payment, column).ilike(f"%{value}%"))
+                    query = query.filter(
+                        getattr(Payment, column).ilike(f"%{value}%"))
 
         if limit and offset:
             payments = query.offset(offset).limit(limit).all()
         else:
             payments = query.all()
-        
+
         return payments
 
     def fetch(self, db: Session, payment_id: str):
@@ -73,7 +75,7 @@ class PaymentService:
             payments = query.all()
 
         return payments
-    
+
     def dictize_payments_and_pagination(self, payments: list, offset: 0, limit: 0):
         """Return a list of dicts of all Payment objs in `payments`
         and details of pagination for the payment list"""
@@ -119,25 +121,42 @@ class PaymentGatewayService:
         of the accepted payment gateways, then return 
         the lower case in case it's in another case"""
         if not isinstance(gateway, str) \
-            or gateway.lower() not in self.PAYMENT_GATEWAYS:
+                or gateway.lower() not in self.PAYMENT_GATEWAYS:
             raise HTTPException(
-                status.HTTP_403_FORBIDDEN, 
+                status.HTTP_403_FORBIDDEN,
                 detail=f"Only {self.PAYMENT_GATEWAYS} supported for now"
             )
         return gateway.lower()
-    
-    def check_payment_is_multiples_of_bill_per_interval(
-            self, payment_amount: Union[int, float, Decimal], 
-            bill_per_interval: Union[int, float, Decimal]
-        ):
-        """Make sure to pass the same datatype for 
-        `payment_amount` and `bill_per_interval` to avoid errors"""
-        if payment_amount % bill_per_interval:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="Error - paid amount doesn't match billing plan price"
-            )
-    
+
+    def check_paid_amount_and_bill_per_interval(
+        self, paid_amount: Union[int, float, Decimal], paid_currency: str, 
+        bill_plan: BillingPlan, decimal_places: int = 2, enforce_one_interval=True
+    ):
+        """Check that `paid_amount` is equal to, or represents exact multiples
+        of `bill_plan.price` without remenders based on `decimal_places`, 
+        and that `paid_currency` is same as `bill_plan.currency`.
+        `enforce_one_interval=True` makes sure that only payment for 
+        one billing plan interval is accepted"""
+
+        def invalid_pay_resp(message):
+            return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
+        
+        paid_amount = Decimal(format(paid_amount, f".{decimal_places}f"))
+        bill_per_interval = Decimal(format(bill_plan.price, f".{decimal_places}f"))
+        
+        # CHECK PAID AMOUNT AGAINST BILL PRICE PER INTERVAL
+        if enforce_one_interval and (paid_amount != bill_per_interval):
+            # checks that payment is equal to price when `enforce_one_interval` is True
+            raise invalid_pay_resp("Error - paid amount doesn't match billing plan price")
+        
+        elif enforce_one_interval is False and (paid_amount % bill_per_interval):
+            # checks that payment is multiples price when `enforce_one_interval` is False
+            raise invalid_pay_resp("Error - paid amount is not multiples of billing plan price")
+        
+        # CHECK PAYMENT CURRENCY
+        if paid_currency != bill_plan.currency:
+            raise invalid_pay_resp("Error - invalid payment currency")
+
     def get_payment_url_for_flutterwave(self, user, bill_plan, schema):
         payment_data = {
             "tx_ref": bill_plan.id,
@@ -165,12 +184,12 @@ class PaymentGatewayService:
             )
 
             return {"payment_url": response.json()["data"]["link"]}
-        
+
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Error initializing payment"
             )
-    
+
     def get_payment_url_for_stripe(self, user, bill_plan, success_url, schema):
         try:
             # Create a checkout session
@@ -181,7 +200,8 @@ class PaymentGatewayService:
                         'product_data': {
                             'name': bill_plan.plan_name,
                         },
-                        'unit_amount': int(bill_plan.price * 100),  # Convert to the smallest unit
+                        # Convert to the smallest unit
+                        'unit_amount': int(bill_plan.price * 100),
                     },
                     'quantity': 1,
                 }],
@@ -218,13 +238,13 @@ class PaymentGatewayService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid payment amount."
             )
-        
+
         if data.get('currency') != billing_plan.currency:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid currency."
             )
-        
+
         return True
 
     def create_subscription_plan(self, plan: BillingPlan):
@@ -250,7 +270,7 @@ class PaymentGatewayService:
         except Exception as e:
             print(e)
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Error enabling auto-renewal"
             )
 
@@ -259,6 +279,7 @@ class PaymentGatewayService:
             subscription_plan_id = response['data']['id']
 
             return subscription_plan_id
-            
+
+
 payment_service = PaymentService()
 payment_gateway_service = PaymentGatewayService()

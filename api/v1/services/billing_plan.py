@@ -14,6 +14,8 @@ class BillingPlanService:
     """Product service functionality"""
 
     YEARLY_PAYMENT_DISCOINT_PERCENT = 15
+    NUMBER_OF_MONTHS_CHARGED_YEARLY = 10
+
     def load_billing_plans_in_db(self, db: Session,):
 
         try:
@@ -172,7 +174,8 @@ class BillingPlanService:
             return user_sub
         
         # create a user subscription plan
-        start_date, end_date = user_sub_service.get_sub_start_and_end_datetime(0, 0, free_plan=True)
+        start_date, end_date = user_sub_service.get_sub_start_and_end_datetime(
+            free_plan.plan_interval)
         user_subscription_data = {
             "user_id": user.id,
             "end_date": end_date,
@@ -205,7 +208,8 @@ class BillingPlanService:
         year_total = bill_plan.price
         if year_total:
             # get the 99.99 effect, instead of hardcoding it
-            year_total = math.ceil(bill_plan.price * 10) - 0.01
+            year_total = math.ceil(
+                bill_plan.price * self.NUMBER_OF_MONTHS_CHARGED_YEARLY) - 0.01
 
             # reset percentage for plans other that free plan
             yearly_discount_percent = self.YEARLY_PAYMENT_DISCOINT_PERCENT
