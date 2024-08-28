@@ -14,6 +14,18 @@ APPLICATION_JAVASCRIPT = "application/javascript"
 APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded"
 APPLICATION_X_SHOCKWAVE_FLASH = "application/x-shockwave-flash"
 
+# IMAGE TYPES
+IMAGE_BMP = "image/bmp"
+IMAGE_GIF = "image/gif"
+IMAGE_JPEG = "image/jpeg"
+IMAGE_PNG = "image/png"
+IMAGE_SVG_XML = "image/svg+xml"
+IMAGE_TIFF = "image/tiff"
+IMAGE_WEBP = "image/webp"
+IMAGE_X_ICON = "image/x-icon"
+IMAGE_X_MS_BMP = "image/x-ms-bmp"
+IMAGE_X_PIXMAP = "image/x-xpixmap"
+
 # AUDIO TYPES
 AUDIO_MP3 = "audio/mpeg"
 AUDIO_MPEG = "audio/mpeg"
