@@ -12,6 +12,7 @@ from api.utils.files import upload_to_current_dir, contains_face
 from api.v1.services.presets import preset_service
 from api.v1.services.job import job_service
 from api.v1.schemas.ai_tools.talking_avatar import TalkingHeadRequest
+from api.v1.schemas.project import ProjectToolsEnum
 from api.core.dependencies.celery.tasks.video_tasks import generate_talking_avatar_task
 
 video_router = APIRouter(prefix="/tools/video", tags=["Tools"])
@@ -60,7 +61,7 @@ async def talking_head_image_upload(
     project = job_service.create_project_with_job(
         job=task,
         project_title='New project',
-        project_type='Talking Head',
+        project_type=ProjectToolsEnum.image_to_video.value,
     )
 
     return success_response(
@@ -105,7 +106,7 @@ async def talking_head_avatar_selection(
     project = job_service.create_project_with_job(
         job=task,
         project_title='New project',
-        project_type='Talking Head',
+        project_type=ProjectToolsEnum.talking_avatar.value,
     )
 
     return success_response(
