@@ -161,7 +161,7 @@ class TextToVideoService:
         
         # save_url = f'{settings.APP_URL}/{final_result_file}'
 
-        minio_save_file = f'tavtr-{str(uuid4())}.mp4'
+        minio_save_file = f'ttvid-{str(uuid4())}.mp4'
         save_url, download_url = minio_service.upload_to_minio(
             bucket_name='text-to-video',
             source_file=final_result_file,
