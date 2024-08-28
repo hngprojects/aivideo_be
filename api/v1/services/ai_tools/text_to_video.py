@@ -30,12 +30,21 @@ class TextToVideoService:
 
     def generate_scene_descriptions(self, script: str):
 
-        response = self.client.completions.create(
-            model="gpt-3.5-turbo-instruct",
-            prompt=f"Generate five simple scene descriptions that can be used as an image description for the following script and I do not want any form of numbering or bulleting on them, just list and separate with a new line:\n\n{script}\n\nScene Descriptions:",
-            max_tokens=500
+        # response = self.client.completions.create(
+        #     model="gpt-3.5-turbo-instruct",
+        #     prompt=f"Generate five simple scene descriptions that can be used as an image description for the following script and I do not want any form of numbering or bulleting on them, just list and separate with a new line:\n\n{script}\n\nScene Descriptions:",
+        #     max_tokens=500
+        # )
+
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": f"Generate five simple scene descriptions that can be used as an image description for the following script and I do not want any form of numbering or bulleting on them. Also, don not say anoy other thing other than the scene descriptions. Here is the script: :\n\n{script}\n\nScene Descriptions:"}
+            ]
         )
-        scenes = response.choices[0].text.strip().split('\n')
+        # scenes = response.choices[0].message.content.strip().split('\n')
+        scenes = [scene.strip() for scene in response.choices[0].message.content.strip().split('\n') if scene.strip()]
         return scenes
     
 
