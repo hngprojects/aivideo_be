@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status, Query, Form, File, UploadFile
 from fastapi.encoders import jsonable_encoder
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
@@ -17,6 +17,7 @@ from api.v1.schemas.resource import (
     SuccessResponse,
 )
 import logging
+import json
 
 
 resource = APIRouter(prefix="/resources", tags=["Resources"])
@@ -30,7 +31,12 @@ resource = APIRouter(prefix="/resources", tags=["Resources"])
     description="Admin endpoint to create a resource",
 )
 async def create_resource(
-    schema: CreateResource,
+    # schema: CreateResource,
+    title: Optional[str] = Form(None),
+    content: Optional[str] = Form(None),
+    tags: Optional[str] = Form(None),
+    cover_image: Optional[UploadFile] = File(None),
+    image: Optional[UploadFile] = File(None),
     publish: bool = Query(True),
     db: Session = Depends(get_db),
     current_admin: User = Depends(user_service.get_current_super_admin),
@@ -46,7 +52,12 @@ async def create_resource(
     Returns:
         success_response
     """
-    resource = resource_service.create(db, schema=schema, publish=publish)
+
+    schema = CreateResource(title=title, content=content, tags=json.loads(tags))
+
+    resource = resource_service.create(
+        db, schema=schema, publish=publish, cover_image=cover_image, image=image
+    )
 
     logging.info(f"Creating new Resource. ID: {resource.id}.")
     return success_response(

@@ -1,9 +1,14 @@
 from typing import Any, Optional
 from sqlalchemy import desc, or_
-from fastapi import status
+from fastapi import status, UploadFile
+from uuid_extensions import uuid7
+import os
+import shutil
 
 from sqlalchemy.orm import Session
 from api.core.base.services import Service
+from api.utils import mime_types
+from api.utils.minio_service import minio_service
 from api.v1.models.resource import Resource
 from api.v1.schemas.resource import (
     CreateResource,
@@ -14,27 +19,87 @@ from api.v1.schemas.resource import (
 from api.utils.db_validators import check_model_existence
 from fastapi import HTTPException
 
+UPLOAD_DIR = "media/uploads/resources"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 
 class ResourceService(Service):
     """Resource service functionality"""
 
-    def create(self, db: Session, schema: CreateResource, publish: bool) -> Resource:
+    def get_image_url(self, image: UploadFile, resource_id: str):
+        ext = image.filename.split(".")[-1]
+        mime = None
+        image_url = None
+
+        if ext == "jpg" or ext == "jpeg":
+            mime = mime_types.IMAGE_JPEG
+        elif ext == "png":
+            mime = mime_types.IMAGE_PNG
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid file format, please upload png or jpeg",
+            )
+
+        cleaned_filename = image.filename.replace(" ", "_")
+
+        if cleaned_filename:
+            filename = f"tmp_{cleaned_filename}"
+            file_path = os.path.join(UPLOAD_DIR, filename)
+
+            # Save the new avatar file to the server
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(image.file, buffer)
+
+            minio_save_file = f"resource-{resource_id}-{str(uuid7())}.{ext}"
+            minio_response = minio_service.upload_to_minio(
+                bucket_name="resources",
+                source_file=file_path,
+                destination_file=minio_save_file,
+                content_type=mime,
+            )
+
+            os.remove(file_path)
+
+            image_url = minio_response[0]
+
+        return image_url
+
+    def create(
+        self,
+        db: Session,
+        schema: CreateResource,
+        publish: bool,
+        image: UploadFile,
+        cover_image: UploadFile,
+    ) -> Resource:
         """Create a new Resource
 
         Returns:
             (Resource): Resource object.
         """
-        if (
-            schema.title.strip() == ""
-            or schema.image_url.strip() == ""
-            or schema.cover_image_url.strip() == ""
-            or schema.content.strip() == ""
-        ):
+
+        if schema.title.strip() == "" or schema.content.strip() == "":
             raise HTTPException(status_code=400, detail="Invalid request body")
+
+        UPLOAD_DIR = "media/uploads/resources"
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
 
         new_resource = Resource(**schema.model_dump())
         new_resource.is_published = publish
         db.add(new_resource)
+        db.commit()
+        db.refresh(new_resource)
+
+        if cover_image:
+            new_resource.cover_image_url = self.get_image_url(
+                image=cover_image, resource_id=new_resource.id
+            )
+        if image:
+            new_resource.image_url = self.get_image_url(
+                image=image, resource_id=new_resource.id
+            )
+
         db.commit()
         db.refresh(new_resource)
 
