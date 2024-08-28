@@ -26,42 +26,57 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 class ResourceService(Service):
     """Resource service functionality"""
 
-    def get_image_url(self, image: UploadFile, resource_id: str):
-        ext = image.filename.split(".")[-1]
-        mime = None
-        image_url = None
+    def get_image_url(self, image: UploadFile, resource_id: str) -> str:
+        """Upload image to minio bucket and return it's URL
 
-        if ext == "jpg" or ext == "jpeg":
-            mime = mime_types.IMAGE_JPEG
-        elif ext == "png":
-            mime = mime_types.IMAGE_PNG
-        else:
+        Args:
+            image (UploadFile): Image file to upload
+            resource_id (str): Resource UUID string
+
+        Raises:
+            HTTPException: 400 (Bad Request) - If wrong file format is passed
+
+        Returns:
+            str: The live image url for the uploaded image
+        """
+        extension = image.filename.split(".")[-1]
+        mime_map = {
+            "jpg": mime_types.IMAGE_JPEG,
+            "jpeg": mime_types.IMAGE_JPEG,
+            "png": mime_types.IMAGE_PNG,
+        }
+
+        if extension not in ["jpg", "jpeg", "png"]:
             raise HTTPException(
                 status_code=400,
                 detail="Invalid file format, please upload png or jpeg",
             )
 
+        mime = mime_map[extension]
+
         cleaned_filename = image.filename.replace(" ", "_")
 
-        if cleaned_filename:
-            filename = f"tmp_{cleaned_filename}"
-            file_path = os.path.join(UPLOAD_DIR, filename)
+        if not cleaned_filename:
+            return None
 
-            # Save the new avatar file to the server
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(image.file, buffer)
+        filename = f"tmp_{cleaned_filename}"
+        file_path = os.path.join(UPLOAD_DIR, filename)
 
-            minio_save_file = f"resource-{resource_id}-{str(uuid7())}.{ext}"
-            minio_response = minio_service.upload_to_minio(
-                bucket_name="resources",
-                source_file=file_path,
-                destination_file=minio_save_file,
-                content_type=mime,
-            )
+        # Save the new avatar file to the server
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
 
-            os.remove(file_path)
+        minio_save_file = f"resource-{resource_id}-{str(uuid7())}.{extension}"
+        minio_response = minio_service.upload_to_minio(
+            bucket_name="resources",
+            source_file=file_path,
+            destination_file=minio_save_file,
+            content_type=mime,
+        )
 
-            image_url = minio_response[0]
+        os.remove(file_path)
+
+        image_url = minio_response[0]
 
         return image_url
 
@@ -327,7 +342,9 @@ class ResourceService(Service):
         resource.is_published = False
         db.commit()
 
-    def search_resources(self, db: Session, search_query: str, skip: int, limit: int) -> List[Resource]:
+    def search_resources(
+        self, db: Session, search_query: str, skip: int, limit: int
+    ) -> List[Resource]:
         """Search resources with pagination.
 
         Args:
@@ -360,13 +377,12 @@ class ResourceService(Service):
         total = query.count()
 
         # Apply pagination to the query
-        search_results = query.order_by(desc(Resource.created_at)).offset(skip).limit(limit).all()
+        search_results = (
+            query.order_by(desc(Resource.created_at)).offset(skip).limit(limit).all()
+        )
 
         # Return the results
-        return {
-            "total": total,
-            "items": search_results
-        }
+        return {"total": total, "items": search_results}
 
 
 resource_service = ResourceService()
