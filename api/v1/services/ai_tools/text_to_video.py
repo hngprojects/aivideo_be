@@ -1,19 +1,8 @@
 import os
-from pathlib import Path
-import random
 from typing import List
 from uuid import uuid4
 import openai
-import ffmpeg
 from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip
-import requests
-
-from deepgram_captions import DeepgramConverter, srt
-from deepgram import (
-    DeepgramClient,
-    PrerecordedOptions,
-    FileSource,
-)
 
 from api.utils.files import delete_file
 from api.utils.settings import settings

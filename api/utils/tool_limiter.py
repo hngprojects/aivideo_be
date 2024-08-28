@@ -10,6 +10,7 @@ from api.v1.models.usage_store import UsageStore
 from api.v1.services.user import user_service
 from api.v1.services.usage import usage_store_service
 from api.v1.services.user_usage import user_usage_store_service
+from api.v1.services.billing_plan import billing_plan_service
 from api.v1.models.user import User
 
 ACCESS_LIMIT = 3
@@ -36,16 +37,17 @@ def track_tool_usage(current_tool: str):
             if user:
                 tracking_record = user_usage_store_service.fetch_by_user(db, user.id)
                 if tracking_record:
-                    tracking_record.tool_access_count += 1
+                    user_usage_store_service.add_tool_access_count_by_user(db, user, 1)
                     tool_count = user_usage_store_service.get_or_create_tool_value(
                         db,
                         tracking_record.id,
                         current_tool
                     )
-                    if tool_count > 20:
+                    if usage_store_service.fetch_total(db, tracking_record.id) > user.subscription.billing_plan.access_limit:
+                        billing_plan_service.subscribe_user_to_free_plan(db, user)
                         raise HTTPException(
                             status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Please upgrade your plan to get more access to the {current_tool} tool.",
+                            detail=f"Please upgrade your plan to get more access to the {current_tool} tool.",
                         )
                     else:
                         user_usage_store_service.update_tool_usage(

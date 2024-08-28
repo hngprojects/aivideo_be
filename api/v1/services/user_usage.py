@@ -2,24 +2,24 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
-from api.v1.models.usage_store import UserUsageStore, ToolAccess
+from api.v1.models.usage_store import UserUsageStore, UserToolAccess
 
 class UserUsageStoreService:
     
-    def create_tool_access(db: Session, usage_store_id: int, tool_name: str, access_count: int) -> ToolAccess:
+    def create_tool_access(db: Session, usage_store_id: int, tool_name: str, access_count: int) -> UserToolAccess:
         """
-        Creates a new ToolAccess record in the database.
+        Creates a new UserToolAccess record in the database.
 
         :param db: SQLAlchemy session
         :param usage_store_id: The ID of the related UsageStore
         :param tool_name: The name of the tool
         :param access_count: The access count for the tool
-        :return: The created ToolAccess record
+        :return: The created UserToolAccess record
         """
-        new_tool_access = ToolAccess(
-            usage_store_id=usage_store_id,
+        new_tool_access = UserToolAccess(
             tool_name=tool_name,
-            access_count=access_count
+            access_count=access_count,
+            usage_store_id=usage_store_id
         )
         
         try:
@@ -55,7 +55,7 @@ class UserUsageStoreService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND ,detail="Tool Usage record not found")
 
         # Update the dictionary
-        tool: ToolAccess  = next((tool for tool in tools_usage.tools if tool.tool_name == tool_name), None)
+        tool = next((tool for tool in tools_usage.tools if tool.tool_name == tool_name), None)
         tool.access_count = value        
         db.commit()
         return tool
@@ -74,8 +74,23 @@ class UserUsageStoreService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND ,detail="Tool Usage record not found")
 
         # Retrieve the tool value from the dictionary
-        tool: ToolAccess  = next((tool for tool in tools_usage.tools if tool.tool_name == tool_name), None)
+        tool = next((tool for tool in tools_usage.tools if tool.tool_name == tool_name), None)
         return tool.access_count
+    
+    def fetch_total(self, db: Session, id: int) -> int:
+        """
+        Retrieves the total access count for all tools in the ToolsUsage record with the given ID.
+
+        :param db: SQLAlchemy session object for database operations.
+        :param id: ID of the ToolsUsage record to retrieve the total access count for.
+
+        :return: Total access count for all tools in the ToolsUsage record.
+        :raises HTTPException: If the ToolsUsage record with the given ID is not found.
+        """
+        tools_usage = self.get_tools_usage_by_id(db, id)
+        if tools_usage is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usage record not found")
+        return tools_usage.tool_access_count
     
     def get_or_create_tool_value(self, db: Session, id: int, tool_name: str):
         """
@@ -92,7 +107,7 @@ class UserUsageStoreService:
             raise ValueError("ToolsUsage record not found")
 
         # Retrieve the dictionary
-        tool: ToolAccess  = [tool.tool_name for tool in tools_usage.tools]
+        tool = [tool.tool_name for tool in tools_usage.tools]
 
         # Check if the tool exists in the dictionary
         if tool_name in tool:
@@ -107,6 +122,18 @@ class UserUsageStoreService:
             )
 
         return value
-
+    
+    def add_tool_access_count_by_id(self, db: Session, id:str, value:int):
+        tool = self.fetch_by_id(db, id)
+        # Increment the access count for the tool
+        tool.tool_access_count += value
+        db.commit()
+        return tool.tool_access_count
+    
+    def add_tool_access_count_by_user(self, db: Session, user_id:str, value:int):
+        tool = self.fetch_by_user(db, user_id)
+        tool.tool_access_count += value
+        db.commit()
+        return tool.tool_access_count
 
 user_usage_store_service = UserUsageStoreService()

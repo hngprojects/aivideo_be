@@ -35,10 +35,6 @@ class User(BaseTableModel):
         "LanguageRegionTimezoneSetting", back_populates="user"
     )
     jobs = relationship("Job", back_populates="user")
-
-    text_to_vdeos = relationship(
-        "TextToVideo", back_populates="user", cascade="all, delete-orphan"
-    )
     tool_usage = relationship('UserUsageStore', back_populates='user')
     
     def to_dict(self):

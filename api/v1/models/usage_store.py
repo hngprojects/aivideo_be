@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from api.v1.models.base_model import BaseTableModel
-from sqlalchemy.dialects.postgresql import ARRAY
+
 
 class UsageStore(BaseTableModel):
     __tablename__ = 'usage_store'
