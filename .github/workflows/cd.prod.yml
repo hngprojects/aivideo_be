@@ -27,6 +27,22 @@ jobs:
             git stash
             git pull origin main
             source venv/bin/activate
-            pip install -r requirements.txt
+            pip install -r requirements.txt --no-deps --use-deprecated=legacy-resolver
             alembic revision --autogenerate
             alembic upgrade head
+            pm2 reload aivideo_be_prod
+
+      - name: Deploy to Worker Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.WORKER_HOST }}
+          username: ${{ secrets.WORKER_USERNAME }}
+          password: ${{ secrets.WORKER_PASSWORD }}
+          script: |
+            cd aivideo_be/prod
+            git add .
+            git stash
+            git pull origin main
+            source venv/bin/activate
+            pip install -r requirements.txt --no-deps --use-deprecated=legacy-resolver
+            pm2 reload aivideo_celery_prod

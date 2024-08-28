@@ -8,6 +8,7 @@ from api.core.dependencies.celery.tasks.video_tasks import (
 from api.utils.settings import settings
 from api.utils.success_response import success_response
 from api.utils.files import upload_file
+from api.v1.schemas.project import ProjectToolsEnum
 from api.v1.services.job import job_service
 from api.v1.schemas.ai_tools.thumbnail import ThumbnailSelectionRequest, ThumbnailResponse
 from urllib.parse import urljoin
@@ -81,7 +82,7 @@ async def upload_or_process_video(
     project = job_service.create_project_with_job(
         job=task,
         project_title='Video Processing and Thumbnail Generation',
-        project_type='Video Thumbnail Generator'
+        project_type=ProjectToolsEnum.thumbnail_generator.value
     )
 
     return success_response(
@@ -123,7 +124,7 @@ async def generate_thumbnails(
     project = job_service.create_project_with_job(
         job=task,
         project_title=task_title,
-        project_type='Video Thumbnail Generator'
+        project_type=ProjectToolsEnum.thumbnail_generator.value
     )
 
     return success_response(
@@ -148,7 +149,7 @@ async def select_and_download_thumbnail(
     project = job_service.create_project_with_job(
         job=task,
         project_title='Thumbnail Selection and Download',
-        project_type='Video Thumbnail Generator'
+        project_type=ProjectToolsEnum.thumbnail_generator.value
     )
 
     return success_response(

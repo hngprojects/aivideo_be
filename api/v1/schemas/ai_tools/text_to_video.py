@@ -1,11 +1,11 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, field_validator
 
 
 class TTVSchema(BaseModel):
 
     script: str
-    audio_id: str
+    audio_id: Optional[str] = None
     aspect_ratio: str
     voice_over: str
     scenes: List[str]

@@ -73,6 +73,7 @@ bp_update_data = {
 def make_request(token, billing_plan):
     bp_update_data.update({
         # Unchanged
+        "access_limit": 100,
         "currency": billing_plan.currency,
         "plan_interval": billing_plan.plan_interval
     })

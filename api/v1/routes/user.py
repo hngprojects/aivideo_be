@@ -4,6 +4,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from sqlalchemy import event
 from sse_starlette import EventSourceResponse
+from fastapi.responses import JSONResponse
 import asyncio
 import json
 
