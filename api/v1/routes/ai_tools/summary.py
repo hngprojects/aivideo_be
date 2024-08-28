@@ -154,9 +154,9 @@ async def translate_summary(translation_request: TranslationRequest):
         )
     
 
-@summary.get("/download-summary/{job_id}", response_class=FileResponse)
+@summary.get("/download-summary/{job_id}", response_model=success_response)
 async def download_summary(job_id: str, db: Session = Depends(get_db)):
-    """Download the generated summary as a PDF file"""
+    """Return the generated summary's download URL from MinIO"""
     task_result = job_service.fetch_by_job_id(job_id)
     if not task_result or not task_result.result:
         job_service.update_job_result(job_id)
@@ -165,12 +165,17 @@ async def download_summary(job_id: str, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail="Summary not found")
     try:
         task_result_data = json.loads(task_result.result)
-        pdf_file_path = task_result_data.get('pdf_file_path')
-        if not pdf_file_path or not os.path.exists(pdf_file_path):
-            raise HTTPException(status_code=404, detail="PDF file not found")
-        return FileResponse(pdf_file_path, filename=f"summary_{job_id}.pdf")
+        download_url = task_result_data.get('download_url')
+        preview_url = task_result_data.get('preview_url')
+        if not download_url:
+            raise HTTPException(status_code=404, detail="Download URL not found")
+        return success_response(
+            status_code=200,
+            message="Download URL retrieved successfully",
+            data={"download_url": download_url, "preview_url": preview_url}
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to export summary: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve download URL: {str(e)}")
 
 
 
