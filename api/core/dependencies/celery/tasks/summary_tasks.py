@@ -1,13 +1,18 @@
 import json
-from celery import shared_task
 from pypdf import PdfReader
-from celery.exceptions import SoftTimeLimitExceeded
+import os
+import secrets
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from io import BytesIO
 from api.core.dependencies.celery.celery_app import worker
-from api.utils.files import delete_file
 from api.v1.services.ai_tools.summary import summary_service
-from api.v1.services.job import job_service  # Import job_service to update job status
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.db.database import get_db
+from api.v1.services.ai_tools.audio_transcriber import (
+    transcribe_audio_file_with_timestamps
+)
 
 db = next(get_db())
 
@@ -36,7 +41,38 @@ def generate_pdf_summary_task(pdf_file_path):
 
         time_saved = estimated_read_time - summary_read_time
 
-        # Create the result dictionary
+        # Create the PDF with better formatting
+        pdf_buffer = BytesIO()
+        pdf_filename = os.path.join("media/uploads/pdf", f"summary_{secrets.token_hex(8)}.pdf")
+        os.makedirs(os.path.dirname(pdf_filename), exist_ok=True)
+
+        # Set up the document
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Title
+        title_style = styles['Title']
+        story.append(Paragraph("Summary Report", title_style))
+        story.append(Spacer(1, 12))
+ 
+        normal_style = styles['Normal']
+        paragraphs = summary.split("\n\n") 
+
+        for paragraph in paragraphs:
+            story.append(Paragraph(paragraph, normal_style))
+            story.append(Spacer(1, 12))
+    
+        doc.build(story)
+
+        # Save the PDF content to a file
+        pdf_buffer.seek(0)
+        with open(pdf_filename, "wb") as f:
+            f.write(pdf_buffer.read())
+
+        pdf_buffer.close()
+
+        # Remove binary data from the result dictionary
         result = {
             "number_of_pages": number_of_pages,
             "number_of_words": number_of_words,
@@ -45,11 +81,12 @@ def generate_pdf_summary_task(pdf_file_path):
             "summary_read_time": f"{summary_read_time:.2f} minutes",
             "time_saved": f"{time_saved:.2f} minutes",
             "summary": summary,
-            
+            "pdf_file_path": pdf_filename
         }
 
         result_json = json.dumps(result)
 
+        result_json = json.dumps(result, default=str)
         return result_json
 
     except Exception as e:
@@ -57,19 +94,34 @@ def generate_pdf_summary_task(pdf_file_path):
 
 
 @worker.task()
-def generate_pdf_summary_task(pdf_file):
-    """BAckground task to summarize a pdf and save to database"""
-
-    summary = summary_service.summarize_pdf(pdf_file)
-
-    # Delete file from file system
-    delete_file(pdf_file)
-    
-    return summary
-
-@worker.task()
 def generate_yt_transcript(video_pth):
     """background task generates a transcript based off yt video"""
 
     summary = yts_service.summarize_video(video_pth)
-    return summary
+    return json.dumps(summary)
+
+
+@worker.task()
+def generate_podcast_summary_task(audio_file):
+    '''BAckground task to summarize a podcast and save to database'''
+
+    summary, transcription = summary_service.summarize_podcast(audio_file)
+    return json.dumps({
+        'summary': summary,
+        'transcript': transcription
+    })
+    
+
+@worker.task()
+def generate_audio_summary_task(audio_file, target_lang):
+    '''Background task to summarize an audio file and save to the database'''
+
+    # Process the audio file: transcribe, summarize, translate, and export
+    result = summary_service.process_audio(audio_file, target_lang)
+    return json.dumps(result)
+
+    
+@worker.task()
+def transcribe_audio_task(audio_data):
+    result = transcribe_audio_file_with_timestamps(audio_data)
+    return json.dumps(result)

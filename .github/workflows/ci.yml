@@ -33,10 +33,6 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install dependencies
         run: |
-          id -a
-          sudo apt install -y libasound2-dev gcc python3-dev
-          python -m pip install --upgrade pip
-          pip install --upgrade wheel
           pip install -r requirements.txt
       - name: Copy env file
         run: cp .env.sample .env
@@ -44,6 +40,10 @@ jobs:
         run: |
           sed -i "s/DB_PORT=.*/DB_PORT=${{ job.services.postgres.ports[5432] }}/" .env
           sed -i "s|DB_URL=.*|DB_URL=postgresql://username:password@localhost:${{ job.services.postgres.ports[5432] }}/test|" .env
+      - name: Run migrations
+        run: |
+          alembic revision --autogenerate
+          alembic upgrade head
       - name: Run app
         run: |
           python3 main.py &
@@ -56,9 +56,6 @@ jobs:
             echo "main.py failed to start"
             exit 1
           fi
-      - name: Run migrations
-        run: |
-          alembic upgrade head
       - name: Run tests
         run: |
           PYTHONPATH=. pytest

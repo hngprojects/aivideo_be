@@ -1,13 +1,13 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from datetime import datetime
 from typing import List
 
 from api.v1.schemas.billing_plan import CreateBillingPlanResponse
 from api.v1.schemas.user_subscription import CreateUserSubResponse
+from api.v1.schemas.base_schema import ResponseBase, PaginationBase
 
 
 class InitiatePaymentSchema(BaseModel):
-    email: EmailStr
     billing_plan_id: str
     payment_gateway: str
     redirect_url: str
@@ -27,10 +27,7 @@ class InitiatePaymentData(BaseModel):
     payment_description: str
 
 
-class InitiatePaymentResponse(BaseModel):
-    status_code: int = 200
-    success: bool
-    message: str
+class InitiatePaymentResponse(ResponseBase):
     payment_url: str
 
 
@@ -58,19 +55,17 @@ class PaymentAndPlanAndSubcription(BaseModel):
     user_subscription: CreateUserSubResponse
 
 
-class CreatePaymentResponse(BaseModel):
-    status_code: int = 200
-    success: bool
-    message: str
+class CreatePaymentResponse(ResponseBase):
     data: PaymentAndPlanAndSubcription
 
     class Config:
         from_attributes = True
 
 
-class PaymentsData(BaseModel):
-    current_page: int
-    total_pages: int
-    limit: int
-    total_items: int
-    payments: List[CreatePaymentSchema]
+class PaymentListResponse(ResponseBase):
+    payments: List[CreatePaymentReturnData]
+    pagination: PaginationBase
+
+
+class GetPaymentResponse(ResponseBase):
+    data: CreatePaymentReturnData

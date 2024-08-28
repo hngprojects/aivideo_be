@@ -1,6 +1,8 @@
 from api.v1.models.activity_logs import ActivityLog
+from api.v1.models.api_status import APIStatus
 from api.v1.models.billing_plan import BillingPlan
 from api.v1.models.contact_us import ContactUs
+from api.v1.models.help_topics import HelpTopics
 from api.v1.models.profile import Profile
 from api.v1.models.notifications import Notification, NotificationSetting
 from api.v1.models.resource import Resource
@@ -19,6 +21,6 @@ from api.v1.models.project import Project
 from api.v1.models.payment import Payment
 from api.v1.models.presets import Avatar, BackgroundMusic
 from api.v1.models.lang_reg_timezone_setting import LanguageRegionTimezoneSetting
-
-
+from api.v1.models.text_to_video import TextToVideo
+from api.v1.models.usage_store import UsageStore
 from celery.backends.database.models import Task, TaskSet

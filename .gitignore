@@ -27,6 +27,10 @@ share/python-wheels/
 *.egg
 MANIFEST
 api/core/dependencies/mailjet.py
+downloaded_video.mp4
+
+#Regression test json file
+result.json
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -132,7 +136,7 @@ celerybeat.pid
 .blog_env/
 
 env/
-venv/
+venv*/
 *venv/
 ENV/
 env.bak/
@@ -157,7 +161,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
+tssss.py
 # pytype static type analyzer
 .pytype/
 
@@ -173,3 +177,5 @@ cython_debug/
 #.idea/
 
 test_case1.py
+alembic/versions
+tmp

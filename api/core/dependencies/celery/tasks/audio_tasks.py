@@ -1,7 +1,10 @@
-from celery import shared_task
+import json
 from api.core.dependencies.celery.celery_app import worker
-from api.v1.services.ai_tools.summary_audio import summary_service
+from api.v1.services.ai_tools.summary import summary_service
 from api.db.database import get_db
+import json
+from api.v1.services.ai_tools.audio_transcriber import transcribe_audio_file_with_timestamps
+from api.v1.services.ai_tools.audio_transcriber import  translate_text
 
 # Initialize the database session
 db = next(get_db())
@@ -12,4 +15,22 @@ def generate_audio_summary_task(audio_file, target_lang):
 
     # Process the audio file: transcribe, summarize, translate, and export
     result = summary_service.process_audio(audio_file, target_lang)
-    return result
+    return json.dumps(result)
+
+    
+@worker.task()
+def transcribe_audio_task(audio_data):
+    result = transcribe_audio_file_with_timestamps(audio_data)
+    return json.dumps(result)
+
+
+@worker.task()
+def translate_text_task(text: str, target_language: str):
+    """Celery task for translating text."""
+    try:
+        parsed_text = json.loads(text)
+    except json.JSONDecodeError:
+        parsed_text = text
+    
+    translation = translate_text(parsed_text, target_language)
+    return json.dumps({'translation': translation})

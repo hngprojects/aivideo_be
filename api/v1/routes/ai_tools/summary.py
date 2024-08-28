@@ -8,30 +8,32 @@ from fastapi import (
     UploadFile,
 )
 from sqlalchemy.orm import Session
-from pypdf import PdfReader
-from datetime import timedelta
+from typing import Optional
+import requests
+import io
 import os
+import json
+from fastapi.responses import FileResponse
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.utils.files import upload_file_to_current_dir, delete_file
-from api.utils.files import upload_file
-from api.v1.schemas.project import CreateProject
+from api.utils.files import upload_file_to_current_dir
+from api.utils.files import upload_file, check_file_size
 from api.utils.language_code import LANGUAGE_CODES
-from api.core.dependencies.translator_service import translate_text
+from api.v1.services.ai_tools.translator_service import translate_text
 from api.v1.schemas.translation import TranslationRequest
-from api.v1.models.project import Project
-from api.v1.services.project import project_service
+from api.v1.schemas.ai_tools.audio_transcriber import PodcastRequest
 from api.v1.services.ai_tools.summary import summary_service
 from api.v1.services.job import job_service
-from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summary_task
+from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summary_task, generate_podcast_summary_task, generate_audio_summary_task, transcribe_audio_task
 
 summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
-# Set a maximum file size (e.g., 10 MB)
-MAX_FILE_SIZE = 15 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE = 15 * 1024 * 1024
 
-@summary.post('/pdf-summarizer-test', status_code=status.HTTP_200_OK, response_model=success_response)
+@summary.post('/pdf-summarizer-test', 
+              status_code=status.HTTP_200_OK, 
+              response_model=success_response)
 async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
     '''Endpoint to summarize PDF'''
     
@@ -66,7 +68,8 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
     status_code=status.HTTP_202_ACCEPTED,
     response_model=success_response,
 )
-async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
+):
     """Endpoint to summarize PDF"""
 
     # Read the file content to determine its size
@@ -148,3 +151,109 @@ async def translate_summary(translation_request: TranslationRequest):
         raise HTTPException(
             status_code=500, detail=f"An error occurred during translation: {str(e)}"
         )
+    
+
+@summary.get("/download-summary/{job_id}", response_class=FileResponse)
+async def download_summary(job_id: str, db: Session = Depends(get_db)):
+    """Download the generated summary as a PDF file"""
+    task_result = job_service.fetch_by_job_id(job_id)
+    if not task_result or not task_result.result:
+        job_service.update_job_result(job_id)
+        task_result = job_service.fetch_by_job_id(job_id)
+        if not task_result or not task_result.result:
+            raise HTTPException(status_code=404, detail="Summary not found")
+    try:
+        task_result_data = json.loads(task_result.result)
+        pdf_file_path = task_result_data.get('pdf_file_path')
+        if not pdf_file_path or not os.path.exists(pdf_file_path):
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        return FileResponse(pdf_file_path, filename=f"summary_{job_id}.pdf")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to export summary: {str(e)}")
+
+
+
+@summary.post("/summarize-podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)
+async def summarize_podcast(request: PodcastRequest):
+
+    audio_url = summary_service.get_audio_url(request.podcast_url)
+
+    audio_response = requests.get(audio_url)
+    if audio_response.status_code == 200:
+        file_like_object = io.BytesIO(audio_response.content)
+        file_like_object.filename = "podcast.mp3"
+        file_path = await upload_file_to_current_dir(
+            file_like_object, 
+            allowed_extensions=['mp3', 'mp4'], 
+            save_extension='mp3',
+        )
+        task = generate_podcast_summary_task.delay(file_path)
+   
+        # Create project with job
+        project = job_service.create_project_with_job(
+            job=task,
+            project_title='New project',
+            project_type='Podcast Summarizer'
+            # user_id = pass in the current user id for authenticated users
+        )
+
+        return success_response(
+            status_code=202,
+            message="Podcast Summary generation job initiated successfully",
+            data={
+                "job_id": task.id,
+                "project_id": project.id,
+            }
+        )
+    else:
+        return success_response(
+            status_code=404,
+            message="Podcast not found",
+            data={}
+        )
+
+@summary.post('/audio-summarizer', status_code=status.HTTP_200_OK, response_model=success_response)
+async def summarize_audio(
+    file: UploadFile = File(...), 
+    target_lang: str = "es",  # Default to Spanish
+    db: Session = Depends(get_db)
+):
+    '''Endpoint to summarize an audio file'''
+    
+    audio_file = await upload_file(
+        file, 
+        allowed_extensions=['mp3', 'wav'],
+        upload_folder='audio', 
+        save_extension='mp3' 
+    )
+    await check_file_size(file)
+    
+    task_transcribe = transcribe_audio_task.delay(audio_file)
+
+
+    task = generate_audio_summary_task.delay(audio_file, target_lang)
+    
+
+    project = job_service.create_project_with_job(
+        job=task,
+        project_title='New Audio Summarization Project',
+        project_type='Audio Summarizer'
+    )
+
+    project_transcribe = job_service.create_project_with_job(
+        job=task_transcribe,
+        project_title='New Audio transcription Project',
+        project_type='Audio transcriber'
+    )
+
+    return success_response(
+        status_code=202,
+        message="Audio summary generation and transcription  job initiated successfully",
+        data={
+            "job_id": task.id,
+            "project_id": project.id,
+            "transcription_job_id": task_transcribe.id,
+            "transcription_project_id": project_transcribe.id,
+
+        }
+    )

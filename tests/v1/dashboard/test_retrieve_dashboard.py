@@ -43,7 +43,6 @@ class TestCodeUnderTest:
     def setup_class(cls):
         app.dependency_overrides[user_service.get_current_user] = lambda: MagicMock(id='user_id')
         app.dependency_overrides[get_db] = mock_db_session
-        app.dependency_overrides[project_service.fetch_all_user_projects] = lambda: mock_data
 
 
     @classmethod
@@ -68,6 +67,28 @@ class TestCodeUnderTest:
 
         with patch("api.v1.services.project.ProjectService.fetch_all_user_projects", return_value=mock_data):
             response = client.get(ENDPOINT)
+            assert response.status_code == 200
+            assert response.json()['data'][0]['title'] == mock_data[0].title
+            assert response.json()['data'][1]['project_type'] == mock_data[1].project_type
+
+    def test_get_all_project_by_keywords(self, client):
+        """Test to verify response for getting all projects."""
+    
+        mock_data = [
+            Project(id='user_id', user_id=str(uuid7()), title="Summarize Joe Rogan",
+                    project_type="Podcast Summarizer", created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                    ),
+            Project(id='user_id', user_id=str(uuid7()), title="Summarize YT Video",
+                    project_type="Video Summarizer", created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                    )
+        ]
+
+        app.dependency_overrides[project_service.fetch_user_projects_by_keywords] = lambda: mock_data
+
+        with patch("api.v1.services.project.ProjectService.fetch_user_projects_by_keywords", return_value=mock_data):
+            response = client.get(f'{ENDPOINT}?keywords=summarize')
             assert response.status_code == 200
             assert response.json()['data'][0]['title'] == mock_data[0].title
             assert response.json()['data'][1]['project_type'] == mock_data[1].project_type

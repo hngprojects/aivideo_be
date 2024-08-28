@@ -1,5 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
-import re
+from pydantic import BaseModel, EmailStr, Field
 
 
 class RequestEmail(BaseModel):
@@ -9,3 +8,9 @@ class RequestEmail(BaseModel):
 class ResetPassword(BaseModel):
     new_password: str = Field(min_length=3)
     confirm_password: str = Field(min_length=3)
+
+
+class ResetPasswordResponse(BaseModel):
+    status_code: int
+    success: bool
+    message: str

@@ -10,7 +10,6 @@ from api.v1.routes.ai_tools.youtube_summarizer import video_summary
 from api.db.database import get_db
 from main import app
 
-
 # Create a test client
 client = TestClient(app)
 
@@ -21,12 +20,12 @@ client = TestClient(app)
 def mock_db():
     yield AsyncMock()
 
-# Mock the upload_file function and the Celery task
+# Mock the upload_files function and the Celery task
 
 
 @pytest.fixture
-def mock_upload_file():
-    with patch("api.utils.files.upload_file") as mock:
+def mock_upload_files():
+    with patch("api.utils.files.upload_files") as mock:
         mock.return_value = ["test_video.mp4"]
         yield mock
 
@@ -39,6 +38,15 @@ def mock_generate_video_summary_task():
 
 
 @pytest.fixture
+def mock_create_project_with_job():
+    with patch("api.v1.services.job.job_service.create_project_with_job") as mock:
+        mock.return_value = AsyncMock(
+            id="mock_project_id"
+        )
+        yield mock
+
+
+@pytest.fixture
 def override_get_db(mock_db):
     app.dependency_overrides[get_db] = lambda: mock_db
     yield
@@ -47,7 +55,7 @@ def override_get_db(mock_db):
 # Test the endpoint
 
 
-def test_enqueue_summarize_batch_job(mock_upload_file, mock_generate_video_summary_task, override_get_db):
+def test_enqueue_summarize_batch_job(mock_upload_files, mock_generate_video_summary_task, mock_create_project_with_job, override_get_db):
     # Prepare test files
     files = {
         "files": ("video.mp4", b"dummy video data", "video/mp4")
@@ -55,6 +63,10 @@ def test_enqueue_summarize_batch_job(mock_upload_file, mock_generate_video_summa
 
     # Send a POST request to the summarize_batch endpoint
     response = client.post(
-        "api/v1/tools/youtube_summarizer/summarize_batch", files=files)
+        "/api/v1/tools/summary/video_batch", files=files)
 
+    # Assertions
     assert response.status_code == 202
+    assert response.json()[
+        "message"] == "Video summary generation task initiated successfully"
+    assert "job_ids" in response.json()["data"]

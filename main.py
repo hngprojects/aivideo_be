@@ -1,25 +1,30 @@
-# import eventlet
-# eventlet.monkey_patch()
-
 import uvicorn
+import slowapi
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from fastapi.staticfiles import StaticFiles
 import uvicorn, os
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware  # required by google oauth
-
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from api.utils.logger import logger
 from api.utils.success_response import success_response
 from api.v1.routes import api_version_one
 from api.utils.settings import settings
+from starlette.middleware.base import BaseHTTPMiddleware
+from slowapi.middleware import SlowAPIMiddleware
+from collections import defaultdict
+from slowapi.errors import RateLimitExceeded
 from scripts.presets import load_avatars_in_db, load_audio_in_db
 
 
@@ -35,21 +40,57 @@ app = FastAPI(
     title='Convey API'
 )
 
+# In-memory request counter by endpoint and IP address
+request_counter = defaultdict(lambda: defaultdict(int))
+
+# Middleware to track request counts and IP addresses
+class RequestCountMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        endpoint = request.url.path
+        ip_address = request.client.host
+        request_counter[endpoint][ip_address] += 1
+        response = await call_next(request)
+        return response
+
+
+app.add_middleware(RequestCountMiddleware)
+
+# Endpoint to get request stats
+@app.get("/request-stats", response_class=JSONResponse)
+async def get_request_stats():
+    return success_response(
+        status_code=status.HTTP_200_OK, 
+        message="endpoints request retreived successfully", 
+        data={"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}}
+    )
+
+
+# Initialize the limiter
+limiter = Limiter(key_func=get_remote_address)
+
+# Register the rate limit exceeded handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, lambda request, exc: JSONResponse({"detail": "Rate limit exceeded"}, status_code=429))
+app.add_middleware(SlowAPIMiddleware)
+
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')
 
-# MEDIA_DIR = os.path.expanduser('~/.media')
 MEDIA_DIR = './media'
-if not os.path.exists(MEDIA_DIR):
-    os.makedirs(MEDIA_DIR)
+os.makedirs(MEDIA_DIR, exist_ok=True)
+
+TEMP_DIR = './tmp/media'
+os.makedirs(TEMP_DIR, exist_ok=True)
 
 # Load up media static files
 app.mount('/media', StaticFiles(directory=MEDIA_DIR), name='media')
+app.mount('/tmp/media', StaticFiles(directory=TEMP_DIR), name='tmp-media')
 app.mount('/presets', StaticFiles(directory='./presets'), name='presets')
 
 origins = [
     "http://localhost:3000",
-    "http://localhost:3001"
+    "http://localhost:3001",
+    "https://staging.tifi.tv"
 ]
 
 
@@ -145,50 +186,10 @@ async def exception(request: Request, exc: Exception):
     )
 
 
-html = """
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Chat</title>
-    </head>
-    <body>
-        <h1>WebSocket Chat</h1>
-        <form action="" onsubmit="sendMessage(event)">
-            <input type="text" id="messageText" autocomplete="off"/>
-            <button>Send</button>
-        </form>
-        <ul id='messages'>
-        </ul>
-        <script>
-            var ws = new WebSocket("ws://localhost:7001/api/v1/ws/job/progress?job_id=d29d3c3b-32b6-49a8-a937-d40ad90a199a");
-            ws.onmessage = function(event) {
-                var messages = document.getElementById('messages')
-                var message = document.createElement('li')
-                var content = document.createTextNode(event.data)
-                message.appendChild(content)
-                messages.appendChild(message)
-            };
-            function sendMessage(event) {
-                var input = document.getElementById("messageText")
-                ws.send(input.value)
-                input.value = ''
-                event.preventDefault()
-            }
-        </script>
-    </body>
-</html>
-"""
-
-
-@app.get("/websocket")
-async def get():
-    return HTMLResponse(html)
-
-
 if __name__ == "__main__":
     uvicorn.run(
         "main:app", 
         port=7001, 
         reload=True,
-        # workers=4,
+        workers=4,
     )

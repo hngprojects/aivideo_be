@@ -1,14 +1,11 @@
-from fastapi import Depends, status, APIRouter, Path
-from fastapi.encoders import jsonable_encoder
+from fastapi import Depends, APIRouter
 from sqlalchemy.orm import Session
 from api.utils.success_response import success_response
 from api.v1.models import User
-from typing import Annotated
 from api.db.database import get_db
 from api.v1.schemas.notification_settings import NotificationSettingsBase
 from api.v1.services.user import user_service
 from api.v1.services.notification_settings import notification_setting_service
-from api.v1.models.notifications import NotificationSetting
 
 
 notification_setting = APIRouter(prefix="/settings/notification-settings", tags=["Notification Settings"])
@@ -25,7 +22,7 @@ def get_user_notification_settings(
     return success_response(
         status_code=200,
         message="Notification preferences retrieved successfully",
-        data=jsonable_encoder(settings)
+        data=settings
     )
 
 @notification_setting.post('', response_model=success_response, status_code=200)
@@ -45,7 +42,7 @@ def create_user_notification_settings(
     return success_response(
         status_code=201,
         message="Notification settings created successfully",
-        data=jsonable_encoder(settings)
+        data=settings
     )
 
 
@@ -66,5 +63,5 @@ def update_user_notification_settings(
     return success_response(
         status_code=200,
         message="Notification preferences updated successfully",
-        data=jsonable_encoder(settings)
+        data=settings
     )

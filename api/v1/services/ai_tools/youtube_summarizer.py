@@ -2,9 +2,8 @@
 
 """Services to handle audio transcription"""
 
-import logging
 import os
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 from typing_extensions import List
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains.llm import LLMChain
@@ -40,7 +39,7 @@ class ChatOpenRouter(ChatOpenAI):
 
 class TranscriptionService:
     def __init__(self):
-        self.assemblyai_api_key = settings.ASEMBLYAI_API_KEY
+        self.assemblyai_api_key = settings.ASSEMBLYAI_API_KEY
 
     def init_chain(self):
         prompt_template = """Write a concise summary of the following:
@@ -57,15 +56,15 @@ class TranscriptionService:
             audio_file_path: str,
             language: Optional[str] = None) -> Tuple[List, str]:
         """
-        Transcribes an audio file using OpenAI's Whisper model via LangChain.
+        Transcribes an audio file using AssemblyAI via LangChain.
 
         Args:
-            audio_file_path (str): Path to the video file to be transcribed.
+            audio_file_path (str): Path to the audio file to be transcribed.
             language (Optional[str]): The language of the audio. If None,
-            Whisper will auto-detect the language.
+            AssemblyAI will auto-detect the language.
 
         Returns:
-            str: The transcribed text from the audio file.
+            Tuple[List, str]: The transcribed paragraphs with timestamps and summary.
 
         Raises:
             FileNotFoundError: If the audio file doesn't exist.
@@ -78,17 +77,21 @@ class TranscriptionService:
             loader = AssemblyAIAudioTranscriptLoader(
                 file_path=audio_file_path,
                 api_key=self.assemblyai_api_key,
-                transcript_format=TranscriptFormat.PARAGRAPHS
+                transcript_format=TranscriptFormat.PARAGRAPHS  # Paragraph format
             )
             docs = loader.load()
 
             transcription_timestamp = []
 
             for doc in docs:
+                # Each doc represents a paragraph. Get its content and timestamps.
                 transcribe = {
                     "paragraph": doc.page_content,
+                    "start_time": doc.metadata.get("start_time"),
+                    "end_time": doc.metadata.get("end_time")
                 }
                 transcription_timestamp.append(transcribe)
+
             summary = self.summarize_transcription(docs)
             return (transcription_timestamp, summary)
 
@@ -96,14 +99,15 @@ class TranscriptionService:
             print(f"An error occurred during transcription: {str(e)}")
             raise
 
-    def summarize_transcription(self, transcription: Document):
-        """Returns a summarized version of a PDF
+    def summarize_transcription(self, transcription: List[Document]):
+        """Returns a summarized version of the transcription
 
         Args:
-            pdf_file (str): This is expecting the path to the pdf file
+            transcription (List[Document]): List of Document objects containing
+            transcription
 
         Returns:
-            str: Summary of uploaded PDF file
+            str: Summary of the transcription
         """
 
         llm_chain = self.init_chain()

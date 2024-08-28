@@ -1,15 +1,19 @@
 from fastapi import HTTPException, status
-from api.v1.models.payment import Payment
+import stripe.error
 from sqlalchemy.orm import Session
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from decimal import Decimal
 import requests
+import stripe
 
 from api.v1.models.payment import Payment
 from api.v1.models import User, BillingPlan
-from api.utils.db_validators import check_model_existence
+from api.utils.pagination import get_pagination_details
+from api.utils.db_validators import check_model_existence, get_model_or_none, get_model_by_params
 from api.utils.settings import settings
 
+
+stripe.api_key = settings.STRIPE_SECRET
 
 class PaymentService:
     """Payment service functionality"""
@@ -24,7 +28,7 @@ class PaymentService:
 
         return new_payment
 
-    def fetch_all(self, db: Session, **query_params: Optional[Any]):
+    def fetch_all(self, db: Session, offset: int = 0, limit: int = 0, **query_params: Optional[Any]):
         """Fetch all payments with option to search using query parameters"""
 
         query = db.query(Payment)
@@ -35,45 +39,49 @@ class PaymentService:
                 if hasattr(Payment, column) and value:
                     query = query.filter(getattr(Payment, column).ilike(f"%{value}%"))
 
-        return query.all()
+        if limit and offset:
+            payments = query.offset(offset).limit(limit).all()
+        else:
+            payments = query.all()
+        
+        return payments
 
     def fetch(self, db: Session, payment_id: str):
         """Fetches a payment by id"""
-        
         payment = check_model_existence(db, Payment, payment_id)
         return payment
 
+    def fetch_or_none(self, db: Session, payment_id: str):
+        """Fetches a payment by id or returns None"""
+        payment = get_model_or_none(db, Payment, payment_id)
+        return payment
+
+    def fetch_by_params(self, db: Session, query_params: dict):
+        """Fetches a payment by one or more query params"""
+        payment = get_model_by_params(db, Payment, query_params)
+        return payment
+
     def fetch_all_for_user(
-            self, db: Session, user_id, limit: int = 0, page: int = 0):
-        """Fetches all payments for a user"""
+            self, db: Session, user: User, offset: int = 0, limit: int = 0):
+        """Fetches all payments for/by a user"""
 
-        # check if user exists
-        _ = check_model_existence(db, User, user_id)
+        query = db.query(Payment).filter(Payment.user_id == user.id)
 
-        if limit and page:
-            # calculating offset value
-            # from page and limit given
-            offset_value = (page - 1) * limit
-
-            # Filter to return only 
-            # payments of the user_id
-            payments = (
-                db.query(Payment)
-                .filter(Payment.user_id == user_id)
-                .offset(offset_value)
-                .limit(limit)
-                .all()
-            )
+        if limit and offset:
+            payments = query.offset(offset).limit(limit).all()
         else:
-            # Filter to return only 
-            # payments of the user_id
-            payments = (
-                db.query(Payment)
-                .filter(Payment.user_id == user_id)
-                .all()
-            )
+            payments = query.all()
 
         return payments
+    
+    def dictize_payments_and_pagination(self, payments: list, offset: 0, limit: 0):
+        """Return a list of dicts of all Payment objs in `payments`
+        and details of pagination for the payment list"""
+        data = {
+            "payments": [p.to_dict() for p in payments],
+            "pagination": get_pagination_details(len(payments), offset, limit)
+        }
+        return data
 
     def update(self, db: Session, payment_id: str, schema):
         """Updates a payment"""
@@ -100,11 +108,101 @@ class PaymentService:
 class PaymentGatewayService:
     """Payment gateway service functionality"""
 
-    PAYMENT_GATEWAYS = ["Stripe", "Flutterwave", "Lemonsqueezy"]
+    PAYMENT_GATEWAYS = ["stripe", "flutterwave"]
 
     FLUTTERWAVE_CHECKOUT_URL = "https://checkout.flutterwave.com/v3/hosted/pay"
 
     FLUTTERWAVE_PAYMENTS_URL = "https://api.flutterwave.com/v3/payments"
+
+    def validate_gateway(self, gateway):
+        """Confirm that the gateway passed in part 
+        of the accepted payment gateways, then return 
+        the lower case in case it's in another case"""
+        if not isinstance(gateway, str) \
+            or gateway.lower() not in self.PAYMENT_GATEWAYS:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, 
+                detail=f"Only {self.PAYMENT_GATEWAYS} supported for now"
+            )
+        return gateway.lower()
+    
+    def check_payment_is_multiples_of_bill_per_interval(
+            self, payment_amount: Union[int, float, Decimal], 
+            bill_per_interval: Union[int, float, Decimal]
+        ):
+        """Make sure to pass the same datatype for 
+        `payment_amount` and `bill_per_interval` to avoid errors"""
+        if payment_amount % bill_per_interval:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Error - paid amount doesn't match billing plan price"
+            )
+    
+    def get_payment_url_for_flutterwave(self, user, bill_plan, schema):
+        payment_data = {
+            "tx_ref": bill_plan.id,
+            "currency": bill_plan.currency,
+            "amount": float(bill_plan.price),
+            "redirect_url": schema.redirect_url,
+            "payment_description": "User subscription payment",
+            "payment_title": f"{bill_plan.plan_name} Subscription",
+            "customer": {
+                "email": user.email,
+                "name": f"{user.first_name} {user.last_name}",
+            },
+        }
+
+        # check for auto renew and create flutterwave payment plan
+        if schema.auto_renew:
+            subscription_plan_id = self.create_subscription_plan(bill_plan)
+            payment_data['payment_plan'] = subscription_plan_id
+
+        header = {"Authorization": f"Bearer {settings.FLUTTERWAVE_SECRET}"}
+
+        try:
+            response = requests.post(
+                self.FLUTTERWAVE_PAYMENTS_URL, json=payment_data, headers=header
+            )
+
+            return {"payment_url": response.json()["data"]["link"]}
+        
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Error initializing payment"
+            )
+    
+    def get_payment_url_for_stripe(self, user, bill_plan, success_url, schema):
+        try:
+            # Create a checkout session
+            checkout_session = stripe.checkout.Session.create(
+                line_items=[{
+                    'price_data': {
+                        'currency': bill_plan.currency,
+                        'product_data': {
+                            'name': bill_plan.plan_name,
+                        },
+                        'unit_amount': int(bill_plan.price * 100),  # Convert to the smallest unit
+                    },
+                    'quantity': 1,
+                }],
+                mode='subscription' if schema.auto_renew else 'payment',
+                customer_email=user.email,  # Automatically fill in the user's email in the checkout
+                success_url=success_url,
+                # cancel_url=cancel_url,
+                metadata={
+                    'user_id': user.id,
+                    'billing_plan_id': bill_plan.id,
+                    'plan_name': bill_plan.plan_name
+                },
+            )
+
+            return {"payment_url": checkout_session["url"]}
+
+        # except Exception as e:
+        except stripe.error.StripeError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error initializing payment {str(e)}"
+            )
 
     def confirm_flutterwave_payment(self, data: dict, billing_plan: BillingPlan):
         """Handle checkout response from `flutterwave`"""
