@@ -83,8 +83,10 @@ class ToolStatsResponse(BaseModel):
 class ProjectToolsEnum(str, Enum):
     youtube_summarizer = "Youtube Summarizer"
     text_to_video = "Text To Video"
-    audio_transcriber = "Audio transcriber"
+    audio_transcriber = "Audio Transcriber"
+    audio_summarizer = "Audio Summarizer"
     image_to_video = "Image To Video"
+    talking_avatar = "Talking Avatar"
     podcast_summarizer = "Podcast Summarizer"
     thumbnail_generator = "Thumbnail Generator"
     pdf_summarizer = "PDF Summarizer"
