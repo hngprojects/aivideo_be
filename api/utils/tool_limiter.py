@@ -1,5 +1,5 @@
 from typing import Callable
-from fastapi import Request, HTTPException, Depends
+from fastapi import Request, HTTPException, Depends,status
 from sqlalchemy.orm import Session
 from functools import wraps
 from datetime import timedelta
@@ -32,7 +32,7 @@ def track_tool_usage(current_tool: str):
             request: Request = kwargs.get('request')
             db: Session = kwargs.get('db', Depends(get_db))
             user: User | None = kwargs.get('user', Depends(user_service.get_current_user_optional))
-            print(user)
+
             if user:
                 tracking_record = user_usage_store_service.fetch_by_user(db, user.id)
                 if tracking_record:
@@ -44,8 +44,8 @@ def track_tool_usage(current_tool: str):
                     )
                     if tool_count > 20:
                         raise HTTPException(
-                            status_code=429,
-                            detail="Please upgrade your plan to get more access",
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Please upgrade your plan to get more access to the {current_tool} tool.",
                         )
                     else:
                         user_usage_store_service.update_tool_usage(
@@ -70,8 +70,8 @@ def track_tool_usage(current_tool: str):
                 tracking_record.tool_access_count += 1
                 if tracking_record.tools_accessed.count(current_tool) == ACCESS_LIMIT:
                     raise HTTPException(
-                        status_code=429,
-                        detail="Too many requests, please log in to continue using this tool.",
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Please log in to continue using {current_tool} tool.",
                     )
                 else:
                     usage_store_service.create_usage_store_and_assign_tool(

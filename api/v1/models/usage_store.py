@@ -11,7 +11,7 @@ class UsageStore(BaseTableModel):
     __tablename__ = 'usage_store'
     
     ip_address = Column(String, nullable=False)
-    tool_access_count = Column(String, default=0)
+    tool_access_count = Column(Integer, default=0)
     last_accessed = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     tools = relationship('ToolAccess', back_populates='usage_store', cascade="all, delete-orphan")
 
