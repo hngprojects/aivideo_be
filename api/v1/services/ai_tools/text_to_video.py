@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import random
-from typing import List
+from typing import List, Optional
 from uuid import uuid4
 import openai
 import ffmpeg
@@ -15,6 +15,8 @@ from deepgram import (
     FileSource,
 )
 
+from api.utils.minio_service import minio_service
+from api.utils import mime_types
 from api.utils.files import delete_file
 from api.utils.settings import settings
 from api.v1.services.ai_tools.general_video_service import video_service
@@ -30,7 +32,7 @@ class TextToVideoService:
 
         response = self.client.completions.create(
             model="gpt-3.5-turbo-instruct",
-            prompt=f"Generate five simple scene descriptions that can be used as an image description for the following script:\n\n{script}\n\nScene Descriptions:",
+            prompt=f"Generate five simple scene descriptions that can be used as an image description for the following script and I do not want any form of numbering or bulleting on them, just list and separate with a new line:\n\n{script}\n\nScene Descriptions:",
             max_tokens=500
         )
         scenes = response.choices[0].text.strip().split('\n')
@@ -109,8 +111,8 @@ class TextToVideoService:
         script: str, 
         scenes: List[str], 
         voice_over: str, 
-        background_audio: str, 
-        aspect_ratio: str
+        aspect_ratio: str,
+        background_audio: Optional[str] = None, 
     ):
 
         audio_file = video_service.generate_audio_from_script(script, voice_over)
@@ -127,13 +129,14 @@ class TextToVideoService:
             output_video=video_with_subtitles_path
         )
 
-        # Add background music to video
-        video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
-        video_with_audio = video_service.add_background_audio(
-            video_path=video_with_subtitles, 
-            audio_path=background_audio, 
-            output_path=video_with_bg_music_path
-        )
+        if background_audio:
+            # Add background music to video
+            video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
+            video_with_audio = video_service.add_background_audio(
+                video_path=video_with_subtitles, 
+                audio_path=background_audio, 
+                output_path=video_with_bg_music_path
+            )
 
         # Set up for final result
         video_dir = os.path.join(settings.STORAGE_DIR, 'video')
@@ -141,7 +144,7 @@ class TextToVideoService:
         output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
         # Adjust aspect ratio
         final_result_file = video_service.change_aspect_ratio(
-            input_file=video_with_audio, 
+            input_file=video_with_audio if background_audio is not None else video_with_subtitles, 
             output_file=output_video_file, 
             aspect_ratio=aspect_ratio
         )
@@ -151,16 +154,27 @@ class TextToVideoService:
         delete_file(subtitle_file)
         delete_file(video_file)
         delete_file(video_with_subtitles_path)
-        delete_file(video_with_bg_music_path)
+        if background_audio:
+            delete_file(video_with_bg_music_path)
         for img in images:
             delete_file(img)
         
-        save_url = f'{settings.APP_URL}/{final_result_file}'
+        # save_url = f'{settings.APP_URL}/{final_result_file}'
+
+        minio_save_file = f'tavtr-{str(uuid4())}.mp4'
+        save_url, download_url = minio_service.upload_to_minio(
+            bucket_name='text-to-video',
+            source_file=final_result_file,
+            destination_file=minio_save_file,
+            content_type=mime_types.VIDEO_MP4
+        )
+
         data = {
-            "url": save_url
+            "url": save_url,
+            "download_url": download_url,
         }
 
-        print(data)
+        delete_file(final_result_file)
         return data
 
 
