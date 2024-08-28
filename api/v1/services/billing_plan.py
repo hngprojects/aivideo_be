@@ -174,8 +174,7 @@ class BillingPlanService:
             return user_sub
         
         # create a user subscription plan
-        start_date, end_date = user_sub_service.get_sub_start_and_end_datetime(
-            free_plan.plan_interval)
+        start_date, end_date = user_sub_service.get_sub_start_and_end_datetime(0, 0, free_plan=True)
         user_subscription_data = {
             "user_id": user.id,
             "end_date": end_date,
@@ -201,7 +200,9 @@ class BillingPlanService:
         return user_sub.billing_plan.plan_name == plan_name
     
     def dynamic_billing_plan_dict(self, bill_plan: BillingPlan):
-        """Return `BillingPlan.to_dict()` with extra dynamic details, 
+        """
+        ***NO LONGER IN USE, SINCE THE INTRO OF `load_billing_plans_in_db`***\n
+        Return `BillingPlan.to_dict()` with extra dynamic details, 
         eg: `'yearly_discount_percent'`, `'yearly_total'`, etc
         """
         yearly_discount_percent = 0

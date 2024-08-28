@@ -133,10 +133,11 @@ class PaymentGatewayService:
         bill_plan: BillingPlan, decimal_places: int = 2, enforce_one_interval=True
     ):
         """Check that `paid_amount` is equal to, or represents exact multiples
-        of `bill_plan.price` without remenders based on `decimal_places`, 
-        and that `paid_currency` is same as `bill_plan.currency`.
+        of `bill_plan.price` without remenders when checked with `decimal_places`, 
+        and that `paid_currency` is same as `bill_plan.currency`. The 
         `enforce_one_interval=True` makes sure that only payment for 
-        one billing plan interval is accepted"""
+        one billing plan interval is allowed. Set it to `False` to allow
+        payment for multiple billing plan interval"""
 
         def invalid_pay_resp(message):
             return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
@@ -190,7 +191,7 @@ class PaymentGatewayService:
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Error initializing payment"
             )
 
-    def get_payment_url_for_stripe(self, user, bill_plan, success_url, schema):
+    def get_payment_url_for_stripe(self, user, bill_plan, schema):
         try:
             # Create a checkout session
             checkout_session = stripe.checkout.Session.create(
@@ -207,7 +208,7 @@ class PaymentGatewayService:
                 }],
                 mode='subscription' if schema.auto_renew else 'payment',
                 customer_email=user.email,  # Automatically fill in the user's email in the checkout
-                success_url=success_url,
+                success_url=schema.redirect_url,
                 # cancel_url=cancel_url,
                 metadata={
                     'user_id': user.id,

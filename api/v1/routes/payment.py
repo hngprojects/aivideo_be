@@ -51,7 +51,7 @@ async def initiate_payment(
     else:  # stripe
         # get a dictionary containing "payment_url" for stripe
         payment_url = pg_service.get_payment_url_for_stripe(
-            current_user, bill_plan, schema.redirect_url, schema)
+            current_user, bill_plan, schema)
 
     # RETURN payment data
     return success_response(
@@ -117,7 +117,7 @@ async def verify_payment_status(
 
         # create a user subscription plan
         start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
-            bill_plan.plan_interval)
+            paid_amount, bill_plan.price)
         user_subscription_payload = {
             "start_date": start_date,
             "billing_plan_id": billing_plan_id,
@@ -186,7 +186,7 @@ async def stripe_webhook(
 
         # create a user subscription plan
         start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
-            bill_plan.plan_interval)
+            paid_amount, bill_plan.price)
         user_subscription_payload = {
             "start_date": start_date,
             "billing_plan_id": billing_plan_id,
@@ -281,7 +281,7 @@ async def flutterwave_webhook(
 
         # create a user subscription plan
         start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
-            bill_plan.plan_interval)
+            paid_amount, bill_plan.price)
         user_subscription_payload = {
             "start_date": start_date,
             "billing_plan_id": billing_plan_id,
