@@ -291,20 +291,6 @@ async def check_file_size(file, max_file_size_mb=10):
         )
 
 
-async def audio_scan(file_path: str) -> bool:
-    '''Basic scan to validate the audio file'''
-    try:
-        if not os.path.getsize(file_path):
-            return False
-        audio = AudioSegment.from_file(file_path)
-        if len(audio) < 1000:
-            return False
-
-        return True
-    except Exception as e:
-        print(f"Audio scan error: {e}")
-        return False
-
 
 async def contains_face(image_path):
     face_cascade = cv2.CascadeClassifier(
@@ -326,7 +312,7 @@ async def contains_face(image_path):
         status_code=400, detail=f"Image does not contain a face.",)
 
 
-async def get_media_type_from_extension(file_extension):
+def get_media_type_from_extension(file_extension):
     """
     Given a file extension (e.g., 'mp4', 'jpg', 'pdf'), return the corresponding media type (MIME type).
     """

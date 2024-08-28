@@ -1,6 +1,8 @@
 import os
 from typing import Optional
 from uuid import uuid4
+from api.utils import mime_types
+from api.utils.minio_service import minio_service
 from api.utils.settings import settings
 import json
 import os
@@ -44,14 +46,25 @@ class TalkingAvatarService:
 		]
 		payload = {
 			"functions": None,
-			"variables": None,
+			"variables": {},
 			"face_padding_top": 0,
 			"face_padding_bottom": 18,
 			"face_padding_left": 0,
 			"face_padding_right": 0,
-			"sadtalker_settings": None,
-			"selected_model": "Wav2Lip",
+			"sadtalker_settings": {
+				"still": True,
+				"ref_pose": None,
+				"input_yaw": None,
+				"input_roll": None,
+				"pose_style": 0,
+				"preprocess": "resize",
+				"input_pitch": None,
+				"ref_eyeblink": None,
+				"expression_scale": 1,
+			},
+			"selected_model": "SadTalker",
 		}
+
 		response = requests.post(
 			"https://api.gooey.ai/v2/Lipsync/form/",
 			headers={
@@ -96,18 +109,41 @@ class TalkingAvatarService:
 		delete_file(initial_save_path)
 		delete_file(audio)
 
-		# Compress video
+		minio_save_file = f'tavtr-{str(uuid4())}.mp4'
+		save_url, download_url = minio_service.upload_to_minio(
+			bucket_name='talking-avatar',
+			source_file=final_save_path,
+			destination_file=minio_save_file,
+			content_type=mime_types.VIDEO_MP4
+		)
+
+		# Compress video and save to minio as well
 		low_quality = video_service.compress_video(input_file=final_save_path, bitrate=500)
+		low_quality_vid_preview, low_quality_vid_download = minio_service.upload_to_minio(
+			bucket_name='talking-avatar',
+			source_file=low_quality,
+			destination_file=f'tavtr-{str(uuid4())}.mp4',
+			content_type=mime_types.VIDEO_MP4
+		)
 		medium_quality = video_service.compress_video(input_file=final_save_path, bitrate=1080)
+		medium_quality_vid_preview, medium_quality_vid_download = minio_service.upload_to_minio(
+			bucket_name='talking-avatar',
+			source_file=medium_quality,
+			destination_file=f'tavtr-{str(uuid4())}.mp4',
+			content_type=mime_types.VIDEO_MP4
+		)
+
+		delete_file(final_save_path)
+		delete_file(medium_quality)
+		delete_file(low_quality)
 		
-		save_url = f'{settings.APP_URL}/{final_save_path}'
 		return {
 			'app_url': save_url,
 			'source': url,
 			'quality': {
-				"low_quality": f'{settings.APP_URL}/{low_quality}',
-				"medium_quality": f'{settings.APP_URL}/{medium_quality}',
-				"high_quality": f'{settings.APP_URL}/{final_save_path}',
+				"low_quality": low_quality_vid_download,
+				"medium_quality": medium_quality_vid_download,
+				"high_quality": download_url,
 			}
 		}
 

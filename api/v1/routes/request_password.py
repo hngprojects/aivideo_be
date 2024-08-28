@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request, Query, BackgroundTasks
 from sqlalchemy.orm import Session
-from api.v1.schemas.request_password_reset import RequestEmail, ResetPassword
+from api.v1.schemas.request_password_reset import RequestEmail, ResetPassword, ResetPasswordResponse
 from api.db.database import get_db as get_session
 from api.v1.services.request_pwd import reset_service
 from api.utils.success_response import success_response
@@ -21,11 +21,13 @@ async def request_forget_password(
     url = "api/v1/auth/forget-password"
     template_file = "reset_password.html"
     subject = "HNG11 PASSWORD RESET"
-    data =  await reset_service.create(reset_schema, request, db, background_tasks,
-                                           subject=subject, template_file=template_file, url=url)
+    data = await reset_service.create(reset_schema, request, db, background_tasks,
+                                      subject=subject, template_file=template_file, url=url)
     return success_response(**data)
 
 # process password link
+
+
 @pwd_reset.get("/forget-password")
 async def process_forget_password_link(
     token: str = Query(...), db: Session = Depends(get_session)
@@ -43,7 +45,9 @@ async def forget_password(
     return reset_service.reset_password(data, token, session)
 
 # change the password
-@pwd_reset.post("/reset-password")
+
+
+@pwd_reset.post("/reset-password", response_model=ResetPasswordResponse)
 async def reset_password(
     data: ResetPassword,
     session: Session = Depends(get_session),

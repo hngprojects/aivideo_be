@@ -1,12 +1,12 @@
 name: Dev Deployment
 
 on:
-  # push:
-  #   branches: [dev]
-  #   paths-ignore:
-  #     - "README.md"
-  #     - ".github/workflows/**"
-  #     - ".gitignore"
+  push:
+   branches: [dev]
+   paths-ignore:
+     - "README.md"
+#     - ".github/workflows/**"
+     - ".gitignore"
   workflow_dispatch:
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
     runs-on: pydeploy
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@v0.1.8
@@ -31,3 +31,15 @@ jobs:
             pip install -r requirements.txt
             alembic revision --autogenerate
             alembic upgrade head
+            python3 main.py &
+            pid=$!
+            sleep 10
+            if ps -p $pid > /dev/null; then
+              echo "main.py started successfully"
+              kill $pid
+            else
+              echo "main.py failed to start"
+              exit 1
+            fi
+
+          

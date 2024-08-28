@@ -4,6 +4,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from sqlalchemy import event
 from sse_starlette import EventSourceResponse
+from fastapi.responses import JSONResponse
 import asyncio
 import json
 
@@ -21,6 +22,7 @@ from api.v1.schemas.user import (
     UserActivityResponse,
     UserUpdateResponse,
     UserDetailResponse,
+    CurrentUserDetailResponse
 )
 from api.db.database import get_db
 from api.v1.services.user import user_service, UserService
@@ -29,7 +31,7 @@ from api.v1.services.user import user_service, UserService
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@user_router.get("/me", status_code=status.HTTP_200_OK, response_model=success_response)
+@user_router.get("/me", status_code=status.HTTP_200_OK, response_model=CurrentUserDetailResponse)
 def get_current_user_details(
     db: Session = Depends(get_db),
     current_user: User = Depends(user_service.get_current_user),

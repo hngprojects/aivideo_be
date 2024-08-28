@@ -18,9 +18,9 @@ from fastapi.responses import FileResponse
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.utils.files import upload_file_to_current_dir
-
-from api.utils.files import upload_file, check_file_size, audio_scan
+from api.utils.files import upload_file, check_file_size
 from api.utils.language_code import LANGUAGE_CODES
+from api.v1.schemas.project import ProjectToolsEnum
 from api.v1.services.ai_tools.translator_service import translate_text
 from api.v1.schemas.translation import TranslationRequest
 from api.v1.schemas.ai_tools.audio_transcriber import PodcastRequest
@@ -50,7 +50,7 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
     project = job_service.create_project_with_job(
         job=task,
         project_title='New project',
-        project_type='Talking Head',
+        project_type=ProjectToolsEnum.pdf_summarizer.value,
         # user_id = pass in the current user id for authenticated users
     )
 
@@ -102,7 +102,7 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
     project = job_service.create_project_with_job(
         job=task,
         project_title='New project',
-        project_type='PDF Summarizer',
+        project_type=ProjectToolsEnum.pdf_summarizer.value,
         # user_id = pass in the current user id for authenticated users
     )
 
@@ -194,7 +194,7 @@ async def summarize_podcast(request: PodcastRequest):
         project = job_service.create_project_with_job(
             job=task,
             project_title='New project',
-            project_type='Podcast Summarizer'
+            project_type=ProjectToolsEnum.podcast_summarizer.value
             # user_id = pass in the current user id for authenticated users
         )
 
@@ -228,25 +228,20 @@ async def summarize_audio(
         save_extension='mp3' 
     )
     await check_file_size(file)
-    if not await audio_scan(audio_file):
-        raise HTTPException(status_code=400, detail="Audio file scan failed. The file might be corrupted or empty.")
     
     task_transcribe = transcribe_audio_task.delay(audio_file)
-
-
     task = generate_audio_summary_task.delay(audio_file, target_lang)
-    
 
     project = job_service.create_project_with_job(
         job=task,
         project_title='New Audio Summarization Project',
-        project_type='Audio Summarizer'
+        project_type=ProjectToolsEnum.audio_summarizer.value
     )
 
     project_transcribe = job_service.create_project_with_job(
         job=task_transcribe,
         project_title='New Audio transcription Project',
-        project_type='Audio transcriber'
+        project_type=ProjectToolsEnum.audio_transcriber.value
     )
 
     return success_response(

@@ -18,6 +18,8 @@ from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.job import job_service
 from api.v1.services.user import user_service
 from api.utils.tool_limiter import TrackToolUsage
+from api.v1.schemas.project import ProjectToolsEnum
+
 
 from api.v1.services.user import user_service
 from api.v1.models.user import User
@@ -64,7 +66,7 @@ async def summarize_up_vid(
     project = job_service.create_project_with_job(
         job=task,
         project_title="video upload project",
-        project_type="Youtube summarizer",
+        project_type=ProjectToolsEnum.youtube_summarizer.value
     )
 
     return success_response(
@@ -95,7 +97,7 @@ async def summarize_yt_vid(
     project = job_service.create_project_with_job(
         job=task,
         project_title="Youtube URL Summary",
-        project_type="Youtube Summariser",
+        project_type=ProjectToolsEnum.youtube_summarizer.value,
         description="New YT Summarizer Project",
     )
 

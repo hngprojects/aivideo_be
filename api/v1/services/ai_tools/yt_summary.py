@@ -103,17 +103,16 @@ class YoutubeSummary:
         )
         elements.append(main_heading)
 
-        # Add the Transcript heading and text
-        if request.transcript:
-            transcript_heading = Paragraph("Transcript", subheading_style)
-            elements.append(transcript_heading)
-            elements.append(Paragraph(request.transcript, body_style))
-
         if request.summary:
             # Add the Summary heading and text
             summary_heading = Paragraph("Summary", subheading_style)
             elements.append(summary_heading)
             elements.append(Paragraph(request.summary, body_style))
+
+        if request.transcript:
+            transcript_heading = Paragraph("Transcript", subheading_style)
+            elements.append(transcript_heading)
+            elements.append(Paragraph(request.transcript, body_style))
 
         # Build the PDF
         pdf.build(elements)

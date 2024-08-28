@@ -30,6 +30,11 @@ class UpdateProjectSchema(BaseModel):
     result: Optional[str] = None
 
 
+class SaveProjectSchema(BaseModel):
+    
+    result: str
+
+
 class AddFullProjectSchema(CreateFullProjectSchema):
     pass
 
@@ -40,6 +45,24 @@ class ProjectCreateResponseSchema(CreateFullProjectSchema):
 
     class Config:
         from_attributes = True
+
+class BaseResponseSchema(BaseModel):
+    message: str
+    status_code: int
+    status: str
+
+class SingleProjectResponse(BaseResponseSchema):
+    """
+    Schema for all Project Response
+    """
+    data: ProjectCreateResponseSchema | None
+
+
+class AllProjectResponse(BaseResponseSchema):
+    """
+    Schema for all Project Response
+    """
+    data: Union[list[ProjectCreateResponseSchema], list[None]]
 
 class ToolStatsData(BaseModel):
     pdf_summarizer: float = 0
@@ -60,8 +83,10 @@ class ToolStatsResponse(BaseModel):
 class ProjectToolsEnum(str, Enum):
     youtube_summarizer = "Youtube Summarizer"
     text_to_video = "Text To Video"
-    audio_transcriber = "Audio transcriber"
+    audio_transcriber = "Audio Transcriber"
+    audio_summarizer = "Audio Summarizer"
     image_to_video = "Image To Video"
+    talking_avatar = "Talking Avatar"
     podcast_summarizer = "Podcast Summarizer"
     thumbnail_generator = "Thumbnail Generator"
     pdf_summarizer = "PDF Summarizer"

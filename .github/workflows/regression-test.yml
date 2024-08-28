@@ -8,7 +8,7 @@ on:
 
 jobs:
   run-newman-test:
-    runs-on: pyrunner
+    runs-on: pytest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,11 +26,26 @@ jobs:
         run: |
           newman run qa_tests/regression/Core_Product.postman_collection.json -r json --reporter-json-export=result.json --suppress-exit-code
 
-      - name: Copy result.json to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          source: "result.json"
-          target: "/home/${{ secrets.USERNAME }}/aivideo_be/staging"
+      - name: Update api-status endpoint
+        run: |
+          python3 update_api_status.py
+
+      # - name: Copy result.json to server
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.HOST }}
+      #     username: ${{ secrets.USERNAME }}
+      #     password: ${{ secrets.PASSWORD }}
+      #     source: "result.json"
+      #     target: "/home/${{ secrets.USERNAME }}/aivideo_be/staging"
+          
+      # - name: Deploy to Server
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: ${{ secrets.HOST }}
+      #     username: ${{ secrets.USERNAME }}
+      #     password: ${{ secrets.PASSWORD }}
+      #     script: |
+      #       cd aivideo_be/staging
+      #       python3 update_api_status.py
+
