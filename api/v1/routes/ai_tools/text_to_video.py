@@ -6,6 +6,7 @@ from api.utils.success_response import success_response
 from api.v1.services.job import job_service
 from api.v1.services.ai_tools.text_to_video import ttv_service
 from api.v1.services.presets import preset_service
+from api.v1.schemas.project import ProjectToolsEnum
 from api.v1.schemas.ai_tools.text_to_video import SceneGeneration, TTVSchema
 from api.core.dependencies.celery.tasks.video_tasks import geenerate_video_from_script_task, generate_video_scenes_task
 
@@ -61,14 +62,15 @@ async def convert_text_to_video(
 ):
     '''Endpoint to convert a script to video'''
     
-    audio = preset_service.fetch_music_by_id(
-        db=db, music_id=schema.audio_id
-    )
+    if schema.audio_id:
+        audio = preset_service.fetch_music_by_id(
+            db=db, music_id=schema.audio_id
+        )
 
-    audio_file = audio.file_path
+        audio_file = audio.file_path
 
     task = geenerate_video_from_script_task.apply_async(kwargs={
-        'background_audio': audio_file,
+        'background_audio': audio_file if schema.audio_id else None,
         'scenes': schema.scenes,
         'aspect_ratio': schema.aspect_ratio,
         'script': schema.script,
@@ -79,7 +81,7 @@ async def convert_text_to_video(
     project = job_service.create_project_with_job(
         job=task,
         project_title='New TTV Project',
-        project_type='Text to Video',
+        project_type=ProjectToolsEnum.text_to_video.value,
         # user_id = pass in the current user id for authenticated users
     )
 
