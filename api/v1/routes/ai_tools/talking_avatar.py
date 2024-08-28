@@ -4,9 +4,8 @@ from sqlalchemy.orm import Session
 
 from api.db.database import get_db
 from api.v1.models.user import User
-from api.v1.schemas.profile import ProjectToolsEnum
 from api.v1.services.user import user_service
-from api.utils.tool_limiter import track_tool_usage
+# from api.utils.tool_limiter import track_tool_usage
 from api.utils.success_response import success_response
 from api.utils.files import upload_to_current_dir, contains_face
 from api.v1.services.presets import preset_service
