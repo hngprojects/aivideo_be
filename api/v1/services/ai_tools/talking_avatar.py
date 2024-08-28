@@ -1,6 +1,7 @@
 import os
 from typing import Optional
 from uuid import uuid4
+from api.utils import mime_types
 from api.utils.minio_service import minio_service
 from api.utils.settings import settings
 import json
@@ -37,9 +38,6 @@ class TalkingAvatarService:
 		Returns:
 			str: A string json for the save url and the source of the video
 		"""
-		
-
-		
 
 		audio = video_service.generate_audio_from_script(script=script, voice_over=voice_over)
 		files = [
@@ -113,26 +111,26 @@ class TalkingAvatarService:
 
 		minio_save_file = f'tavtr-{str(uuid4())}.mp4'
 		save_url, download_url = minio_service.upload_to_minio(
-			bucket_name='videos',
+			bucket_name='talking-avatar',
 			source_file=final_save_path,
 			destination_file=minio_save_file,
-			content_type='video/mp4'
+			content_type=mime_types.VIDEO_MP4
 		)
 
 		# Compress video and save to minio as well
 		low_quality = video_service.compress_video(input_file=final_save_path, bitrate=500)
 		low_quality_vid_preview, low_quality_vid_download = minio_service.upload_to_minio(
-			bucket_name='videos',
+			bucket_name='talking-avatar',
 			source_file=low_quality,
 			destination_file=f'tavtr-{str(uuid4())}.mp4',
-			content_type='video/mp4'
+			content_type=mime_types.VIDEO_MP4
 		)
 		medium_quality = video_service.compress_video(input_file=final_save_path, bitrate=1080)
 		medium_quality_vid_preview, medium_quality_vid_download = minio_service.upload_to_minio(
-			bucket_name='videos',
+			bucket_name='talking-avatar',
 			source_file=medium_quality,
 			destination_file=f'tavtr-{str(uuid4())}.mp4',
-			content_type='video/mp4'
+			content_type=mime_types.VIDEO_MP4
 		)
 
 		delete_file(final_save_path)

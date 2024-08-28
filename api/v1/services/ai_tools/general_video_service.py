@@ -180,7 +180,7 @@ class GeneralVideoService:
             video = ffmpeg.input(video_path)
 
             # Load the background audio and adjust its volume
-            background_audio = ffmpeg.input(audio_path).filter('volume', 0.2)
+            background_audio = ffmpeg.input(audio_path).filter('volume', 0.15)
 
             # Adjust the volume of the original audio from the video
             original_audio = video.audio.filter('volume', 1.0)
