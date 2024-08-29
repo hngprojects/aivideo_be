@@ -101,7 +101,7 @@ class BillingPlanService:
             return user_sub
         
         # create a user subscription plan
-        start_date, end_date = user_sub_service.get_sub_start_and_end_datetime(0, 0, free_plan=True)
+        start_date, end_date = user_sub_service.get_sub_start_and_end_datetime(billing_plan_interval='free')
         user_subscription_data = {
             "user_id": user.id,
             "end_date": end_date,
