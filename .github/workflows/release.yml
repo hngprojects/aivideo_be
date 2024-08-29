@@ -1,0 +1,157 @@
+name: Automated Release (Python FastAPI)
+
+on:
+  push:
+    branches:
+      - main # or your default branch name
+
+jobs:
+  check_and_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Fetch all history for all tags and branches
+
+      - name: Get latest version
+        id: get_version
+        run: |
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            echo "VERSION=v0.0.0" >> $GITHUB_OUTPUT
+            echo "FIRST_RELEASE=true" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=$LATEST_TAG" >> $GITHUB_OUTPUT
+            echo "FIRST_RELEASE=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for changes since last tag
+        id: check_changes
+        run: |
+          echo "Current version: ${{ steps.get_version.outputs.VERSION }}"
+          echo "Is first release: ${{ steps.get_version.outputs.FIRST_RELEASE }}"
+
+          if [[ "${{ steps.get_version.outputs.FIRST_RELEASE }}" == "true" ]]; then
+            echo "This is the first release, changes=1"
+            echo "changes=1" >> $GITHUB_OUTPUT
+          else
+            echo "Checking for changes since ${{ steps.get_version.outputs.VERSION }}"
+            if git diff --quiet ${{ steps.get_version.outputs.VERSION }}..HEAD -- .; then
+              echo "No changes detected, changes=0"
+              echo "changes=0" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected, changes=1"
+              echo "changes=1" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Set up Python
+        if: steps.check_changes.outputs.changes == 1
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9" # or your preferred Python version
+
+      - name: Install dependencies
+        if: steps.check_changes.outputs.changes == 1
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Bump version and push tag
+        if: steps.check_changes.outputs.changes == 1
+        id: bump_version
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          VERSION_WITHOUT_V="${VERSION#v}"
+          if [ -z "$VERSION_WITHOUT_V" ]; then
+            NEW_VERSION="v0.0.1"
+          else
+            IFS='.' read -ra VERSION_PARTS <<< "$VERSION_WITHOUT_V"
+            PATCH=$((VERSION_PARTS[2] + 1))
+            NEW_VERSION="v${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH"
+          fi
+          echo "New version: $NEW_VERSION"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a $NEW_VERSION -m "Automated release $NEW_VERSION"
+          git push origin $NEW_VERSION
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate Release Notes
+        if: steps.check_changes.outputs.changes == 1
+        id: release_notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          PREVIOUS_TAG=${{ steps.get_version.outputs.VERSION }}
+          NEW_TAG=${{ steps.bump_version.outputs.new_version }}
+
+          echo "## What's Changed" > release_notes.md
+          echo "" >> release_notes.md
+
+          # Get commit messages
+          git log --pretty=format:"* %s (%an)" ${PREVIOUS_TAG}..HEAD >> release_notes.md
+
+          echo "" >> release_notes.md
+          echo "## Contributors" >> release_notes.md
+          echo "" >> release_notes.md
+
+          # Get unique contributors with GitHub usernames
+          CONTRIBUTORS=$(git log --pretty=format:"%an|%ae" ${PREVIOUS_TAG}..HEAD | sort | uniq)
+
+          # Install jq for JSON parsing
+          sudo apt-get install jq -y
+
+          # Function to get GitHub username from email
+          get_github_username() {
+            local email=$1
+            local api_url="https://api.github.com/search/users?q=$email+in:email"
+            local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$api_url")
+            echo $response | jq -r '.items[0].login // empty'
+          }
+
+          # Process each contributor
+          echo "<table>" >> release_notes.md
+          while IFS='|' read -r name email; do
+            username=$(get_github_username "$email")
+            if [ -n "$username" ]; then
+              echo "<tr><td><img src='https://github.com/$username.png' width='50' height='50' alt='$name'></td><td><a href='https://github.com/$username'>$name</a></td></tr>" >> release_notes.md
+            else
+              echo "<tr><td></td><td>$name</td></tr>" >> release_notes.md
+            fi
+          done <<< "$CONTRIBUTORS"
+          echo "</table>" >> release_notes.md
+
+          echo "" >> release_notes.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${NEW_TAG}" >> release_notes.md
+
+          cat release_notes.md
+
+      - name: Create Release
+        if: steps.check_changes.outputs.changes == 1
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          tag_name: ${{ steps.bump_version.outputs.new_version }}
+          release_name: Release ${{ steps.bump_version.outputs.new_version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+
+      - name: Zip Project
+        if: steps.check_changes.outputs.changes == 1
+        run: zip -r release.zip . -x "*.git*"
+
+      - name: Upload Release Asset
+        if: steps.check_changes.outputs.changes == 1
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release.zip
+          asset_name: release.zip
+          asset_content_type: application/zip
