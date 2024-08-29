@@ -135,5 +135,13 @@ class UserUsageStoreService:
         tool.tool_access_count += value
         db.commit()
         return tool.tool_access_count
-
+    
+    def update_tool_access_count_by_id(self, db: Session, id:str, value:int):
+        tool = self.fetch_by_id(db, id)
+        # Increment the access count for the tool
+        tool.tool_access_count = value
+        db.commit()
+        return tool.tool_access_count
+    
+    
 user_usage_store_service = UserUsageStoreService()
