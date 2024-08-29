@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 import os
 import shutil
 from typing import Optional, Dict
-
-
+from api.utils.minio_service import minio_service
+from uuid import uuid4
 from api.v1.models.user import User
 from api.v1.schemas.profile import ProfileBase, ProfileCreateUpdate, CurrentProfileResponse
 from api.db.database import get_db
@@ -12,6 +12,7 @@ from api.v1.services.user import user_service
 from api.v1.services.profile import profile_service
 from fastapi import UploadFile, File
 from api.utils.success_response import success_response
+import tempfile
 
 
 
@@ -74,25 +75,28 @@ def update_user_profile(
         
         # Check if the cleaned filename is not empty or None
         if cleaned_filename:
-            filename = f"{current_user.id}_{cleaned_filename}"
-            file_path = os.path.join(UPLOAD_DIR, filename)
+            # Upload the avatar to Minio
+            minio_save_file = f"avatar-{str(uuid4())}.{avatar.filename.split('.')[-1]}"
+            minio_bucket_name = 'user-avatars'
+            minio_content_type = avatar.content_type
+
+            # Create a temporary file to save the avatar
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                shutil.copyfileobj(avatar.file, temp_file)
+                temp_file_path = temp_file.name
+
+            save_url, download_url = minio_service.upload_to_minio(
+                bucket_name=minio_bucket_name,
+                source_file=temp_file_path,
+                destination_file=minio_save_file,
+                content_type=minio_content_type
+            )
             
-            # Check if there is an existing avatar URL and remove the old file
-            if current_user.avatar_url:
-                old_filename = os.path.basename(current_user.avatar_url)
-                old_file_path = os.path.join(UPLOAD_DIR, old_filename)
-                
-                # Delete the old avatar file if it exists and is different from the new one
-                if os.path.exists(old_file_path) and old_filename != filename:
-                    os.remove(old_file_path)
-            
-            # Save the new avatar file to the server
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(avatar.file, buffer)
-            
-            # Generate the URL or path for the saved file
-            avatar_url = f"media/uploads/user_avatars/{filename}"
-            current_user.avatar_url = avatar_url
+            # Clean up the temporary file after uploading
+            os.remove(temp_file_path)
+
+            # Update the user's avatar URL
+            current_user.avatar_url = save_url
         else:
             pass
     else:

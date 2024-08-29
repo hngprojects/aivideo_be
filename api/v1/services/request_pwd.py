@@ -68,9 +68,12 @@ class RequestPasswordService:
         html_content = templates.TemplateResponse(f"{template_file}", {"url": reset_link, "user": user, "request": request}).body.decode("utf-8")
 
         # Sending the email
+
+        
         email_service = EmailService()
         email_subject = subject
         body = html_content
+
         await email_service.send_email(
             background_tasks=background_tasks,
             to_email=email.user_email,
@@ -78,6 +81,7 @@ class RequestPasswordService:
             body=body,
             from_name="HNG11 Support"
         )
+
 
         # Return the success response
         return {
