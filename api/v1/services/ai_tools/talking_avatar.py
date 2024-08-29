@@ -135,9 +135,9 @@ class TalkingAvatarService:
 			content_type=mime_types.VIDEO_MP4
 		)
 
-		delete_file(final_save_path)
 		delete_file(medium_quality)
 		delete_file(low_quality)
+		delete_file(final_save_path)
 		
 		return {
 			'app_url': save_url,
