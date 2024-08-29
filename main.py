@@ -59,7 +59,11 @@ app.add_middleware(RequestCountMiddleware)
 # Endpoint to get request stats
 @app.get("/request-stats", response_class=JSONResponse)
 async def get_request_stats():
-    return success_response(status_code=status.HTTP_200_OK, message="endpoints request retreived successfully", data={"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}})
+    return success_response(
+        status_code=status.HTTP_200_OK, 
+        message="endpoints request retreived successfully", 
+        data={"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}}
+    )
 
 
 # Initialize the limiter

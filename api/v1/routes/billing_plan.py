@@ -22,7 +22,7 @@ async def create_billing_plan(
     db: Session = Depends(get_db),
 ):
     """
-    Endpoint to create new billing plan by a `superadmin`
+    Endpoint to create new billing plan by a `superadmin`.
     """
 
     new_plan = bp_service.create(db=db, schema=billing_plan_schema)
@@ -47,7 +47,7 @@ async def get_all_billing_plans(
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Billing plans fetched successfully.",
-        data={"billing_plans": [bp.to_dict() for bp in all_plans]},
+        data={"billing_plans": [bp_service.dynamic_billing_plan_dict(bp) for bp in all_plans]},
     )
 
 
@@ -65,7 +65,7 @@ async def get_single_billing_plan(
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Billing plan fetched successfully",
-        data=bill_plan.to_dict()
+        data=bp_service.dynamic_billing_plan_dict(bill_plan)
     )
 
 

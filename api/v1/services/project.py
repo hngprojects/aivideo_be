@@ -120,10 +120,11 @@ class ProjectService(Service):
 
         return db.query(Project).all()
 
-    def add_user_to_project(self, db: Session, project: Project, user: User):
+    def save_project(self, db: Session, project: Project, user: User, project_result: str):
         """Add a user to a project"""
 
         project.user_id = user.id
+        project.result = project_result
         db.commit()
         return project
 

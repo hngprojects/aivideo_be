@@ -51,6 +51,12 @@ class SummaryService():
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         return llm_chain
 
+    def advanced_summarize(self, text, model_name="facebook/bart-large-cnn"):
+        summarizer = pipeline("summarization", model=model_name)
+        summary = summarizer(text, max_length=150,
+                             min_length=30, do_sample=False)
+        return summary[0]['summary_text']
+
     def apply_ocr_to_images(self, doc):
         """Extract text from images in the PDF using OCR."""
         text = ""
@@ -82,8 +88,7 @@ class SummaryService():
 
         if not text.strip():
             return "The PDF contains images but no text could be extracted."
-        
-        
+
         if summary_length == "brief":
             chunk_size = 1500
             chunk_overlap = 500
@@ -95,7 +100,8 @@ class SummaryService():
             chunk_overlap = 300
 
         # Summarize Text
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000, chunk_overlap=100)
         documents = text_splitter.create_documents([text])
@@ -115,8 +121,6 @@ class SummaryService():
         final_summary = final_summary.replace(
             '\n', ' ').replace('\r', ' ').strip()
         return final_summary
-    
-
 
     def transcribe_audio(self, file_path) -> Transcription:
         transcript = self.client.audio.transcriptions.create(
@@ -146,11 +150,33 @@ class SummaryService():
         summary = chain.run(docs)
 
         return summary, transcribed_text
-
+    
     def fetch_page(self, url):
         response = requests.get(url)
         response.raise_for_status()
         return response.text
+    
+    def get_podcast_details(self, podcast_url: str):
+        """Get the transcript of a podcast episode from the provided URL."""
+        try:
+            content = self.fetch_page(podcast_url)
+            soup = BeautifulSoup(content, 'html.parser')
+            apple_title_meta = soup.find('meta', attrs={'name': 'apple:title'})
+
+            title = apple_title_meta['content']
+            li_tags = soup.select('ul.metadata li')
+            duration = li_tags[-2].text.strip()
+            host = soup.select('img', attrs={'class': 'artwork-component__contents artwork-component__image svelte-3e3mdo'})
+            host_name = host[1]['alt']
+            return {
+                "title": title,
+                "duration": duration,
+                "host": host_name
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to extract podcast details: {str(e)}")
+
 
     def string_to_dict(self, input_string):
         try:
@@ -186,7 +212,8 @@ class SummaryService():
             intent_data = {}
 
         if not data:
-            raise HTTPException(status_code=404, detail="Unable to retrieve audio from the provided URL")
+            raise HTTPException(
+                status_code=404, detail="Unable to retrieve audio from the provided URL")
         intent_data = data[0].get('data', {})
         shelves = intent_data.get('shelves', [])
 
@@ -200,7 +227,8 @@ class SummaryService():
                 if stream_url:
                     return stream_url
         if not stream_url:
-            raise HTTPException(status_code=404, detail="Unable to retrieve audio from the provided URL")
+            raise HTTPException(
+                status_code=404, detail="Unable to retrieve audio from the provided URL")
 
     def summarize_audio(self, audio_file_path):
         """Summarizes an audio file by transcribing and then summarizing the transcript."""
@@ -330,9 +358,10 @@ class SummaryService():
 
     def create_documents(self, transcript: Transcription) -> List[Document]:
         """Create a list of documents from the transcript"""
+
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000, chunk_overlap=200)
-        documents = text_splitter.create_documents([transcript])
+        documents = text_splitter.create_documents(transcript)
         return documents
 
 

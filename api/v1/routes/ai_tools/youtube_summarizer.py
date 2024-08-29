@@ -13,6 +13,8 @@ from api.utils.logger import logging
 from api.utils.success_response import success_response
 from api.v1.schemas.ai_tools.youtube import YTLinksRequest
 from api.v1.services.job import job_service
+from api.v1.schemas.project import ProjectToolsEnum
+
 
 video_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
@@ -56,7 +58,7 @@ async def enqueue_summarize_batch_job(
 
         project = job_service.create_project_with_job(
             job=job, project_title="New project",
-            project_type="Youtube summarizer"
+            project_type=ProjectToolsEnum.youtube_summarizer.value
         )
 
         job_ids.append({
@@ -91,7 +93,7 @@ async def summarize_yt_vid(
         project = job_service.create_project_with_job(
             job=task,
             project_title="New project",
-            project_type="YT video Summarizer"
+            project_type=ProjectToolsEnum.youtube_summarizer.value
         )
         data.append({
             "job_id": task.id,

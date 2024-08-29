@@ -30,6 +30,11 @@ class UpdateProjectSchema(BaseModel):
     result: Optional[str] = None
 
 
+class SaveProjectSchema(BaseModel):
+    
+    result: str
+
+
 class AddFullProjectSchema(CreateFullProjectSchema):
     pass
 
@@ -78,7 +83,9 @@ class ToolStatsResponse(BaseModel):
 class ProjectToolsEnum(str, Enum):
     youtube_summarizer = "Youtube Summarizer"
     text_to_video = "Text To Video"
-    audio_transcriber = "Audio transcriber"
+    talking_avatar = "Talking Avatar"
+    audio_transcriber = "Audio Transcriber"
+    audio_summarizer = "Audio Summarizer"
     image_to_video = "Image To Video"
     podcast_summarizer = "Podcast Summarizer"
     thumbnail_generator = "Thumbnail Generator"

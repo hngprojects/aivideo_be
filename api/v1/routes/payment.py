@@ -91,12 +91,8 @@ async def verify_payment_status(
     billing_plan_id = response['data']['tx_ref']
     bill_plan = bp_service.fetch(db, billing_plan_id)
 
-    # Verify paid amount
-    if bill_plan.price != amount:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Error - paid amount doesn't match billing plan price"
-        )
+    # Verify that paid amount is exact multiples of `bill_plan.price`
+    pg_service.check_payment_is_multiples_of_bill_per_interval(amount, bill_plan.price)
 
     # check if payment record already exist
     payment_exist = payment_service.fetch_by_params(
@@ -116,7 +112,8 @@ async def verify_payment_status(
         payment_service.create(db, payload)
 
         # create a user subscription plan
-        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(amount, amount)
+        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
+            amount, bill_plan.price)
         user_subscription_payload = {
             "start_date": start_date,
             "billing_plan_id": billing_plan_id,
@@ -162,8 +159,14 @@ async def stripe_webhook(
     if event.type == "checkout.session.completed":
         payment = event.data
         amount = payment["amount_total"]
+        billing_plan_id = payment['metadata']['billing_plan_id']
 
-        payload = {
+        bill_plan = bp_service.fetch(db, billing_plan_id)
+
+        # Verify that paid amount is exact multiples of `bill_plan.price`
+        pg_service.check_payment_is_multiples_of_bill_per_interval(amount, bill_plan.price)
+
+        payment_payload = {
             "user_id": payment['metadata']['user_id'],
             "transaction_id": payment['id'],
             "amount": amount,
@@ -173,13 +176,14 @@ async def stripe_webhook(
         }
 
         # Record payment
-        payment_service.create(db, payload)
+        payment_service.create(db, payment_payload)
 
         # create a user subscription plan
-        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(amount, amount)
+        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
+            amount, bill_plan.price)
         user_subscription_payload = {
             "start_date": start_date,
-            "billing_plan_id": payment['metadata']['billing_plan_id'],
+            "billing_plan_id": billing_plan_id,
             "user_id": payment['metadata']['user_id'],
             "end_date": end_date
         }
@@ -241,10 +245,16 @@ async def flutterwave_webhook(
     payment = await req.body()
 
     # Handle the event
-    if payload.event == "charge.completed":
+    if payment.event == "charge.completed":
         amount = payment['data']["amount"]
         user = user_service.fetch_by_params(
             db, {"email": payment['data']['email']})
+        billing_plan_id = payment['data']['tx_ref']
+
+        bill_plan = bp_service.fetch(db, billing_plan_id)
+
+        # Verify that paid amount is exact multiples of `bill_plan.price`
+        pg_service.check_payment_is_multiples_of_bill_per_interval(amount, bill_plan.price)
 
         payload = {
             "user_id": user.id,
@@ -258,10 +268,9 @@ async def flutterwave_webhook(
         # Record payment
         payment_service.create(db, payload)
 
-        billing_plan_id = payment['data']['tx_ref']
-
         # create a user subscription plan
-        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(amount, amount)
+        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
+            amount, bill_plan.price)
         user_subscription_payload = {
             "start_date": start_date,
             "billing_plan_id": billing_plan_id,

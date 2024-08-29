@@ -8,7 +8,6 @@ from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.faq import faq_service
 from api.v1.schemas.faq import CreateFAQ, UpdateFAQ, FAQBase
-from api.utils.tool_limiter import track_tool_usage
 import logging
 
 faq = APIRouter(prefix="/faqs", tags=["FAQs"])

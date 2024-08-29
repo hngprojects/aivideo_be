@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime
 from typing import List
 
@@ -12,6 +12,14 @@ class CreateBillingPlanSchema(BaseModel):
     currency: str
     access_limit: int
     features: List[str]
+
+    @field_validator("plan_interval")
+    @classmethod
+    def validate_plan_interval(cls, value):
+        v = value.lower()
+        if v not in ["monthly", "yearly"]:
+            raise ValueError("Interval must be either 'monthly' or 'yearly'")
+        return v
 
 
 class CreateBillingPlanReturnData(CreateBillingPlanSchema):

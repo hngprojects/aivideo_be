@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from fastapi import HTTPException
 from uuid_extensions import uuid7
 
 from api.utils.settings import settings
@@ -59,39 +60,77 @@ def load_audio_in_db():
                 db.refresh(audio)
 
 
+
 def load_billing_plans_in_db():
-    '''Function to load all billing plan presets in the database'''
+    free_plan = BillingPlan(
+        id="free",
+        plan_name="Free",
+        price=0,
+        access_limit=50,
+        plan_interval='one-off',
+        currency='USD',
+        features=[
+            'Access to tools',
+            'Text to Video',
+            'Image to Video',
+            'Talking Avatar Generator',
+            'Youtube Summarizer',
+            'Podcast Summarizer',
+            'Limited Processing',
+            'Watermark on videos'
+        ]
+    )
 
-    plans = [
-        {
-            "plan_name": "Free",
-            "price": 0.00,
-            "plan_interval": "monthly",
-            "currency": "USD",
-            "features": ["Basic support", "Access to community"],
-            "access_limit": 30
-        },
-        {
-            "plan_name": "Basic",
-            "price": 9.99,
-            "plan_interval": "monthly",
-            "currency": "USD",
-            "features": ["Email support", "Access to all features", "Basic analytics"],
-            "access_limit": 100
-        },
-        {
-            "plan_name": "Pro",
-            "price": 29.99,
-            "plan_interval": "monthly",
-            "currency": "USD",
-            "features": ["Priority support", "Access to all features", "Advanced analytics", "Custom reporting"],
-            "access_limit": 300
-        }
-    ]
+    premium_monthly_plan = BillingPlan(
+        id='premium_monthly',
+        plan_name="Premium Monthly",
+        price=4.99,
+        plan_interval='monthly',
+        access_limit=150,
+        currency='USD',
+        features=[
+            'Access to tools',
+            'Text to Video',
+            'Image to Video',
+            'Talking Avatar Generator',
+            'Youtube Summarizer',
+            'Podcast Summarizer',
+            'Watermark free videos',
+            'Early access to new features',
+            'Early access to future tools'
+        ]
+    )
 
-    for plan_data in plans:
-        if not db.query(BillingPlan).filter(BillingPlan.plan_name==plan_data["plan_name"]).first():
-            plan = BillingPlan(id=str(uuid7()), **plan_data)
-            db.add(plan)
+    premium_yearly_plan = BillingPlan(
+        id='premium_yearly',
+        plan_name="Premium Yearly",
+        price=49.99,
+        plan_interval='yearly',
+        access_limit=500,
+        currency='USD',
+        features=[
+            'Access to tools',
+            'Text to Video',
+            'Image to Video',
+            'Talking Avatar Generator',
+            'Youtube Summarizer',
+            'Podcast Summarizer',
+            'Watermark free videos',
+            'Early access to new features',
+            'Early access to future tools',
+            'Save 15% compared to monthly'
+        ]
+    )
+    
+    plans = [free_plan, premium_monthly_plan, premium_yearly_plan]
+    
+    for i in plans:
+        if not db.query(BillingPlan).filter(BillingPlan.id == i.id).first():
+            db.query(BillingPlan).delete()
             db.commit()
+            for plan in plans:
+                db.add(plan)
+                db.commit()
+                db.refresh(plan)
+            return True
 

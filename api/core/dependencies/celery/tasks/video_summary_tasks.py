@@ -2,8 +2,8 @@
 from api.utils.files import delete_file, download_audio_yt
 from api.core.dependencies.celery.celery_app import worker
 import json
-from api.utils.transcripts import get_paragraphs
-from api.v1.services.ai_tools.video_subtitles import convert_video_to_audio, transcribe_audio
+from api.utils.transcripts import create_documents_from_transcript, get_paragraphs
+from api.v1.services.ai_tools.video_subtitles import convert_video_to_audio, transcribe_audio, transcribe_audio_segments
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.ai_tools.summary import summary_service
 
@@ -30,8 +30,7 @@ def generate_video_summary_task(self, video_file):
             }
         })
 
-        transcription = transcribe_audio(audio_file)
-
+        transcription = transcribe_audio_segments(audio_file)
         self.update_state(state='PROGRESS', meta={
             'status': 'Creating document from text', 'meta': {
                 'current': 50,
@@ -39,7 +38,7 @@ def generate_video_summary_task(self, video_file):
             }
         })
 
-        documents = summary_service.create_documents(transcription["text"])
+        documents, transcript = create_documents_from_transcript(transcription)
 
         self.update_state(state='PROGRESS', meta={
             'status': 'Summarizing transcript', 'meta': {
@@ -49,7 +48,6 @@ def generate_video_summary_task(self, video_file):
         })
 
         summary = summary_service.summarize_transcript(documents)
-
         self.update_state(state='PROGRESS', meta={
             'status': 'Transciption and summarization completed', 'meta': {
                 'current': 100,
@@ -59,9 +57,11 @@ def generate_video_summary_task(self, video_file):
 
         result = {
             "summary": summary,
-            "summary_word_count": summary_service.calculate_word_count(summary),
+            "summary_word_count": summary_service.calculate_word_count(
+                summary),
             "transcript": get_paragraphs(transcription),
-            "transcript_word_count": summary_service.calculate_word_count(transcription)
+            "transcript_word_count": summary_service.calculate_word_count(
+                transcript)
         }
         return json.dumps(result)
     except Exception as e:
@@ -88,7 +88,6 @@ def download_and_generate_video_summmary_task(self, link):
             }
         })
         audio_file = download_audio_yt(link)
-        print(audio_file)
         self.update_state(state='PROGRESS', meta={
             'status': 'Transcribing audio to text', 'meta': {
                 'current': 10,
@@ -96,20 +95,20 @@ def download_and_generate_video_summmary_task(self, link):
             }
         })
 
-        transcription = transcribe_audio(audio_file)
+        transcription = transcribe_audio_segments(audio_file)
 
         self.update_state(state='PROGRESS', meta={
             'status': 'Creating document from text', 'meta': {
-                'current': 50,
+                'current': 20,
                 'total': 100
             }
         })
 
-        documents = summary_service.create_documents(transcription["text"])
+        documents, transcript = create_documents_from_transcript(transcription)
 
         self.update_state(state='PROGRESS', meta={
             'status': 'Summarizing transcript', 'meta': {
-                'current': 80,
+                'current': 70,
                 'total': 100
             }
         })
@@ -125,9 +124,11 @@ def download_and_generate_video_summmary_task(self, link):
 
         result = {
             "summary": summary,
-            "summary_word_count": summary_service.calculate_word_count(summary),
+            "summary_word_count": summary_service.calculate_word_count(
+                summary),
             "transcript": get_paragraphs(transcription),
-            "transcript_word_count": summary_service.calculate_word_count(transcription)
+            "transcript_word_count": summary_service.calculate_word_count(
+                transcript)
         }
         return json.dumps(result)
     except Exception as e:

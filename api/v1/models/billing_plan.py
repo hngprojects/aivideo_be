@@ -6,7 +6,6 @@ from api.v1.models.base_model import BaseTableModel
 class BillingPlan(BaseTableModel):
     __tablename__ = 'billing_plans'
 
-    #id = Column(String, primary_key=True)
     plan_name = Column(String, nullable=False)
     price = Column(DECIMAL, nullable=False)
     plan_interval = Column(
@@ -17,5 +16,5 @@ class BillingPlan(BaseTableModel):
     currency = Column(String, nullable=False)
     features = Column(ARRAY(String), nullable=False)
     access_limit = Column(Integer, nullable=True)
-    
+
     subscriptions = relationship('UserSubscription', back_populates='billing_plan')

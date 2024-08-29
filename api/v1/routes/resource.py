@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
+from api.utils.pagination import paginated_response
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.resource import resource_service
@@ -12,7 +13,9 @@ from api.v1.schemas.resource import (
     CreateResource,
     ResourceBase,
     AllResourcesResponse,
-    UpdateResource
+    UpdateResource,
+    CreateResourceResponse,
+    SuccessResponse,
 )
 import logging
 
@@ -20,9 +23,16 @@ import logging
 resource = APIRouter(prefix="/resources", tags=["Resources"])
 
 
-@resource.post("", response_model=success_response, status_code=201)
+@resource.post(
+    "",
+    response_model=CreateResourceResponse,
+    status_code=201,
+    summary="Create new Resource",
+    description="Admin endpoint to create a resource",
+)
 async def create_resource(
     schema: CreateResource,
+    publish: bool = Query(True),
     db: Session = Depends(get_db),
     current_admin: User = Depends(user_service.get_current_super_admin),
 ):
@@ -30,13 +40,14 @@ async def create_resource(
 
     Args:
         schema (CreateResource): Request Body for creating resource
+        publish (bool): query parameter to decide whether or not to publish after creating
         db (Session, optional): The db session object. Defaults to Depends(get_db).
         current_admin (User, optional): Admin User. Defaults to Depends(user_service.get_current_super_admin).
 
     Returns:
         success_response
     """
-    resource = resource_service.create(db, schema=schema)
+    resource = resource_service.create(db, schema=schema, publish=publish)
 
     logging.info(f"Creating new Resource. ID: {resource.id}.")
     return success_response(
@@ -52,6 +63,7 @@ async def get_resources(
     db: Annotated[Session, Depends(get_db)],
     page: int = 1,
     per_page: int = 10,
+    search: Optional[str] = Query(None),
     is_published: Optional[bool] = Query(None),
     is_deleted: Optional[bool] = Query(None),
 ):
@@ -71,14 +83,17 @@ async def get_resources(
         "is_published": is_published,
         "is_deleted": is_deleted,
     }
-    return resource_service.fetch_all(db, page, per_page, **query_params)
+    return resource_service.fetch_all(db, page, per_page, search, **query_params)
 
 
 @resource.get(
     "/public", status_code=status.HTTP_200_OK, response_model=AllResourcesResponse
 )
 async def get_public_resources(
-    db: Annotated[Session, Depends(get_db)], page: int = 1, per_page: int = 10
+    db: Annotated[Session, Depends(get_db)],
+    page: int = 1,
+    per_page: int = 10,
+    search: Optional[str] = Query(None),
 ):
     """
     Retrieves all public resources.
@@ -90,9 +105,19 @@ async def get_public_resources(
         ResourceData
     """
 
-    return resource_service.fetch_all_public(db, page, per_page)
+    return resource_service.fetch_all(
+        db=db,
+        page=page,
+        per_page=per_page,
+        search=search,
+        is_published=True,
+        is_deleted=False,
+    )
 
-@resource.get("/search", status_code=status.HTTP_200_OK, response_model=AllResourcesResponse)
+
+@resource.get(
+    "/search", status_code=status.HTTP_200_OK, response_model=AllResourcesResponse
+)
 async def search_resources(
     keywords: str,
     db: Session = Depends(get_db),
@@ -107,20 +132,38 @@ async def search_resources(
         db: Database session object.
         page: Page number for pagination.
         per_page: Max number of resources per page.
-    
+
     Returns:
         Search results in a paginated format.
     """
-    search_results = resource_service.search_resources(db, keywords, page, per_page)
-    return search_results
+    skip = (page - 1) * per_page
+    results = resource_service.search_resources(db, keywords, skip, per_page)
+    total = results['total']
+    items = jsonable_encoder(results['items'])
+    total_pages = int(total / per_page) + (total % per_page > 0)
 
-@resource.patch('/{resource_id}',response_model=success_response, status_code=status.HTTP_200_OK)
+    return success_response(
+        status_code=200,
+        message="Successfully fetched items",
+        data={
+            "pages": total_pages,
+            "total": total,
+            "skip": skip,
+            "limit": per_page,
+            "items": items,
+        },
+    )
+
+
+@resource.patch(
+    "/{resource_id}", response_model=success_response, status_code=status.HTTP_200_OK
+)
 async def update_resources(
     schema: UpdateResource,
-    resource_id : str,
+    resource_id: str,
     db: Annotated[Session, Depends(get_db)],
-    current_user : Annotated[User, Depends(user_service.get_current_super_admin)],
-    ):
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+):
     """
     Route to Update resources
 
@@ -139,16 +182,17 @@ async def update_resources(
     resource = resource_service.update(db=db, resource_id=resource_id, schema=schema)
     return success_response(
         status_code=status.HTTP_200_OK,
-        message='Resource updated Succesfully',
-        data = jsonable_encoder(ResourceBase.model_validate(resource))
+        message="Resource updated Succesfully",
+        data=jsonable_encoder(ResourceBase.model_validate(resource)),
     )
 
-@resource.delete('/{resource_id}', status_code=status.HTTP_204_NO_CONTENT)
+
+@resource.delete("/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_resources(
-    resource_id : str,
-    db : Annotated[Session, Depends(get_db)],
-    current_user : Annotated[User, Depends(user_service.get_current_super_admin)]
-    ) :
+    resource_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+):
     """
     Route to soft  delete Resources
 
@@ -159,22 +203,58 @@ async def delete_resources(
     """
     return resource_service.delete(db=db, Resource_id=resource_id)
 
-@resource.get('/{resource_id}', status_code=status.HTTP_200_OK, response_model=success_response)
-async def get_resource_by_id(
-    resource_id : str,
-    db : Annotated[Session, Depends(get_db)]
-) :
+
+@resource.get(
+    "/{resource_id}", status_code=status.HTTP_200_OK, response_model=success_response
+)
+async def get_resource_by_id(resource_id: str, db: Annotated[Session, Depends(get_db)]):
     """
-    Route to get resource by its id 
+    Route to get resource by its id
 
     Args:
         resource_id (str):the identifier of the resource to query
         db (Annotated[Session, Depends): database dependency
     """
-    
-    resource = resource_service.fetch(db=db , id=resource_id)
+
+    resource = resource_service.fetch(db=db, id=resource_id)
     return success_response(
         status_code=status.HTTP_200_OK,
-        message='Resource fetched successfully',\
-        data=jsonable_encoder(resource)
+        message="Resource fetched successfully",
+        data=jsonable_encoder(resource),
+    )
+
+
+@resource.put(
+    "/{resource_id}/publish",
+    status_code=status.HTTP_200_OK,
+    summary="Publish a resource",
+    response_model=SuccessResponse,
+)
+async def publish_resource(
+    resource_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_admin: Annotated[User, Depends(user_service.get_current_super_admin)],
+):
+    resource_service.publish(db=db, Resource_id=resource_id)
+
+    return success_response(
+        status_code=status.HTTP_200_OK, message="Resource successfully published!"
+    )
+
+
+@resource.put(
+    "/{resource_id}/unpublish",
+    status_code=status.HTTP_200_OK,
+    summary="Unpublish a resource",
+    response_model=SuccessResponse,
+)
+async def unpublish_resource(
+    resource_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_admin: Annotated[User, Depends(user_service.get_current_super_admin)],
+):
+    resource_service.unpublish(db=db, Resource_id=resource_id)
+
+    return success_response(
+        status_code=status.HTTP_200_OK, message="Resource successfully unpublished!"
     )

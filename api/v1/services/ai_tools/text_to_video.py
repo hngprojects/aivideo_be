@@ -1,20 +1,12 @@
 import os
-from pathlib import Path
-import random
+
 from typing import List, Optional
 from uuid import uuid4
 import openai
-import ffmpeg
 from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip
-import requests
 
-from deepgram_captions import DeepgramConverter, srt
-from deepgram import (
-    DeepgramClient,
-    PrerecordedOptions,
-    FileSource,
-)
-
+from api.utils.minio_service import minio_service
+from api.utils import mime_types
 from api.utils.files import delete_file
 from api.utils.settings import settings
 from api.v1.services.ai_tools.general_video_service import video_service
@@ -28,12 +20,14 @@ class TextToVideoService:
 
     def generate_scene_descriptions(self, script: str):
 
-        response = self.client.completions.create(
-            model="gpt-3.5-turbo-instruct",
-            prompt=f"Generate five simple scene descriptions that can be used as an image description for the following script:\n\n{script}\n\nScene Descriptions:",
-            max_tokens=500
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": f"Generate five simple scene descriptions that can be used as an image description for the following script and I do not want any form of numbering or bulleting on them. Also, don not say anoy other thing other than the scene descriptions. Here is the script: :\n\n{script}\n\nScene Descriptions:"}
+            ]
         )
-        scenes = response.choices[0].text.strip().split('\n')
+        scenes = [scene.strip() for scene in response.choices[0].message.content.strip().split('\n') if scene.strip()]
         return scenes
     
 
@@ -110,7 +104,7 @@ class TextToVideoService:
         scenes: List[str], 
         voice_over: str, 
         aspect_ratio: str,
-        background_audio: Optional[str] = None,
+        background_audio: Optional[str] = None, 
     ):
 
         audio_file = video_service.generate_audio_from_script(script, voice_over)
@@ -130,7 +124,7 @@ class TextToVideoService:
         if background_audio:
             # Add background music to video
             video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
-            video_with_bg_audio = video_service.add_background_audio(
+            video_with_audio = video_service.add_background_audio(
                 video_path=video_with_subtitles, 
                 audio_path=background_audio, 
                 output_path=video_with_bg_music_path
@@ -142,8 +136,8 @@ class TextToVideoService:
         output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
         # Adjust aspect ratio
         final_result_file = video_service.change_aspect_ratio(
-            input_file=video_with_subtitles if background_audio is None else video_with_bg_audio,
-            output_file=output_video_file,
+            input_file=video_with_audio if background_audio is not None else video_with_subtitles, 
+            output_file=output_video_file, 
             aspect_ratio=aspect_ratio
         )
 
@@ -157,12 +151,22 @@ class TextToVideoService:
         for img in images:
             delete_file(img)
         
-        save_url = f'{settings.APP_URL}/{final_result_file}'
+        # save_url = f'{settings.APP_URL}/{final_result_file}'
+
+        minio_save_file = f'ttvid-{str(uuid4())}.mp4'
+        save_url, download_url = minio_service.upload_to_minio(
+            bucket_name='text-to-video',
+            source_file=final_result_file,
+            destination_file=minio_save_file,
+            content_type=mime_types.VIDEO_MP4
+        )
+
         data = {
-            "url": save_url
+            "url": save_url,
+            "download_url": download_url,
         }
 
-        print(data)
+        delete_file(final_result_file)
         return data
 
 

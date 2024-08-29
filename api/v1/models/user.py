@@ -23,7 +23,7 @@ class User(BaseTableModel):
     profile = relationship("Profile", back_populates="user", uselist=False)
     notifications = relationship("Notification", back_populates="user")
     activity_logs = relationship("ActivityLog", back_populates="user")
-    subscriptions = relationship("UserSubscription", back_populates="user")
+    subscription = relationship("UserSubscription", uselist=False)
     payments = relationship("Payment", back_populates="user")
     projects = relationship("Project", back_populates="user")
     reviews = relationship("Review", back_populates="user")
@@ -35,11 +35,8 @@ class User(BaseTableModel):
         "LanguageRegionTimezoneSetting", back_populates="user"
     )
     jobs = relationship("Job", back_populates="user")
-
-    text_to_vdeos = relationship(
-        "TextToVideo", back_populates="user", cascade="all, delete-orphan"
-    )
-
+    tool_usage = relationship('UserUsageStore', back_populates='user')
+    
     def to_dict(self):
         obj_dict = super().to_dict()
         obj_dict.pop("password")
