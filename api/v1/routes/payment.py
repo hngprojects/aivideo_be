@@ -84,9 +84,9 @@ async def verify_payment_status(
         )
 
     if response["status"] == "error":
-        return success_response(
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            message="No transaction was found for this id",
+            detail="No transaction was found for this id"
         )
 
     paid_amount = Decimal(response['data']['amount'])
@@ -155,11 +155,10 @@ async def stripe_webhook(
             json.loads(payload), stripe.api_key
         )
     except ValueError as e:
-        return success_response(
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            message="Payment failed"
+            detail="Payment failed"
         )
-
     # Handle the event
     if event.type == payment_event_types.STRIPE_CHECHOUT_COMPLETED:
         payment = event.data
@@ -248,9 +247,9 @@ async def flutterwave_webhook(
     secret_hash = settings.FLW_SECRET_HASH
     signature = req.headers.get("verifi-hash")
     if signature == None or (signature != secret_hash):
-        return success_response(
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            message="Payment failed"
+            detail="Payment failed"
         )
 
     payment = await req.body()
