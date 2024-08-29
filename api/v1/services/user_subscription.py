@@ -109,6 +109,8 @@ class UserSubscriptionService:
     def get_sub_start_and_end_datetime(billing_plan_interval):
         """Compute and return subcription end datetiem, with start datetime"""
         start_datetime = datetime.now(tz=timezone.utc)
+        monthly = False
+
         if billing_plan_interval == 'monthly':
             monthly = True
         # If the plan is a free_plan or yearly, set the duration to 12-months
