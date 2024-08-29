@@ -1,9 +1,14 @@
 from typing import Any, Optional, List
 from sqlalchemy import desc, or_
-from fastapi import status
+from fastapi import status, UploadFile
+from uuid_extensions import uuid7
+import os
+import shutil
 
 from sqlalchemy.orm import Session
 from api.core.base.services import Service
+from api.utils import mime_types
+from api.utils.minio_service import minio_service
 from api.v1.models.resource import Resource
 from api.v1.schemas.resource import (
     CreateResource,
@@ -14,27 +19,99 @@ from api.v1.schemas.resource import (
 from api.utils.db_validators import check_model_existence
 from fastapi import HTTPException
 
+UPLOAD_DIR = "media/uploads/resources"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 
 class ResourceService(Service):
     """Resource service functionality"""
 
-    def create(self, db: Session, schema: CreateResource, publish: bool) -> Resource:
+    def get_image_url(self, image: UploadFile, resource_id: str) -> str:
+        """Upload image to minio bucket and return it's URL
+
+        Args:
+            image (UploadFile): Image file to upload
+            resource_id (str): Resource UUID string
+
+        Raises:
+            HTTPException: 400 (Bad Request) - If wrong file format is passed
+
+        Returns:
+            str: The live image url for the uploaded image
+        """
+        extension = image.filename.split(".")[-1]
+        mime_map = {
+            "jpg": mime_types.IMAGE_JPEG,
+            "jpeg": mime_types.IMAGE_JPEG,
+            "png": mime_types.IMAGE_PNG,
+        }
+
+        if extension not in ["jpg", "jpeg", "png"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid file format, please upload png or jpeg",
+            )
+
+        mime = mime_map[extension]
+
+        cleaned_filename = image.filename.replace(" ", "_")
+
+        if not cleaned_filename:
+            return None
+
+        filename = f"tmp_{cleaned_filename}"
+        file_path = os.path.join(UPLOAD_DIR, filename)
+
+        # Save the new avatar file to the server
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+
+        minio_save_file = f"resource-{resource_id}-{str(uuid7())}.{extension}"
+        minio_response = minio_service.upload_to_minio(
+            bucket_name="resources",
+            source_file=file_path,
+            destination_file=minio_save_file,
+            content_type=mime,
+        )
+
+        os.remove(file_path)
+
+        image_url = minio_response[0]
+
+        return image_url
+
+    def create(
+        self,
+        db: Session,
+        schema: CreateResource,
+        publish: bool,
+        image: UploadFile,
+        cover_image: UploadFile,
+    ) -> Resource:
         """Create a new Resource
 
         Returns:
             (Resource): Resource object.
         """
-        if (
-            schema.title.strip() == ""
-            or schema.image_url.strip() == ""
-            or schema.cover_image_url.strip() == ""
-            or schema.content.strip() == ""
-        ):
+
+        if schema.title.strip() == "" or schema.content.strip() == "":
             raise HTTPException(status_code=400, detail="Invalid request body")
 
         new_resource = Resource(**schema.model_dump())
         new_resource.is_published = publish
         db.add(new_resource)
+        db.commit()
+        db.refresh(new_resource)
+
+        if cover_image:
+            new_resource.cover_image_url = self.get_image_url(
+                image=cover_image, resource_id=new_resource.id
+            )
+        if image:
+            new_resource.image_url = self.get_image_url(
+                image=image, resource_id=new_resource.id
+            )
+
         db.commit()
         db.refresh(new_resource)
 
@@ -193,7 +270,12 @@ class ResourceService(Service):
         return resource
 
     def update(
-        self, db: Session, resource_id: str, schema: UpdateResource
+        self,
+        db: Session,
+        resource_id: str,
+        schema: UpdateResource,
+        image: UploadFile,
+        cover_image: UploadFile,
     ) -> Resource | None:
         """Updates an Resource
 
@@ -213,6 +295,15 @@ class ResourceService(Service):
         update_data = schema.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(resource, key, value)
+
+        if cover_image:
+            resource.cover_image_url = self.get_image_url(
+                image=cover_image, resource_id=resource_id
+            )
+        if image:
+            resource.image_url = self.get_image_url(
+                image=image, resource_id=resource_id
+            )
 
         db.commit()
         db.refresh(resource)
@@ -251,7 +342,9 @@ class ResourceService(Service):
         resource.is_published = False
         db.commit()
 
-    def search_resources(self, db: Session, search_query: str, skip: int, limit: int) -> List[Resource]:
+    def search_resources(
+        self, db: Session, search_query: str, skip: int, limit: int
+    ) -> List[Resource]:
         """Search resources with pagination.
 
         Args:
@@ -284,13 +377,12 @@ class ResourceService(Service):
         total = query.count()
 
         # Apply pagination to the query
-        search_results = query.order_by(desc(Resource.created_at)).offset(skip).limit(limit).all()
+        search_results = (
+            query.order_by(desc(Resource.created_at)).offset(skip).limit(limit).all()
+        )
 
         # Return the results
-        return {
-            "total": total,
-            "items": search_results
-        }
+        return {"total": total, "items": search_results}
 
 
 resource_service = ResourceService()
