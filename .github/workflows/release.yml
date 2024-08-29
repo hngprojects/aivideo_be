@@ -50,13 +50,13 @@ jobs:
         if: steps.check_changes.outputs.changes == 1
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9" # or your preferred Python version
+          python-version: "3.10" # or your preferred Python version
 
       - name: Install dependencies
         if: steps.check_changes.outputs.changes == 1
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt --no-deps --use-deprecated=legacy-resolver
 
       - name: Bump version and push tag
         if: steps.check_changes.outputs.changes == 1
