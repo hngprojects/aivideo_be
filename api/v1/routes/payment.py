@@ -18,7 +18,7 @@ from api.v1.services.user import user_service
 from api.utils.settings import settings
 from api.db.database import get_db
 from api.v1.models import User
-from api.v1.services.payment import payment_service
+from api.v1.services.payment import payment_service, payment_event_types
 from api.v1.services.user_subscription import user_subscription_service
 
 
@@ -160,7 +160,7 @@ async def stripe_webhook(
         )
 
     # Handle the event
-    if event.type == "checkout.session.completed":
+    if event.type == payment_event_types.STRIPE_CHECHOUT_COMPLETED:
         payment = event.data
         paid_amount = Decimal(payment["amount_total"])
         paid_currency = payment['currency']
@@ -254,7 +254,7 @@ async def flutterwave_webhook(
     payment = await req.body()
 
     # Handle the event
-    if payment.event == "charge.completed":
+    if payment.event == payment_event_types.FLW_CHARGE_COMPLETED:
         paid_amount = Decimal(payment['data']["amount"])
         paid_currency = payment['data']['currency']
         user = user_service.fetch_by_params(

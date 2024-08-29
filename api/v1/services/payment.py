@@ -5,6 +5,7 @@ from typing import Any, Optional, Union
 from decimal import Decimal
 import requests
 import stripe
+from sqlalchemy import Enum
 
 from api.v1.models.payment import Payment
 from api.v1.models import User, BillingPlan
@@ -300,5 +301,16 @@ class PaymentGatewayService:
             return response['data']['id']
 
 
+class PaymentEventTypes(str, Enum):
+    """
+    Possible events that could result from payments requests
+    """
+    FLW_CHARGE_COMPLETED = "charge.completed" 
+    FLW_CHARGE_FAILED = "charge.failed" 
+
+    STRIPE_CHECHOUT_COMPLETED = "checkout.session.completed"
+
+
 payment_service = PaymentService()
+payment_event_types = PaymentEventTypes()
 payment_gateway_service = PaymentGatewayService()
