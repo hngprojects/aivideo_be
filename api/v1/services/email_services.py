@@ -19,7 +19,7 @@ class EmailService:
             VALIDATE_CERTS=False,
             MAIL_STARTTLS = False,
             MAIL_SSL_TLS = True,
-            TEMPLATE_FOLDER='./api/v1/templates'
+            TEMPLATE_FOLDER='./api/v1/templates' 
         )
         self.fast_mail = FastMail(self.conf)
 
