@@ -6,14 +6,14 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.pagesizes import letter
 from pathlib import Path
-
+import json
 import yt_dlp
 from concurrent.futures import ThreadPoolExecutor
 from api.v1.services.ai_tools.summary import summary_service
 
 from api.utils.logger import logging
 from api.utils.settings import settings
-
+from api.utils.pagination import format_timestamp
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 
@@ -112,7 +112,13 @@ class YoutubeSummary:
         if request.transcript:
             transcript_heading = Paragraph("Transcript", subheading_style)
             elements.append(transcript_heading)
-            elements.append(Paragraph(request.transcript, body_style))
+            for transcript in json.loads(request.transcript):
+                elements.append(
+                    Paragraph(
+                        f"{format_timestamp(transcript['start_time'])}: {transcript['paragraph']}",
+                        body_style,
+                    )
+                )
 
         # Build the PDF
         pdf.build(elements)

@@ -1,6 +1,6 @@
 import base64
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -12,14 +12,13 @@ from api.db.database import get_db
 from api.utils.files import delete_file, upload_files
 from api.utils.logger import logging
 from api.utils.success_response import success_response
+from api.utils.tool_limiter import track_tool_usage
+from api.v1.models.user import User
 from api.v1.schemas.ai_tools.youtube import PdfDownloadRequest, VideoLinkRequest
 from api.v1.schemas.project import ProjectToolsEnum
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.job import job_service
 from api.v1.services.user import user_service
-from api.utils.tool_limiter import track_tool_usage
-from api.v1.models.user import User
-
 
 yt_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 download = APIRouter(prefix="/tools/download", tags=["Download"])
@@ -30,10 +29,12 @@ download = APIRouter(prefix="/tools/download", tags=["Download"])
     status_code=status.HTTP_200_OK,
     response_model=success_response,
 )
+# @track_tool_usage(ProjectToolsEnum.video_summarizer)
 async def summarize_up_vid(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    # user: User = Depends(user_service.get_current_user_optional),
 ):
     """Endpoint to summarize a single video"""
 
@@ -63,7 +64,7 @@ async def summarize_up_vid(
     project = job_service.create_project_with_job(
         job=task,
         project_title="video upload project",
-        project_type=ProjectToolsEnum.youtube_summarizer.value
+        project_type=ProjectToolsEnum.youtube_summarizer.value,
     )
 
     return success_response(
@@ -81,9 +82,11 @@ async def summarize_up_vid(
     status_code=status.HTTP_200_OK,
     response_model=success_response,
 )
+# @track_tool_usage(ProjectToolsEnum.youtube_summarizer)
 async def summarize_yt_vid(
     request: VideoLinkRequest,
     db: Session = Depends(get_db),
+    # user: User = Depends(user_service.get_current_user_optional),
 ):
     """Endpoint to download and summarize a single youtube video"""
 
