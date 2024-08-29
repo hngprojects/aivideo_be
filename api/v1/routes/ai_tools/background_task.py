@@ -106,7 +106,7 @@ async def event_generator(job_id: str, db: Session, request: Request):
             break
 
         yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
-        await asyncio.sleep(1)  # Delay between status checks
+        await asyncio.sleep(15)  # Delay between status checks
 
 
 async def event_generator_for_job(job_id: str):
@@ -148,7 +148,7 @@ async def event_generator_for_job(job_id: str):
             break
 
         yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
-        await asyncio.sleep(1)  # Delay between status checks
+        await asyncio.sleep(5)  # Delay between status checks
 
 
 @background_router.get("/{job_id}/sse/progress")

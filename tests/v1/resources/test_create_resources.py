@@ -62,7 +62,9 @@ class TestCodeUnderTest:
             "api.v1.services.resource.resource_service.create",
             return_value=mock_resource(),
         ) as mock_create:
-            response = client.post("/api/v1/resources", json=test_resource_req_body)
+            response = client.post("/api/v1/resources", data=test_resource_req_body)
+
+            print(response.json())
 
             assert response.status_code == 201
             assert response.json()["data"]["title"] == mock_freq_asked_titles.title
@@ -83,7 +85,7 @@ class TestCodeUnderTest:
             return_value=mock_freq_asked_titles,
         ) as mock_create:
             response = client.post(
-                "/api/v1/resources", json={"title": "TTest qustion?"}
+                "/api/v1/resources", data={"title": "TTest qustion?"}
             )
 
             assert response.status_code == 422
@@ -103,7 +105,7 @@ class TestCodeUnderTest:
             "api.v1.services.user.user_service.get_current_user",
             return_value=MagicMock(is_superadmin=False),
         ) as cu:
-            response = client.post("/api/v1/resources", json=test_resource_req_body)
+            response = client.post("/api/v1/resources", data=test_resource_req_body)
 
         assert response.status_code == 403
         assert (
