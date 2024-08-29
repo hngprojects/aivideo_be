@@ -125,29 +125,6 @@ class BillingPlanService:
             return plan_name == "Free"
         
         return user_sub.billing_plan.plan_name == plan_name
-    
-    def dynamic_billing_plan_dict(self, bill_plan: BillingPlan):
-        """Return `BillingPlan.to_dict()` with extra dynamic details, 
-        eg: `'yearly_discount_percent'`, `'yearly_total'`, etc
-        """
-        yearly_discount_percent = 0
-        year_total = bill_plan.price
-        if year_total:
-            # get the 99.99 effect, instead of hardcoding it
-            year_total = math.ceil(bill_plan.price * self.NUMBER_OF_MONTHS_CHARGED_YEARLY) - 0.01
-
-            # reset percentage for plans other that free plan
-            yearly_discount_percent = self.YEARLY_PAYMENT_DISCOINT_PERCENT
-
-        user_sub_dict = {
-            **bill_plan.to_dict(),
-            "yearly_total": year_total,
-            "yearly_original": bill_plan.price * 12,
-            "yearly_discount_percent": yearly_discount_percent
-        }
-
-        return user_sub_dict
-
 
 
 billing_plan_service = BillingPlanService()

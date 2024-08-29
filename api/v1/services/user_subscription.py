@@ -117,5 +117,4 @@ class UserSubscriptionService:
         end_datetime = start_datetime + timedelta(days=num_of_days)
         return start_datetime, end_datetime
 
-
 user_subscription_service = UserSubscriptionService()
