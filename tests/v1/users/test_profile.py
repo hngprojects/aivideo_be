@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from uuid_extensions import uuid7
 import json
 import os
-
+from minio import Minio
 
 import tempfile
 from main import app
@@ -18,10 +18,28 @@ from api.v1.services.user import user_service
 from api.v1.models.user import User
 from api.v1.models.profile import Profile
 from api.v1.services.profile import profile_service
+from api.utils.minio_service import minio_service
+from tempfile import NamedTemporaryFile
 from faker import Faker
 
 fake = Faker()
 
+
+
+# Mock Minio client
+@pytest.fixture
+def mock_minio_service():
+    with patch("api.utils.minio_service.Minio") as mock_minio:
+        mock_client = MagicMock()
+        mock_minio.return_value = mock_client
+        yield mock_client
+
+def create_temp_file():
+    # Create a temporary file to simulate an avatar upload
+    with NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file.write(b"Test file content")
+        tmp_file_path = tmp_file.name
+    return tmp_file_path
 
 
 def mock_get_current_user():
@@ -113,16 +131,19 @@ def test_get_profile_not_found(client, db_session_mock):
         assert response_data['status_code'] == 404  
         
           
-
-def test_update_profile_success(client, db_session_mock):
-    '''Test to successfully update a user profile'''
+def test_update_profile_success(client, db_session_mock, mock_minio_service):
+    '''Test to successfully update a user profile with avatar upload to Minio'''
 
     # Mock the user service to return the current user
     app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
-    
+
     # Mock profile update behavior
     mock_profile_instance = mock_profile()
     temp_file_path = create_temp_file()
+
+    # Mock Minio upload_to_minio method to avoid actual S3 interaction
+    mock_minio_service.fput_object.return_value = None
+
     with patch("api.v1.services.profile.profile_service.update", return_value=mock_profile_instance) as mock_update:
         response = client.put(
             "/api/v1/profile",
@@ -141,7 +162,7 @@ def test_update_profile_success(client, db_session_mock):
             files={"avatar": ("avatar.jpg", open(temp_file_path, "rb"), "image/jpeg")},
             headers={'Authorization': 'Bearer token'}
         )
-        
+
         # Clean up temporary file
         os.remove(temp_file_path)
 
@@ -151,8 +172,6 @@ def test_update_profile_success(client, db_session_mock):
         assert response_data['success'] is True
         assert response_data['message'] == "User Profile Updated Successfully!!!"
         assert response_data['data']
-
-
 
 
 # Test for unauthorized access
