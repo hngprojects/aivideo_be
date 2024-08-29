@@ -85,7 +85,6 @@ def paginated_response(
 
     items = jsonable_encoder(results)
 
-
     return success_response(
         status_code=200,
         message="Successfully fetched items",
@@ -102,8 +101,13 @@ def paginated_response(
 def get_pagination_details(num_of_items, offset, limit):
     total_pages = int(num_of_items / limit) + (num_of_items % limit > 0)
     return {
-            "limit": limit,
-            "offset": offset,
-            "pages": total_pages,
-            "total_items": num_of_items
-        }
+        "limit": limit,
+        "offset": offset,
+        "pages": total_pages,
+        "total_items": num_of_items,
+    }
+
+
+def format_timestamp(seconds):
+    minutes, seconds = divmod(int(seconds), 60)
+    return f"{minutes:02}:{seconds:02}"
