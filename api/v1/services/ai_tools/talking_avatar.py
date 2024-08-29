@@ -94,6 +94,8 @@ class TalkingAvatarService:
 				output_path=video_audio_path,
 			)
 
+		video_dir = os.path.join(settings.STORAGE_DIR, 'video')
+		os.makedirs(video_dir, exist_ok=True)
 		final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
 
 		# Perform aspect ratio resizing based on user input
