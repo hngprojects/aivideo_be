@@ -113,7 +113,8 @@ async def verify_payment_status(
 
         # create a user subscription plan
         start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
-            amount, bill_plan.price)
+            bill_plan.plan_interval
+            )
         user_subscription_payload = {
             "start_date": start_date,
             "billing_plan_id": billing_plan_id,
@@ -180,7 +181,8 @@ async def stripe_webhook(
 
         # create a user subscription plan
         start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
-            amount, bill_plan.price)
+            bill_plan.plan_interval
+            )
         user_subscription_payload = {
             "start_date": start_date,
             "billing_plan_id": billing_plan_id,
@@ -270,7 +272,8 @@ async def flutterwave_webhook(
 
         # create a user subscription plan
         start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
-            amount, bill_plan.price)
+            bill_plan.plan_interval
+            )
         user_subscription_payload = {
             "start_date": start_date,
             "billing_plan_id": billing_plan_id,
