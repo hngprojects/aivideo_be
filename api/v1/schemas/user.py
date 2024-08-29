@@ -14,8 +14,8 @@ class UserBase(BaseModel):
     """Base user schema"""
 
     id: str
-    first_name: str
-    last_name: str
+    first_name: Optional[str]
+    last_name: Optional[str]
     email: EmailStr
     avatar_url: Optional[str] = None
     created_at: datetime
@@ -49,8 +49,8 @@ class UserData(BaseModel):
 
     id: str
     email: EmailStr
-    first_name: str
-    last_name: str
+    first_name: Optional[str]
+    last_name: Optional[str]
     is_active: bool
     is_deleted: bool
     is_superadmin: bool
@@ -93,8 +93,8 @@ class AdminCreateUser(BaseModel):
     """
 
     email: EmailStr
-    first_name: str
-    last_name: str
+    first_name: Optional[str]
+    last_name: Optional[str]
     password: str = ""
     is_active: bool = False
     is_deleted: bool = False
@@ -216,8 +216,8 @@ class RegisterUserData(BaseModel):
 
     id: str
     email: EmailStr
-    first_name: str
-    last_name: str
+    first_name: Optional[str]
+    last_name: Optional[str]
     is_active: bool
     is_superadmin: bool
     created_at: datetime

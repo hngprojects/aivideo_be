@@ -11,10 +11,10 @@ class MinioService:
 
     def __init__(self):
         self.minio_client = Minio(
-            endpoint='91.229.239.118:9000',
+            endpoint='media.tifi.tv',
             access_key=settings.MINIO_ACCESS_KEY,
             secret_key=settings.MINIO_SECRET_KEY,
-            secure=False
+            secure=True
         )
 
     

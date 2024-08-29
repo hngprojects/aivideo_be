@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Request
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
@@ -8,6 +8,7 @@ from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.faq import faq_service
 from api.v1.schemas.faq import CreateFAQ, UpdateFAQ, FAQBase
+from api.utils.tool_limiter import track_tool_usage
 import logging
 
 faq = APIRouter(prefix="/faqs", tags=["FAQs"])
@@ -38,9 +39,13 @@ async def create_faq(
         status_code=status.HTTP_201_CREATED,
     )
 
+
 @faq.get("", response_model=success_response, status_code=200)
+@track_tool_usage(current_tool="example_tool")
 async def get_all_faqs(
+    request: Request,
     db: Session = Depends(get_db),
+    user: User = Depends(user_service.get_current_user_optional)
 ):
     """Endpoint to get all FAQs
 
