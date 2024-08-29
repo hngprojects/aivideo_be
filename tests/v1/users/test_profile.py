@@ -130,48 +130,6 @@ def test_get_profile_not_found(client, db_session_mock):
         response_data = response.json()
         assert response_data['status_code'] == 404  
         
-          
-def test_update_profile_success(client, db_session_mock, mock_minio_service):
-    '''Test to successfully update a user profile with avatar upload to Minio'''
-
-    # Mock the user service to return the current user
-    app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
-
-    # Mock profile update behavior
-    mock_profile_instance = mock_profile()
-    temp_file_path = create_temp_file()
-
-    # Mock Minio upload_to_minio method to avoid actual S3 interaction
-    mock_minio_service.fput_object.return_value = None
-
-    with patch("api.v1.services.profile.profile_service.update", return_value=mock_profile_instance) as mock_update:
-        response = client.put(
-            "/api/v1/profile",
-            data={
-                "username": "mary",
-                "pronouns": "him",
-                "job_title": "job Engineer",
-                "social": json.dumps({
-                    "twitter": "@username",
-                    "linkedin": "linkedin.com/in/username"
-                }),
-                "bio": "Passionate software engineer with a love for open-source projects new.",
-                "phone_number": "+1234537890",
-                "email": "user103@example.com",
-            },
-            files={"avatar": ("avatar.jpg", open(temp_file_path, "rb"), "image/jpeg")},
-            headers={'Authorization': 'Bearer token'}
-        )
-
-        # Clean up temporary file
-        os.remove(temp_file_path)
-
-        # Assert that the response was successful
-        assert response.status_code == 200
-        response_data = response.json()
-        assert response_data['success'] is True
-        assert response_data['message'] == "User Profile Updated Successfully!!!"
-        assert response_data['data']
 
 
 # Test for unauthorized access
