@@ -247,13 +247,17 @@ class SummaryService():
         transcript_word_count = self.calculate_word_count(transcribed_text)
         summary_word_count = self.calculate_word_count(final_summary)
 
+        """Calculate estimated read time (assuming 250 words per minute reading speed)"""
+        estimated_read_time = transcript_word_count / 250
+        
         return {
             "summary": final_summary,
             "summary_word_count": summary_word_count,
             "transcript": transcribed_text,
-            "transcript_word_count": transcript_word_count
+            "transcript_word_count": transcript_word_count,
+            "estimated_read_time": f"{estimated_read_time:.2f} minutes"
         }
-
+        
     def translate_summary(self, text, target_lang):
         """Translates the summary to the target language using GoogleTranslator."""
         translated_text = self.translator.translate(
@@ -322,6 +326,7 @@ class SummaryService():
         os.remove(temp_file_path)
 
         return save_url, download_url
+    
     def calculate_word_count(self, text):
         """Calculates the word count of a given text."""
         words = text.split()
@@ -343,6 +348,7 @@ class SummaryService():
             "summary": results["summary"],
             "summary_word_count": results["summary_word_count"],
             "translation": translated_summary,
+            "estimated_read_time": results["estimated_read_time"],
             "save_url": save_url,
             "download_url": download_url
         }
