@@ -182,6 +182,7 @@ async def download_summary(job_id: str, db: Session = Depends(get_db)):
 @summary.post("/summarize-podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)
 async def summarize_podcast(request: PodcastRequest):
 
+    podcast_details = summary_service.get_podcast_details(request.podcast_url)
     audio_url = summary_service.get_audio_url(request.podcast_url)
 
     audio_response = requests.get(audio_url)
@@ -209,6 +210,7 @@ async def summarize_podcast(request: PodcastRequest):
             data={
                 "job_id": task.id,
                 "project_id": project.id,
+                "podcast_details": podcast_details,
             }
         )
     else:

@@ -31,7 +31,6 @@ def generate_video_summary_task(self, video_file):
         })
 
         transcription = transcribe_audio_segments(audio_file)
-
         self.update_state(state='PROGRESS', meta={
             'status': 'Creating document from text', 'meta': {
                 'current': 50,
@@ -89,7 +88,6 @@ def download_and_generate_video_summmary_task(self, link):
             }
         })
         audio_file = download_audio_yt(link)
-        print(audio_file)
         self.update_state(state='PROGRESS', meta={
             'status': 'Transcribing audio to text', 'meta': {
                 'current': 10,
@@ -97,7 +95,7 @@ def download_and_generate_video_summmary_task(self, link):
             }
         })
 
-        transcription = transcribe_audio(audio_file)
+        transcription = transcribe_audio_segments(audio_file)
 
         self.update_state(state='PROGRESS', meta={
             'status': 'Creating document from text', 'meta': {

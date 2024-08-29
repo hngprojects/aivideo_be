@@ -1,7 +1,8 @@
-import os
+import io
 from typing import List
 import uuid
-
+from api.utils import mime_types
+from api.utils.minio_service import minio_service
 from openai.types.audio.transcription import Transcription
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -50,12 +51,6 @@ class SummaryService():
                          api_key=settings.OPENAI_API_KEY)
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         return llm_chain
-
-    def advanced_summarize(self, text, model_name="facebook/bart-large-cnn"):
-        summarizer = pipeline("summarization", model=model_name)
-        summary = summarizer(text, max_length=150,
-                             min_length=30, do_sample=False)
-        return summary[0]['summary_text']
 
     def apply_ocr_to_images(self, doc):
         """Extract text from images in the PDF using OCR."""
@@ -147,11 +142,33 @@ class SummaryService():
         summary = chain.run(docs)
 
         return summary, transcribed_text
-
+    
     def fetch_page(self, url):
         response = requests.get(url)
         response.raise_for_status()
         return response.text
+    
+    def get_podcast_details(self, podcast_url: str):
+        """Get the transcript of a podcast episode from the provided URL."""
+        try:
+            content = self.fetch_page(podcast_url)
+            soup = BeautifulSoup(content, 'html.parser')
+            apple_title_meta = soup.find('meta', attrs={'name': 'apple:title'})
+
+            title = apple_title_meta['content']
+            li_tags = soup.select('ul.metadata li')
+            duration = li_tags[-2].text.strip()
+            host = soup.select('img', attrs={'class': 'artwork-component__contents artwork-component__image svelte-3e3mdo'})
+            host_name = host[1]['alt']
+            return {
+                "title": title,
+                "duration": duration,
+                "host": host_name
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to extract podcast details: {str(e)}")
+
 
     def string_to_dict(self, input_string):
         try:
@@ -242,13 +259,10 @@ class SummaryService():
             text, target_lang=target_lang)
         return translated_text
 
-    def export_results_to_pdf(self, summary, transcript, translation, output_dir="exports"):
-        """Exports the summary, transcript, and translation to a PDF file."""
-        os.makedirs(output_dir, exist_ok=True)
-        pdf_file_path = os.path.join(
-            output_dir, f"summary_export_{uuid.uuid4()}.pdf")
-
-        c = canvas.Canvas(pdf_file_path, pagesize=letter)
+    def export_results_to_pdf(self, summary, transcript, translation):
+        """Exports the summary, transcript, and translation to a PDF and uploads it to MinIO."""
+        pdf_file = io.BytesIO()
+        c = canvas.Canvas(pdf_file, pagesize=letter)
         width, height = letter
 
         """Add Title"""
@@ -286,7 +300,17 @@ class SummaryService():
 
         c.save()
 
-        return pdf_file_path
+        """Upload the PDF to MinIO"""
+        pdf_file.seek(0)
+        minio_save_file = f'summary_export_{uuid.uuid4()}.pdf'
+        save_url, download_url = minio_service.upload_to_minio(
+            bucket_name='summaries',
+            source_file=pdf_file,
+            destination_file=minio_save_file,
+            content_type=mime_types.APPLICATION_PDF
+        )
+        
+        return save_url, download_url
 
     def calculate_word_count(self, text):
         """Calculates the word count of a given text."""
@@ -296,24 +320,21 @@ class SummaryService():
     def process_audio(self, audio_file_path, target_lang, export_format="pdf"):
         """Processes the audio file: transcribes, summarizes, translates, and exports."""
         results = self.summarize_audio(audio_file_path)
-        translated_summary = self.translate_summary(
-            results["summary"], target_lang)
-
+        translated_summary = self.translate_summary(results["summary"], target_lang)
+        
         if export_format == "pdf":
-            export_path = self.export_results_to_pdf(
-                results["summary"], results["transcript"], translated_summary)
+            save_url, download_url = self.export_results_to_pdf(results["summary"], results["transcript"], translated_summary)
         else:
-            export_path = self.export_results(
-                results["summary"], results["transcript"], translated_summary)
+            save_url, download_url = self.export_results(results["summary"], results["transcript"], translated_summary)
 
         return {
             "transcript": results["transcript"],
             "transcript_word_count": results["transcript_word_count"],
             "summary": results["summary"],
-            "translation": translated_summary,
             "summary_word_count": results["summary_word_count"],
             "translation": translated_summary,
-            "export_path": export_path
+            "save_url": save_url,
+            "download_url": download_url
         }
 
     def summarize_transcript(self, documents: List[Document]) -> str:
