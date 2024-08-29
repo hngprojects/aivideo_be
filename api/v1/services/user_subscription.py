@@ -106,14 +106,17 @@ class UserSubscriptionService:
         db.commit()
     
     @staticmethod
-    def get_sub_start_and_end_datetime(amount_paid, bill_per_interval, free_plan=False):
+    def get_sub_start_and_end_datetime(billing_plan_interval):
         """Compute and return subcription end datetiem, with start datetime"""
         start_datetime = datetime.now(tz=timezone.utc)
-        # If the plan if free_plan, set the duration to 12-months
-        num_of_months = 12 if free_plan else int(amount_paid // bill_per_interval)
+        monthly = False
+
+        if billing_plan_interval == 'monthly':
+            monthly = True
+        # If the plan is a free_plan or yearly, set the duration to 12-months
+        num_of_months = 1 if monthly else 12
         num_of_days = num_of_months * 30
         end_datetime = start_datetime + timedelta(days=num_of_days)
         return start_datetime, end_datetime
-
 
 user_subscription_service = UserSubscriptionService()

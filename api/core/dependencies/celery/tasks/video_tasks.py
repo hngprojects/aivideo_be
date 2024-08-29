@@ -109,7 +109,7 @@ def upload_video_task(video_id: str, base_url: str):
 @worker.task()
 def process_youtube_video_task(youtube_url: str, base_url: str):
     # Validate video size before downloading
-    max_size_mb = 100  #
+    max_size_mb = 50  #
 
     ydl_opts = {'skip_download': True}
 

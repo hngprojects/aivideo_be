@@ -21,6 +21,7 @@ class UpdateProject(BaseModel):
 class CreateFullProjectSchema(CreateProject):
     file_url: Optional[str] = None
     result: Optional[str] = None
+    thumbnail: Optional[str] = None
 
 
 class UpdateProjectSchema(BaseModel):

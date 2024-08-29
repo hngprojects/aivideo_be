@@ -2,6 +2,8 @@ import json
 from pypdf import PdfReader
 import os
 import secrets
+from api.utils.minio_service import minio_service
+from api.utils.mime_types import APPLICATION_PDF
 from uuid import uuid4
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ListStyle
@@ -15,14 +17,14 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from io import BytesIO
 from reportlab.lib.enums import TA_CENTER
-from io import BytesIO
 from api.core.dependencies.celery.celery_app import worker
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.summary import summary_service
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.db.database import get_db
-from api.v1.services.ai_tools.audio_transcriber import transcribe_audio_file_with_timestamps
-from api.utils.minio_service import minio_service
+from api.v1.services.ai_tools.audio_transcriber import (
+    transcribe_audio_file_with_timestamps,
+)
 from api.utils import mime_types
 
 db = next(get_db())
@@ -54,7 +56,9 @@ def generate_pdf_summary_task(pdf_file_path):
 
         # Create the PDF with better formatting
         pdf_buffer = BytesIO()
-        pdf_filename = os.path.join("media/uploads/pdf", f"summary_{secrets.token_hex(8)}.pdf")
+        pdf_filename = os.path.join(
+            "media/uploads/pdf", f"summary_{secrets.token_hex(8)}.pdf"
+        )
         os.makedirs(os.path.dirname(pdf_filename), exist_ok=True)
 
         # Set up the document
@@ -63,19 +67,17 @@ def generate_pdf_summary_task(pdf_file_path):
         story = []
 
         # Title
-        title_style = styles['Title']
+        title_style = styles["Title"]
         story.append(Paragraph("Summary Report", title_style))
         story.append(Spacer(1, 12))
 
-        
-        normal_style = styles['Normal']
-        paragraphs = summary.split("\n\n") 
+        normal_style = styles["Normal"]
+        paragraphs = summary.split("\n\n")
 
-    
         for paragraph in paragraphs:
             story.append(Paragraph(paragraph, normal_style))
             story.append(Spacer(1, 12))
-    
+
         doc.build(story)
 
         # Save the PDF content to a file
@@ -84,6 +86,18 @@ def generate_pdf_summary_task(pdf_file_path):
             f.write(pdf_buffer.read())
 
         pdf_buffer.close()
+
+        bucket_name = "pdf-summarizer"
+        minio_save_file = pdf_filename
+        preview_url, download_url = minio_service.upload_to_minio(
+            bucket_name=bucket_name,
+            source_file=pdf_filename,
+            destination_file=minio_save_file,
+            content_type=APPLICATION_PDF,
+        )
+
+        if os.path.exists(pdf_filename):
+            os.remove(pdf_filename)
 
         # Remove binary data from the result dictionary
         result = {
@@ -94,13 +108,19 @@ def generate_pdf_summary_task(pdf_file_path):
             "summary_read_time": f"{summary_read_time:.2f} minutes",
             "time_saved": f"{time_saved:.2f} minutes",
             "summary": summary,
-            "pdf_file_path": pdf_filename
+            "preview_url": preview_url,
+            "download_url": download_url,
         }
 
         result_json = json.dumps(result, default=str)
         return result_json
 
     except Exception as e:
+        # Ensure that files are deleted even if an exception occurs
+        if os.path.exists(pdf_filename):
+            os.remove(pdf_filename)
+        if os.path.exists(pdf_file_path):
+            os.remove(pdf_file_path)
         raise Exception(f"Summarization failed: {str(e)}")
 
 
@@ -111,9 +131,10 @@ def generate_yt_transcript(video_pth):
     summary = yts_service.summarize_video(video_pth)
     return json.dumps(summary)
 
+
 @worker.task()
 def generate_podcast_summary_task(audio_file):
-    '''BAckground task to summarize a podcast and save to database'''
+    """BAckground task to summarize a podcast and save to database"""
 
     summary, transcription = summary_service.summarize_podcast(audio_file)
     number_of_words = len(transcription.split())
@@ -132,14 +153,12 @@ def generate_podcast_summary_task(audio_file):
     story = []
 
     # Title
-    title_style = styles['Title']
+    title_style = styles["Title"]
     story.append(Paragraph("Summary Report", title_style))
     story.append(Spacer(1, 12))
 
-    
-    normal_style = styles['Normal']
-    paragraphs = summary.split("\n\n") 
-
+    normal_style = styles["Normal"]
+    paragraphs = summary.split("\n\n")
 
     for paragraph in paragraphs:
         story.append(Paragraph(paragraph, normal_style))
@@ -153,31 +172,34 @@ def generate_podcast_summary_task(audio_file):
         f.write(pdf_buffer.read())
 
     pdf_buffer.close()
-    minio_save_file = f'pdsum-{str(uuid4())}.pdf'
+    minio_save_file = f"pdsum-{str(uuid4())}.pdf"
     save_url, download_url = minio_service.upload_to_minio(
-        bucket_name='podcast_summary',
+        bucket_name="podcast-summary",
         source_file=pdf_filename,
         destination_file=minio_save_file,
-        content_type=mime_types.APPLICATION_PDF
+        content_type=mime_types.APPLICATION_PDF,
     )
     delete_file(pdf_filename)
-    return json.dumps({
-        'summary': summary,
-        'transcript': transcription,
-        "estimated_read_time": f"{estimated_read_time:.2f} minutes",
-        "pdf_file_path": save_url,
-        "download_url": download_url
-    })
+    return json.dumps(
+        {
+            "summary": summary,
+            "transcript": transcription,
+            "estimated_read_time": f"{estimated_read_time:.2f} minutes",
+            "pdf_file_path": save_url,
+            "download_url": download_url,
+        }
+    )
+
 
 @worker.task()
 def generate_audio_summary_task(audio_file, target_lang):
-    '''Background task to summarize an audio file and save to the database'''
+    """Background task to summarize an audio file and save to the database"""
 
     # Process the audio file: transcribe, summarize, translate, and export
     result = summary_service.process_audio(audio_file, target_lang)
     return json.dumps(result)
 
-    
+
 @worker.task()
 def transcribe_audio_task(audio_data):
     result = transcribe_audio_file_with_timestamps(audio_data)
