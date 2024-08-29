@@ -95,6 +95,7 @@ async def event_generator(job_id: str, db: Session, request: Request):
                     is_active=True,
                     user=user
                 )
+                project_service.set_file_url(project, db)
             except Exception as e:
                 print(f"Error saving project {e}")
                 db.rollback()
