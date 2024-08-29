@@ -3,7 +3,7 @@ name: Automated Release (Python FastAPI)
 on:
   push:
     branches:
-      - main # or your default branch name
+      - main
 
 jobs:
   check_and_release:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Fetch all history for all tags and branches
+          fetch-depth: 0
 
       - name: Get latest version
         id: get_version
