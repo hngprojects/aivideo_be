@@ -342,9 +342,7 @@ class ResourceService(Service):
         resource.is_published = False
         db.commit()
 
-    def search_resources(
-        self, db: Session, search_query: str, skip: int, limit: int
-    ) -> List[Resource]:
+    def search_resources(self, db: Session, search_query: str) -> List[Resource]:
         """Search resources with pagination.
 
         Args:
@@ -373,16 +371,7 @@ class ResourceService(Service):
             )
         )
 
-        # Get the total number of results (for pagination metadata)
-        total = query.count()
-
-        # Apply pagination to the query
-        search_results = (
-            query.order_by(desc(Resource.created_at)).offset(skip).limit(limit).all()
-        )
-
-        # Return the results
-        return {"total": total, "items": search_results}
+        return query
 
 
 resource_service = ResourceService()

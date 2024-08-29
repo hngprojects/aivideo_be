@@ -15,7 +15,8 @@ from api.v1.schemas.project import (
 from api.utils.db_validators import check_model_existence
 from api.v1.models.user import User
 from api.v1.schemas.project import ProjectToolsEnum
-
+from api.utils.handle_file_url import generate_file_url
+import logging
 
 class ProjectService(Service):
     """Project service functionality"""
@@ -216,6 +217,14 @@ class ProjectService(Service):
 
         db.commit()
 
-
+    def set_file_url(self, db: Session, project: Project):
+        try:
+            file_url = generate_file_url(project)
+            if file_url is not None:
+                project.file_url = file_url
+                db.commit()
+        except Exception as e:
+            logging.error(str(e))
+            return
 
 project_service = ProjectService()
