@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status, Query, Form, File, UploadFile
 from fastapi.encoders import jsonable_encoder
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
+from api.utils.pagination import paginated_response
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.resource import resource_service
@@ -17,6 +18,7 @@ from api.v1.schemas.resource import (
     SuccessResponse,
 )
 import logging
+import json
 
 
 resource = APIRouter(prefix="/resources", tags=["Resources"])
@@ -30,7 +32,12 @@ resource = APIRouter(prefix="/resources", tags=["Resources"])
     description="Admin endpoint to create a resource",
 )
 async def create_resource(
-    schema: CreateResource,
+    # schema: CreateResource,
+    title: Annotated[str, Form()],
+    content: Annotated[str, Form()],
+    tags: Optional[str] = Form(None),
+    cover_image: Optional[UploadFile] = File(None),
+    image: Optional[UploadFile] = File(None),
     publish: bool = Query(True),
     db: Session = Depends(get_db),
     current_admin: User = Depends(user_service.get_current_super_admin),
@@ -46,7 +53,15 @@ async def create_resource(
     Returns:
         success_response
     """
-    resource = resource_service.create(db, schema=schema, publish=publish)
+
+    schema = CreateResource(title=title, content=content)
+
+    if tags:
+        schema.tags = json.loads(tags)
+
+    resource = resource_service.create(
+        db, schema=schema, publish=publish, cover_image=cover_image, image=image
+    )
 
     logging.info(f"Creating new Resource. ID: {resource.id}.")
     return success_response(
@@ -114,39 +129,18 @@ async def get_public_resources(
     )
 
 
-@resource.get(
-    "/search", status_code=status.HTTP_200_OK, response_model=AllResourcesResponse
-)
-async def search_resources(
-    keywords: str,
-    db: Session = Depends(get_db),
-    page: int = 1,
-    per_page: int = 10,
-):
-    """
-    Search for resources by keywords.
-
-    Args:
-        keywords: Search terms provided by the user.
-        db: Database session object.
-        page: Page number for pagination.
-        per_page: Max number of resources per page.
-
-    Returns:
-        Search results in a paginated format.
-    """
-    search_results = resource_service.search_resources(db, keywords, page, per_page)
-    return search_results
-
-
 @resource.patch(
     "/{resource_id}", response_model=success_response, status_code=status.HTTP_200_OK
 )
 async def update_resources(
-    schema: UpdateResource,
-    resource_id: str,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(user_service.get_current_super_admin)],
+    resource_id: str,
+    title: Optional[str] = Form(None),
+    content: Optional[str] = Form(None),
+    tags: Optional[str] = Form(None),
+    image: Optional[UploadFile] = File(None),
+    cover_image: Optional[UploadFile] = File(None),
 ):
     """
     Route to Update resources
@@ -163,7 +157,23 @@ async def update_resources(
                "data" : {}
                }
     """
-    resource = resource_service.update(db=db, resource_id=resource_id, schema=schema)
+
+    schema = UpdateResource()
+
+    if title:
+        schema.title = title
+    if content:
+        schema.content = content
+    if tags:
+        schema.tags = json.loads(tags)
+
+    resource = resource_service.update(
+        db=db,
+        resource_id=resource_id,
+        schema=schema,
+        cover_image=cover_image,
+        image=image,
+    )
     return success_response(
         status_code=status.HTTP_200_OK,
         message="Resource updated Succesfully",
