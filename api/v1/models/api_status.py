@@ -6,6 +6,6 @@ class APIStatus(BaseTableModel):
 
     api_group = Column(String, nullable=False)
     status = Column(String, nullable=False)
-    last_checked = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    last_checked = Column(DateTime(timezone=True), server_default=func.now())
     response_time = Column(Numeric, nullable=True)
     details = Column(Text, nullable=True)
