@@ -3,6 +3,7 @@ from typing import Optional, Union
 from datetime import datetime
 from enum import Enum
 
+
 class CreateProject(BaseModel):
 
     title: str
@@ -31,7 +32,7 @@ class UpdateProjectSchema(BaseModel):
 
 
 class SaveProjectSchema(BaseModel):
-    
+
     result: str
 
 
@@ -46,15 +47,18 @@ class ProjectCreateResponseSchema(CreateFullProjectSchema):
     class Config:
         from_attributes = True
 
+
 class BaseResponseSchema(BaseModel):
     message: str
     status_code: int
     status: str
 
+
 class SingleProjectResponse(BaseResponseSchema):
     """
     Schema for all Project Response
     """
+
     data: ProjectCreateResponseSchema | None
 
 
@@ -62,7 +66,9 @@ class AllProjectResponse(BaseResponseSchema):
     """
     Schema for all Project Response
     """
+
     data: Union[list[ProjectCreateResponseSchema], list[None]]
+
 
 class ToolStatsData(BaseModel):
     pdf_summarizer: float = 0
@@ -73,6 +79,7 @@ class ToolStatsData(BaseModel):
     image_to_video: float = 0
     thumbnail_generator: float = 0
 
+
 class ToolStatsResponse(BaseModel):
     message: str
     status_code: int
@@ -82,6 +89,7 @@ class ToolStatsResponse(BaseModel):
 
 class ProjectToolsEnum(str, Enum):
     youtube_summarizer = "Youtube Summarizer"
+    video_summarizer = "Video Summarizer"
     text_to_video = "Text To Video"
     talking_avatar = "Talking Avatar"
     audio_transcriber = "Audio Transcriber"
