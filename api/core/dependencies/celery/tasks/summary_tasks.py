@@ -1,7 +1,9 @@
 import json
 from pypdf import PdfReader
 import os
-import secrets
+import secrets 
+from api.utils.minio_service import minio_service  
+from api.utils.mime_types import APPLICATION_PDF
 from uuid import uuid4
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ListStyle
@@ -15,7 +17,6 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from io import BytesIO
 from reportlab.lib.enums import TA_CENTER
-from io import BytesIO
 from api.core.dependencies.celery.celery_app import worker
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.summary import summary_service
@@ -84,6 +85,18 @@ def generate_pdf_summary_task(pdf_file_path):
             f.write(pdf_buffer.read())
 
         pdf_buffer.close()
+        
+        bucket_name = "pdf-summarizer"
+        minio_save_file = pdf_filename
+        preview_url, download_url = minio_service.upload_to_minio(
+            bucket_name=bucket_name,
+            source_file=pdf_filename,
+            destination_file=minio_save_file,
+            content_type=APPLICATION_PDF
+        )
+        
+        if os.path.exists(pdf_filename):
+            os.remove(pdf_filename)
 
         # Remove binary data from the result dictionary
         result = {
@@ -94,13 +107,19 @@ def generate_pdf_summary_task(pdf_file_path):
             "summary_read_time": f"{summary_read_time:.2f} minutes",
             "time_saved": f"{time_saved:.2f} minutes",
             "summary": summary,
-            "pdf_file_path": pdf_filename
+            "preview_url": preview_url,
+            "download_url": download_url
         }
 
         result_json = json.dumps(result, default=str)
         return result_json
 
     except Exception as e:
+        # Ensure that files are deleted even if an exception occurs
+        if os.path.exists(pdf_filename):
+            os.remove(pdf_filename)
+        if os.path.exists(pdf_file_path):
+            os.remove(pdf_file_path)
         raise Exception(f"Summarization failed: {str(e)}")
 
 

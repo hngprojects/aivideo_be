@@ -70,8 +70,7 @@ class SummaryService():
         try:
             doc = fitz.open(pdf_file_path)
         except Exception as e:
-            raise ValueError(
-                f"Failed to open PDF file at path {pdf_file_path}: {str(e)}")
+            raise ValueError(f"Failed to open PDF file at path {pdf_file_path}: {str(e)}")
 
         text = ""
         for page in doc:
@@ -102,8 +101,7 @@ class SummaryService():
         documents = text_splitter.create_documents([text])
 
         llm_chain = self.init_chain()
-        stuff_chain = StuffDocumentsChain(
-            llm_chain=llm_chain, document_variable_name="text")
+        stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
 
         summaries = []
         for doc in documents:
@@ -113,8 +111,7 @@ class SummaryService():
             summaries.append(summary)
 
         final_summary = " ".join(summaries)
-        final_summary = final_summary.replace(
-            '\n', ' ').replace('\r', ' ').strip()
+        final_summary = final_summary.replace('\n', ' ').replace('\r', ' ').strip()
         return final_summary
 
     def transcribe_audio(self, file_path) -> Transcription:
