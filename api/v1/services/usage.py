@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
+from datetime import datetime
 
 from api.v1.models.usage_store import UsageStore, ToolAccess
 class UsageStoreService:
@@ -139,5 +140,30 @@ class UsageStoreService:
         db.commit()  # Commit the ToolAccess record
         
         return new_usage_store
+    
+    def update_tool_access_count_by_id(self, db: Session, id:str, value:int):
+        tool = self.fetch_by_id(db, id)
+        # Increment the access count for the tool
+        tool.tool_access_count = value
+        db.commit()
+        return tool.tool_access_count
+    
+    def fetch_tool_access_by_usage_store_and_name(self, db: Session, usage_store_id: str, tool_name: str):
+        """Find ToolAccess entries by usage_store_id and tool_name."""
+        tool_access = db.query(ToolAccess).filter_by(
+            usage_store_id=usage_store_id,
+            tool_name=tool_name
+        ).first()
+
+        return tool_access
+
+
+    def add_tool_count_by_id(self, db: Session, id:str, tool_name: str, value:int):
+        usage = self.fetch_by_id(db, id)
+        tool = self.fetch_tool_access_by_usage_store_and_name(db, id, tool_name)
+        tool.access_count += value
+        usage.last_accessed, tool.last_accessed = datetime.utcnow()
+        db.commit()
+        return tool.tool_access_count
 
 usage_store_service = UsageStoreService()

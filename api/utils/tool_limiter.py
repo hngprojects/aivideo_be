@@ -70,17 +70,19 @@ def track_tool_usage(current_tool: str):
             tracking_record = db.query(UsageStore).filter_by(ip_address=client_ip).first()
             if tracking_record:
                 tracking_record.tool_access_count += 1
-                if tracking_record.tools_accessed.count(current_tool) == ACCESS_LIMIT:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Please log in to continue using {current_tool} tool.",
-                    )
+                if tracking_record.is_access_count_exceeded(ACCESS_LIMIT):
+                    if tracking_record.is_last_accessed_old():
+                        usage_store_service.update_tool_access_count_by_id(db, id, 1)
+                    else:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Please log in to continue using {current_tool} tool.",
+                        )
                 else:
-                    usage_store_service.create_usage_store_and_assign_tool(
+                    usage_store_service.add_tool_count_by_id(
                         db,
-                        client_ip,
+                        tracking_record.id,
                         current_tool,
-                        1,
                         1
                     )
             else:
