@@ -1,6 +1,6 @@
 """UsageStore data model"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import Column, DateTime, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
@@ -14,6 +14,16 @@ class UsageStore(BaseTableModel):
     tool_access_count = Column(Integer, default=0)
     last_accessed = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     tools = relationship('ToolAccess', back_populates='usage_store', cascade="all, delete-orphan")
+    
+    def is_access_count_exceeded(self, access_limit):
+        """Check if tool_access_count is greater than 3."""
+        return self.tool_access_count > access_limit
+
+    def is_last_accessed_old(self):
+        """Check if last_accessed is more than 24 hours old."""
+        if self.last_accessed:
+            return datetime.utcnow() - self.last_accessed > timedelta(hours=24)
+        return False
 
 
 class ToolAccess(BaseTableModel):
