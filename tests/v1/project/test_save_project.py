@@ -62,7 +62,7 @@ def test_save_project_success(client, mocker, mock_project, mock_user):
                  return_value=mock_user)
 
     # Call the save_project endpoint
-    response = client.put(
+    response = client.post(
         "/api/v1/projects/1/save", 
         headers={"Authorization": "Bearer test_token"},
         json={
@@ -86,7 +86,7 @@ def test_save_project_already_saved(client, mocker, mock_project, mock_user):
                  return_value=mock_project)
 
     # Call the save_project endpoint
-    response = client.put(
+    response = client.post(
         "/api/v1/projects/1/save",
         headers={"Authorization": "Bearer test_token"},
         json={
