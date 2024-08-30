@@ -52,7 +52,7 @@ class UserService(Service):
             per_page: max number of users in a page
             query_params: params to filter by
         """
-        per_page = min(per_page, 10)
+        # per_page = min(per_page, 10)
 
         if not isinstance(search, str) and search is not None:
             raise HTTPException(

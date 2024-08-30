@@ -6,7 +6,6 @@ from datetime import timedelta
 
 from api.db.database import get_db
 from api.utils.client_helpers import get_ip_address
-from api.v1.models.usage_store import UsageStore
 from api.v1.services.user import user_service
 from api.v1.services.usage import usage_store_service
 from api.v1.services.user_usage import user_usage_store_service
@@ -33,23 +32,77 @@ def track_tool_usage(current_tool: str):
             request: Request = kwargs.get('request')
             db: Session = kwargs.get('db', Depends(get_db))
             user: User | None = kwargs.get('user', Depends(user_service.get_current_user_optional))
-
+            
+            
             if user:
                 tracking_record = user_usage_store_service.fetch_by_user(db, user.id)
                 if tracking_record:
-                    user_usage_store_service.add_tool_access_count_by_user(db, user, 1)
                     tool_count = user_usage_store_service.get_or_create_tool_value(
                         db,
                         tracking_record.id,
                         current_tool
                     )
-                    if usage_store_service.fetch_total(db, tracking_record.id) > user.subscription.billing_plan.access_limit:
-                        billing_plan_service.subscribe_user_to_free_plan(db, user)
-                        raise HTTPException(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"Please upgrade your plan to get more access to the {current_tool} tool.",
-                        )
+                    if tracking_record.is_access_count_exceeded(user.subscription.billing_plan.access_limit):
+                        if billing_plan_service.confirm_user_is_on_plan(db, user.id, "Free"):
+                            if tracking_record.is_last_accessed_old(24):
+                                hours, minutes, seconds = tracking_record.time_until(2)
+                                message = f"{hours} hours, {minutes} minutes, {seconds} seconds"
+                                raise HTTPException(
+                                    status_code=status.HTTP_403_FORBIDDEN,
+                                    detail=f"Please to get more access to out tools wait for {message} to gain access."
+                                )
+                            else:
+                                user_usage_store_service.update_tool_access_count_by_id(db, tracking_record.id, 1)
+                                user_usage_store_service.update_tool_usage(
+                                    db,
+                                    tracking_record.id,
+                                    current_tool,
+                                    tool_count + 1
+                                )
+                                return await func(*args, **kwargs)
+                        else:
+                            if user.subscription.is_active():
+                                if billing_plan_service.confirm_user_is_on_plan(db, user.id, "premium_monthly"):
+                                    if tracking_record.is_last_accessed_old(2):
+                                        hours, minutes, seconds = tracking_record.time_until(2)
+                                        message = f"{hours} hours, {minutes} minutes, {seconds} seconds"
+                                    else:
+                                        user_usage_store_service.update_tool_access_count_by_id(db, tracking_record.id, 1)
+                                        user_usage_store_service.update_tool_usage(
+                                            db,
+                                            tracking_record.id,
+                                            current_tool,
+                                            tool_count + 1
+                                        )
+                                        return await func(*args, **kwargs)
+                                else:
+                                    if tracking_record.is_last_accessed_old(1):
+                                        hours, minutes, seconds = tracking_record.time_until(1)
+                                        message = f"{hours} hours, {minutes} minutes, {seconds} seconds"
+                                    else:
+                                        user_usage_store_service.update_tool_access_count_by_id(db, tracking_record.id, 1)
+                                        user_usage_store_service.update_tool_usage(
+                                            db,
+                                            tracking_record.id,
+                                            current_tool,
+                                            tool_count + 1
+                                        )
+                                        return await func(*args, **kwargs)
+                                raise HTTPException(
+                                    status_code=status.HTTP_403_FORBIDDEN,
+                                    detail=f"Please to get more access to out tools wait for {message} to gain access.",
+                                )
+                            else:
+                                billing_plan_service.subscribe_user_to_free_plan(db, user)
+                                user_usage_store_service.update_tool_access_count_by_id(db, tracking_record.id, 1)
+                                user_usage_store_service.update_tool_usage(
+                                    db,
+                                    tracking_record.id,
+                                    current_tool,
+                                    tool_count + 1
+                                )
                     else:
+                        user_usage_store_service.add_tool_access_count_by_user(db, user.id, 1)
                         user_usage_store_service.update_tool_usage(
                             db,
                             tracking_record.id,
@@ -59,7 +112,7 @@ def track_tool_usage(current_tool: str):
                 else:
                     tracking_record = user_usage_store_service.create_usage_store_and_assign_tool(
                         db,
-                        get_ip_address(request),
+                        user.id,
                         current_tool,
                         1,
                         1
@@ -67,18 +120,20 @@ def track_tool_usage(current_tool: str):
                 return await func(*args, **kwargs)
 
             client_ip = get_ip_address(request)
-            tracking_record = db.query(UsageStore).filter_by(ip_address=client_ip).first()
+            tracking_record = usage_store_service.fetch_by_user(db, client_ip)
             if tracking_record:
-                tracking_record.tool_access_count += 1
                 if tracking_record.is_access_count_exceeded(ACCESS_LIMIT):
-                    if tracking_record.is_last_accessed_old():
-                        usage_store_service.update_tool_access_count_by_id(db, id, 1)
+                    if tracking_record.is_last_accessed_old(24):
+                        usage_store_service.update_store_access_count(db, client_ip, 1)
                     else:
+                        hours, minutes, seconds = tracking_record.time_until(24)
+                        message = f"{hours} hours, {minutes} minutes, {seconds} seconds"
                         raise HTTPException(
                             status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"Please log in to continue using {current_tool} tool.",
+                            detail=f"Please log in to continue using our tools or wait for {message}.",
                         )
                 else:
+                    usage_store_service.add_tool_access_count_by_user(db, client_ip, 1)
                     usage_store_service.add_tool_count_by_id(
                         db,
                         tracking_record.id,

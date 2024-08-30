@@ -14,6 +14,12 @@ class PdfDownloadRequest(BaseModel):
     video_title: Optional[str] = None
 
 
+class VideoTranslationRequest(BaseModel):
+    """Defines Request for video translation"""
+    job_id: str
+    language: str
+
+
 class YTLinksRequest(BaseModel):
     """Youtube batch upload request body"""
 

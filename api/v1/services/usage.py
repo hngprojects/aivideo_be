@@ -38,15 +38,17 @@ class UsageStoreService:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
     def fetch_by_user(self, db: Session, ip_address: str) -> UsageStore | None:     
+        print(ip_address)
         usage = db.query(UsageStore).filter_by(ip_address=ip_address).first()
         if not usage:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Visitor usage not found")
+            return False
         return usage    
     
     def fetch_by_id(self, db: Session, id: int):
+        print(id)
         usage = db.query(UsageStore).filter(UsageStore.id == id).one()
         if not usage:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Visitor usage not found")
+            raise False
         return usage
 
     def update_tool_usage(self, db: Session, id: int, tool_name: str, value: int):
@@ -141,12 +143,12 @@ class UsageStoreService:
         
         return new_usage_store
     
-    def update_tool_access_count_by_id(self, db: Session, id:str, value:int):
-        tool = self.fetch_by_id(db, id)
-        # Increment the access count for the tool
-        tool.tool_access_count = value
+    
+    def update_store_access_count(self, db: Session, id: str, value: int):
+        store = self.fetch_by_user(db, id)
+        store.tool_access_count = value
         db.commit()
-        return tool.tool_access_count
+        return store.tool_access_count
     
     def fetch_tool_access_by_usage_store_and_name(self, db: Session, usage_store_id: str, tool_name: str):
         """Find ToolAccess entries by usage_store_id and tool_name."""
@@ -162,7 +164,24 @@ class UsageStoreService:
         usage = self.fetch_by_id(db, id)
         tool = self.fetch_tool_access_by_usage_store_and_name(db, id, tool_name)
         tool.access_count += value
-        usage.last_accessed, tool.last_accessed = datetime.utcnow()
+        usage.last_accessed = datetime.utcnow()
+        db.commit()
+        tool.last_accessed = datetime.utcnow()
+        db.commit()
+        return tool.access_count
+    
+    def add_tool_access_count_by_user(self, db: Session, ip_address: str, value: int) -> int:
+        """
+        Increments the access count for a specific tool in the UsageStore record identified by the user ID.
+
+        :param db: SQLAlchemy session object for database operations.
+        :param ip_address: The visitors ip address of the UsageStore record to update.
+        :param value: The increment value for the tool's access count.
+
+        :return: The updated access count for the tool.
+        """
+        tool = self.fetch_by_user(db, ip_address)
+        tool.tool_access_count += value
         db.commit()
         return tool.tool_access_count
 

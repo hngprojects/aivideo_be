@@ -21,32 +21,40 @@ class UserUsageStoreService:
             access_count=access_count,
             usage_store_id=usage_store_id
         )
-        
-        try:
-            db.add(new_tool_access)
-            db.commit()
-            db.refresh(new_tool_access)
-            return new_tool_access
-        except IntegrityError as e:
-            db.rollback()
-            print(f"Integrity error: {e}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-        except Exception as e:
-            db.rollback()
-            print(f"An error occurred: {e}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        db.add(new_tool_access)
+        db.commit()
+        db.refresh(new_tool_access)
+        return new_tool_access
 
-    def fetch_by_user(self, db: Session, user_id: str) -> UserUsageStore | None:     
+    def fetch_by_user(self, db: Session, user_id: str) -> UserUsageStore | None:
+        """
+        Fetches a UserUsageStore record by user ID from the database.
+
+        :param db: SQLAlchemy session object for database operations.
+        :param user_id: The user ID to search for in the UserUsageStore table.
+
+        :return: The UserUsageStore record associated with the given user ID, or None if not found.
+        :raises HTTPException: If a UserUsageStore record is not found for the given user ID.
+        """
         usage = db.query(UserUsageStore).filter_by(user_id=user_id).first()
         if not usage:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User usage not found")
-        return usage    
+            return False
+        return usage
     
-    def fetch_by_id(self, db: Session, id: int):
+    def fetch_by_id(self, db: Session, id: int) -> UserUsageStore:
+        """
+        Fetches a UserUsageStore record by its ID from the database.
+
+        :param db: SQLAlchemy session object for database operations.
+        :param id: The ID of the UserUsageStore record to fetch.
+
+        :return: The UserUsageStore record associated with the given ID.
+        :raises HTTPException: If a UserUsageStore record is not found for the given ID.
+        """
         usage = db.query(UserUsageStore).filter(UserUsageStore.id == id).one()
         if not usage:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User usage not found")
+            return False
         return usage
 
     def update_tool_usage(self, db: Session, id: int, tool_name: str, value: int):
@@ -130,18 +138,66 @@ class UserUsageStoreService:
         db.commit()
         return tool.tool_access_count
     
-    def add_tool_access_count_by_user(self, db: Session, user_id:str, value:int):
+    def add_tool_access_count_by_user(self, db: Session, user_id: str, value: int) -> int:
+        """
+        Increments the access count for a specific tool in the UserUsageStore record identified by the user ID.
+
+        :param db: SQLAlchemy session object for database operations.
+        :param user_id: The user ID of the UserUsageStore record to update.
+        :param value: The increment value for the tool's access count.
+
+        :return: The updated access count for the tool.
+        """
         tool = self.fetch_by_user(db, user_id)
         tool.tool_access_count += value
         db.commit()
         return tool.tool_access_count
     
-    def update_tool_access_count_by_id(self, db: Session, id:str, value:int):
+    def update_tool_access_count_by_id(self, db: Session, id: str, value: int) -> int:
+        """
+        Updates the access count for a specific tool in the UserUsageStore record identified by its ID.
+
+        :param db: SQLAlchemy session object for database operations.
+        :param id: The ID of the UserUsageStore record to update.
+        :param value: The new access count value for the tool.
+
+        :return: The updated access count for the tool.
+        """
         tool = self.fetch_by_id(db, id)
         # Increment the access count for the tool
         tool.tool_access_count = value
         db.commit()
         return tool.tool_access_count
     
+    def create_usage_store_and_assign_tool(self, db: Session, user_id: str, tool_name: str, access_count: int, tool_access_count: int) -> UserUsageStore:
+        """
+        Creates a new UserUsageStore record in the database and assigns a new UserToolAccess record to it.
+
+        :param db: SQLAlchemy session object for database operations.
+        :param user_id: The user ID for the new UserUsageStore record.
+        :param tool_name: The name of the tool to be associated with the new UserToolAccess record.
+        :param access_count: The access count for the new UserUsageStore record.
+        :param tool_access_count: The access count for the new UserToolAccess record.
+
+        :return: The newly created UserUsageStore record.
+        """
+        new_usage_store = UserUsageStore(
+            user_id=user_id,
+            tool_access_count=access_count,
+        )
+
+        db.add(new_usage_store)
+        db.commit()
+
+        new_tool_access = UserToolAccess(
+            usage_store_id=new_usage_store.id,
+            tool_name=tool_name,
+            access_count=tool_access_count
+        )
+
+        db.add(new_tool_access)
+        db.commit()
+
+        return new_usage_store
     
 user_usage_store_service = UserUsageStoreService()

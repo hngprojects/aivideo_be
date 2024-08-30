@@ -1,21 +1,26 @@
 import base64
+import json
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from celery.result import AsyncResult
+from fastapi import (APIRouter, Depends, File, HTTPException, Request,
+                     UploadFile, status)
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
+from api.core.dependencies.celery.celery_app import worker
 from api.core.dependencies.celery.tasks.video_summary_tasks import (
-    download_and_generate_video_summmary_task,
-    generate_video_summary_task,
-)
+    download_and_generate_video_summmary_task, generate_video_summary_task)
 from api.db.database import get_db
 from api.utils.files import delete_file, upload_files
 from api.utils.logger import logging
 from api.utils.success_response import success_response
 from api.utils.tool_limiter import track_tool_usage
 from api.v1.models.user import User
-from api.v1.schemas.ai_tools.youtube import PdfDownloadRequest, VideoLinkRequest
+from api.v1.schemas.ai_tools.youtube import (PdfDownloadRequest,
+                                             VideoLinkRequest,
+                                             VideoTranslationRequest)
 from api.v1.schemas.project import ProjectToolsEnum
+from api.v1.services.ai_tools.audio_transcriber import translate_text
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.job import job_service
 from api.v1.services.user import user_service
@@ -139,3 +144,33 @@ def download_pdf(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@yt_summary.post(
+    "/translate_job_result",
+    status_code=status.HTTP_200_OK,
+    response_model=success_response
+)
+def translate_job_id(
+    request: VideoTranslationRequest,
+):
+    """Endpoint to translate the summary and transcript of a video"""
+    job = AsyncResult(request.job_id, app=worker)
+    translate_result = None
+
+    if job.result is None and job.state != "SUCCESS":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Job not completed"
+        )
+    result = json.loads(str(job.result))
+
+    translate_result = translate_text(result, request.language)
+
+    return success_response(
+        status_code=status.HTTP_200_OK,
+        message="Translation successful",
+        data={
+            "result": translate_result
+        }
+    )
