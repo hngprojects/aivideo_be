@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Endpoints that handle video transcription and summarization"""
+import json
 from typing import List
 
 from fastapi import APIRouter, Depends, File, UploadFile, status
@@ -12,9 +13,9 @@ from api.utils.files import upload_files
 from api.utils.logger import logging
 from api.utils.success_response import success_response
 from api.v1.schemas.ai_tools.youtube import YTLinksRequest
-from api.v1.services.job import job_service
 from api.v1.schemas.project import ProjectToolsEnum
-
+from api.v1.services.ai_tools.audio_transcriber import translate_text
+from api.v1.services.job import job_service
 
 video_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 

@@ -11,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent
 class Settings(BaseSettings):
     """ Class to hold application's config values."""
 
+    PYTHON_ENV: str = config("PYTHON_ENV")
     SECRET_KEY: str = config("SECRET_KEY")
     ALGORITHM: str = config("ALGORITHM")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = config("ACCESS_TOKEN_EXPIRE_MINUTES")

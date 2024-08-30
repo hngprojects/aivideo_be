@@ -80,6 +80,7 @@ def register(
             "status_code": 201,
             "message": "User created successfully",
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "data": {
                 "user": jsonable_encoder(
                     user, exclude=["password", "is_deleted", "updated_at"]
@@ -125,6 +126,7 @@ def register_as_super_admin(user: UserCreate, request: Request, db: Session = De
             "status_code": 201,
             "message": "User created successfully",
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "data": {
                 "user": jsonable_encoder(
                     user, exclude=["password", "is_deleted", "updated_at"]
@@ -167,6 +169,7 @@ def login(login_request: LoginRequest, request: Request, db: Session = Depends(g
             "status_code": 200,
             "message": "Login successful",
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "data": {
                 "user": jsonable_encoder(
                     user, exclude=["password", "is_deleted", "updated_at"]
@@ -219,12 +222,13 @@ def refresh_access_token(
         current_refresh_token=current_refresh_token
     )
 
-    response = success_response(
+    response = response = JSONResponse(
         status_code=200,
-        message="Tokens refreshed successfully",
-        data={
+        content={
+            "status_code": 200,
+            "message": "Tokens refreshed successfully",
             "access_token": access_token,
-            "token_type": "bearer",
+            "refresh_token": refresh_token,
         },
     )
 
@@ -293,6 +297,7 @@ def verify_magic_link(token: str = Query(...), db: Session = Depends(get_db)):
             "status_code": 200,
             "message": "Login successful",
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "data": {
                 "user": jsonable_encoder(
                     user, exclude=["password", "is_deleted", "updated_at"]

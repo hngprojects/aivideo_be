@@ -68,6 +68,7 @@ async def google_login(background_tasks: BackgroundTasks, token_request: OAuthTo
                     "status_code": 200,
                     "message": "Login successful",
                     "access_token": access_token,
+                    "refresh_token": refresh_token,
                     "data": {
                         "user": jsonable_encoder(
                             user, exclude=["password", "is_deleted", "updated_at"]
@@ -183,6 +184,7 @@ async def google_callback(background_tasks: BackgroundTasks, request: Request, d
             "status_code": 200,
             "message": "Authenticated successfully",
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "id_token": id_token,
             "data": {
                 "user": jsonable_encoder(
