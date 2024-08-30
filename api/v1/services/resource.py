@@ -134,7 +134,7 @@ class ResourceService(Service):
             search: search query
             query_params: params to filter by
         """
-        per_page = min(per_page, 10)
+        # per_page = min(per_page, 10)
 
         if not isinstance(search, str) and search is not None:
             raise HTTPException(
@@ -186,7 +186,7 @@ class ResourceService(Service):
 
     def fetch_all_public(self, db: Session, page: int, per_page: int):
         """fetch all public resources"""
-        per_page = min(per_page, 10)
+        # per_page = min(per_page, 10)
         query = (
             db.query(Resource)
             .filter(Resource.is_published == True)
