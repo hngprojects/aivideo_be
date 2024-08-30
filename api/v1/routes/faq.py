@@ -44,8 +44,7 @@ async def create_faq(
 @track_tool_usage(current_tool="example_tool")
 async def get_all_faqs(
     request: Request,
-    db: Session = Depends(get_db),
-    user: User = Depends(user_service.get_current_user_optional)
+    db: Session = Depends(get_db)
 ):
     """Endpoint to get all FAQs
 
