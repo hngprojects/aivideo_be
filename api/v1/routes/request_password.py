@@ -19,7 +19,7 @@ async def request_forget_password(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_session),
 ):
-    url = "api/v1/auth/forget-password"
+    url = "/forget-password"
     template_file = "reset_password.html"
     subject = "HNG11 PASSWORD RESET"
     data = await reset_service.create(reset_schema, request, db, background_tasks,
@@ -46,6 +46,7 @@ async def forget_password(
     return reset_service.reset_password(data, token, session)
 
 # change the password
+
 
 
 @pwd_reset.post("/reset-password", response_model=ResetPasswordResponse)
