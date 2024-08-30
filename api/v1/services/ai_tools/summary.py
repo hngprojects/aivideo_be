@@ -1,4 +1,5 @@
 import io
+import os
 from typing import List
 import uuid
 from api.utils import mime_types
@@ -246,13 +247,17 @@ class SummaryService():
         transcript_word_count = self.calculate_word_count(transcribed_text)
         summary_word_count = self.calculate_word_count(final_summary)
 
+        """Calculate estimated read time (assuming 250 words per minute reading speed)"""
+        estimated_read_time = transcript_word_count / 250
+        
         return {
             "summary": final_summary,
             "summary_word_count": summary_word_count,
             "transcript": transcribed_text,
-            "transcript_word_count": transcript_word_count
+            "transcript_word_count": transcript_word_count,
+            "estimated_read_time": f"{estimated_read_time:.2f} minutes"
         }
-
+        
     def translate_summary(self, text, target_lang):
         """Translates the summary to the target language using GoogleTranslator."""
         translated_text = self.translator.translate(
@@ -261,10 +266,12 @@ class SummaryService():
 
     def export_results_to_pdf(self, summary, transcript, translation):
         """Exports the summary, transcript, and translation to a PDF and uploads it to MinIO."""
+        
+        # Generate PDF in-memory
         pdf_file = io.BytesIO()
         c = canvas.Canvas(pdf_file, pagesize=letter)
         width, height = letter
-
+    
         """Add Title"""
         c.setFont("Helvetica-Bold", 16)
         c.drawString(100, height - 40, "Audio Summary and Transcript")
@@ -300,18 +307,26 @@ class SummaryService():
 
         c.save()
 
-        """Upload the PDF to MinIO"""
+        """Save the PDF to a temporary file"""
         pdf_file.seek(0)
-        minio_save_file = f'summary_export_{uuid.uuid4()}.pdf'
+        temp_file_path = f'/tmp/summary_export_{uuid.uuid4()}.pdf'
+        with open(temp_file_path, 'wb') as f:
+            f.write(pdf_file.getvalue())
+
+        """Upload the PDF to MinIO using the file path"""
+        minio_save_file = os.path.basename(temp_file_path)
         save_url, download_url = minio_service.upload_to_minio(
             bucket_name='summaries',
-            source_file=pdf_file,
+            source_file=temp_file_path,
             destination_file=minio_save_file,
             content_type=mime_types.APPLICATION_PDF
         )
-        
-        return save_url, download_url
 
+        """Delete the temporary file after upload"""
+        os.remove(temp_file_path)
+
+        return save_url, download_url
+    
     def calculate_word_count(self, text):
         """Calculates the word count of a given text."""
         words = text.split()
@@ -333,6 +348,7 @@ class SummaryService():
             "summary": results["summary"],
             "summary_word_count": results["summary_word_count"],
             "translation": translated_summary,
+            "estimated_read_time": results["estimated_read_time"],
             "save_url": save_url,
             "download_url": download_url
         }

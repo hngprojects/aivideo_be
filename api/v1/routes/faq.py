@@ -41,7 +41,7 @@ async def create_faq(
 
 @faq.get("", response_model=success_response, status_code=200)
 async def get_all_faqs(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
     """Endpoint to get all FAQs
 

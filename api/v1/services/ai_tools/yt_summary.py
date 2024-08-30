@@ -6,14 +6,19 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.pagesizes import letter
 from pathlib import Path
-
+import json
 import yt_dlp
 from concurrent.futures import ThreadPoolExecutor
 from api.v1.services.ai_tools.summary import summary_service
 
 from api.utils.logger import logging
 from api.utils.settings import settings
-
+from api.utils.pagination import format_timestamp
+from api.v1.models.job import Job
+from api.v1.services.job import job_service
+from sqlalchemy.orm import Session
+from api.v1.services.ai_tools.translator_service import translate_text
+from api.v1.schemas.ai_tools.youtube import PdfDownloadRequest
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 
@@ -73,8 +78,10 @@ class YoutubeSummary:
                 detail=f"An Error occurred: {e}",
             )
 
-    def pdf_transform(self, request):
+    def pdf_transform(self, request: PdfDownloadRequest):
         # Save file using BASE_DIR
+        job: Job = job_service.fetch_by_job_id(request.job_id)
+        result = json.loads(job.result)
 
         if request.video_title:
             video_title = request.video_title
@@ -105,14 +112,25 @@ class YoutubeSummary:
 
         if request.summary:
             # Add the Summary heading and text
+            summ = translate_text(result["summary"], request.language)
             summary_heading = Paragraph("Summary", subheading_style)
             elements.append(summary_heading)
-            elements.append(Paragraph(request.summary, body_style))
+            elements.append(Paragraph(summ, body_style))
 
         if request.transcript:
             transcript_heading = Paragraph("Transcript", subheading_style)
             elements.append(transcript_heading)
-            elements.append(Paragraph(request.transcript, body_style))
+            trans = translate_text(
+                json.dumps(result["transcript"]),
+                request.language,
+            )
+            for transcript in json.loads(trans):
+                elements.append(
+                    Paragraph(
+                        f"{format_timestamp(transcript['start_time'])}: {transcript['paragraph']}",
+                        body_style,
+                    )
+                )
 
         # Build the PDF
         pdf.build(elements)

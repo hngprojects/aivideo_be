@@ -21,6 +21,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Token serializer
 SECRET_KEY = settings.SECRET_KEY
+FRONTEND_MAGIKLINK_URL = settings.FRONTEND_MAGICLINK_URL
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 
 
@@ -63,14 +64,17 @@ class RequestPasswordService:
 
         token = create_reset_token(email.user_email)
 
-        base_url = request.base_url
-        reset_link = f"{base_url}{url}?token={token}"
+       
+        reset_link = f"{FRONTEND_MAGIKLINK_URL}{url}?token={token}"
         html_content = templates.TemplateResponse(f"{template_file}", {"url": reset_link, "user": user, "request": request}).body.decode("utf-8")
 
         # Sending the email
+
+        
         email_service = EmailService()
         email_subject = subject
         body = html_content
+
         await email_service.send_email(
             background_tasks=background_tasks,
             to_email=email.user_email,
@@ -78,6 +82,7 @@ class RequestPasswordService:
             body=body,
             from_name="HNG11 Support"
         )
+
 
         # Return the success response
         return {
