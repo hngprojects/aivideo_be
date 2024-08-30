@@ -1,10 +1,11 @@
-from typing import Any, List, Optional
 from api.core.base.services import Service
-from sqlalchemy.orm import Session
 from api.v1.models.api_status import APIStatus
 from api.v1.schemas.api_status import APIStatusPost
+from datetime import datetime
 from fastapi import HTTPException
-
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+from typing import Any, List, Optional
 
 class APIStatusService(Service):
 
@@ -57,6 +58,7 @@ class APIStatusService(Service):
             if existing_status:
                 existing_status.api_group = schema.api_group
                 existing_status.status = schema.status
+                existing_status.last_checked = func.now()
                 existing_status.response_time = schema.response_time
                 existing_status.details = schema.details
 
