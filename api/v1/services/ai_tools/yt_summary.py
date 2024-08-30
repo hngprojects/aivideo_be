@@ -1,24 +1,27 @@
-import os
-from uuid import uuid4
-import assemblyai as aai
-from fastapi import HTTPException, status
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph
-from reportlab.lib.pagesizes import letter
-from pathlib import Path
 import json
-import yt_dlp
+import os
 from concurrent.futures import ThreadPoolExecutor
-from api.v1.services.ai_tools.summary import summary_service
+from pathlib import Path
+from uuid import uuid4
 
-from api.utils.logger import logging
-from api.utils.settings import settings
-from api.utils.pagination import format_timestamp
-from api.v1.models.job import Job
-from api.v1.services.job import job_service
+import assemblyai as aai
+import yt_dlp
+from celery.result import AsyncResult
+from fastapi import HTTPException, status
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate
 from sqlalchemy.orm import Session
-from api.v1.services.ai_tools.translator_service import translate_text
+
+from api.core.dependencies.celery.celery_app import worker
+from api.utils.logger import logging
+from api.utils.pagination import format_timestamp
+from api.utils.settings import settings
+from api.v1.models.job import Job
 from api.v1.schemas.ai_tools.youtube import PdfDownloadRequest
+from api.v1.services.ai_tools.audio_transcriber import translate_text
+from api.v1.services.ai_tools.summary import summary_service
+from api.v1.services.job import job_service
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 
@@ -80,8 +83,13 @@ class YoutubeSummary:
 
     def pdf_transform(self, request: PdfDownloadRequest):
         # Save file using BASE_DIR
-        job: Job = job_service.fetch_by_job_id(request.job_id)
-        result = json.loads(job.result)
+        job = AsyncResult(request.job_id, app=worker)
+
+        if job.state != "SUCCESS" and job.result is None:
+            raise HTTPException(detail="Job not completed", status_code=400)
+        result = translate_text(json.loads(
+            str(job.result)), request.language)
+        result = json.loads(result)
 
         if request.video_title:
             video_title = request.video_title
@@ -112,19 +120,15 @@ class YoutubeSummary:
 
         if request.summary:
             # Add the Summary heading and text
-            summ = translate_text(result["summary"], request.language)
             summary_heading = Paragraph("Summary", subheading_style)
             elements.append(summary_heading)
-            elements.append(Paragraph(summ, body_style))
+            elements.append(Paragraph(result["summary"], body_style))
 
         if request.transcript:
             transcript_heading = Paragraph("Transcript", subheading_style)
             elements.append(transcript_heading)
-            trans = translate_text(
-                json.dumps(result["transcript"]),
-                request.language,
-            )
-            for transcript in json.loads(trans):
+
+            for transcript in result["transcript"]:
                 elements.append(
                     Paragraph(
                         f"{format_timestamp(transcript['start_time'])}: {transcript['paragraph']}",
