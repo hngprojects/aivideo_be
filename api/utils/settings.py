@@ -66,6 +66,7 @@ class Settings(BaseSettings):
 
     TEMP_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent, 'tmp', 'media')
     STORAGE_DIR: str = os.path.join('media', 'downloads')
+    FRONTEND_MAGICLINK_URL : str = config("FRONTEND_MAGICLINK_URL")
     
     @property
     def ALLOWED_EXTENSIONS(self) -> set[str]:
