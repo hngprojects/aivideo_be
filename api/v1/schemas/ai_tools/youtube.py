@@ -7,8 +7,10 @@ class VideoLinkRequest(BaseModel):
 
 
 class PdfDownloadRequest(BaseModel):
-    transcript: Optional[str] = None
-    summary: Optional[str] = None
+    job_id: str
+    language: str
+    transcript: bool = True
+    summary: bool = True
     video_title: Optional[str] = None
 
 

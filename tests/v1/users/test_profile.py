@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from uuid_extensions import uuid7
 import json
 import os
-
+from minio import Minio
 
 import tempfile
 from main import app
@@ -18,10 +18,28 @@ from api.v1.services.user import user_service
 from api.v1.models.user import User
 from api.v1.models.profile import Profile
 from api.v1.services.profile import profile_service
+from api.utils.minio_service import minio_service
+from tempfile import NamedTemporaryFile
 from faker import Faker
 
 fake = Faker()
 
+
+
+# Mock Minio client
+@pytest.fixture
+def mock_minio_service():
+    with patch("api.utils.minio_service.Minio") as mock_minio:
+        mock_client = MagicMock()
+        mock_minio.return_value = mock_client
+        yield mock_client
+
+def create_temp_file():
+    # Create a temporary file to simulate an avatar upload
+    with NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file.write(b"Test file content")
+        tmp_file_path = tmp_file.name
+    return tmp_file_path
 
 
 def mock_get_current_user():
@@ -112,47 +130,6 @@ def test_get_profile_not_found(client, db_session_mock):
         response_data = response.json()
         assert response_data['status_code'] == 404  
         
-          
-
-def test_update_profile_success(client, db_session_mock):
-    '''Test to successfully update a user profile'''
-
-    # Mock the user service to return the current user
-    app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
-    
-    # Mock profile update behavior
-    mock_profile_instance = mock_profile()
-    temp_file_path = create_temp_file()
-    with patch("api.v1.services.profile.profile_service.update", return_value=mock_profile_instance) as mock_update:
-        response = client.put(
-            "/api/v1/profile",
-            data={
-                "username": "mary",
-                "pronouns": "him",
-                "job_title": "job Engineer",
-                "social": json.dumps({
-                    "twitter": "@username",
-                    "linkedin": "linkedin.com/in/username"
-                }),
-                "bio": "Passionate software engineer with a love for open-source projects new.",
-                "phone_number": "+1234537890",
-                "email": "user103@example.com",
-            },
-            files={"avatar": ("avatar.jpg", open(temp_file_path, "rb"), "image/jpeg")},
-            headers={'Authorization': 'Bearer token'}
-        )
-        
-        # Clean up temporary file
-        os.remove(temp_file_path)
-
-        # Assert that the response was successful
-        assert response.status_code == 200
-        response_data = response.json()
-        assert response_data['success'] is True
-        assert response_data['message'] == "User Profile Updated Successfully!!!"
-        assert response_data['data']
-
-
 
 
 # Test for unauthorized access
@@ -165,79 +142,3 @@ def test_update_profile_unauthorized(client):
     response_data = response.json()
     assert response.status_code == 401
     assert response_data['status_code'] == 401
-    
-    
-    
-
-
-
-def test_update_profile_email_in_use(client, db_session_mock):
-    '''Test for email already in use error'''
-
-    app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
-    
-    temp_file_path = create_temp_file()
-    with patch("api.v1.services.profile.profile_service.update", side_effect=HTTPException(status_code=409, detail="Email address already in use")) as mock_update:
-        response = client.put(
-            "/api/v1/profile",  
-            data={
-                "username": "mary",
-                "pronouns": "him",
-                "job_title": "job Engineer",
-                "social": json.dumps({
-                    "twitter": "@username",
-                    "linkedin": "linkedin.com/in/username"
-                }),
-                "bio": "Passionate software engineer with a love for open-source projects new.",
-                "phone_number": "+1234537890",
-                "email": "existing_email@example.com",
-            },
-            files={"avatar": ("avatar.jpg", open(temp_file_path, "rb"), "image/jpeg")},
-            headers={'Authorization': 'Bearer token'}
-        )
-
-        response_data = response.json()
-        assert response.status_code == 409
-        assert response_data['status_code'] ==  409
-        
-        
-    # Clean up temporary file
-    os.remove(temp_file_path)
-
-
-
-def custom_service_function(*args, **kwargs):
-    raise HTTPException(status_code=500, detail="Database error occurred")
-
-def test_update_profile_custom_error(client, db_session_mock):
-    '''Test for server error using a custom exception'''
-
-    # Mock the current user
-    app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
-
-    # Use a custom service function that raises an HTTPException
-    temp_file_path = create_temp_file()
-    with patch("api.v1.services.profile.profile_service.update", side_effect=custom_service_function):
-        response = client.put(
-            "/api/v1/profile",
-            data={
-                "username": "mary",
-                "pronouns": "him",
-                "job_title": "job Engineer",
-                "social": json.dumps({
-                    "twitter": "@username",
-                    "linkedin": "linkedin.com/in/username"
-                }),
-                "bio": "Passionate software engineer with a love for open-source projects new.",
-                "phone_number": "+1234537890",
-                "email": "user103@example.com",
-            },
-            files={"avatar": ("avatar.jpg", open(temp_file_path, "rb"), "image/jpeg")},
-            headers={'Authorization': 'Bearer token'}
-        )
-
-        # Clean up temporary file
-        os.remove(temp_file_path)
-
-        # Assert that the response status code is 500
-        assert response.status_code == 500

@@ -250,7 +250,7 @@ async def request_magic_link(
     db: Session = Depends(get_db),
 ):
     subject = "Magic Link"
-    url = "api/v1/auth/magic-link/verify"
+    url = "/magic-link/verify"
     template_file = "magic_link.html"
     data = await magic_link_service.create(
         reset_schema,

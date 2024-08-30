@@ -4,7 +4,7 @@ LANGUAGE_CODES = {
     "french": "fr",
     "spanish": "es",
     "deutsch": "de",
-    "chinese": "zh",
+    "chinese": "zh-CN",
     "german": "de",
     "japanese": "ja",
     "portuguese": "pt",

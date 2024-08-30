@@ -41,11 +41,10 @@ async def create_faq(
 
 
 @faq.get("", response_model=success_response, status_code=200)
-@track_tool_usage(current_tool="example_tool")
+# @track_tool_usage(current_tool="example_tool")
 async def get_all_faqs(
     request: Request,
-    db: Session = Depends(get_db),
-    user: User = Depends(user_service.get_current_user_optional)
+    db: Session = Depends(get_db)
 ):
     """Endpoint to get all FAQs
 
