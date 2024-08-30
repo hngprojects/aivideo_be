@@ -50,8 +50,8 @@ async def initiate_payment(
 
     else:  # stripe
         # get a dictionary containing "payment_url" for stripe
-        payment_url = pg_service.get_payment_url_for_stripe(
-            current_user, bill_plan, schema)
+        payment_url = pg_service.get_static_payment_url_for_stripe(
+            bill_plan)
 
     # RETURN payment data
     return success_response(

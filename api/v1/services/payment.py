@@ -126,6 +126,11 @@ class PaymentGatewayService:
 
     FLUTTERWAVE_PAYMENTS_URL = "https://api.flutterwave.com/v3/payments"
 
+    STRIPE_PAYMENT_URLS = {
+        "premium_monthly": "https://buy.stripe.com/3cs7wrbkc8igeGI14a",
+        "premium_yearly": "https://buy.stripe.com/bIY3gb3RK564aqsdQX"
+    }
+
     def validate_gateway(self, gateway):
         """Confirm that the gateway passed in part 
         of the accepted payment gateways, then return 
@@ -244,6 +249,22 @@ class PaymentGatewayService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error initializing payment {str(e)}"
             )
+
+    def get_static_payment_url_for_stripe(self, bill_plan: BillingPlan):
+        """Return a dictionary containing payment url for the billing plan
+        
+        Args:
+          bill_plan: The billing plan object being paid for.
+        
+        Returns:
+         A dictionary with two key
+         - plan_name: Name of the billing plan
+         - payment_url: The stripe static payment url for the plan
+        """
+        return {
+            "plan_name": bill_plan.plan_name,
+            "payment_url": self.STRIPE_PAYMENT_URLS[bill_plan.id]
+        }
 
     def confirm_flutterwave_payment(self, data: dict, billing_plan: BillingPlan):
         """Handle checkout response from `flutterwave`"""
