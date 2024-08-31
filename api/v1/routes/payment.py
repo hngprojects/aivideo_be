@@ -147,6 +147,8 @@ async def stripe_webhook(
     """
 
     payload = await req.body()
+
+    # validate request and get the webhook event
     event = pg_service.get_stripe_webhook_event(payload)
     
     # Handle the event
