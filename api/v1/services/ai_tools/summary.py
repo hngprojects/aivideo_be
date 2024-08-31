@@ -260,6 +260,7 @@ class SummaryService():
             "summary": final_summary,
             "summary_word_count": summary_word_count,
             "transcript": transcription,
+            "transcribed_txt": transcribed_text,
             "transcript_word_count": transcript_word_count,
             "estimated_read_time": f"{estimated_read_time:.2f} minutes"
         }
@@ -344,9 +345,9 @@ class SummaryService():
         translated_summary = self.translate_summary(results["summary"], target_lang)
         
         if export_format == "pdf":
-            save_url, download_url = self.export_results_to_pdf(results["summary"], results["transcript"], translated_summary)
+            save_url, download_url = self.export_results_to_pdf(results["summary"], results["transcribed_txt"], translated_summary)
         else:
-            save_url, download_url = self.export_results(results["summary"], results["transcript"], translated_summary)
+            save_url, download_url = self.export_results(results["summary"], results["transcribed_txt"], translated_summary)
 
         return {
             "transcript": results["transcript"],
