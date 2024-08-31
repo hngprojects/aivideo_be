@@ -156,7 +156,7 @@ async def stripe_webhook(
         and event.data['object']["success_url"].startswith("https://tifi.tv"):
 
         event_data = event.data['object']
-        paid_amount = Decimal(event_data["amount_total"])
+        paid_amount = Decimal(event_data["amount_total"] / 100) # Convert from the smallest unit
         paid_currency = event_data['currency']
         billing_plan_id = event_data['metadata']['billing_plan_id']
         user_email = event_data['customer_email']
