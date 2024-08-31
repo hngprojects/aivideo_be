@@ -183,7 +183,7 @@ class PaymentGatewayService:
             raise invalid_pay_resp("Error - paid amount is not multiples of billing plan price")
         
         # CHECK PAYMENT CURRENCY
-        if paid_currency != bill_plan.currency:
+        if paid_currency.lower() != bill_plan.currency.lower():
             raise invalid_pay_resp("Error - invalid payment currency")
 
     def get_payment_url_for_flutterwave(self, user, bill_plan, schema):

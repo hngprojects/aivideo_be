@@ -151,7 +151,7 @@ async def stripe_webhook(
     
     # Handle the event
     if event.type == payment_event_types.STRIPE_CHECHOUT_COMPLETED \
-        and event.data.success_url.startswith("https://tifi.tv"):
+        and event.data["success_url"].startswith("https://tifi.tv"):
 
         event_data = event.data
         paid_amount = Decimal(event_data["amount_total"])
