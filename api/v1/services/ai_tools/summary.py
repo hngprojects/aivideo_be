@@ -230,6 +230,8 @@ class SummaryService():
     def summarize_audio(self, audio_file_path):
         """Summarizes an audio file by transcribing and then summarizing the transcript."""
         transcribed_text = self.transcribe_audio(audio_file_path)
+        segments = transcribe_audio_segments(audio_file_path)
+        transcription = get_paragraphs(segments)
         llm_chain = self.init_chain()
         stuff_chain = StuffDocumentsChain(
             llm_chain=llm_chain, document_variable_name="text")
@@ -257,7 +259,7 @@ class SummaryService():
         return {
             "summary": final_summary,
             "summary_word_count": summary_word_count,
-            "transcript": transcribed_text,
+            "transcript": transcription,
             "transcript_word_count": transcript_word_count,
             "estimated_read_time": f"{estimated_read_time:.2f} minutes"
         }
