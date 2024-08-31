@@ -6,11 +6,14 @@ from decimal import Decimal
 import requests
 import stripe
 from sqlalchemy import Enum
+import json
 
 from api.v1.models.payment import Payment
 from api.v1.models import User, BillingPlan
 from api.utils.pagination import get_pagination_details
-from api.utils.db_validators import check_model_existence, get_model_or_none, get_model_by_params
+from api.utils.db_validators import (
+    check_model_existence, get_model_or_none, get_model_by_params
+)
 from api.utils.settings import settings
 
 
@@ -57,9 +60,9 @@ class PaymentService:
         payment = get_model_or_none(db, Payment, payment_id)
         return payment
 
-    def fetch_by_params(self, db: Session, query_params: dict):
+    def fetch_by_params(self, db: Session, query_params: dict, raise_if_none=False):
         """Fetches a payment by one or more query params"""
-        payment = get_model_by_params(db, Payment, query_params)
+        payment = get_model_by_params(db, Payment, query_params, raise_if_none=raise_if_none)
         return payment
 
     def fetch_all_for_user(
@@ -126,6 +129,11 @@ class PaymentGatewayService:
 
     FLUTTERWAVE_PAYMENTS_URL = "https://api.flutterwave.com/v3/payments"
 
+    STRIPE_PAYMENT_URLS = {
+        "premium_monthly": "https://buy.stripe.com/3cs7wrbkc8igeGI14a",
+        "premium_yearly": "https://buy.stripe.com/bIY3gb3RK564aqsdQX"
+    }
+
     def validate_gateway(self, gateway):
         """Confirm that the gateway passed in part 
         of the accepted payment gateways, then return 
@@ -175,7 +183,7 @@ class PaymentGatewayService:
             raise invalid_pay_resp("Error - paid amount is not multiples of billing plan price")
         
         # CHECK PAYMENT CURRENCY
-        if paid_currency != bill_plan.currency:
+        if paid_currency.lower() != bill_plan.currency.lower():
             raise invalid_pay_resp("Error - invalid payment currency")
 
     def get_payment_url_for_flutterwave(self, user, bill_plan, schema):
@@ -243,6 +251,45 @@ class PaymentGatewayService:
         except stripe.error.StripeError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error initializing payment {str(e)}"
+            )
+
+    def get_static_payment_url_for_stripe(self, bill_plan: BillingPlan):
+        """Return a dictionary containing payment url for the billing plan
+        
+        Args:
+          bill_plan: The billing plan object being paid for.
+        
+        Returns:
+         A dictionary with two key
+         - plan_name: Name of the billing plan
+         - payment_url: The stripe static payment url for the plan
+        """
+        return {
+            "plan_name": bill_plan.plan_name,
+            "payment_url": self.STRIPE_PAYMENT_URLS[bill_plan.id]
+        }
+    
+    def get_stripe_webhook_event(self, payload):
+        """Get the event object returned from stripe webhook
+        
+        Args:
+          payload: A dictionary from request body to pass on to stripe
+        
+        Returns:
+          `event` object from stripe webhook
+
+        Raises:
+          HTTPException: If the operation fails
+        """
+        try:
+            event = stripe.Event.construct_from(
+                json.loads(payload), stripe.api_key
+            )
+            return event
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payment failed"
             )
 
     def confirm_flutterwave_payment(self, data: dict, billing_plan: BillingPlan):

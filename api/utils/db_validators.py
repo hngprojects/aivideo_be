@@ -30,6 +30,27 @@ def get_models_by_params(db: Session, model, query_params):
     return query
 
 
-def get_model_by_params(db: Session, model, query_params):
-    """Get a single model by multiple query params"""
-    return get_models_by_params(db, model, query_params).first()
+def get_model_by_params(
+        db: Session, model, query_params: dict, raise_if_none: bool = False):
+    """Get a single model by multiple query params
+        
+    Args:
+        db: The database session.
+        model: The model to be queried.
+        query_params: A dict containing the keys to be queried with valuse.
+        raise_if_none: Indicates whether exception should be raised if the 
+          model is not foud. \n Default is `False` meaning: Do Not Raise
+    
+    Returns:
+        An object of `model` or `None`
+
+    Raises:
+        HTTPException: If object is not found and `raise_if_none=True`.
+    """
+    model_obj = get_models_by_params(db, model, query_params).first()
+    
+    if (not model_obj) and raise_if_none:
+        raise HTTPException(
+            status_code=404, detail=f"{model.__name__} does not exist")
+    
+    return model_obj
