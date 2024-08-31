@@ -1,8 +1,13 @@
 import requests
 import json
+from api.utils.settings import settings
 
 # Define the API endpoint
-BASE_URL = "https://api.staging.tifi.tv"
+if settings.PYTHON_ENV == "prod":
+    BASE_URL = "https://api.tifi.tv"
+else:
+    BASE_URL = "https://api.staging.tifi.tv"
+
 API_ENDPOINT = f"{BASE_URL}/api/v1/api-status"
 
 
@@ -20,7 +25,7 @@ def parse_and_post_results():
         status_code = item.get('response', {}).get('code')
         response_time = item.get('item', {}).get('responseTime')
 
-        if status_code >= 500:
+        if isinstance(status_code, int) and status_code >= 500:
             status = 'Down'
             details = item.get('response', {}).get('status', 'No status available')
         else:
@@ -47,7 +52,6 @@ def parse_and_post_results():
         }
 
         try:
-        # send a POST request to create
             response = requests.post(API_ENDPOINT, json=payload)
 
             # Check response status

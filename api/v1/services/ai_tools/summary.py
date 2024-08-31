@@ -4,6 +4,8 @@ from typing import List
 import uuid
 from api.utils import mime_types
 from api.utils.minio_service import minio_service
+from api.v1.services.ai_tools.video_subtitles import transcribe_audio_segments
+from api.utils.transcripts import get_paragraphs
 from openai.types.audio.transcription import Transcription
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -134,6 +136,8 @@ class SummaryService():
         """
         # Transcribe audio
         transcribed_text = self.transcribe_audio(audio_file_path)
+        segments = transcribe_audio_segments(audio_file_path)
+        transcription = get_paragraphs(segments)
         delete_file(audio_file_path)
         # Initialize LLM chain
         text_splitter = CharacterTextSplitter()
@@ -142,7 +146,7 @@ class SummaryService():
         chain = load_summarize_chain(self.llm, chain_type='map_reduce')
         summary = chain.run(docs)
 
-        return summary, transcribed_text
+        return summary, transcription, transcribed_text
     
     def fetch_page(self, url):
         response = requests.get(url)
