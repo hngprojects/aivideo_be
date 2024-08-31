@@ -136,8 +136,8 @@ def generate_yt_transcript(video_pth):
 def generate_podcast_summary_task(audio_file):
     """BAckground task to summarize a podcast and save to database"""
 
-    summary, transcription = summary_service.summarize_podcast(audio_file)
-    number_of_words = len(transcription.split())
+    summary, transcription, transcribed_text = summary_service.summarize_podcast(audio_file)
+    number_of_words = len(transcribed_text.split())
     estimated_read_time = (
         number_of_words / 250
     )  # Assuming 250 words per minute reading speed
