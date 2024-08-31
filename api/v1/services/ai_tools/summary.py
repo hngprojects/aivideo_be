@@ -146,7 +146,7 @@ class SummaryService():
         chain = load_summarize_chain(self.llm, chain_type='map_reduce')
         summary = chain.run(docs)
 
-        return summary, transcription
+        return summary, transcription, transcribed_text
     
     def fetch_page(self, url):
         response = requests.get(url)
