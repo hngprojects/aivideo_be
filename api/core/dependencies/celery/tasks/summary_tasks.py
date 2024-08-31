@@ -164,6 +164,16 @@ def generate_podcast_summary_task(audio_file):
         story.append(Paragraph(paragraph, normal_style))
         story.append(Spacer(1, 12))
 
+    story.append(Paragraph("Transcript", title_style))
+    story.append(Spacer(1, 12))
+
+    normal_style = styles["Normal"]
+    paragraphs = transcribed_text.split("\n\n")
+
+    for paragraph in paragraphs:
+        story.append(Paragraph(paragraph, normal_style))
+        story.append(Spacer(1, 12))
+
     doc.build(story)
 
     # Save the PDF content to a file
