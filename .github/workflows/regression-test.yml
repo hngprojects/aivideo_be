@@ -13,11 +13,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
       - name: Cache dependency
         uses: actions/cache@v3
         with:
@@ -40,7 +35,7 @@ jobs:
           newman run qa_tests/regression/Core_Product.postman_collection.json -r json --reporter-json-export=result.json --suppress-exit-code
 
       - name: Install pydantic-settings
-        run: pip install pydantic-settings
+        run: pip install pydantic-settings requests python-decouple
 
       - name: Update api-status endpoint
         run: |
