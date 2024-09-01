@@ -1,5 +1,5 @@
 from fastapi import BackgroundTasks, Depends, HTTPException
-from api.core.dependencies.email_sender import send_email
+from api.core.dependencies.email.email_sender import send_email
 from api.db.database import get_db
 from api.v1.models.user import User
 from api.v1.models.user import User
