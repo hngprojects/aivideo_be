@@ -3,12 +3,13 @@ from decimal import Decimal
 from unittest.mock import patch
 from uuid_extensions import uuid7
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
 from fastapi.testclient import TestClient
+from datetime import datetime, timezone, timedelta
 
 from main import app
 from api.db.database import get_db
 from api.v1.models import User, BillingPlan, Payment
+from api.v1.services.user_subscription import user_subscription_service
 
 
 class StripeEvent:
@@ -182,6 +183,8 @@ def test_payment(test_user):
 
 
 @pytest.mark.asyncio
+@patch("api.v1.services.user_subscription.UserSubscriptionService.get_sub_start_and_end_datetime")
+@patch("api.v1.services.user_subscription.UserSubscriptionService.create")
 @patch("api.v1.services.payment.PaymentService.create")
 @patch("api.v1.routes.payment.get_model_by_params")
 @patch("api.v1.services.payment.PaymentService.fetch_by_params")
@@ -192,9 +195,11 @@ async def test_subscription_success(
     mock_get_stripe_webhook_event,
     mock_stripe,
     mock_bp_service,
-    mock_fetch_payment_by_params,
+    mock_payment_fetch_by_params,
     mock_get_model_by_params,
     mock_payment_create,
+    mock_user_subscription_create,
+    mock_get_sub_start_and_end_datetime,
     mock_db_session,
     test_user,
     test_bill_plan
@@ -203,12 +208,16 @@ async def test_subscription_success(
     mock_get_stripe_webhook_event.return_value = StripeEvent
     mock_stripe.api_key = "test_secret_key"
     mock_bp_service.fetch.return_value = test_bill_plan
-    mock_fetch_payment_by_params.return_value = None
+    mock_payment_fetch_by_params.return_value = None
     mock_get_model_by_params.return_value = test_user
+
+    start_date = datetime.now(tz=timezone.utc)
+    end_date = start_date + timedelta(days=360)
+    mock_get_sub_start_and_end_datetime.return_value = (start_date, end_date)
 
     response = client.post('api/v1/payments/stripe/webhook')
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     event_data = StripeEvent.data['object']
     
@@ -225,6 +234,98 @@ async def test_subscription_success(
         }
     )
     
-    # this will fail if args are 
-    # passed due to datetime differences
-    mock_payment_create.assert_called_once()
+    # test that call to create user subscription was made
+    mock_user_subscription_create.assert_called_once_with(
+        mock_db_session,
+        {
+            "start_date": start_date,
+            "billing_plan_id": test_bill_plan.id,
+            "user_id": test_user.id,
+            "end_date": end_date
+        }
+    )
+
+
+@pytest.mark.asyncio
+@patch("api.v1.services.payment.PaymentService.fetch_by_params")
+@patch("api.v1.services.payment.stripe")
+@patch("api.v1.services.payment.PaymentGatewayService.get_stripe_webhook_event")
+async def test_subscription_unsuccessful(
+    mock_get_stripe_webhook_event,
+    mock_stripe,
+    mock_payment_fetch_by_params,
+    mock_db_session,
+    test_user,
+    test_bill_plan
+):
+    # set value for mocks
+    mock_get_stripe_webhook_event.return_value = StripeEvent
+    mock_stripe.api_key = "test_secret_key"
+    mock_payment_fetch_by_params.return_value = None
+
+    # WRONG AMOUNT
+    test_bill_plan.price = 50  # instead of 49.99
+    mock_db_session.get.return_value = test_bill_plan
+    response = client.post('api/v1/payments/stripe/webhook')
+    assert response.status_code == 400
+    # reset amount to previous state
+    test_bill_plan.price = 49.99
+
+
+    # WRONG CURRENCY
+    test_bill_plan.currency = "NGN" # instead of `USD`
+    mock_db_session.get.return_value = test_bill_plan
+    response = client.post('api/v1/payments/stripe/webhook')
+    assert response.status_code == 400
+    # reset currency to previous state
+    test_bill_plan.currency = "USD"
+
+
+    # NO BILLING PLAN FOUND
+    mock_db_session.get.return_value = None
+    response = client.post('api/v1/payments/stripe/webhook')
+    assert response.status_code == 404
+    # reset billing plan to previous state
+    mock_db_session.get.return_value = test_bill_plan
+
+
+    # PAYMENT OBJECT ALREADY EXIST
+    # i.e: One with transaction_id==event id
+    mock_payment_fetch_by_params.return_value = test_payment
+    response = client.post('api/v1/payments/stripe/webhook')
+    assert response.status_code == 200  # 200 response is correct, payment already exist
+    # reset payment to previous state
+    mock_payment_fetch_by_params.return_value = None
+
+
+    # WRONG EVENT TYPE
+    StripeEvent.type = "unhandled.event"
+    response = client.post('api/v1/payments/stripe/webhook')
+    assert response.status_code == 200
+    # reset event type to previous state
+    StripeEvent.type = "checkout.session.completed"
+
+
+    # WRONG SUCCESS URL
+    StripeEvent.data['object']['success_url'] = "http://tifi.tv/subscribe/success"
+    response = client.post('api/v1/payments/stripe/webhook')
+    assert response.status_code == 200
+    # reset success url to previous state
+    StripeEvent.data['object']['success_url'] = "https://tifi.tv/subscribe/success"
+
+
+def test_stripe_payment_related_functions():
+    
+    # TEST MONTHLY SUBSCRIPTION DURATION
+    start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime("monthly")
+    assert (end_date - start_date).days == 30
+    
+
+    # TEST YEARLY SUBSCRIPTION DURATION
+    start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime("yearly")
+    assert (end_date - start_date).days == 360
+    
+
+    # TEST FREE SUBSCRIPTION DURATION
+    start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime("free")
+    assert (end_date - start_date).days == 360

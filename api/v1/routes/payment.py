@@ -172,9 +172,6 @@ async def stripe_webhook(
         # check if payment has been recorded in db before
         payment_exist = payment_service.fetch_by_params(
             db, {'transaction_id': transaction_id})
-        
-        # for when payment is alraedy recorded
-        already_recorded = " Already recorded"
 
         if not payment_exist:
             # Above check is necessary because stripe notes that an 
@@ -207,20 +204,23 @@ async def stripe_webhook(
                 "end_date": end_date
             }
             user_subscription_service.create(db, user_subscription_payload)
-            
-            print(payment_exist)
-            print(user)
-            print(payment_payload)
-            print(start_date)
-            print(end_date)
-            print(user_subscription_payload)
 
-            # reset already recorded
-            already_recorded = ""
+            # Subscription created, return 201
+            return success_response(
+                status_code=status.HTTP_201_CREATED,
+                message="Payment successfull. User subscribed."
+            )
+        
+        # Payment already recorded, return 200
+        return success_response(
+            status_code=status.HTTP_200_OK,
+            message="Payment successfull. Already recorded."
+        )
 
+    # Event not handled here, return 200
     return success_response(
         status_code=status.HTTP_200_OK,
-        message=f"Payment successfull.{already_recorded}"
+        message=f"Unhabdled event: {event.type}"
     )
 
 
