@@ -2,6 +2,7 @@ import pytest
 from decimal import Decimal
 from unittest.mock import patch
 from uuid_extensions import uuid7
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from datetime import datetime, timezone, timedelta
@@ -9,6 +10,7 @@ from datetime import datetime, timezone, timedelta
 from main import app
 from api.db.database import get_db
 from api.v1.models import User, BillingPlan, Payment
+from api.v1.services.payment import payment_gateway_service
 from api.v1.services.user_subscription import user_subscription_service
 
 
@@ -172,7 +174,7 @@ def test_payment(test_user):
     payment = Payment(
         id=str(uuid7()),
         amount=49.99,
-        currency="uds",
+        currency="usd",
         status="completed",
         method="stripe",
         user_id=test_user.id,
@@ -329,3 +331,21 @@ def test_stripe_payment_related_functions():
     # TEST FREE SUBSCRIPTION DURATION
     start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime("free")
     assert (end_date - start_date).days == 360
+
+
+    # TEST NORMALISE STRIPE AMOUNT
+    def two_deci(num):
+        return Decimal(format(num, ".2f"))
+    # ....................................
+    assert payment_gateway_service.normalise_stripe_amount(49, to_stripe=True) == two_deci(4900)
+    assert payment_gateway_service.normalise_stripe_amount(4900, from_stripe=True) == two_deci(49)
+
+    assert payment_gateway_service.normalise_stripe_amount(49.99, to_stripe=True) == two_deci(4999)
+    assert payment_gateway_service.normalise_stripe_amount(4999, from_stripe=True) == two_deci(49.99)
+
+    assert payment_gateway_service.normalise_stripe_amount(Decimal(49.99), to_stripe=True) == two_deci(4999)
+    assert payment_gateway_service.normalise_stripe_amount(Decimal(4999), from_stripe=True) == two_deci(49.99)
+
+    with pytest.raises(HTTPException) as e_info:   
+        payment_gateway_service.normalise_stripe_amount(49)
+        e_info.type is HTTPException
