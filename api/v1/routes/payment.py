@@ -160,7 +160,7 @@ async def stripe_webhook(
             event_data["amount_total"], from_stripe=True)
         paid_currency = event_data['currency']
         billing_plan_id = event_data['metadata']['billing_plan_id']
-        user_email = event_data['customer_email']
+        user_email = event_data['customer_details']['email']
         transaction_id = event_data['id']
 
         bill_plan = bp_service.fetch(db, billing_plan_id)
@@ -207,6 +207,13 @@ async def stripe_webhook(
                 "end_date": end_date
             }
             user_subscription_service.create(db, user_subscription_payload)
+            
+            print(payment_exist)
+            print(user)
+            print(payment_payload)
+            print(start_date)
+            print(end_date)
+            print(user_subscription_payload)
 
             # reset already recorded
             already_recorded = ""
