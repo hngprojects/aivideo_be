@@ -156,7 +156,8 @@ async def stripe_webhook(
         and event.data['object']["success_url"].startswith("https://tifi.tv"):
 
         event_data = event.data['object']
-        paid_amount = Decimal(event_data["amount_total"] / 100) # Convert from the smallest unit
+        paid_amount = pg_service.normalise_stripe_amount(
+            event_data["amount_total"], from_stripe=True)
         paid_currency = event_data['currency']
         billing_plan_id = event_data['metadata']['billing_plan_id']
         user_email = event_data['customer_email']
@@ -171,8 +172,13 @@ async def stripe_webhook(
         # check if payment has been recorded in db before
         payment_exist = payment_service.fetch_by_params(
             db, {'transaction_id': transaction_id})
+        
+        # for when payment is alraedy recorded
+        already_recorded = " Already recorded"
 
         if not payment_exist:
+            # Above check is necessary because stripe notes that an 
+            # event can be triggered multiple times with the same details
         
             # get the user in who made the payment
             user = get_model_by_params(
@@ -202,9 +208,12 @@ async def stripe_webhook(
             }
             user_subscription_service.create(db, user_subscription_payload)
 
+            # reset already recorded
+            already_recorded = ""
+
     return success_response(
         status_code=status.HTTP_200_OK,
-        message="Payment success"
+        message=f"Payment successfull.{already_recorded}"
     )
 
 
