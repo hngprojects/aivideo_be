@@ -68,13 +68,6 @@ def register(
 
     # Send email in the background
     email_sending_service.send_welcome_email(background_tasks, user)
-    # background_tasks.add_task(
-    #     send_email,
-    #     recipient=user.email,
-    #     template_name="welcome.html",
-    #     subject="Welcome to Tifi",
-    #     context={"first_name": user.first_name, "last_name": user.last_name, "cta_link": "https://tifi.tv/about"},
-    # )
 
     response = JSONResponse(
         status_code=201,
