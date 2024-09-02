@@ -34,12 +34,6 @@ class Settings(BaseSettings):
     DB_TYPE: str = config("DB_TYPE")
     DB_URL: str = config("DB_URL")
 
-    MAIL_USERNAME: str = config("MAIL_USERNAME")
-    MAIL_PASSWORD: str = config("MAIL_PASSWORD")
-    MAIL_FROM: str = config("MAIL_FROM")
-    MAIL_PORT: int = config("MAIL_PORT")
-    MAIL_SERVER: str = config("MAIL_SERVER")
-
     FLUTTERWAVE_SECRET: str = config("FLUTTERWAVE_SECRET")
     STRIPE_SECRET: str = config("STRIPE_SECRET")
     FLW_SECRET_HASH: str = config("FLW_SECRET_HASH")
