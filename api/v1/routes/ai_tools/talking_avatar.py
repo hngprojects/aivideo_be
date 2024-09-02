@@ -13,7 +13,7 @@ from api.v1.services.job import job_service
 from api.v1.schemas.ai_tools.talking_avatar import TalkingHeadRequest
 from api.v1.schemas.project import ProjectToolsEnum
 from api.core.dependencies.celery.tasks.video_tasks import generate_talking_avatar_task
-from api.utils.tool_limiter import track_tool_usage
+
 
 video_router = APIRouter(prefix="/tools/video", tags=["Tools"])
 

@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from api.db.database import get_db
+from api.v1.models.user import User
+from api.v1.services.user import user_service
+from api.utils.tool_limiter import track_tool_usage
 from api.utils.success_response import success_response
 from api.v1.services.job import job_service
 from api.v1.services.ai_tools.text_to_video import ttv_service
@@ -33,9 +36,12 @@ async def recompose_script(
 
 
 @ttv_router.post('/text-to-video/generate-scenes', status_code=202, response_model=success_response)
+@track_tool_usage(ProjectToolsEnum.text_to_video)
 async def generate_video_scenes(
+    request: Request,
     schema: SceneGeneration,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to generate video scenes'''
 
