@@ -69,6 +69,13 @@ class Settings(BaseSettings):
     FRONTEND_MAGICLINK_URL : str = config("FRONTEND_MAGICLINK_URL")
     
     @property
+    def ACTIVATE_TOOL_TRACKING(self) -> bool:
+        # Get the environment variable as a string
+        activate_tool_tracking_str = config("ACTIVATE_TOOL_TRACKING", default="True")
+        # Convert the string to a boolean, defaulting to True if conversion fails
+        return activate_tool_tracking_str.lower() in {"true", "1", "yes"}  
+      
+    @property
     def ALLOWED_EXTENSIONS(self) -> set[str]:
         raw_extensions = config("ALLOWED_EXTENSIONS", default="")
         return set(ext.strip() for ext in raw_extensions.split(",") if ext.strip())
