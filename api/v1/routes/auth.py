@@ -14,7 +14,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from api.core.dependencies.email.email_sender import send_email
 from api.utils.success_response import success_response
 from api.v1.models import User
 
