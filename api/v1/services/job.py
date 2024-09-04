@@ -93,13 +93,20 @@ class JobService:
             raise HTTPException(status_code=404, detail="Celery job not found")
         return job
 
-    def update_job(self, job_id: str, status: str, result: Optional[str] = None):
-        """Updates the job details"""
+    def update_job(
+        self, 
+        job_id: str, 
+        status: str, 
+        result: Optional[str] = None, 
+        user_id: Optional[str] = None
+    ):
+        """Updates the job details with option to link to a user"""
 
         try:
             job = self.fetch_by_job_id(job_id=job_id)
             job.status = status
             job.result = result if result is not None else None
+            job.user_id = user_id if user_id is not None else None
             db.commit()
             db.refresh(job)
             return job

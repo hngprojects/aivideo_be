@@ -25,6 +25,12 @@ async def event_generator(job_id: str, db: Session, request: Request):
     refresh_token = request.cookies.get('refresh_token')
     if refresh_token:
         user = user_service.get_user_from_refresh_token(refresh_token=refresh_token, db=db)
+        job_service.update_job(
+            job_id=job_id,
+            status='Pending',
+            user_id=user.id
+        )
+
 
     while True:
         task_result = AsyncResult(job_id, app=worker)

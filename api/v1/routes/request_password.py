@@ -5,6 +5,7 @@ from api.db.database import get_db as get_session
 from api.v1.services.request_pwd import reset_service
 from api.utils.success_response import success_response
 from api.v1.services.user import user_service
+from api.v1.services.email_sending import email_sending_service
 from api.v1.models.user import User
 
 pwd_reset = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -19,12 +20,26 @@ async def request_forget_password(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_session),
 ):
-    url = "/forget-password"
-    template_file = "reset_password.html"
-    subject = "HNG11 PASSWORD RESET"
-    data = await reset_service.create(reset_schema, request, db, background_tasks,
-                                      subject=subject, template_file=template_file, url=url)
-    return success_response(**data)
+    # url = "/forget-password"
+    # template_file = "reset_password.html"
+    # subject = "HNG11 PASSWORD RESET"
+    user, link = await reset_service.create(
+        reset_schema, db, url='/forgot-password'
+    )
+
+    email_sending_service.send_reset_password_email(
+        request=request,
+        background_tasks=background_tasks,
+        user=user,
+        reset_url=link
+    )
+
+    # return success_response(**data)
+    return success_response(
+        message='Password rest link sent successfully',
+        status_code=200,
+        data={"reset_link": link}
+    )
 
 # process password link
 
