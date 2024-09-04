@@ -62,7 +62,6 @@ def create_mock_user(mock_db_session, user_email):
     mock_db_session.query(User).filter_by(email=user_email).first.return_value = mock_user
     return mock_user
 
-# @pytest.mark.usefixtures("mock_db_session", "mock_reset_service", "mock_verify_token", "mock_get_password_hash")
 def test_reset_password_success(mock_db_session, mock_verify_token, mock_get_password_hash, mock_send_email):
     user_email = "testuser@example.com"
     token = "mock_token"
@@ -83,7 +82,6 @@ def test_reset_password_success(mock_db_session, mock_verify_token, mock_get_pas
     assert response.json()['message'] == "Password has been reset successfully"
 
 
-# @pytest.mark.usefixtures("mock_db_session", "mock_reset_service", "mock_verify_token")
 def test_reset_password_invalid_token(mock_verify_token):
     mock_verify_token.return_value = None
     token = "invalid_token"
@@ -97,7 +95,6 @@ def test_reset_password_invalid_token(mock_verify_token):
     assert response.json()['message'] == "Invalid or expired token"
 
 
-# @pytest.mark.usefixtures("mock_db_session", "mock_reset_service", "mock_verify_token")
 def test_reset_password_user_not_found(mock_db_session, mock_verify_token):
     user_email = "testuser@example.com"
     token = "mock_token"
@@ -129,7 +126,6 @@ def test_reset_password_passwords_do_not_match(mock_db_session, mock_verify_toke
     assert response.status_code == 400
     assert response.json()['message'] == "Passwords do not match"
 
-# @pytest.mark.usefixtures("mock_db_session", "mock_reset_service", "mock_verify_token")
 def test_reset_password_database_error(mock_db_session, mock_verify_token):
     user_email = "testuser@example.com"
     token = "mock_token"
@@ -150,7 +146,6 @@ def test_reset_password_database_error(mock_db_session, mock_verify_token):
     assert mock_db_session.rollback.called
 
 
-# @pytest.mark.usefixtures("mock_db_session", "mock_reset_service")
 def test_create_valid_reset_link(mock_db_session, mock_reset_service, mock_send_email):
     user_email = "mike@example.com"
     create_mock_reset_link(mock_reset_service, user_email)
@@ -164,7 +159,6 @@ def test_create_valid_reset_link(mock_db_session, mock_reset_service, mock_send_
     assert response.status_code == 200
 
 
-# @pytest.mark.usefixtures("mock_db_session", "mock_reset_service")
 def test_create_reset_link_invalid_email(mock_db_session, mock_reset_service):
     user_email = "miexample.com"
     create_mock_reset_link(mock_reset_service, user_email)
