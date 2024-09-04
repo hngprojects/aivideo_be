@@ -218,6 +218,41 @@ class PaymentGatewayService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Error initializing payment"
             )
+    
+    def normalise_stripe_amount(
+            self, amount: Union[Decimal, float, int], to_stripe: bool = False, 
+            from_stripe: bool = False, deci_places: int = 2) -> Decimal:
+        """Stripe expects/returns payment amounts in their smallest units.
+        Eg: It expects `10` to be sent in as `1000` and it returns the same.
+        This function does the conversion to and fro.
+
+        Args:
+          amount: The amount to be sent to, or received from stripe.
+          to_stripe: Set to `True` ONLY if amount is being "sent" to stripe .
+          from_stripe: Set to `True` ONLY if amount is being "received" from stripe.
+          deci_places: Number of decimal places to return amount in after conversion. 
+        
+        Returns:
+          `amount` after applying all specified conversion/return args.
+        
+        Raises:
+          HTTPException: If `to_stripe` and `from_stripe` are False
+        """
+        if to_stripe is False and from_stripe is False:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="One of 'to_stripe' and 'from_stripe' must be specified"
+            )
+        
+        if not isinstance(amount, Decimal):
+            amount = Decimal(amount)
+        
+        if to_stripe:
+            # multiply amount by 100
+            return Decimal(format(amount * 100, f".{deci_places}f"))
+        
+        # This leaves "from_stripe": divide amount by 100
+        return Decimal(format(amount / 100, f".{deci_places}f"))
 
     def get_payment_url_for_stripe(self, user, bill_plan, schema):
         try:

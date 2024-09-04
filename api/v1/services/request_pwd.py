@@ -47,15 +47,17 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 class RequestPasswordService:
+    
     @staticmethod
-    async def create(email: request_password_reset.RequestEmail,
-                     request: Request,
-                     session: Session,
-                     background_tasks: BackgroundTasks,
-                     url: str,
-                     template_file: str,
-                     subject: str
-                ):
+    async def create(
+        email: request_password_reset.RequestEmail,
+        request: Request,
+        session: Session,
+        background_tasks: BackgroundTasks,
+        url: str,
+        template_file: str,
+        subject: str
+    ):
 
         user = session.query(User).filter_by(email=email.user_email).first()
 
@@ -80,7 +82,7 @@ class RequestPasswordService:
             to_email=email.user_email,
             subject=email_subject,
             body=body,
-            from_name="HNG11 Support"
+            from_name="Tifi.tv"
         )
 
 

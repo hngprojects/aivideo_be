@@ -7,7 +7,6 @@ from pathlib import Path
 # Use this to build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent
 
-
 class Settings(BaseSettings):
     """ Class to hold application's config values."""
 
@@ -33,12 +32,6 @@ class Settings(BaseSettings):
     DB_NAME: str = config("DB_NAME")
     DB_TYPE: str = config("DB_TYPE")
     DB_URL: str = config("DB_URL")
-
-    MAIL_USERNAME: str = config("MAIL_USERNAME")
-    MAIL_PASSWORD: str = config("MAIL_PASSWORD")
-    MAIL_FROM: str = config("MAIL_FROM")
-    MAIL_PORT: int = config("MAIL_PORT")
-    MAIL_SERVER: str = config("MAIL_SERVER")
 
     FLUTTERWAVE_SECRET: str = config("FLUTTERWAVE_SECRET")
     STRIPE_SECRET: str = config("STRIPE_SECRET")
