@@ -1,5 +1,5 @@
 from fastapi import BackgroundTasks, Depends, HTTPException
-from api.core.dependencies.email_sender import send_email
+from api.core.dependencies.email.email_sender import send_email
 from api.db.database import get_db
 from api.v1.models.user import User
 from api.v1.models.user import User
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from api.v1.schemas.google_oauth import Tokens
 from api.v1.services.user import user_service
+from api.v1.services.email_sending import email_sending_service
 
 
 class GoogleOauthServices(Service):
@@ -31,16 +32,7 @@ class GoogleOauthServices(Service):
 
         try:
             new_user = self.create_new_user(google_response, db)
-            background_tasks.add_task(
-                send_email,
-                recipient=new_user.email,
-                template_name="welcome.html",
-                subject="Welcome to HNG Boilerplate",
-                context={
-                    "first_name": new_user.first_name,
-                    "last_name": new_user.last_name,
-                },
-            )
+            email_sending_service.send_welcome_email(background_tasks, new_user)
             return new_user
         except Exception as e:
             db.rollback()
