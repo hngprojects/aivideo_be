@@ -6,16 +6,12 @@ from api.utils.success_response import success_response
 from api.v1.models.user import User
 from api.v1.schemas import request_password_reset
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from fastapi import BackgroundTasks
-from api.v1.services.email_services import EmailService 
 from passlib.context import CryptContext
 from typing import Optional
 from api.utils.settings import settings
-from fastapi.templating import Jinja2Templates
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 
-templates = Jinja2Templates(directory="./api/v1/templates")
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
