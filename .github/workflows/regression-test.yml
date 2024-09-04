@@ -13,6 +13,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Cache dependency
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-update-status-${{ hashFiles('**/update_api_status.py') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-update-status-
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -26,26 +39,13 @@ jobs:
         run: |
           newman run qa_tests/regression/Core_Product.postman_collection.json -r json --reporter-json-export=result.json --suppress-exit-code
 
+      - name: Copy env file
+        run: cp .env.sample .env
+
+      - name: Install pydantic-settings
+        run: pip install pydantic-settings requests python-decouple
+
       - name: Update api-status endpoint
         run: |
           python3 update_api_status.py
-
-      # - name: Copy result.json to server
-      #   uses: appleboy/scp-action@v0.1.7
-      #   with:
-      #     host: ${{ secrets.HOST }}
-      #     username: ${{ secrets.USERNAME }}
-      #     password: ${{ secrets.PASSWORD }}
-      #     source: "result.json"
-      #     target: "/home/${{ secrets.USERNAME }}/aivideo_be/staging"
-          
-      # - name: Deploy to Server
-      #   uses: appleboy/ssh-action@master
-      #   with:
-      #     host: ${{ secrets.HOST }}
-      #     username: ${{ secrets.USERNAME }}
-      #     password: ${{ secrets.PASSWORD }}
-      #     script: |
-      #       cd aivideo_be/staging
-      #       python3 update_api_status.py
 

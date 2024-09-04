@@ -230,6 +230,8 @@ class SummaryService():
     def summarize_audio(self, audio_file_path):
         """Summarizes an audio file by transcribing and then summarizing the transcript."""
         transcribed_text = self.transcribe_audio(audio_file_path)
+        segments = transcribe_audio_segments(audio_file_path)
+        transcription = get_paragraphs(segments)
         llm_chain = self.init_chain()
         stuff_chain = StuffDocumentsChain(
             llm_chain=llm_chain, document_variable_name="text")
@@ -257,7 +259,8 @@ class SummaryService():
         return {
             "summary": final_summary,
             "summary_word_count": summary_word_count,
-            "transcript": transcribed_text,
+            "transcript": transcription,
+            "transcribed_txt": transcribed_text,
             "transcript_word_count": transcript_word_count,
             "estimated_read_time": f"{estimated_read_time:.2f} minutes"
         }
@@ -342,9 +345,9 @@ class SummaryService():
         translated_summary = self.translate_summary(results["summary"], target_lang)
         
         if export_format == "pdf":
-            save_url, download_url = self.export_results_to_pdf(results["summary"], results["transcript"], translated_summary)
+            save_url, download_url = self.export_results_to_pdf(results["summary"], results["transcribed_txt"], translated_summary)
         else:
-            save_url, download_url = self.export_results(results["summary"], results["transcript"], translated_summary)
+            save_url, download_url = self.export_results(results["summary"], results["transcribed_txt"], translated_summary)
 
         return {
             "transcript": results["transcript"],

@@ -4,8 +4,6 @@ from uuid_extensions import uuid7
 from typing import Annotated
 from decimal import Decimal
 import requests
-import stripe
-import json
 
 from api.v1.services.billing_plan import billing_plan_service as bp_service
 from api.v1.services.payment import payment_gateway_service as pg_service
@@ -13,6 +11,7 @@ from api.v1.schemas.payment import (
     InitiatePaymentSchema, InitiatePaymentResponse, PaymentListResponse,
     GetPaymentResponse
 )
+from api.utils.db_validators import get_model_by_params
 from api.utils.success_response import success_response
 from api.v1.services.user import user_service
 from api.utils.settings import settings
@@ -50,8 +49,8 @@ async def initiate_payment(
 
     else:  # stripe
         # get a dictionary containing "payment_url" for stripe
-        payment_url = pg_service.get_payment_url_for_stripe(
-            current_user, bill_plan, schema)
+        payment_url = pg_service.get_static_payment_url_for_stripe(
+            bill_plan)
 
     # RETURN payment data
     return success_response(
@@ -143,62 +142,83 @@ async def stripe_webhook(
     db: Session = Depends(get_db),
 ):
     """
-    stripe webhook for event listening
+    Stripe webhook for event listening. \n
+    Verifies customer payment and subscribes them to the plan they paid for.
     """
 
     payload = await req.body()
-    stripe.api_key = settings.STRIPE_SECRET
-    event = None
 
-    try:
-        event = stripe.Event.construct_from(
-            json.loads(payload), stripe.api_key
+    # validate request and get the webhook event
+    event = pg_service.get_stripe_webhook_event(payload)
+    
+    # confirm it's checkout.session.completed event
+    if event.type != payment_event_types.STRIPE_CHECHOUT_COMPLETED \
+        or not event.data['object']["success_url"].startswith("https://tifi.tv"):
+        # Request is successful, but event not handled here, return 200
+        return success_response(
+            status_code=status.HTTP_200_OK,
+            message=f"Unhabdled event: {event.type}"
         )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Payment failed"
+
+    event_data = event.data['object']
+    paid_amount = pg_service.normalise_stripe_amount(
+        event_data["amount_total"], from_stripe=True)
+    paid_currency = event_data['currency']
+    billing_plan_id = event_data['metadata']['billing_plan_id']
+    user_email = event_data['customer_details']['email']
+    transaction_id = event_data['id']
+
+    bill_plan = bp_service.fetch(db, billing_plan_id)
+
+    # Verify that paid amount is exact multiples of `bill_plan.price`
+    pg_service.check_paid_amount_and_bill_per_interval(
+        paid_amount, paid_currency, bill_plan)
+    
+    # check if payment has been recorded in db before
+    payment_exist = payment_service.fetch_by_params(
+        db, {'transaction_id': transaction_id})
+
+    if payment_exist:
+        # This check is necessary because stripe notes that an 
+        # event can be triggered multiple times with the same details
+        # Payment already recorded, return 200
+        return success_response(
+            status_code=status.HTTP_200_OK,
+            message="Payment successfull. Already recorded."
         )
-    # Handle the event
-    if event.type == payment_event_types.STRIPE_CHECHOUT_COMPLETED:
-        payment = event.data
-        paid_amount = Decimal(payment["amount_total"])
-        paid_currency = payment['currency']
-        billing_plan_id = payment['metadata']['billing_plan_id']
+    
+    # get the user in who made the payment
+    user = get_model_by_params(
+        db, User, {'email': user_email}, raise_if_none=True)
 
-        bill_plan = bp_service.fetch(db, billing_plan_id)
+    # create `Payment` object
+    payment_payload = {
+        "user_id": user.id,
+        "transaction_id": transaction_id,
+        "amount": paid_amount,
+        "currency": paid_currency,
+        "status": "completed",
+        "method": "stripe",
+    }
 
-        # Verify that paid amount is exact multiples of `bill_plan.price`
-        pg_service.check_paid_amount_and_bill_per_interval(
-            paid_amount, paid_currency, bill_plan)
+    payment_service.create(db, payment_payload)
 
-        payment_payload = {
-            "user_id": payment['metadata']['user_id'],
-            "transaction_id": payment['id'],
-            "amount": paid_amount,
-            "currency": paid_currency,
-            "status": "completed",
-            "method": "stripe",
-        }
+    # create `UserSubscription` object
+    start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
+        bill_plan.plan_interval)
 
-        # Record payment
-        payment_service.create(db, payment_payload)
+    user_subscription_payload = {
+        "start_date": start_date,
+        "billing_plan_id": billing_plan_id,
+        "user_id": user.id,
+        "end_date": end_date
+    }
+    user_subscription_service.create(db, user_subscription_payload)
 
-        # create a user subscription plan
-        start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
-            bill_plan.plan_interval)
-
-        user_subscription_payload = {
-            "start_date": start_date,
-            "billing_plan_id": billing_plan_id,
-            "user_id": payment['metadata']['user_id'],
-            "end_date": end_date
-        }
-        user_subscription_service.create(db, user_subscription_payload)
-
+    # Subscription created, return 201
     return success_response(
-        status_code=status.HTTP_200_OK,
-        message="Payment success"
+        status_code=status.HTTP_201_CREATED,
+        message="Payment successfull. User subscribed."
     )
 
 

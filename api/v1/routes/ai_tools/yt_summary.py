@@ -34,12 +34,12 @@ download = APIRouter(prefix="/tools/download", tags=["Download"])
     status_code=status.HTTP_200_OK,
     response_model=success_response,
 )
-# @track_tool_usage(ProjectToolsEnum.video_summarizer)
+@track_tool_usage(ProjectToolsEnum.youtube_summarizer)
 async def summarize_up_vid(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    # user: User = Depends(user_service.get_current_user_optional),
+    user: User = Depends(user_service.get_current_user_optional)
 ):
     """Endpoint to summarize a single video"""
 
