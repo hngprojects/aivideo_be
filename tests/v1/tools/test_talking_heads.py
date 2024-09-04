@@ -47,17 +47,20 @@ async def test_talking_head_image_upload(
 @patch('api.v1.routes.ai_tools.talking_avatar.preset_service.fetch_music_by_id')
 @patch('api.v1.routes.ai_tools.talking_avatar.generate_talking_avatar_task.apply_async')
 @patch('api.v1.routes.ai_tools.talking_avatar.job_service.create_project_with_job')
+@patch('api.v1.services.usage.usage_store_service')
 async def test_talking_head_avatar_selection(
     mock_create_project_with_job,
     mock_apply_async,
     mock_fetch_music_by_id,
-    mock_fetch_avatar_by_id
+    mock_fetch_avatar_by_id,
+    mock_usage
 ):
     # Arrange
     mock_fetch_avatar_by_id.return_value = MagicMock(file_path="test_avatar.jpg")
     mock_fetch_music_by_id.return_value = MagicMock(file_path="test_audio.mp3")
     mock_apply_async.return_value.id = "test_task_id"
     mock_create_project_with_job.return_value.id = "test_project_id"
+    mock_usage.return_value = True
 
     # Act
     response = client.post(
