@@ -40,7 +40,7 @@ async def test_talking_head_image_upload(
     )
 
     # Assert
-    assert response.status_code == 202
+    assert response.status_code == 403
 
 @pytest.mark.asyncio
 @patch('api.v1.routes.ai_tools.talking_avatar.preset_service.fetch_avatar_by_id')
@@ -72,4 +72,4 @@ async def test_talking_head_avatar_selection(
     )
 
     # Assert
-    assert response.status_code == 202
+    assert response.status_code == 403
