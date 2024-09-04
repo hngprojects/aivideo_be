@@ -1,19 +1,16 @@
 from fastapi import (
-    BackgroundTasks,
     Depends,
     status,
     APIRouter,
     HTTPException,
     File,
     UploadFile,
+    Request
 )
 from sqlalchemy.orm import Session
-from typing import Optional
 import requests
 import io
-import os
 import json
-from fastapi.responses import FileResponse
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
@@ -27,6 +24,9 @@ from api.v1.schemas.ai_tools.audio_transcriber import PodcastRequest
 from api.v1.services.ai_tools.summary import summary_service
 from api.v1.services.job import job_service
 from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summary_task, generate_podcast_summary_task, generate_audio_summary_task, transcribe_audio_task
+from api.v1.services.user import user_service
+from api.utils.tool_limiter import track_tool_usage
+from api.v1.models.user import User
 
 summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
@@ -69,7 +69,12 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
     status_code=status.HTTP_202_ACCEPTED,
     response_model=success_response,
 )
-async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
+@track_tool_usage(ProjectToolsEnum.pdf_summarizer)
+async def summarize_pdf(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(user_service.get_current_user_optional)
 ):
     """Endpoint to summarize PDF"""
 
@@ -221,10 +226,13 @@ async def summarize_podcast(request: PodcastRequest):
         )
 
 @summary.post('/audio-summarizer', status_code=status.HTTP_200_OK, response_model=success_response)
+@track_tool_usage(ProjectToolsEnum.audio_summarizer)
 async def summarize_audio(
+    request: Request,
     file: UploadFile = File(...), 
     target_lang: str = "es",  # Default to Spanish
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to summarize an audio file'''
     

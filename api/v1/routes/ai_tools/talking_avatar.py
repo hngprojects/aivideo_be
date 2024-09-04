@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from api.db.database import get_db
 from api.v1.models.user import User
 from api.v1.services.user import user_service
-# from api.utils.tool_limiter import track_tool_usage
+from api.utils.tool_limiter import track_tool_usage
 from api.utils.success_response import success_response
 from api.utils.files import upload_to_current_dir, contains_face
 from api.v1.services.presets import preset_service
@@ -14,19 +14,20 @@ from api.v1.schemas.ai_tools.talking_avatar import TalkingHeadRequest
 from api.v1.schemas.project import ProjectToolsEnum
 from api.core.dependencies.celery.tasks.video_tasks import generate_talking_avatar_task
 
+
 video_router = APIRouter(prefix="/tools/video", tags=["Tools"])
 
-# @track_tool_usage(ProjectToolsEnum.talking_avatar)
 @video_router.post('/talking-head/image-upload', status_code=202, response_model=success_response)
+@track_tool_usage(ProjectToolsEnum.image_to_video)
 async def talking_head_image_upload(
-    # request: Request,
+    request: Request,
     script: str = Form(..., max_length=2500),
     aspect_ratio: str = Form(...),
     voice_over: str = Form(...),
     audio_id: Optional[str] = Form(None),
     file: UploadFile = File(...), 
     db: Session = Depends(get_db),
-    # user: User = Depends(user_service.get_current_user_optional)
+    user: User = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to Talking Avatar'''
 
@@ -74,9 +75,12 @@ async def talking_head_image_upload(
 
 
 @video_router.post('/talking-head/avatar-selection', status_code=202, response_model=success_response)
+@track_tool_usage(ProjectToolsEnum.talking_avatar)
 async def talking_head_avatar_selection(
+    request: Request,
     schema: TalkingHeadRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to Talking Avatar'''
 
