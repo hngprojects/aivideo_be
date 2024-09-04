@@ -151,60 +151,74 @@ async def stripe_webhook(
     # validate request and get the webhook event
     event = pg_service.get_stripe_webhook_event(payload)
     
-    # Handle the event
-    if event.type == payment_event_types.STRIPE_CHECHOUT_COMPLETED \
-        and event.data['object']["success_url"].startswith("https://tifi.tv"):
+    # confirm it's checkout.session.completed event
+    if event.type != payment_event_types.STRIPE_CHECHOUT_COMPLETED \
+        or not event.data['object']["success_url"].startswith("https://tifi.tv"):
+        # Request is successful, but event not handled here, return 200
+        return success_response(
+            status_code=status.HTTP_200_OK,
+            message=f"Unhabdled event: {event.type}"
+        )
 
-        event_data = event.data['object']
-        paid_amount = Decimal(event_data["amount_total"])
-        paid_currency = event_data['currency']
-        billing_plan_id = event_data['metadata']['billing_plan_id']
-        user_email = event_data['customer_email']
-        transaction_id = event_data['id']
+    event_data = event.data['object']
+    paid_amount = pg_service.normalise_stripe_amount(
+        event_data["amount_total"], from_stripe=True)
+    paid_currency = event_data['currency']
+    billing_plan_id = event_data['metadata']['billing_plan_id']
+    user_email = event_data['customer_details']['email']
+    transaction_id = event_data['id']
 
-        bill_plan = bp_service.fetch(db, billing_plan_id)
+    bill_plan = bp_service.fetch(db, billing_plan_id)
 
-        # Verify that paid amount is exact multiples of `bill_plan.price`
-        pg_service.check_paid_amount_and_bill_per_interval(
-            paid_amount, paid_currency, bill_plan)
-        
-        # check if payment has been recorded in db before
-        payment_exist = payment_service.fetch_by_params(
-            db, {'transaction_id': transaction_id})
+    # Verify that paid amount is exact multiples of `bill_plan.price`
+    pg_service.check_paid_amount_and_bill_per_interval(
+        paid_amount, paid_currency, bill_plan)
+    
+    # check if payment has been recorded in db before
+    payment_exist = payment_service.fetch_by_params(
+        db, {'transaction_id': transaction_id})
 
-        if not payment_exist:
-        
-            # get the user in who made the payment
-            user = get_model_by_params(
-                db, User, {'email': user_email}, raise_if_none=True)
+    if payment_exist:
+        # This check is necessary because stripe notes that an 
+        # event can be triggered multiple times with the same details
+        # Payment already recorded, return 200
+        return success_response(
+            status_code=status.HTTP_200_OK,
+            message="Payment successfull. Already recorded."
+        )
+    
+    # get the user in who made the payment
+    user = get_model_by_params(
+        db, User, {'email': user_email}, raise_if_none=True)
 
-            # create `Payment` object
-            payment_payload = {
-                "user_id": user.id,
-                "transaction_id": transaction_id,
-                "amount": paid_amount,
-                "currency": paid_currency,
-                "status": "completed",
-                "method": "stripe",
-            }
+    # create `Payment` object
+    payment_payload = {
+        "user_id": user.id,
+        "transaction_id": transaction_id,
+        "amount": paid_amount,
+        "currency": paid_currency,
+        "status": "completed",
+        "method": "stripe",
+    }
 
-            payment_service.create(db, payment_payload)
+    payment_service.create(db, payment_payload)
 
-            # create `UserSubscription` object
-            start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
-                bill_plan.plan_interval)
+    # create `UserSubscription` object
+    start_date, end_date = user_subscription_service.get_sub_start_and_end_datetime(
+        bill_plan.plan_interval)
 
-            user_subscription_payload = {
-                "start_date": start_date,
-                "billing_plan_id": billing_plan_id,
-                "user_id": user.id,
-                "end_date": end_date
-            }
-            user_subscription_service.create(db, user_subscription_payload)
+    user_subscription_payload = {
+        "start_date": start_date,
+        "billing_plan_id": billing_plan_id,
+        "user_id": user.id,
+        "end_date": end_date
+    }
+    user_subscription_service.create(db, user_subscription_payload)
 
+    # Subscription created, return 201
     return success_response(
-        status_code=status.HTTP_200_OK,
-        message="Payment success"
+        status_code=status.HTTP_201_CREATED,
+        message="Payment successfull. User subscribed."
     )
 
 

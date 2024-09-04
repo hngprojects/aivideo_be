@@ -14,7 +14,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from api.core.dependencies.email_sender import send_email
 from api.utils.success_response import success_response
 from api.v1.models import User
 
@@ -33,6 +32,7 @@ from api.v1.schemas.request_password_reset import RequestEmail
 from api.v1.services.request_pwd import reset_service as magic_link_service
 from slowapi import Limiter
 from api.v1.services.billing_plan import billing_plan_service
+from api.v1.services.email_sending import email_sending_service
 
 
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -66,13 +66,7 @@ def register(
     refresh_token = user_service.create_refresh_token(user_id=user.id)
 
     # Send email in the background
-    background_tasks.add_task(
-        send_email,
-        recipient=user.email,
-        template_name="welcome.html",
-        subject="Welcome to HNG Boilerplate",
-        context={"first_name": user.first_name, "last_name": user.last_name},
-    )
+    email_sending_service.send_welcome_email(background_tasks, user)
 
     response = JSONResponse(
         status_code=201,
