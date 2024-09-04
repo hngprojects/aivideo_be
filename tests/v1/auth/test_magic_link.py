@@ -33,8 +33,7 @@ def mock_user_service():
         yield mock_service
 
 
-@pytest.mark.usefixtures("mock_db_session", "mock_user_service")
-def test_request_magic_link(mock_user_service, mock_db_session):
+def test_request_magic_link(mock_user_service, mock_db_session, mock_send_email):
     """Test for requesting magic link"""
 
     # Create a mock user
@@ -51,14 +50,8 @@ def test_request_magic_link(mock_user_service, mock_db_session):
     )
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_user
 
-    with patch("smtplib.SMTP_SSL") as mock_smtp:
-        # Configure the mock SMTP server
-        mock_smtp_instance = MagicMock()
-        mock_smtp.return_value = mock_smtp_instance
-
-        # Test for requesting magic link for an existing user
-        magic_login = client.post(MAGIC_ENDPOINT, json={
-            "user_email": mock_user.email
-        })
-        assert magic_login.status_code == status.HTTP_200_OK
-        response = magic_login.json()
+    # Test for requesting magic link for an existing user
+    magic_login = client.post(MAGIC_ENDPOINT, json={
+        "user_email": mock_user.email
+    })
+    assert magic_login.status_code == status.HTTP_200_OK

@@ -31,7 +31,7 @@ def create_token(email: str) -> str:
     return serializer.dumps(email, salt=SECRET_KEY)
 
 
-def verifu_token(token: str, expiration: int = 3600) -> Optional[str]:
+def verify_token(token: str, expiration: int = 3600) -> Optional[str]:
     try:
         email = serializer.loads(token, salt=SECRET_KEY, max_age=expiration)
         return email
@@ -71,7 +71,7 @@ class RequestPasswordService:
     @staticmethod
     def process_reset_link(token: str = Query(...), session: Session = Depends(get_db)):
 
-        email = verifu_token(token)
+        email = verify_token(token)
 
         if not email:
             raise HTTPException(status_code=400, detail="Invalid or expired token")
@@ -89,7 +89,7 @@ class RequestPasswordService:
     @staticmethod
     def verify_magic_link(token: str = Query(...), session: Session = Depends(get_db)):
 
-        email = verifu_token(token)
+        email = verify_token(token)
 
         if not email:
             raise HTTPException(status_code=400, detail="Invalid or expired token")
@@ -108,7 +108,7 @@ class RequestPasswordService:
         session: Session = Depends(get_db),
     ):
         try:
-            email = verifu_token(token)
+            email = verify_token(token)
 
             if not email:
                 raise HTTPException(status_code=400, detail="Invalid or expired token")
