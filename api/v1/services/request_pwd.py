@@ -119,10 +119,7 @@ class RequestPasswordService:
             user.password = get_password_hash(data.new_password)
             session.commit()
 
-            return success_response(
-                message="Password has been reset successfully",
-                status_code=status.HTTP_200_OK,
-            )
+            return user
         
         except SQLAlchemyError as e:
             session.rollback()  # Rollback the session in case of an error
