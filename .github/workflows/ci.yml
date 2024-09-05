@@ -7,7 +7,7 @@ on:
       - ".github/workflows/**"
 jobs:
   build-and-test:
-    runs-on: pyrunner
+    runs-on: self-hosted
     services:
       postgres:
         image: postgres:latest
