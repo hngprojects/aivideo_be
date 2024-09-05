@@ -19,7 +19,7 @@ class EmailSendingService:
         background_tasks.add_task(
             send_email,
             recipient=user.email,
-            template_name="welcome.html",
+            template_name="welcome-marketing.html",
             subject="Welcome to TiFi",
             context={
                 "request": request,
@@ -32,15 +32,27 @@ class EmailSendingService:
     def send_magic_link_email(self, request: Request, background_tasks: BackgroundTasks, user: User, magic_link_url: str):
         '''Thiss function sends the welcome email to a user'''
 
+        # background_tasks.add_task(
+        #     send_email,
+        #     recipient=user.email,
+        #     template_name="magic-link.html",
+        #     subject="Magic Link Authentication",
+        #     context={
+        #         "request": request,
+        #         "user": user,
+        #         "url": magic_link_url
+        #     }
+        # )
+
         background_tasks.add_task(
             send_email,
             recipient=user.email,
-            template_name="magic-link.html",
-            subject="Magic Link Authentication",
+            template_name="welcome-marketing.html",
+            subject="Welcome to TiFi",
             context={
                 "request": request,
                 "user": user,
-                "url": magic_link_url
+                "cta_link": "https://tifi.tv/about"
             }
         )
     

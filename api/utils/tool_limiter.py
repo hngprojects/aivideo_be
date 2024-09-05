@@ -32,7 +32,8 @@ def track_tool_usage(current_tool: str):
         async def wrapper(*args, **kwargs):
             request: Request = kwargs.get('request')
             db: Session = kwargs.get('db', Depends(get_db))
-            user: User | None = kwargs.get('user', Depends(user_service.get_current_user_optional))
+            user: User | None = kwargs.get('user', Depends(user_service.get_current_user_optional)
+        )
             if settings.ACTIVATE_TOOL_TRACKING:
             
                 if user:
