@@ -14,7 +14,7 @@ class EmailSendingService:
     """
 
     def send_welcome_email(self, request: Request, background_tasks: BackgroundTasks, user: User):
-        '''Thiss function sends the welcome email to a user'''
+        '''This function sends the welcome email to a user'''
 
         background_tasks.add_task(
             send_email,
@@ -30,7 +30,7 @@ class EmailSendingService:
      
     
     def send_magic_link_email(self, request: Request, background_tasks: BackgroundTasks, user: User, magic_link_url: str):
-        '''Thiss function sends the welcome email to a user'''
+        '''This function sends the magic link authentication email to a user'''
 
         background_tasks.add_task(
             send_email,
@@ -46,7 +46,7 @@ class EmailSendingService:
     
 
     def send_reset_password_email(self, request: Request, background_tasks: BackgroundTasks, user: User, reset_url: str):
-        '''Thiss function sends the welcome email to a user'''
+        '''This function sends the reset password email to a user'''
 
         background_tasks.add_task(
             send_email,
@@ -57,6 +57,21 @@ class EmailSendingService:
                 "request": request,
                 "user": user,
                 "url": reset_url
+            }
+        )
+    
+
+    def send_reset_password_success_email(self, request: Request, background_tasks: BackgroundTasks, user: User):
+        '''This function sends the reset password success email to a user'''
+
+        background_tasks.add_task(
+            send_email,
+            recipient=user.email,
+            template_name="password-reset-complete.html",
+            subject="Password Reset Complete",
+            context={
+                "request": request,
+                "user": user,
             }
         )
 
