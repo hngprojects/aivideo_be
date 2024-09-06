@@ -9,6 +9,10 @@ on:
      - ".gitignore"
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: aivid
