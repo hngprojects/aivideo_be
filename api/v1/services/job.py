@@ -8,12 +8,10 @@ from typing import Optional
 from fastapi import HTTPException
 from fastapi import status as HTTPStatus
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from celery.result import AsyncResult
 
 from api.core.dependencies.celery.celery_app import worker
-from api.db.database import get_db
 from api.v1.models.job import Job
 from api.v1.models.project import Project
 from api.v1.models.user import User
@@ -23,13 +21,10 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, desc
 
 
-db = next(get_db())
-
-
 class JobService:
     """This is for job db operations"""
 
-    def get_job_status(self, job_id: str):
+    def get_job_status(self, db: Session, job_id: str):
         """Returns the status of a partiular job"""
 
         task_result = AsyncResult(job_id, app=worker)
@@ -37,6 +32,7 @@ class JobService:
 
     def create_project_with_job(
         self,
+        db: Session,
         job,
         project_title: str,
         project_type: str,
@@ -55,12 +51,13 @@ class JobService:
         project = project_service.create(db=db, schema=project_schema)
 
         # Create celery task
-        self.create_job(job_id=job.id, project_id=project.id, user_id=user_id)
+        self.create_job(db=db,job_id=job.id, project_id=project.id, user_id=user_id)
 
         return project
 
     def create_job(
         self,
+        db: Session,
         job_id: str,
         project_id: Optional[str] = None,
         user_id: Optional[str] = None,
@@ -69,7 +66,10 @@ class JobService:
 
         try:
             job = Job(
-                job_id=job_id, project_id=project_id, user_id=user_id, status="Pending"
+                job_id=job_id, 
+                project_id=project_id, 
+                user_id=user_id, 
+                status="Pending"
             )
             db.add(job)
             db.commit()
@@ -79,13 +79,13 @@ class JobService:
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Error {e}")
 
-    def fetch_all_jobs(self):
+    def fetch_all_jobs(self, db: Session):
         """Fetches all celery jobs from the database"""
 
         jobs = db.query(Job).all()
         return jobs
 
-    def fetch_by_job_id(self, job_id: str):
+    def fetch_by_job_id(self, db: Session, job_id: str):
         """Fetches the job details from the database"""
 
         job = db.query(Job).filter(Job.job_id == job_id).first()
@@ -95,6 +95,7 @@ class JobService:
 
     def update_job(
         self, 
+        db: Session,
         job_id: str, 
         status: str, 
         result: Optional[str] = None, 
@@ -103,7 +104,7 @@ class JobService:
         """Updates the job details with option to link to a user"""
 
         try:
-            job = self.fetch_by_job_id(job_id=job_id)
+            job = self.fetch_by_job_id(db=db, job_id=job_id)
             job.status = status
             job.result = result if result is not None else None
             job.user_id = user_id if user_id is not None else None
@@ -116,10 +117,10 @@ class JobService:
                 status_code=400, detail=f"{type(e).__name__} occurred. {repr(e)}"
             )
 
-    def get_project_from_job(self, job_id: str):
+    def get_project_from_job(self, db: Session, job_id: str):
         """Returns the project from the job details"""
 
-        job = self.fetch_by_job_id(job_id=job_id)
+        job = self.fetch_by_job_id(db=db, job_id=job_id)
         project = db.query(Project).filter(Project.id == job.project_id).first()
 
         if not project:
@@ -127,15 +128,15 @@ class JobService:
 
         return project
 
-    def update_job_result(self, job_id: str):
+    def update_job_result(self, db: Session, job_id: str):
         """Fetches the result from celery and updates the job"""
         task_result = AsyncResult(job_id, app=worker)
 
         if task_result.state == "SUCCESS":
             result = task_result.get()
-            self.update_job(job_id=job_id, status=task_result.state, result=result)
+            self.update_job(db=db, job_id=job_id, status=task_result.state, result=result)
         elif task_result.state in ["FAILURE", "REVOKED"]:
-            self.update_job(job_id=job_id, status=task_result.state)
+            self.update_job(db=db, job_id=job_id, status=task_result.state)
 
     def fetch_job_activity(
         self,

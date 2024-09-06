@@ -67,6 +67,7 @@ async def summarize_up_vid(
 
     # Create project with job
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title="video upload project",
         project_type=ProjectToolsEnum.youtube_summarizer.value,
@@ -101,6 +102,7 @@ async def summarize_yt_vid(
 
     # Create project with job
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title="Youtube URL Summary",
         project_type=ProjectToolsEnum.youtube_summarizer.value,

@@ -58,7 +58,9 @@ async def enqueue_summarize_batch_job(
         job = generate_video_summary_task.delay(file)
 
         project = job_service.create_project_with_job(
-            job=job, project_title="New project",
+            db=db,
+            job=job, 
+            project_title="New project",
             project_type=ProjectToolsEnum.youtube_summarizer.value
         )
 
@@ -92,6 +94,7 @@ async def summarize_yt_vid(
         logging.info(f"Background task started {task.id}")
 
         project = job_service.create_project_with_job(
+            db=db,
             job=task,
             project_title="New project",
             project_type=ProjectToolsEnum.youtube_summarizer.value

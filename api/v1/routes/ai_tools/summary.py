@@ -74,6 +74,7 @@ async def summarize_pdf(
 
     # Create project with job
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title='New project',
         project_type=ProjectToolsEnum.pdf_summarizer.value,
