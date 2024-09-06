@@ -53,7 +53,7 @@ def process_job(job: TifiJob, db: Session):
     db.commit()
 
 
-def run_job_tool(job: TifiJob):
+def run_job_tool(job: TifiJob, task_name: str):
     '''THis function runs the tool to run the job script for each job'''
 
     try:
@@ -61,7 +61,7 @@ def run_job_tool(job: TifiJob):
         payload_str = json.dumps(job.payload)
 
         result = subprocess.run(
-            ['python3', f'api/core/depenedencies/jobs/runner.py', payload_str],
+            ['python3', f'api/core/dependencies/jobs/{task_name}.py', payload_str],
             capture_output=True, 
             text=True
         )
