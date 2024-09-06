@@ -148,7 +148,7 @@ class UserService(Service):
             data=all_users,
         )
 
-    def fetch(self, db: Session, id):
+    def fetch(self, db: Session, id: str):
         """Fetches a user by their id"""
 
         user = check_model_existence(db, User, id)

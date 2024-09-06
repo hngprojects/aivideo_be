@@ -67,6 +67,7 @@ async def summarize_up_vid(
 
     # Create project with job
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title="video upload project",
         project_type=ProjectToolsEnum.youtube_summarizer.value,
@@ -87,19 +88,21 @@ async def summarize_up_vid(
     status_code=status.HTTP_200_OK,
     response_model=success_response,
 )
-# @track_tool_usage(ProjectToolsEnum.youtube_summarizer)
+@track_tool_usage(ProjectToolsEnum.youtube_summarizer)
 async def summarize_yt_vid(
-    request: VideoLinkRequest,
+    schema: VideoLinkRequest,
+    request: Request,
     db: Session = Depends(get_db),
-    # user: User = Depends(user_service.get_current_user_optional),
+    user: User = Depends(user_service.get_current_user_optional),
 ):
     """Endpoint to download and summarize a single youtube video"""
 
-    task = download_and_generate_video_summmary_task.delay(request.link)
+    task = download_and_generate_video_summmary_task.delay(schema.link)
     logging.info(f"Background task started {task.id}")
 
     # Create project with job
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title="Youtube URL Summary",
         project_type=ProjectToolsEnum.youtube_summarizer.value,

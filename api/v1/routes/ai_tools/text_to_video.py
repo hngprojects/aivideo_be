@@ -36,7 +36,7 @@ async def recompose_script(
 
 
 @ttv_router.post('/text-to-video/generate-scenes', status_code=202, response_model=success_response)
-@track_tool_usage(ProjectToolsEnum.text_to_video)
+@track_tool_usage(ProjectToolsEnum.script_to_video)
 async def generate_video_scenes(
     request: Request,
     schema: SceneGeneration,
@@ -49,6 +49,7 @@ async def generate_video_scenes(
 
     # Create job
     job = job_service.create_job(
+        db=db,
         job_id=task.id,
         # user_id = pass in the current user id for authenticated users
     )
@@ -85,9 +86,10 @@ async def convert_text_to_video(
 
     # Create project with job
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title='New TTV Project',
-        project_type=ProjectToolsEnum.text_to_video.value,
+        project_type=ProjectToolsEnum.script_to_video.value,
         # user_id = pass in the current user id for authenticated users
     )
 

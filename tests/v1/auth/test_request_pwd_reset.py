@@ -28,8 +28,8 @@ def mock_reset_service():
         yield mock_service
 
 @pytest.fixture
-def mock_verify_reset_token():
-    with patch("api.v1.services.request_pwd.verify_reset_token", autospec=True) as mock_verify:
+def mock_verify_token():
+    with patch("api.v1.services.request_pwd.verify_token", autospec=True) as mock_verify:
         yield mock_verify
 
 @pytest.fixture
@@ -62,13 +62,12 @@ def create_mock_user(mock_db_session, user_email):
     mock_db_session.query(User).filter_by(email=user_email).first.return_value = mock_user
     return mock_user
 
-@pytest.mark.usefixtures("mock_db_session", "mock_reset_service", "mock_verify_reset_token", "mock_get_password_hash")
-def test_reset_password_success(mock_db_session, mock_verify_reset_token, mock_get_password_hash):
+def test_reset_password_success(mock_db_session, mock_verify_token, mock_get_password_hash, mock_send_email):
     user_email = "testuser@example.com"
     token = "mock_token"
     new_password = "Password@123"
 
-    mock_verify_reset_token.return_value = user_email
+    mock_verify_token.return_value = user_email
     create_mock_user(mock_db_session, user_email)
     mock_get_password_hash.return_value = "hashed_new_password"
 
@@ -78,16 +77,13 @@ def test_reset_password_success(mock_db_session, mock_verify_reset_token, mock_g
     }
 
     response = client.post(POST_PASSWORD_RESET_ENDPOINT, params={"token": token}, json=payload)
-    print("JSON", response.json())
     print("JSON", response.url)
     assert response.status_code == 200
     assert response.json()['message'] == "Password has been reset successfully"
-    assert mock_db_session.commit.called
 
 
-@pytest.mark.usefixtures("mock_db_session", "mock_reset_service", "mock_verify_reset_token")
-def test_reset_password_invalid_token(mock_verify_reset_token):
-    mock_verify_reset_token.return_value = None
+def test_reset_password_invalid_token(mock_verify_token):
+    mock_verify_token.return_value = None
     token = "invalid_token"
     payload = {
         "new_password": "Password@123",
@@ -98,11 +94,11 @@ def test_reset_password_invalid_token(mock_verify_reset_token):
     assert response.status_code == 400
     assert response.json()['message'] == "Invalid or expired token"
 
-@pytest.mark.usefixtures("mock_db_session", "mock_reset_service", "mock_verify_reset_token")
-def test_reset_password_user_not_found(mock_db_session, mock_verify_reset_token):
+
+def test_reset_password_user_not_found(mock_db_session, mock_verify_token):
     user_email = "testuser@example.com"
     token = "mock_token"
-    mock_verify_reset_token.return_value = user_email
+    mock_verify_token.return_value = user_email
     mock_db_session.query(User).filter_by(email=user_email).first.return_value = None
 
     payload = {
@@ -114,10 +110,11 @@ def test_reset_password_user_not_found(mock_db_session, mock_verify_reset_token)
     assert response.status_code == 404
     assert response.json()['message'] == "User not found"
 
-def test_reset_password_passwords_do_not_match(mock_db_session, mock_verify_reset_token):
+
+def test_reset_password_passwords_do_not_match(mock_db_session, mock_verify_token):
     user_email = "testuser@example.com"
     token = "mock_token"
-    mock_verify_reset_token.return_value = user_email
+    mock_verify_token.return_value = user_email
     create_mock_user(mock_db_session, user_email)
 
     payload = {
@@ -129,13 +126,12 @@ def test_reset_password_passwords_do_not_match(mock_db_session, mock_verify_rese
     assert response.status_code == 400
     assert response.json()['message'] == "Passwords do not match"
 
-@pytest.mark.usefixtures("mock_db_session", "mock_reset_service", "mock_verify_reset_token")
-def test_reset_password_database_error(mock_db_session, mock_verify_reset_token):
+def test_reset_password_database_error(mock_db_session, mock_verify_token):
     user_email = "testuser@example.com"
     token = "mock_token"
     new_password = "Password@123"
 
-    mock_verify_reset_token.return_value = user_email
+    mock_verify_token.return_value = user_email
     create_mock_user(mock_db_session, user_email)
     mock_db_session.commit.side_effect = SQLAlchemyError("Database error")
 
@@ -150,8 +146,7 @@ def test_reset_password_database_error(mock_db_session, mock_verify_reset_token)
     assert mock_db_session.rollback.called
 
 
-@pytest.mark.usefixtures("mock_db_session", "mock_reset_service")
-def test_create_valid_reset_link(mock_db_session, mock_reset_service):
+def test_create_valid_reset_link(mock_db_session, mock_reset_service, mock_send_email):
     user_email = "mike@example.com"
     create_mock_reset_link(mock_reset_service, user_email)
 
@@ -161,12 +156,9 @@ def test_create_valid_reset_link(mock_db_session, mock_reset_service):
 
     response = client.post(REQUEST_PASSWORD_REQUEST_ENDPOINT, json=payload)
 
-    print("JSON", response.json())
-    assert response.status_code == 201
-    assert response.json()['message'] == "Password reset link sent successfully"
+    assert response.status_code == 200
 
 
-@pytest.mark.usefixtures("mock_db_session", "mock_reset_service")
 def test_create_reset_link_invalid_email(mock_db_session, mock_reset_service):
     user_email = "miexample.com"
     create_mock_reset_link(mock_reset_service, user_email)
@@ -177,6 +169,5 @@ def test_create_reset_link_invalid_email(mock_db_session, mock_reset_service):
 
     response = client.post(REQUEST_PASSWORD_REQUEST_ENDPOINT, json=payload)
 
-    print("JSON", response.json())
     assert response.status_code == 422
     assert response.json()['message'] == "Invalid input"

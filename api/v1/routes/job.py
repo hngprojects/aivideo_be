@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, BackgroundTasks
+from fastapi import APIRouter, Depends, status
 from typing import List, Annotated
 from api.v1.schemas.job import JobResponse
 from fastapi import APIRouter, Depends
@@ -21,10 +21,15 @@ job = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 # Get all jobs
 @job.get("/", response_model=List[JobResponse], status_code=status.HTTP_200_OK)
-async def get_all_jobs():
+async def get_all_jobs(db: Session = Depends(get_db)):
     """Fetch all jobs from the database."""
-    jobs = job_service.fetch_all_jobs()
-    return jobs
+
+    jobs = job_service.fetch_all_jobs(db=db)
+    return success_response(
+        status_code=200,
+        message='Jobs fetched successfully',
+        data=jsonable_encoder(jobs)
+    )
 
 
 @job.get("/activity")
@@ -108,6 +113,7 @@ async def get_sse_job_statistics(db: Session = Depends(get_db)):
         job_service.stream_job_statistics(db=db),
         media_type="text/event-stream",
     )
+
 
 ################ SSE ENDPOINT FOR USER STATISTICS ###################
 

@@ -59,6 +59,7 @@ async def talking_head_image_upload(
 
     # Create project with job
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title='New project',
         project_type=ProjectToolsEnum.image_to_video.value,
@@ -107,6 +108,7 @@ async def talking_head_avatar_selection(
 
     # Create project with job
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title='New project',
         project_type=ProjectToolsEnum.talking_avatar.value,

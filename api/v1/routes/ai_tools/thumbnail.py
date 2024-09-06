@@ -1,10 +1,12 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, Request, Form
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Request, Form
+from sqlalchemy.orm import Session
 from api.core.dependencies.celery.tasks.video_tasks import (
     upload_video_task,
     generate_thumbnails_task,
     select_and_download_thumbnail_task,
     process_youtube_video_task,
 )
+from api.db.database import get_db
 from api.utils.settings import settings
 from api.utils.success_response import success_response
 from api.utils.files import upload_file
@@ -25,7 +27,8 @@ max_file_size = 50 * 1024 * 1024  # 50 MB
 async def upload_or_process_video(
     request: Request,
     file: UploadFile = File(None),
-    youtube_url: str = Form(None)
+    youtube_url: str = Form(None),
+    db: Session = Depends(get_db)
 ):
     base_url = str(request.base_url)
     video_id = None
@@ -80,6 +83,7 @@ async def upload_or_process_video(
         )
 
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title='Video Processing and Thumbnail Generation',
         project_type=ProjectToolsEnum.thumbnail_generator.value
@@ -102,7 +106,8 @@ async def generate_thumbnails(
     video_id: str = Form(...),
     aspect_ratio: str = Form(...),
     timestamp: float = Form(None),
-    title: Optional[str] = Form(None)
+    title: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     base_url = str(request.base_url)
 
@@ -122,6 +127,7 @@ async def generate_thumbnails(
             video_id, base_url, aspect_ratio, title=title)
 
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title=task_title,
         project_type=ProjectToolsEnum.thumbnail_generator.value
@@ -140,13 +146,15 @@ async def generate_thumbnails(
 @thumbnail_router.post("/select-thumbnail", response_model=ThumbnailResponse)
 async def select_and_download_thumbnail(
     request: Request,
-    thumbnail_url: str = Form(...)
+    thumbnail_url: str = Form(...),
+    db: Session = Depends(get_db)
 ):
     task = select_and_download_thumbnail_task.delay(
         thumbnail_url
     )
 
     project = job_service.create_project_with_job(
+        db=db,
         job=task,
         project_title='Thumbnail Selection and Download',
         project_type=ProjectToolsEnum.thumbnail_generator.value

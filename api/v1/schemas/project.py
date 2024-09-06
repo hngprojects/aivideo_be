@@ -91,7 +91,7 @@ class ToolStatsResponse(BaseModel):
 class ProjectToolsEnum(str, Enum):
     youtube_summarizer = "Youtube Summarizer"
     video_summarizer = "Video Summarizer"
-    text_to_video = "Text To Video"
+    script_to_video = "Script To Video"
     talking_avatar = "Talking Avatar"
     audio_transcriber = "Audio Transcriber"
     audio_summarizer = "Audio Summarizer"
@@ -100,7 +100,3 @@ class ProjectToolsEnum(str, Enum):
     thumbnail_generator = "Thumbnail Generator"
     pdf_summarizer = "PDF Summarizer"
     subtitle_translator = "Subtitle Translator"
-    audio_extractor = "Audio Extractor"
-    video_format_conversion = "Video Format Compression"
-    video_compression = "Video Compression"
-    merge_videos = "Merge Videos"

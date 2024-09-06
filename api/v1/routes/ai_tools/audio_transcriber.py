@@ -1,6 +1,8 @@
 # audio_transcriber.py
-from fastapi import HTTPException, APIRouter
+from fastapi import Depends, HTTPException, APIRouter
 import json
+from sqlalchemy.orm import Session
+from api.db.database import get_db
 from api.v1.schemas.ai_tools.audio_transcriber import TranslationRequest
 from api.core.dependencies.celery.tasks.audio_tasks import translate_text_task
 from api.v1.services.job import job_service
@@ -11,7 +13,10 @@ audio = APIRouter(prefix="/tools/audio-transcribe", tags=["Tools"])
 
 
 @audio.post("/translate/", response_model=success_response)
-async def translate_text_endpoint(request: TranslationRequest):
+async def translate_text_endpoint(
+    request: TranslationRequest, 
+    db: Session=Depends(get_db)
+):
     """Translate text to the specified language."""
     try:
         # If the text is a dictionary, serialize it to a string for the task
@@ -22,6 +27,7 @@ async def translate_text_endpoint(request: TranslationRequest):
             text_to_translate, request.target_language)
 
         project = job_service.create_project_with_job(
+            db=db,
             job=task,
             project_title='New Translation Project',
             project_type='Text Translation'

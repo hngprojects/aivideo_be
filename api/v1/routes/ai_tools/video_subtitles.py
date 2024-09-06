@@ -1,5 +1,8 @@
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from sqlalchemy.orm import Session
 from typing import Optional
+
+from api.db.database import get_db
 from api.utils.files import upload_file
 from api.utils.success_response import success_response
 from api.core.dependencies.celery.tasks.video_subtitles_tasks import (
@@ -12,18 +15,18 @@ from api.v1.services.job import job_service
 from api.v1.schemas.project import ProjectToolsEnum
 
 
-video_subtitles_router = APIRouter(
-    prefix="/tools/video-subtitles", tags=["Tools"])
+video_subtitles_router = APIRouter(prefix="/tools/video-subtitles", tags=["Tools"])
 
 
 @video_subtitles_router.post("/translate", status_code=status.HTTP_200_OK, response_model=success_response)
-async def translate(request: TranslationRequest):
+async def translate(request: TranslationRequest, db: Session = Depends(get_db)):
     try:
         task = translate_text_task.delay(
             request.transcription, request.target_language)
 
         # Create project with job
         project = job_service.create_project_with_job(
+            db=db,
             job=task,
             project_title='New Translation Project',
             project_type='Text Translation'
@@ -45,6 +48,7 @@ async def translate(request: TranslationRequest):
 @video_subtitles_router.post("/transcribe", status_code=status.HTTP_200_OK, response_model=success_response)
 async def transcribe(
     file: UploadFile = File(...),
+    db: Session = Depends(get_db)
 ):
     try:
         # Upload and save the video file
@@ -55,6 +59,7 @@ async def transcribe(
 
         # Create project with job
         project = job_service.create_project_with_job(
+            db=db,
             job=task,
             project_title='New Transcription Project',
             project_type='Video Transcription'
@@ -73,7 +78,7 @@ async def transcribe(
         raise HTTPException(status_code=500, detail=str(e))
 
 @video_subtitles_router.post("/generate_subtitles", status_code=status.HTTP_200_OK, response_model=success_response)
-async def generate_subtitle( file: UploadFile = File(...)):
+async def generate_subtitle( file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
         # Save uploaded video file
         video_file_path = await upload_file(
@@ -88,6 +93,7 @@ async def generate_subtitle( file: UploadFile = File(...)):
 
         # Create project with job
         project = job_service.create_project_with_job(
+            db=db,
             job=task,
             project_title='New Subtitle Generation Project',
             project_type=ProjectToolsEnum.subtitle_translator.value

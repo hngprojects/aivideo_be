@@ -1,6 +1,5 @@
 import uvicorn
-import slowapi
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from fastapi.staticfiles import StaticFiles
 import uvicorn, os
@@ -76,6 +75,8 @@ app.add_middleware(SlowAPIMiddleware)
 
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')
+EMAIL_STATIC_DIR = 'api/core/dependencies/email/static'
+app.mount(f'/{EMAIL_STATIC_DIR}', StaticFiles(directory=EMAIL_STATIC_DIR), name='email-static')
 
 MEDIA_DIR = './media'
 os.makedirs(MEDIA_DIR, exist_ok=True)
