@@ -46,7 +46,7 @@ class UsageStoreService:
     
     def fetch_by_id(self, db: Session, id: int):
         print(id)
-        usage = db.query(UsageStore).filter(UsageStore.id == id).one()
+        usage = db.query(UsageStore).filter_by(id == id).first()
         if not usage:
             raise False
         return usage
@@ -98,7 +98,9 @@ class UsageStoreService:
 
         # Check if the tool exists in the dictionary
         if tool_name in tool:
+            tool: ToolAccess = next(tool for tool in tools_usage.tools if tool_name == tool.tool_name)
             value = tool.access_count
+            db.commit()
         else:
             # Tool does not exist, create it with a default value of 0
             new_tool = self.create_tool_access(

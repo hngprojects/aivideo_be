@@ -52,7 +52,7 @@ class UserUsageStoreService:
         :return: The UserUsageStore record associated with the given ID.
         :raises HTTPException: If a UserUsageStore record is not found for the given ID.
         """
-        usage = db.query(UserUsageStore).filter(UserUsageStore.id == id).one()
+        usage = db.query(UserUsageStore).filter_by(id == id).first()
         if not usage:
             return False
         return usage
@@ -119,7 +119,9 @@ class UserUsageStoreService:
 
         # Check if the tool exists in the dictionary
         if tool_name in tool:
+            tool: UserToolAccess = next(tool for tool in tools_usage.tools if tool_name == tool.tool_name)
             value = tool.access_count
+            db.commit()
         else:
             # Tool does not exist, create it with a default value of 0
             value = self.create_tool_access(
