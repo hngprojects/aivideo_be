@@ -69,7 +69,17 @@ def paginated_response(
         # Apply filters
         for attr, value in filters.items():
             if value is not None:
-                query = query.filter(getattr(model, attr).like(f"%{value}%"))
+                column = getattr(model, attr)
+                
+                if isinstance(column.type, bool):
+                    # Handle boolean fields
+                    query = query.filter(column == value)
+                elif isinstance(column.type, str):
+                    # Handle string fields
+                    query = query.filter(column.like(f"%{value}%"))
+                else:
+                    # Handle other types (e.g., Integer, DateTime)
+                    query = query.filter(column == value)
 
     elif filters and join is not None:
         # Apply filters

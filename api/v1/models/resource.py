@@ -13,5 +13,6 @@ class Resource(BaseTableModel):
     image_url = Column(String)
     cover_image_url = Column(String)
     tags = Column(ARRAY(String))
+    # category = Column(String, nullable=False)
     is_deleted = Column(Boolean, server_default="false")
     is_published = Column(Boolean, server_default="false")

@@ -22,4 +22,5 @@ from api.v1.models.payment import Payment
 from api.v1.models.presets import Avatar, BackgroundMusic
 from api.v1.models.lang_reg_timezone_setting import LanguageRegionTimezoneSetting
 from api.v1.models.usage_store import UsageStore, UserToolAccess,UserUsageStore, ToolAccess
+from api.v1.models.blog import Blog
 from celery.backends.database.models import Task, TaskSet
