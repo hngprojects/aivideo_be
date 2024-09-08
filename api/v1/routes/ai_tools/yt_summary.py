@@ -19,10 +19,11 @@ from api.v1.models.user import User
 from api.v1.schemas.ai_tools.youtube import (PdfDownloadRequest,
                                              VideoLinkRequest,
                                              VideoTranslationRequest)
-from api.v1.schemas.project import ProjectToolsEnum
+from api.v1.models.project import ProjectToolsEnum
 from api.v1.services.ai_tools.audio_transcriber import translate_text
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.job import job_service
+from api.v1.services.job import tifi_job_service
 from api.v1.services.user import user_service
 
 yt_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
@@ -34,7 +35,7 @@ download = APIRouter(prefix="/tools/download", tags=["Download"])
     status_code=status.HTTP_200_OK,
     response_model=success_response,
 )
-@track_tool_usage(ProjectToolsEnum.youtube_summarizer)
+@track_tool_usage(ProjectToolsEnum.video_summarizer)
 async def summarize_up_vid(
     request: Request,
     file: UploadFile = File(...),
@@ -62,25 +63,41 @@ async def summarize_up_vid(
         max_file_size=50 * 1024 * 1024,
     )
 
-    task = generate_video_summary_task.delay(video[0])
-    logging.info(f"Background task started {task.id}")
-
-    # Create project with job
-    project = job_service.create_project_with_job(
+    job, project = tifi_job_service.create(
         db=db,
-        job=task,
-        project_title="video upload project",
-        project_type=ProjectToolsEnum.youtube_summarizer.value,
+        tool_name=ProjectToolsEnum.video_summarizer.value,
+        payload={'video_file': video[0]},
+        user_id=user.id if user else None,
     )
 
     return success_response(
         status_code=202,
-        message="Summary generation job initiated successfully",
+        message=f"{ProjectToolsEnum.video_summarizer.value} task initiated successfully",
         data={
-            "job_id": task.id,
-            "project_id": project.id,
-        },
+            "job_id": job.id,
+            "project_id": project.id
+        }
     )
+
+    # task = generate_video_summary_task.delay(video[0])
+    # logging.info(f"Background task started {task.id}")
+
+    # # Create project with job
+    # project = job_service.create_project_with_job(
+    #     db=db,
+    #     job=task,
+    #     project_title="video upload project",
+    #     project_type=ProjectToolsEnum.youtube_summarizer.value,
+    # )
+
+    # return success_response(
+    #     status_code=202,
+    #     message="Summary generation job initiated successfully",
+    #     data={
+    #         "job_id": task.id,
+    #         "project_id": project.id,
+    #     },
+    # )
 
 
 @yt_summary.post(
@@ -97,26 +114,42 @@ async def summarize_yt_vid(
 ):
     """Endpoint to download and summarize a single youtube video"""
 
-    task = download_and_generate_video_summmary_task.delay(schema.link)
-    logging.info(f"Background task started {task.id}")
-
-    # Create project with job
-    project = job_service.create_project_with_job(
+    job, project = tifi_job_service.create(
         db=db,
-        job=task,
-        project_title="Youtube URL Summary",
-        project_type=ProjectToolsEnum.youtube_summarizer.value,
-        description="New YT Summarizer Project",
+        tool_name=ProjectToolsEnum.youtube_summarizer.value,
+        payload={'link': schema.link},
+        user_id=user.id if user else None,
     )
 
     return success_response(
         status_code=202,
-        message="Summary generation job initiated successfully",
+        message=f"{ProjectToolsEnum.youtube_summarizer.value} task initiated successfully",
         data={
-            "job_id": task.id,
-            "project_id": project.id,
-        },
+            "job_id": job.id,
+            "project_id": project.id
+        }
     )
+
+    # task = download_and_generate_video_summmary_task.delay(schema.link)
+    # logging.info(f"Background task started {task.id}")
+
+    # # Create project with job
+    # project = job_service.create_project_with_job(
+    #     db=db,
+    #     job=task,
+    #     project_title="Youtube URL Summary",
+    #     project_type=ProjectToolsEnum.youtube_summarizer.value,
+    #     description="New YT Summarizer Project",
+    # )
+
+    # return success_response(
+    #     status_code=202,
+    #     message="Summary generation job initiated successfully",
+    #     data={
+    #         "job_id": task.id,
+    #         "project_id": project.id,
+    #     },
+    # )
 
 
 @download.post(

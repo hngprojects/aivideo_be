@@ -1,4 +1,4 @@
-import os
+import os, random, secrets
 
 from typing import List, Optional
 from uuid import uuid4
@@ -12,7 +12,7 @@ from api.utils.settings import settings
 from api.v1.services.ai_tools.general_video_service import video_service
 
 
-class TextToVideoService:
+class ScriptToVideoService:
 
     def __init__(self):
         self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -48,6 +48,8 @@ class TextToVideoService:
         images = []
 
         for i, scene in enumerate(scenes):
+            # random_suffix = random.randint(1, 10000000)
+            random_suffix = secrets.token_hex(6)
             response = self.client.images.generate(
                 model="dall-e-3",
                 prompt=f"Generate an image for this scene or related: {scene}",
@@ -60,7 +62,7 @@ class TextToVideoService:
 
             image_path = video_service.download_file(
                 url=image_url, 
-                save_path=os.path.join(settings.TEMP_DIR, f"ttvimage-{i:03d}.png")
+                save_path=os.path.join(settings.TEMP_DIR, f"ttvimage-{i:03d}-{random_suffix}.png")
             )
             images.append(image_path)
         
@@ -171,4 +173,4 @@ class TextToVideoService:
         return data
 
 
-ttv_service = TextToVideoService()
+ttv_service = ScriptToVideoService()

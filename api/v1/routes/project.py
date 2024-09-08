@@ -149,7 +149,7 @@ async def update_project(
     )
 
 
-@project_router.get("/{project_id}", status_code=204)
+@project_router.delete("/{project_id}", status_code=204)
 async def delete_project(
     project_id: str,
     db: Session = Depends(get_db),

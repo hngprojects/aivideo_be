@@ -1,8 +1,9 @@
 import sys, json
+from api.utils.files import delete_file
 from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
 
-
 payload = json.loads(sys.argv[1])
+
 
 # Run task
 result = talking_avatar_service.process_script(
@@ -12,5 +13,7 @@ result = talking_avatar_service.process_script(
     voice_over=payload.get('voice_over'),
     audio_file=payload.get('audio_file', None)
 )
+
+delete_file(payload.get('image_file'))
 
 print(json.dumps(result))

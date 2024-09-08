@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, status
-from typing import List, Annotated
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
+from typing import List, Annotated, Optional
 from api.v1.schemas.job import JobResponse
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
@@ -9,22 +9,37 @@ from sqlalchemy import event
 from sse_starlette import EventSourceResponse
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.v1.models.job import Job
+from api.v1.models.job import Job, TifiJob, JobStatus
 from api.v1.models.user import User
 from api.v1.services.user import user_service
+from api.v1.services.project import project_service
 from api.v1.services.job import job_service
+from api.v1.services.notification import notification_service
+from api.v1.services.job import tifi_job_service
+from api.core.dependencies.jobs.service import run_pending_jobs, process_job
+from api.core.dependencies.celery.tasks.run_job import run_job_in_celery, run_pending_jobs_in_celery
 import json
 import asyncio
 
-job = APIRouter(prefix="/jobs", tags=["Jobs"])
+job_router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 
 # Get all jobs
-@job.get("/", response_model=List[JobResponse], status_code=status.HTTP_200_OK)
-async def get_all_jobs(db: Session = Depends(get_db)):
+@job_router.get("", response_model=success_response, status_code=status.HTTP_200_OK)
+async def get_all_jobs(
+    db: Session = Depends(get_db),
+    # is_expired: bool = False,
+    # tool_name: Optional[str] = None,
+):
     """Fetch all jobs from the database."""
 
-    jobs = job_service.fetch_all_jobs(db=db)
+    # jobs = job_service.fetch_all_jobs(db=db)
+    jobs = tifi_job_service.fetch_all(
+        db=db, 
+        # is_expired=is_expired, 
+        # tool_name=tool_name
+    )
+
     return success_response(
         status_code=200,
         message='Jobs fetched successfully',
@@ -32,7 +47,168 @@ async def get_all_jobs(db: Session = Depends(get_db)):
     )
 
 
-@job.get("/activity")
+@job_router.get("/process-jobs-synchronous", response_model=success_response, status_code=status.HTTP_200_OK)
+async def process_jobs_synchronous(db: Session = Depends(get_db)):
+    """This endpoint processes all pending jobs synchronously"""
+
+    run_pending_jobs()
+
+    return success_response(
+        status_code=200,
+        message='All pending jobs processed successfully',
+    )
+
+
+@job_router.get("/process-jobs-async", response_model=success_response, status_code=status.HTTP_200_OK)
+async def process_jobs_asynchronous(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """This endpoint processes all pending jobs asynchronously"""
+
+    # background_tasks.add_task(run_pending_jobs)
+    # run_pending_jobs_in_celery.delay()
+
+    jobs = tifi_job_service.fetch_all_pending(db=db)
+    for job in jobs:
+        run_job_in_celery.delay(job_id=job.id)
+
+    return success_response(
+        status_code=200,
+        message='Pending jobs executing in the background',
+    )
+
+
+@job_router.get("/{job_id}", response_model=success_response, status_code=status.HTTP_200_OK)
+async def get_single_job(job_id: str, db: Session = Depends(get_db)):
+    """Fetch a single job from the database."""
+
+    job = tifi_job_service.fetch(db=db, job_id=job_id)
+
+    return success_response(
+        status_code=200,
+        message='Job fetched successfully',
+        data=jsonable_encoder(job)
+    )
+
+
+@job_router.get("/{job_id}/process", response_model=success_response, status_code=status.HTTP_200_OK)
+async def process_and_execute_job(background_tasks: BackgroundTasks, job_id: str, db: Session = Depends(get_db)):
+    """Processes and executes a single job from the database as long as it is pending or failed.
+    This is done in the background.
+    """
+
+    job = tifi_job_service.fetch(db=db, job_id=job_id)
+
+    if job.is_expired():
+        raise HTTPException(status_code=400, detail="Job has expired")
+    
+    # Check if job state is valid
+    if job.status not in [JobStatus.pending, JobStatus.failed]:
+        raise HTTPException(status_code=400, detail="Job is not in pending or failed state")
+
+    # background_tasks.add_task(process_job,job_id=job_id)
+
+    # Run job in celery
+    run_job_in_celery.delay(job_id)
+
+    return success_response(
+        status_code=200,
+        message='Job processing started in the background',
+    )
+
+
+# ------------------------ SSE ------------------------
+
+async def job_process_event_generator(
+    job_id: str, 
+    user: Optional[User] = None,
+    save_project = True  # Set to true if a project is to be saved after completion
+):
+    '''Generates events for job processing'''
+
+    while True:
+        # Open new session each iteration to get updates data
+        db = next(get_db())
+
+        try:
+            job = tifi_job_service.fetch(db=db, job_id=job_id)
+            project = project_service.fetch(db=db, project_id=job.project_id)
+
+            status = job.status
+            progress = job.progress
+            result = job.result
+
+            event_name = 'other'
+
+            if status == JobStatus.failed:
+                event_name = 'failure'
+                yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result, "progress": progress})}\n\n'
+                
+                if user and save_project:
+                    # Send notification to user
+                    notification_service.send_notification(
+                        db=db,
+                        user=user,
+                        title="Project creation failed",
+                        message=f"The project '{project.title}' has failed to create.",
+                        type='warning'
+                    )
+
+                break
+
+            elif status == JobStatus.progress:
+                event_name = 'progress'
+                yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result, "progress": progress})}\n\n'
+
+            elif status == JobStatus.completed:
+                event_name = 'success'
+                yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result, "progress": progress})}\n\n'
+                
+                if user and save_project:
+                    # Send notification to user
+                    notification_service.send_notification(
+                        db=db,
+                        user=user,
+                        title="Project created",
+                        message=f"The project '{project.title}' has been created successfully."
+                    )
+
+                break
+        
+        finally:
+            db.close()
+
+        await asyncio.sleep(15)  # Delay between status checks
+
+
+@job_router.get("/{job_id}/sse/progress-check")
+async def send_job_status_updates_over_sse(
+    job_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(user_service.get_current_user_optional),
+    save_project: bool = True  # Set to True if a project is to be saved after job execution. If not set it to False
+):
+    '''
+    Function to send job status over server sent events and this updates the project associated with the job.
+    Set save_project to True if a project is to be saved after job execution. If not set it to false
+    '''
+
+    try:
+        event_stream = job_process_event_generator(
+            job_id=job_id, 
+            user=current_user,
+            save_project=save_project
+        )
+        return StreamingResponse(event_stream, media_type="text/event-stream")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+# ------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------
+
+@job_router.get("/activity")
 async def get_managed_jobs(
     current_admin: User = Depends(user_service.get_current_super_admin),
     db: Session = Depends(get_db),
@@ -77,7 +253,7 @@ async def get_managed_jobs(
     )
 
 
-@job.get("/export")
+@job_router.get("/export")
 async def export_jobs_as_csv(
     db: Session = Depends(get_db),
     current_admin: User = Depends(user_service.get_current_super_admin),
@@ -91,7 +267,7 @@ async def export_jobs_as_csv(
     return response
 
 
-@job.get("/activity/sse", summary="Get job activity via SSE")
+@job_router.get("/activity/sse", summary="Get job activity via SSE")
 async def get_sse_job_activity(db: Session = Depends(get_db)):
     """
     Retrieve a server-sent event stream for job activity updates.
@@ -103,7 +279,7 @@ async def get_sse_job_activity(db: Session = Depends(get_db)):
     )
 
 
-@job.get("/statistics/sse", summary="Get job statistics via SSE")
+@job_router.get("/statistics/sse", summary="Get job statistics via SSE")
 async def get_sse_job_statistics(db: Session = Depends(get_db)):
     """
     Retrieve a server-sent event stream for job statistics updates.
@@ -188,13 +364,10 @@ async def event_generator(db: Session):
         await asyncio.sleep(1)
 
 
-@job.get(
-    "/recent-activity", status_code=status.HTTP_200_OK
-)
-def get_user_statistics(
-    db: Annotated[Session, Depends(get_db)],
-):
+@job_router.get("/recent-activity", status_code=status.HTTP_200_OK)
+def get_user_statistics(db: Annotated[Session, Depends(get_db)]):
     """Endpoint to fetch all user statistics"""
+
     return EventSourceResponse(event_generator(db))
 
 #########################################

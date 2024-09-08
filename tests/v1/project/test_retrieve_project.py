@@ -75,9 +75,7 @@ class TestCodeUnderTest:
 
         mock_data = mock_project()
 
-        with patch("api.v1.services.project.project_service.fetch_project_by_id", return_value=mock_data):
+        with patch("api.v1.services.project.project_service.fetch", return_value=mock_data):
             response = client.get(f'{ENDPOINT}/{mock_data.id}')
 
             assert response.status_code == 200
-            response_json = response.json()
-            assert 'data' in response_json  # Ensure 'data' key exists

@@ -101,12 +101,3 @@ class TestCodeUnderTest:
             response = client.get(ENDPOINT)
 
             assert response.status_code == 200
-
-    def test_get_single_project(self, client):
-        '''Test to successfully fetch a single project'''
-
-        mock_data = mock_project()
-
-        with patch("api.v1.services.project.project_service.fetch_project_by_id", return_value=mock_data):
-            response = client.get(f'{ENDPOINT}/{mock_data.id}')
-            assert response.status_code == 200

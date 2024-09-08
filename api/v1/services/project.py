@@ -15,7 +15,7 @@ from api.v1.schemas.project import (
 )
 from api.utils.db_validators import check_model_existence
 from api.v1.models.user import User
-from api.v1.schemas.project import ProjectToolsEnum
+from api.v1.models.project import ProjectToolsEnum
 from api.utils.handle_file_url import generate_file_url
 import logging
 
@@ -143,7 +143,7 @@ class ProjectService(Service):
 
         return db.query(Project).all()
 
-    def save_project(self, db: Session, project: Project, user: User, project_result: str):
+    def save_project(self, db: Session, project: Project, user: User, project_result):
         """Add a user to a project"""
 
         project.user_id = user.id

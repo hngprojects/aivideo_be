@@ -6,7 +6,7 @@ from api.v1.models.usage_store import UserUsageStore, UserToolAccess
 
 class UserUsageStoreService:
     
-    def create_tool_access(db: Session, usage_store_id: int, tool_name: str, access_count: int) -> UserToolAccess:
+    def create_tool_access(self, db: Session, usage_store_id: int, tool_name: str, access_count: int) -> UserToolAccess:
         """
         Creates a new UserToolAccess record in the database.
 
@@ -128,7 +128,7 @@ class UserUsageStoreService:
                 id,
                 tool_name,
                 0
-            )
+            ).access_count
 
         return value
     
