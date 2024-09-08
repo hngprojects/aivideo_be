@@ -6,7 +6,7 @@ from api.v1.models.help_topics import HelpTopics
 from api.v1.models.profile import Profile
 from api.v1.models.notifications import Notification, NotificationSetting
 from api.v1.models.resource import Resource
-from api.v1.models.job import Job
+from api.v1.models.job import Job, TifiJob
 from api.v1.models.testimonial import Testimonial
 from api.v1.models.faq import FAQ
 from api.v1.models.newsletter import Newsletter, NewsletterSubscriber

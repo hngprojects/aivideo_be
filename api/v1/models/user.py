@@ -35,6 +35,7 @@ class User(BaseTableModel):
         "LanguageRegionTimezoneSetting", back_populates="user"
     )
     jobs = relationship("Job", back_populates="user")
+    tifi_jobs = relationship("TifiJob", back_populates="user")
     tool_usage = relationship('UserUsageStore', back_populates='user')
     
     def to_dict(self):
@@ -64,6 +65,3 @@ class User(BaseTableModel):
                 )
 
             self.is_active = self.last_login >= one_hour_ago
-
-    def __str__(self):
-        return self.email

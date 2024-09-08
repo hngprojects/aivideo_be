@@ -76,8 +76,7 @@ def transcribe_audio(file_path: str, srt_format: bool = False) -> dict:
             segments = transcript.segments
             detected_language = transcript.language
             if not segments:
-                raise Exception(
-                    "No transcription segments received from OpenAI Whisper API.")
+                raise Exception("No transcription segments received from OpenAI Whisper API.")
 
             if srt_format:
                 srt_content = generate_srt_subtitles(segments)

@@ -12,7 +12,7 @@ from api.core.dependencies.celery.tasks.video_subtitles_tasks import (
 )
 from api.v1.schemas.video_subtitles import TranslationRequest
 from api.v1.services.job import job_service
-from api.v1.schemas.project import ProjectToolsEnum
+from api.v1.models.project import ProjectToolsEnum
 
 
 video_subtitles_router = APIRouter(prefix="/tools/video-subtitles", tags=["Tools"])

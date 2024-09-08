@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     GOOEY_API_KEY: str = config("GOOEY_API_KEY")
     DEEPGRAM_API_KEY: str = config("DEEPGRAM_API_KEY")
     UNREAL_SPEECH_API_KEY: str = config("UNREAL_SPEECH_API_KEY")
+    REPLICATE_API_TOKEN: str = config("REPLICATE_API_TOKEN")
 
     MEDIA_DIR: str = config("MEDIA_DIR")
     MAX_FILE_SIZE: int = config("MAX_FILE_SIZE")

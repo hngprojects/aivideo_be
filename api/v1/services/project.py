@@ -2,6 +2,7 @@ import json
 from typing import Any, Optional
 from datetime import datetime
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from api.core.base.services import Service
@@ -14,7 +15,7 @@ from api.v1.schemas.project import (
 )
 from api.utils.db_validators import check_model_existence
 from api.v1.models.user import User
-from api.v1.schemas.project import ProjectToolsEnum
+from api.v1.models.project import ProjectToolsEnum
 from api.utils.handle_file_url import generate_file_url
 import logging
 
@@ -53,16 +54,21 @@ class ProjectService(Service):
         )
         return project
 
-    def fetch(self, db: Session, project_id: str):
+    def fetch(self, db: Session, project_id: str, user: Optional[User]=None):
         """Fetches a, project by id"""
 
         project = check_model_existence(db, Project, project_id)
+        if user:
+            self.validate_project_for_user(db=db, project_id=project_id, user=user)
         return project
 
-    def update(self, db: Session, project_id: str, schema: UpdateProject):
+    def update(self, db: Session, project_id: str, schema: UpdateProject, user: Optional[User]=None):
         """Updates a project"""
 
         project = self.fetch(db=db, project_id=project_id)
+
+        if user:
+            self.validate_project_for_user(db=db, project_id=project_id, user=user)
 
         # Update the fields with the provided schema data
         update_data = schema.dict(exclude_unset=True)
@@ -73,11 +79,27 @@ class ProjectService(Service):
         db.refresh(project)
         return project
 
-    def delete(self, db: Session, project_id: str):
+    def delete(self, db: Session, project_id: str, user: Optional[User]=None):
         """Deletes a project"""
         project = self.fetch(db=db, project_id=project_id)
+        if user:
+            self.validate_project_for_user(db=db, project_id=project_id, user=user)
         project.is_deleted = True
         db.commit()
+    
+    def validate_project_for_user(self, db: Session, project_id: str, user: User):
+        '''This function checks if a user is the owner of a project'''
+
+        project = self.fetch(db=db, project_id=project_id)
+
+        if not project.user_id:
+            raise HTTPException(status_code=400, detail='No user is attached to this project')
+
+        if project.user_id != user.id:
+            raise HTTPException(status_code=403, detail='You do not have permission to make changes to this project')
+        
+        return project
+
 
     def archive_project(self, db: Session, project_id: str):
         """Archives a project"""
@@ -121,7 +143,7 @@ class ProjectService(Service):
 
         return db.query(Project).all()
 
-    def save_project(self, db: Session, project: Project, user: User, project_result: str):
+    def save_project(self, db: Session, project: Project, user: User, project_result):
         """Add a user to a project"""
 
         project.user_id = user.id

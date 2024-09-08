@@ -26,12 +26,12 @@ from api.v1.routes.ai_tools.talking_avatar import video_router
 from api.v1.routes.ai_tools.background_task import background_router
 from api.v1.routes.testimonial import testimonial
 from api.v1.routes.project import project_router
-from api.v1.routes.job import job
+from api.v1.routes.job import job_router
 from api.v1.routes.ai_tools.audio_transcriber import audio
 from api.v1.routes.dashboard import dashboard
 from api.v1.routes.ai_tools.thumbnail import thumbnail_router
 from api.v1.routes.ai_tools.video_subtitles import video_subtitles_router
-from api.v1.routes.ai_tools.text_to_video import ttv_router
+from api.v1.routes.ai_tools.script_to_video import ttv_router
 from api.v1.routes.file_downloader import downloader
 
 
@@ -56,16 +56,14 @@ api_version_one.include_router(faq)
 api_version_one.include_router(resource)
 api_version_one.include_router(testimonial)
 api_version_one.include_router(project_router)
-api_version_one.include_router(google_auth)
+api_version_one.include_router(job_router)
 api_version_one.include_router(pwd_reset)
-api_version_one.include_router(job)
 api_version_one.include_router(notification)
 api_version_one.include_router(preset_router)
 api_version_one.include_router(regions)
 api_version_one.include_router(privacy)
 api_version_one.include_router(background_router)
 api_version_one.include_router(save_summary)
-api_version_one.include_router(job)
 api_version_one.include_router(video_summary)
 api_version_one.include_router(audio)
 api_version_one.include_router(dashboard)

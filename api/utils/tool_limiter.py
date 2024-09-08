@@ -5,7 +5,7 @@ from functools import wraps
 from datetime import timedelta
 
 from api.db.database import get_db
-from api.utils.client_helpers import get_ip_address
+from api.utils.helpers import get_ip_address
 from api.v1.services.user import user_service
 from api.v1.services.usage import usage_store_service
 from api.v1.services.user_usage import user_usage_store_service
@@ -35,7 +35,6 @@ def track_tool_usage(current_tool: str):
             user: User | None = kwargs.get('user', Depends(user_service.get_current_user_optional)
         )
             if settings.ACTIVATE_TOOL_TRACKING:
-            
                 if user:
                     tracking_record = user_usage_store_service.fetch_by_user(db, user.id)
                     if tracking_record:
@@ -45,7 +44,7 @@ def track_tool_usage(current_tool: str):
                             current_tool
                         )
                         if tracking_record.is_access_count_exceeded(user.subscription.billing_plan.access_limit):
-                            if billing_plan_service.confirm_user_is_on_plan(db, user.id, "Free"):
+                            if billing_plan_service.confirm_user_is_on_plan(db, user, "Free"):
                                 if tracking_record.is_last_accessed_old(24):
                                     hours, minutes, seconds = tracking_record.time_until(2)
                                     message = f"{hours} hours, {minutes} minutes, {seconds} seconds"
@@ -64,7 +63,7 @@ def track_tool_usage(current_tool: str):
                                     return await func(*args, **kwargs)
                             else:
                                 if user.subscription.is_active():
-                                    if billing_plan_service.confirm_user_is_on_plan(db, user.id, "premium_monthly"):
+                                    if billing_plan_service.confirm_user_is_on_plan(db, user, "premium_monthly"):
                                         if tracking_record.is_last_accessed_old(2):
                                             hours, minutes, seconds = tracking_record.time_until(2)
                                             message = f"{hours} hours, {minutes} minutes, {seconds} seconds"
@@ -101,7 +100,7 @@ def track_tool_usage(current_tool: str):
                                         db,
                                         tracking_record.id,
                                         current_tool,
-                                        tool_count + 1
+                                        tool_count+1
                                     )
                         else:
                             user_usage_store_service.add_tool_access_count_by_user(db, user.id, 1)
@@ -109,7 +108,7 @@ def track_tool_usage(current_tool: str):
                                 db,
                                 tracking_record.id,
                                 current_tool,
-                                tool_count + 1
+                                tool_count+1
                             )
                     else:
                         tracking_record = user_usage_store_service.create_usage_store_and_assign_tool(

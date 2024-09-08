@@ -10,7 +10,7 @@ from api.db.database import get_db
 from api.utils.settings import settings
 from api.utils.success_response import success_response
 from api.utils.files import upload_file
-from api.v1.schemas.project import ProjectToolsEnum
+from api.v1.models.project import ProjectToolsEnum
 from api.v1.services.job import job_service
 from api.v1.schemas.ai_tools.thumbnail import ThumbnailSelectionRequest, ThumbnailResponse
 from urllib.parse import urljoin

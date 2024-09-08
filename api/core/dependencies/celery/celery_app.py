@@ -1,5 +1,4 @@
 from celery import Celery
-from celery.schedules import crontab
 
 from api.utils.settings import settings
 
@@ -13,6 +12,7 @@ worker = Celery(
         'api.core.dependencies.celery.tasks.video_summary_tasks',
         'api.core.dependencies.celery.tasks.video_tasks',
         'api.core.dependencies.celery.tasks.video_subtitles_tasks',
+        'api.core.dependencies.celery.tasks.run_job',
     ]
 )
 

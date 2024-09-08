@@ -3,8 +3,9 @@
 """Test for youtube_summarizer tool"""
 
 
+from collections import namedtuple
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, Mock
 from fastapi.testclient import TestClient
 from api.v1.routes.ai_tools.youtube_summarizer import video_summary
 from api.db.database import get_db
@@ -16,9 +17,16 @@ client = TestClient(app)
 # Mock the database session for dependency injection
 
 
+# @pytest.fixture
+# def mock_db():
+#     yield AsyncMock()
+
+
 @pytest.fixture
 def mock_db():
-    yield AsyncMock()
+    db_session = Mock()
+    db_session.query.return_value.filter_by.return_value.first.return_value = None  # Adjust this to your use case
+    yield db_session
 
 # Mock the upload_files function and the Celery task
 
@@ -30,19 +38,36 @@ def mock_upload_files():
         yield mock
 
 
-@pytest.fixture
-def mock_generate_video_summary_task():
-    with patch("api.core.dependencies.celery.tasks.video_summary_tasks.generate_video_summary_task.delay") as mock:
-        mock.return_value.id = "mock_job_id"
-        yield mock
+# @pytest.fixture
+# def mock_generate_video_summary_task():
+#     # with patch("api.core.dependencies.celery.tasks.video_summary_tasks.generate_video_summary_task.delay") as mock:
+#     with patch("api.v1.services.job.tifi_job_service.create") as mock:
+#         # mock.return_value.id = "mock_job_id"
+#         TifiJob = namedtuple('TifiJob', ['id'])
+#         Project = namedtuple('Project', ['id'])
+
+#         mock.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
+#         yield mock
+
+
+# @pytest.fixture
+# def mock_create_project_with_job():
+#     with patch("api.v1.services.job.job_service.create_project_with_job") as mock:
+#         mock.return_value = AsyncMock(
+#             id="mock_project_id"
+#         )
+#         yield mock
 
 
 @pytest.fixture
-def mock_create_project_with_job():
-    with patch("api.v1.services.job.job_service.create_project_with_job") as mock:
-        mock.return_value = AsyncMock(
-            id="mock_project_id"
-        )
+def mock_create():
+    # with patch("api.core.dependencies.celery.tasks.video_summary_tasks.generate_video_summary_task.delay") as mock:
+    with patch("api.v1.services.job.tifi_job_service.create") as mock:
+        # mock.return_value.id = "mock_job_id"
+        TifiJob = namedtuple('TifiJob', ['id'])
+        Project = namedtuple('Project', ['id'])
+
+        mock.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
         yield mock
 
 
@@ -55,7 +80,8 @@ def override_get_db(mock_db):
 # Test the endpoint
 
 
-def test_enqueue_summarize_batch_job(mock_upload_files, mock_generate_video_summary_task, mock_create_project_with_job, override_get_db):
+# def test_enqueue_summarize_batch_job(mock_upload_files, mock_generate_video_summary_task, mock_create_project_with_job, override_get_db):
+def test_enqueue_summarize_batch_job(mock_upload_files, mock_create, override_get_db):
     # Prepare test files
     files = {
         "files": ("video.mp4", b"dummy video data", "video/mp4")
