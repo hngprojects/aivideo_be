@@ -66,7 +66,7 @@ async def test_script_to_video_success(
         "/api/v1/tools/video/text-to-video/generate-video",
         json={
             "script": "Test script to test video",
-            "audio_id": "audio-id",
+            # "audio_id": "audio-id",
             "aspect_ratio": "horizontal",
             "voice_over": "woman",
             "scenes": [
