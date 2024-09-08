@@ -163,7 +163,7 @@ async def event_generator_for_job(job_id: str, db: Session):
         await asyncio.sleep(5)  # Delay between status checks
 
 
-@background_router.get("/{job_id}/sse/progress")
+@background_router.get("/{job_id}/sse/progress-old")
 async def send_job_status_updates_over_sse(
     job_id: str,
     request: Request,
