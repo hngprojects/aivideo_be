@@ -12,7 +12,7 @@ class UserSubscription(BaseTableModel):
     end_date = Column(DateTime, nullable=True)
 
     billing_plan = relationship('BillingPlan', back_populates='subscriptions')
-    user = relationship('User')
+    user = relationship('User', back_populates='subscription')
 
     def is_active(self):
         return self.start_date <= datetime.now() and (self.end_date is None or self.end_date > datetime.now())
