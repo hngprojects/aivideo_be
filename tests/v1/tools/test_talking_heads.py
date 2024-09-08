@@ -26,11 +26,13 @@ async def test_talking_head_image_upload(
 ):
     TifiJob = namedtuple('TifiJob', ['id'])
     Project = namedtuple('Project', ['id'])
+    BackgroundMusic = namedtuple('BackgroundMusic', ['file_path'])
     
     # Arrange
     mock_upload_to_current_dir.return_value = "test_image.jpg"
-    mock_fetch_music_by_id.return_value = MagicMock(file_path="test_audio.mp3")
+    mock_fetch_music_by_id.return_value = BackgroundMusic(file_path="test_audio.mp3")
     mock_create.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
+    # mock_fetch_music_by_id.return_value = MagicMock(file_path="test_audio.mp3")
     # mock_apply_async.return_value.id = "test_task_id"
     # mock_create_project_with_job.return_value.id = "test_project_id"
     # mock_contains_face.return_value = "True"
