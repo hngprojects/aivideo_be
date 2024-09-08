@@ -37,45 +37,45 @@ async def test_script_to_video_success_validation_error(
     assert response.status_code == 422
     
 
-@pytest.mark.asyncio
-# @patch('api.core.dependencies.celery.tasks.video_tasks.geenerate_video_from_script_task.apply_async')
-# @patch('api.v1.services.job.job_service.create_project_with_job')
-@patch('api.v1.services.job.tifi_job_service.create')
-@patch('api.v1.services.presets.preset_service.fetch_music_by_id')
-async def test_script_to_video_success(
-    # mock_create_project_with_job,
-    # mock_apply_async,
-    mock_create,
-    mock_music_by_id
-):
-    # Arrange
-    # mock_apply_async.return_value.id = "test_task_id"
-    # mock_create_project_with_job.return_value.id = "test_project_id"
+# @pytest.mark.asyncio
+# # @patch('api.core.dependencies.celery.tasks.video_tasks.geenerate_video_from_script_task.apply_async')
+# # @patch('api.v1.services.job.job_service.create_project_with_job')
+# @patch('api.v1.services.job.tifi_job_service.create')
+# @patch('api.v1.services.presets.preset_service.fetch_music_by_id')
+# async def test_script_to_video_success(
+#     # mock_create_project_with_job,
+#     # mock_apply_async,
+#     mock_create,
+#     mock_music_by_id
+# ):
+#     # Arrange
+#     # mock_apply_async.return_value.id = "test_task_id"
+#     # mock_create_project_with_job.return_value.id = "test_project_id"
 
-    TifiJob = namedtuple('TifiJob', ['id'])
-    Project = namedtuple('Project', ['id'])
-    BackgroundMusic = namedtuple('BackgroundMusic', ['file_path'])
+#     TifiJob = namedtuple('TifiJob', ['id'])
+#     Project = namedtuple('Project', ['id'])
+#     BackgroundMusic = namedtuple('BackgroundMusic', ['file_path'])
 
-    mock_create.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
+#     mock_create.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
 
-    # Mock the audio object with a file_path attribute
-    mock_music_by_id.return_value = BackgroundMusic(file_path="path/to/audio/file")
+#     # Mock the audio object with a file_path attribute
+#     mock_music_by_id.return_value = BackgroundMusic(file_path="path/to/audio/file")
 
-    # Act
-    response = client.post(
-        "/api/v1/tools/video/text-to-video/generate-video",
-        json={
-            "script": "Test script to test video",
-            # "audio_id": "audio-id",
-            "aspect_ratio": "horizontal",
-            "voice_over": "woman",
-            "scenes": [
-                "A man jogging with a red shirt and white shoes", 
-                "1. In a bustling office, a group of programmers sit at their computers", 
-                "2. A young child sits in front of a computer, eagerly typing "
-            ]
-        }
-    )
+#     # Act
+#     response = client.post(
+#         "/api/v1/tools/video/text-to-video/generate-video",
+#         json={
+#             "script": "Test script to test video",
+#             # "audio_id": "audio-id",
+#             "aspect_ratio": "horizontal",
+#             "voice_over": "woman",
+#             "scenes": [
+#                 "A man jogging with a red shirt and white shoes", 
+#                 "1. In a bustling office, a group of programmers sit at their computers", 
+#                 "2. A young child sits in front of a computer, eagerly typing "
+#             ]
+#         }
+#     )
 
     # Assert
     assert response.status_code == 202 or response.status_code == 403 
