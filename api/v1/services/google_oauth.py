@@ -16,7 +16,7 @@ class GoogleOauthServices(Service):
     """Handles database operations for google oauth"""
 
     def create(
-        self, background_tasks: BackgroundTasks, google_response: dict, db: Session
+        self, google_response: dict, db: Session
     ):
         """
         Creates a user using information from google.
@@ -32,7 +32,6 @@ class GoogleOauthServices(Service):
 
         try:
             new_user = self.create_new_user(google_response, db)
-            email_sending_service.send_welcome_email(background_tasks, new_user)
             return new_user
         except Exception as e:
             db.rollback()

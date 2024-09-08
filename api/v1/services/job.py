@@ -8,28 +8,26 @@ from typing import Optional
 from fastapi import HTTPException
 from fastapi import status as HTTPStatus
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from celery.result import AsyncResult
 
 from api.core.dependencies.celery.celery_app import worker
-from api.db.database import get_db
-from api.v1.models.job import Job
+from api.utils.db_validators import check_model_existence
+from api.v1.models.job import Job, TifiJob, JobStatus
 from api.v1.models.project import Project
 from api.v1.models.user import User
 from api.v1.schemas.project import CreateProject
 from api.v1.services.project import project_service
+from api.v1.services.billing_plan import billing_plan_service
+from api.v1.services.user import user_service
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, desc
-
-
-db = next(get_db())
 
 
 class JobService:
     """This is for job db operations"""
 
-    def get_job_status(self, job_id: str):
+    def get_job_status(self, db: Session, job_id: str):
         """Returns the status of a partiular job"""
 
         task_result = AsyncResult(job_id, app=worker)
@@ -37,6 +35,7 @@ class JobService:
 
     def create_project_with_job(
         self,
+        db: Session,
         job,
         project_title: str,
         project_type: str,
@@ -55,12 +54,13 @@ class JobService:
         project = project_service.create(db=db, schema=project_schema)
 
         # Create celery task
-        self.create_job(job_id=job.id, project_id=project.id, user_id=user_id)
+        self.create_job(db=db,job_id=job.id, project_id=project.id, user_id=user_id)
 
         return project
 
     def create_job(
         self,
+        db: Session,
         job_id: str,
         project_id: Optional[str] = None,
         user_id: Optional[str] = None,
@@ -69,7 +69,10 @@ class JobService:
 
         try:
             job = Job(
-                job_id=job_id, project_id=project_id, user_id=user_id, status="Pending"
+                job_id=job_id, 
+                project_id=project_id, 
+                user_id=user_id, 
+                status="Pending"
             )
             db.add(job)
             db.commit()
@@ -79,13 +82,13 @@ class JobService:
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Error {e}")
 
-    def fetch_all_jobs(self):
+    def fetch_all_jobs(self, db: Session):
         """Fetches all celery jobs from the database"""
 
         jobs = db.query(Job).all()
         return jobs
 
-    def fetch_by_job_id(self, job_id: str):
+    def fetch_by_job_id(self, db: Session, job_id: str):
         """Fetches the job details from the database"""
 
         job = db.query(Job).filter(Job.job_id == job_id).first()
@@ -93,13 +96,21 @@ class JobService:
             raise HTTPException(status_code=404, detail="Celery job not found")
         return job
 
-    def update_job(self, job_id: str, status: str, result: Optional[str] = None):
-        """Updates the job details"""
+    def update_job(
+        self, 
+        db: Session,
+        job_id: str, 
+        status: str, 
+        result: Optional[str] = None, 
+        user_id: Optional[str] = None
+    ):
+        """Updates the job details with option to link to a user"""
 
         try:
-            job = self.fetch_by_job_id(job_id=job_id)
+            job = self.fetch_by_job_id(db=db, job_id=job_id)
             job.status = status
             job.result = result if result is not None else None
+            job.user_id = user_id if user_id is not None else None
             db.commit()
             db.refresh(job)
             return job
@@ -109,10 +120,10 @@ class JobService:
                 status_code=400, detail=f"{type(e).__name__} occurred. {repr(e)}"
             )
 
-    def get_project_from_job(self, job_id: str):
+    def get_project_from_job(self, db: Session, job_id: str):
         """Returns the project from the job details"""
 
-        job = self.fetch_by_job_id(job_id=job_id)
+        job = self.fetch_by_job_id(db=db, job_id=job_id)
         project = db.query(Project).filter(Project.id == job.project_id).first()
 
         if not project:
@@ -120,15 +131,15 @@ class JobService:
 
         return project
 
-    def update_job_result(self, job_id: str):
+    def update_job_result(self, db: Session, job_id: str):
         """Fetches the result from celery and updates the job"""
         task_result = AsyncResult(job_id, app=worker)
 
         if task_result.state == "SUCCESS":
             result = task_result.get()
-            self.update_job(job_id=job_id, status=task_result.state, result=result)
+            self.update_job(db=db, job_id=job_id, status=task_result.state, result=result)
         elif task_result.state in ["FAILURE", "REVOKED"]:
-            self.update_job(job_id=job_id, status=task_result.state)
+            self.update_job(db=db, job_id=job_id, status=task_result.state)
 
     def fetch_job_activity(
         self,
@@ -393,3 +404,100 @@ class JobService:
 
 
 job_service = JobService()
+
+
+
+class TifiJobService:
+
+    def create(
+        self,
+        db: Session,
+        tool_name: str,
+        payload,
+        user_id: Optional[str]=None,
+        # is_premium: bool = False,
+        save_project: bool = True
+    ):
+        """Create a new Tifi job with a project if `save_project` is True"""
+
+        # Check if there is a need to create a project and create a project with the job
+        if save_project:
+            project = Project(
+                title=f"New {tool_name} Project",
+                project_type=tool_name,
+                user_id=user_id
+            )
+
+            db.add(project)
+            db.commit()
+            db.refresh(project)
+        
+        if user_id:
+            # Check user
+            user = user_service.fetch(db=db, id=user_id)
+
+            # Check if user is on a free plan
+            user_on_free_plan = billing_plan_service.confirm_user_is_on_plan(db=db, user=user, plan_name='Free')
+
+        job = TifiJob(
+            tool_name=tool_name,
+            is_premium=(not user_on_free_plan) if user_id else False,
+            payload=payload,
+            status='Pending',
+            progress='0% complete',
+            user_id=user_id,
+            project_id=project.id if save_project else None,
+        )
+
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+
+        return (job, project) if save_project else job
+
+
+    def fetch_all(
+        self, 
+        db: Session, 
+        # is_expired: bool=False, 
+        # tool_name: Optional[str]=None
+    ):
+        '''Fetches all jobs'''
+
+        # jobs = db.query(TifiJob).filter(
+        #     TifiJob.is_expired==is_expired,
+        #     TifiJob.tool_name==tool_name
+        # ).all() if tool_name is not None else db.query(TifiJob).filter(TifiJob.is_expired==is_expired,).all()
+
+        jobs = db.query(TifiJob).all()
+        
+        return jobs
+    
+
+    def fetch_all_pending(self, db: Session):
+        '''Fetches all jobs'''
+
+        jobs = db.query(TifiJob).filter(TifiJob.status == JobStatus.pending.value).all()
+        
+        return jobs
+
+
+    def fetch(self, db: Session, job_id: str):
+        """Fetches the job details from the database"""
+
+        job = check_model_existence(db, TifiJob, job_id)
+        return job
+    
+
+    def delete_expired_jobs(self, db: Session):
+        '''Delete expired jobs'''
+
+        # Get all expired jobs
+        expired_jobs = db.query(TifiJob).filter(TifiJob.is_expired).all()
+        
+        # Delete expired jobs
+        for job in expired_jobs:
+            db.delete(job)
+
+
+tifi_job_service = TifiJobService()

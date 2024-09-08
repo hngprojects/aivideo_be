@@ -23,7 +23,7 @@ from api.v1.models.project import Project
 from api.v1.models.job import Job
 from api.v1.models.data_privacy import DataPrivacySetting
 from api.v1.schemas import user
-from api.v1.schemas.project import ProjectToolsEnum
+from api.v1.models.project import ProjectToolsEnum
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -148,7 +148,7 @@ class UserService(Service):
             data=all_users,
         )
 
-    def fetch(self, db: Session, id):
+    def fetch(self, db: Session, id: str):
         """Fetches a user by their id"""
 
         user = check_model_existence(db, User, id)

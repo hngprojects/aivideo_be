@@ -5,9 +5,11 @@ on:
     paths-ignore:
       - "README.md"
       - ".github/workflows/**"
+      
 jobs:
   build-and-test:
-    runs-on: pyrunner
+    runs-on: aivid
+    timeout-minutes: 10
     services:
       postgres:
         image: postgres:latest

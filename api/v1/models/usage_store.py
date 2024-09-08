@@ -110,3 +110,4 @@ class UserToolAccess(BaseTableModel):
     
     # Relationship with UsageStore
     usage_store = relationship('UserUsageStore', back_populates='tools')
+    

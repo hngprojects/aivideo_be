@@ -8,9 +8,14 @@ on:
       - ".github/workflows/**"
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
-    runs-on: pydeploy
+    runs-on: aivid
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -1,67 +1,42 @@
 from fastapi import (
-    BackgroundTasks,
     Depends,
     status,
     APIRouter,
     HTTPException,
     File,
     UploadFile,
+    Request
 )
 from sqlalchemy.orm import Session
-from typing import Optional
 import requests
 import io
-import os
 import json
-from fastapi.responses import FileResponse
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.utils.files import upload_file_to_current_dir
 from api.utils.files import upload_file, check_file_size
 from api.utils.language_code import LANGUAGE_CODES
-from api.v1.schemas.project import ProjectToolsEnum
+from api.v1.models.project import ProjectToolsEnum
 from api.v1.services.ai_tools.translator_service import translate_text
 from api.v1.schemas.translation import TranslationRequest
 from api.v1.schemas.ai_tools.audio_transcriber import PodcastRequest
 from api.v1.services.ai_tools.summary import summary_service
 from api.v1.services.job import job_service
-from api.core.dependencies.celery.tasks.summary_tasks import generate_pdf_summary_task, generate_podcast_summary_task, generate_audio_summary_task, transcribe_audio_task
+from api.v1.services.job import tifi_job_service
+from api.core.dependencies.celery.tasks.summary_tasks import (
+    generate_pdf_summary_task, 
+    generate_podcast_summary_task, 
+    generate_audio_summary_task, 
+    transcribe_audio_task
+)
+from api.v1.services.user import user_service
+from api.utils.tool_limiter import track_tool_usage
+from api.v1.models.user import User
 
 summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
 MAX_FILE_SIZE = 15 * 1024 * 1024
-
-@summary.post('/pdf-summarizer-test', 
-              status_code=status.HTTP_200_OK, 
-              response_model=success_response)
-async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    '''Endpoint to summarize PDF'''
-    
-    pdf_file = await upload_file_to_current_dir(
-        file, 
-        allowed_extensions=['pdf'], 
-        save_extension='pdf'
-    )
-
-    task = generate_pdf_summary_task.delay(pdf_file)
-
-    # Create project with job
-    project = job_service.create_project_with_job(
-        job=task,
-        project_title='New project',
-        project_type=ProjectToolsEnum.pdf_summarizer.value,
-        # user_id = pass in the current user id for authenticated users
-    )
-
-    return success_response(
-        status_code=202,
-        message="Summary generation job initiated successfully",
-        data={
-            "job_id": task.id,
-            "project_id": project.id,
-        },
-    )
 
 
 @summary.post(
@@ -69,7 +44,12 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
     status_code=status.HTTP_202_ACCEPTED,
     response_model=success_response,
 )
-async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
+@track_tool_usage(ProjectToolsEnum.pdf_summarizer)
+async def summarize_pdf(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(user_service.get_current_user_optional)
 ):
     """Endpoint to summarize PDF"""
 
@@ -92,30 +72,51 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
 
     # Upload the file and get its path
     pdf_file_path = await upload_file(
-        file, allowed_extensions=["pdf"], upload_folder="pdf", save_extension="pdf"
-    )
-    
-    # Run task
-    task = generate_pdf_summary_task.delay(pdf_file_path)
-
-    # Create project with job
-    project = job_service.create_project_with_job(
-        job=task,
-        project_title='New project',
-        project_type=ProjectToolsEnum.pdf_summarizer.value,
-        # user_id = pass in the current user id for authenticated users
+        file, 
+        allowed_extensions=["pdf"], 
+        upload_folder="pdf", 
+        save_extension="pdf"
     )
 
+    job, project = tifi_job_service.create(
+        db=db,
+        tool_name=ProjectToolsEnum.pdf_summarizer.value,
+        payload={'pdf_file_path': pdf_file_path},
+        user_id=user.id if user else None,
+    )
 
     return success_response(
         status_code=202,
-        message="Summary generation job initiated successfully",
+        message=f"{ProjectToolsEnum.pdf_summarizer.value} task initiated successfully",
         data={
-            "job_id": task.id,
+            "job_id": job.id,
             "project_id": project.id,
             "file_name": file.filename,
-        },
+        }
     )
+    
+    # Run task
+    # task = generate_pdf_summary_task.delay(pdf_file_path)
+
+    # # Create project with job
+    # project = job_service.create_project_with_job(
+    #     db=db,
+    #     job=task,
+    #     project_title='New project',
+    #     project_type=ProjectToolsEnum.pdf_summarizer.value,
+    #     # user_id = pass in the current user id for authenticated users
+    # )
+
+
+    # return success_response(
+    #     status_code=202,
+    #     message="Summary generation job initiated successfully",
+    #     data={
+    #         "job_id": task.id,
+    #         "project_id": project.id,
+    #         "file_name": file.filename,
+    #     },
+    # )
 
 
 
@@ -126,6 +127,7 @@ async def summarize_pdf(file: UploadFile = File(...), db: Session = Depends(get_
 )
 async def translate_summary(translation_request: TranslationRequest):
     """Endpoint to translate summary into different languages"""
+
     target_language = translation_request.target_language.lower().replace(" ", "_")
 
     if target_language not in LANGUAGE_CODES:
@@ -136,7 +138,8 @@ async def translate_summary(translation_request: TranslationRequest):
 
     try:
         translated_text = translate_text(
-            translation_request.summary, LANGUAGE_CODES[target_language]
+            translation_request.summary, 
+            LANGUAGE_CODES[target_language]
         )
 
         return success_response(
@@ -180,10 +183,16 @@ async def download_summary(job_id: str, db: Session = Depends(get_db)):
 
 
 @summary.post("/summarize-podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)
-async def summarize_podcast(request: PodcastRequest):
+@track_tool_usage(ProjectToolsEnum.podcast_summarizer)
+async def summarize_podcast(
+    schema: PodcastRequest, 
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(user_service.get_current_user_optional)
+):
 
-    podcast_details = summary_service.get_podcast_details(request.podcast_url)
-    audio_url = summary_service.get_audio_url(request.podcast_url)
+    podcast_details = summary_service.get_podcast_details(schema.podcast_url)
+    audio_url = summary_service.get_audio_url(schema.podcast_url)
 
     audio_response = requests.get(audio_url)
     if audio_response.status_code == 200:
@@ -194,25 +203,43 @@ async def summarize_podcast(request: PodcastRequest):
             allowed_extensions=['mp3', 'mp4'], 
             save_extension='mp3',
         )
-        task = generate_podcast_summary_task.delay(file_path)
-   
-        # Create project with job
-        project = job_service.create_project_with_job(
-            job=task,
-            project_title='New project',
-            project_type=ProjectToolsEnum.podcast_summarizer.value
-            # user_id = pass in the current user id for authenticated users
+
+        job, project = tifi_job_service.create(
+            db=db,
+            tool_name=ProjectToolsEnum.podcast_summarizer.value,
+            payload={'audio_file': file_path},
+            user_id=user.id if user else None,
         )
 
         return success_response(
             status_code=202,
-            message="Podcast Summary generation job initiated successfully",
+            message=f"{ProjectToolsEnum.podcast_summarizer.value} task initiated successfully",
             data={
-                "job_id": task.id,
+                "job_id": job.id,
                 "project_id": project.id,
                 "podcast_details": podcast_details,
             }
         )
+    
+        # task = generate_podcast_summary_task.delay(file_path)
+   
+        # # Create project with job
+        # project = job_service.create_project_with_job(
+        #     job=task,
+        #     project_title='New project',
+        #     project_type=ProjectToolsEnum.podcast_summarizer.value
+        #     # user_id = pass in the current user id for authenticated users
+        # )
+
+        # return success_response(
+        #     status_code=202,
+        #     message="Podcast Summary generation job initiated successfully",
+        #     data={
+        #         "job_id": task.id,
+        #         "project_id": project.id,
+        #         "podcast_details": podcast_details,
+        #     }
+        # )
     else:
         return success_response(
             status_code=404,
@@ -221,10 +248,13 @@ async def summarize_podcast(request: PodcastRequest):
         )
 
 @summary.post('/audio-summarizer', status_code=status.HTTP_200_OK, response_model=success_response)
+@track_tool_usage(ProjectToolsEnum.audio_summarizer)
 async def summarize_audio(
+    request: Request,
     file: UploadFile = File(...), 
     target_lang: str = "es",  # Default to Spanish
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to summarize an audio file'''
     

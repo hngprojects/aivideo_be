@@ -1,9 +1,7 @@
-import uvicorn
-import slowapi
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from fastapi.staticfiles import StaticFiles
-import uvicorn, os
+import uvicorn, os, asyncio
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Request
 from fastapi.templating import Jinja2Templates
@@ -33,6 +31,8 @@ async def lifespan(app: FastAPI):
     load_avatars_in_db()
     load_audio_in_db()
     load_billing_plans_in_db()
+    # check_and_expire_jobs_in_celery.delay()
+
     yield
 
 
@@ -40,6 +40,7 @@ app = FastAPI(
     lifespan=lifespan,
     title='Convey API'
 )
+
 
 # In-memory request counter by endpoint and IP address
 request_counter = defaultdict(lambda: defaultdict(int))
@@ -76,6 +77,8 @@ app.add_middleware(SlowAPIMiddleware)
 
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')
+EMAIL_STATIC_DIR = 'api/core/dependencies/email/static'
+app.mount(f'/{EMAIL_STATIC_DIR}', StaticFiles(directory=EMAIL_STATIC_DIR), name='email-static')
 
 MEDIA_DIR = './media'
 os.makedirs(MEDIA_DIR, exist_ok=True)
@@ -113,11 +116,6 @@ async def get_root(request: Request) -> dict:
         status_code=status.HTTP_200_OK, 
         data={"URL": ""}
     )
-
-
-@app.get("/probe", tags=["Home"])
-async def probe():
-    return {"message": "I am the Python FastAPI API responding"}
 
 
 # REGISTER EXCEPTION HANDLERS

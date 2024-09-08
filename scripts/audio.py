@@ -39,3 +39,7 @@ audio_path = './scripts/test-audio.mp3'
 output_path = './test-output.mp4'
 
 add_background_audio(video_path, audio_path, output_path)
+
+
+
+# python3 api/core/dependencies/jobs/tasks/talking_avatar.py '{"image_file": "presets/avatars/avatar-32d49deff3.png", "audio_file": null, "aspect_ratio": "square", "script": "I am just testing please. Just work abeg. Let us see what happens from here on out", "voice_over": "man"}'

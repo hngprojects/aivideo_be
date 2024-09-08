@@ -157,12 +157,16 @@ class UsageStoreService:
             tool_name=tool_name
         ).first()
 
+        if not tool_access:
+            raise HTTPException(status_code=404, detail=f'Tool access with {tool_name} not found')
+
         return tool_access
 
 
     def add_tool_count_by_id(self, db: Session, id:str, tool_name: str, value:int):
         usage = self.fetch_by_id(db, id)
         tool = self.fetch_tool_access_by_usage_store_and_name(db, id, tool_name)
+        
         tool.access_count += value
         usage.last_accessed = datetime.utcnow()
         db.commit()

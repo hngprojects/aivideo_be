@@ -2,15 +2,12 @@ from fastapi import BackgroundTasks, Depends, APIRouter, status, HTTPException, 
 from starlette.responses import RedirectResponse
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from decouple import config
-from api.v1.schemas.user import UserCreate
 import os
-from fastapi.security import OAuth2PasswordBearer
 from api.db.database import get_db
 from api.v1.services.google_oauth import GoogleOauthServices
-from api.utils.success_response import success_response
 from api.v1.schemas.google_oauth import OAuthToken
 from api.v1.services.user import user_service
+from api.v1.services.email_sending import email_sending_service
 from fastapi.encoders import jsonable_encoder
 import requests
 from datetime import timedelta
@@ -20,7 +17,7 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL")
 
 
 @google_auth.post("/google", status_code=200)
-async def google_login(background_tasks: BackgroundTasks, token_request: OAuthToken, db: Session = Depends(get_db)):
+async def google_login(request: Request, background_tasks: BackgroundTasks, token_request: OAuthToken, db: Session = Depends(get_db)):
     """
     Handles Google OAuth login.
 
@@ -89,9 +86,13 @@ async def google_login(background_tasks: BackgroundTasks, token_request: OAuthTo
 
             google_oauth_service = GoogleOauthServices()
             # User does not exist, create a new user
-            user = google_oauth_service.create(background_tasks=background_tasks, db=db, google_response=profile_data)
+            user = google_oauth_service.create(db=db, google_response=profile_data)
             access_token = user_service.create_access_token(user_id=user.id)
             refresh_token = user_service.create_refresh_token(user_id=user.id)
+
+            # Send email
+            email_sending_service.send_welcome_email(request, background_tasks, user)
+
             response = JSONResponse(
                 status_code=200,
                 content={

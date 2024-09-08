@@ -6,7 +6,7 @@ from api.core.dependencies.celery.celery_app import worker
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.yt_summary import yts_service
 from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
-from api.v1.services.ai_tools.text_to_video import ttv_service
+from api.v1.services.ai_tools.script_to_video import ttv_service
 from api.v1.services.ai_tools.thumbnail import generate_thumbnails_service, select_and_download_thumbnail_service
 from api.utils.settings import settings
 from api.db.database import get_db

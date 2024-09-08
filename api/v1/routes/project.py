@@ -15,9 +15,9 @@ from api.v1.models.project import Project
 from api.v1.schemas.project import (
     AddFullProjectSchema,
     CreateFullProjectSchema,
-    ProjectCreateResponseSchema,
     SaveProjectSchema,
     ToolStatsResponse,
+    UpdateProject,
 )
 from api.v1.services.project import project_service
 from api.v1.services.user import user_service
@@ -103,6 +103,61 @@ async def get_user_archived_projects(
         message="Projects retrieved successfully",
         status_code=status.HTTP_200_OK,
     )
+
+
+@project_router.get("{project_id}", response_model=success_response, status_code=200)
+async def get_project(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user),
+):
+    """Endpoint to get all projects of the current logged in user"""
+
+    project = project_service.fetch(
+        db=db, 
+        project_id=project_id,
+        user=current_user
+    )
+
+    return success_response(
+        message="Project retrieved successfully",
+        status_code=status.HTTP_200_OK,
+        data=jsonable_encoder(project)
+    )
+
+
+@project_router.get("{project_id}", response_model=success_response, status_code=200)
+async def update_project(
+    schema: UpdateProject,
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user),
+):
+    """Endpoint to get all projects of the current logged in user"""
+
+    project = project_service.update(
+        db=db, 
+        project_id=project_id,
+        schema=schema,
+        user=current_user
+    )
+
+    return success_response(
+        message="Project updated successfully",
+        status_code=status.HTTP_200_OK,
+        data=jsonable_encoder(project)
+    )
+
+
+@project_router.delete("/{project_id}", status_code=204)
+async def delete_project(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(user_service.get_current_user),
+):
+    """Endpoint to delete a project"""
+
+    project_service.delete(db=db, project_id=project_id, user=current_user)
 
 
 ################ SSE ENDPOINT FOR TOOL USAGE STATISTICS ###################
