@@ -8,7 +8,6 @@ BASE_DIR = 'api/core/dependencies/jobs/tasks'
 tool_to_script_mapping = {
     tools.talking_avatar.value: f'{BASE_DIR}/talking_avatar.py',
     tools.script_to_video.value: f'{BASE_DIR}/script_to_video.py',
-    'Generate Video Scenes': f'{BASE_DIR}/script_to_video_generate_scenes.py',
     tools.image_to_video.value: f'{BASE_DIR}/image_to_video.py',
     tools.podcast_summarizer.value: f'{BASE_DIR}/podcast_summarizer.py',
     tools.youtube_summarizer.value: f'{BASE_DIR}/youtube_summarizer.py',
