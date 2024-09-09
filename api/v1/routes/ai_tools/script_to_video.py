@@ -36,8 +36,7 @@ async def recompose_script(
     )
 
 
-@ttv_router.post('/text-to-video/generate-scenes', status_code=202, response_model=success_response)
-@track_tool_usage('Generate Video Scenes')
+@ttv_router.post('/text-to-video/generate-scenes', status_code=200, response_model=success_response)
 async def generate_video_scenes(
     request: Request,
     schema: SceneGeneration,
@@ -46,38 +45,16 @@ async def generate_video_scenes(
 ):
     '''Endpoint to generate video scenes'''
 
-    job = tifi_job_service.create(
-        db=db,
-        tool_name='Generaate Video Scenes',
-        payload={'script': schema.script},
-        user_id=user.id if user else None,
-        save_project=False
-    )
+    scenes = ttv_service.generate_scene_descriptions(script=schema.script)
 
     return success_response(
-        status_code=202,
-        message=f"Generate Video Scenes task initiated successfully",
+        status_code=200,
+        message=f"Scenes generated successfully",
         data={
-            "job_id": job.id,
+            "scenes": scenes,
         }
     )
 
-    # task = generate_video_scenes_task.delay(schema.script)
-
-    # # Create job
-    # job = job_service.create_job(
-    #     db=db,
-    #     job_id=task.id,
-    #     # user_id = pass in the current user id for authenticated users
-    # )
-
-    # return success_response(
-    #     status_code=202,
-    #     message="Scene generation initiated",
-    #     data={
-    #         "job_id": task.id,
-    #     }
-    # )
 
 @ttv_router.post('/text-to-video/generate-video', status_code=202, response_model=success_response)
 @track_tool_usage(ProjectToolsEnum.script_to_video)
