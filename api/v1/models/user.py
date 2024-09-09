@@ -23,7 +23,7 @@ class User(BaseTableModel):
     profile = relationship("Profile", back_populates="user", uselist=False)
     notifications = relationship("Notification", back_populates="user")
     activity_logs = relationship("ActivityLog", back_populates="user")
-    subscription = relationship("UserSubscription", uselist=False)
+    subscription = relationship("UserSubscription", uselist=False, viewonly=True)
     payments = relationship("Payment", back_populates="user")
     projects = relationship("Project", back_populates="user")
     reviews = relationship("Review", back_populates="user")

@@ -7,7 +7,7 @@ from uuid_extensions import uuid7
 from main import app
 from api.db.database import get_db
 from api.v1.models.blog import Blog
-from api.utils.pagination import paginated_response
+from api.v1.services.user import oauth2_scheme, user_service
 from api.v1.schemas.blog import BlogCreate, BlogUpdate
 
 @pytest.fixture
@@ -32,8 +32,12 @@ def mock_blog():
         updated_at=datetime.now(timezone.utc)
     )
 
+def mock_deps():
+    return MagicMock(id="user_id")
+
 @pytest.fixture
 def setup_dependencies(mock_db_session):
+    app.dependency_overrides[user_service.get_current_super_admin] = mock_deps
     app.dependency_overrides[get_db] = lambda: mock_db_session
     yield
     app.dependency_overrides = {}
