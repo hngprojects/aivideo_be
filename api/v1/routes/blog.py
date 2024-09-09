@@ -6,8 +6,8 @@ from api.v1.services.blog import blog_service
 from api.utils.pagination import paginated_response
 from api.utils.success_response import success_response
 from api.db.database import get_db
-from fastapi.responses import JSONResponse
-
+from api.v1.models.user import User
+from api.v1.services.user import user_service
 
 blog = APIRouter(prefix="/blog", tags=["Blog"])
 
@@ -31,9 +31,12 @@ def read_blogs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
         filters={'is_deleted': "FALSE"}
     )
 
-
 @blog.post("", response_model=BlogSchema)
-def create_blog(blog: BlogCreate, db: Session = Depends(get_db)):
+def create_blog(
+    blog: BlogCreate,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(user_service.get_current_super_admin)
+):
     blog = blog_service.create(db, blog)
     return success_response(
         status_code=status.HTTP_201_CREATED,
@@ -42,7 +45,12 @@ def create_blog(blog: BlogCreate, db: Session = Depends(get_db)):
     )
 
 @blog.put("/{blog_id}", response_model=BlogSchema)
-def update_blog(blog_id: str, blog_update: BlogUpdate, db: Session = Depends(get_db)):
+def update_blog(
+    blog_id: str,
+    blog_update: BlogUpdate,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(user_service.get_current_super_admin)
+):
     updated_blog = blog_service.update(db, blog_id, blog_update)
     if updated_blog is None:
         raise HTTPException(status_code=404, detail="Blog not found")
@@ -53,7 +61,11 @@ def update_blog(blog_id: str, blog_update: BlogUpdate, db: Session = Depends(get
     )
 
 @blog.delete("/{blog_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_blog(blog_id: str, db: Session = Depends(get_db)):
+def delete_blog(
+    blog_id: str,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(user_service.get_current_super_admin)
+):
     blog = blog_service.delete(db, blog_id)
     if blog is None:
         raise HTTPException(status_code=404, detail="Blog not found")
