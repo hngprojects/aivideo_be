@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
@@ -41,7 +42,7 @@ async def generate_video_scenes(
     request: Request,
     schema: SceneGeneration,
     db: Session = Depends(get_db),
-    user: User = Depends(user_service.get_current_user_optional)
+    user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to generate video scenes'''
 
@@ -58,11 +59,11 @@ async def generate_video_scenes(
 
 @ttv_router.post('/text-to-video/generate-video', status_code=202, response_model=success_response)
 @track_tool_usage(ProjectToolsEnum.script_to_video)
-async def convert_text_to_video(
+async def convert_script_to_video(
     schema: TTVSchema,
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(user_service.get_current_user_optional)
+    user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to convert a script to video'''
     

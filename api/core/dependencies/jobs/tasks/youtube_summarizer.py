@@ -10,9 +10,16 @@ payload = json.loads(sys.argv[1])
 audio_file = None
 
 try:
+    print('Downloading and extracting audio from youtube video...')
     audio_file = download_audio_yt(payload.get('link'))
+
+    print('Transcribing audio...')
     transcription = transcribe_audio_segments(audio_file)
+
+    print('Generating transcript documents for summarization...')
     documents, transcript = create_documents_from_transcript(transcription)
+
+    print('Summarizing transcript...')
     summary = summary_service.summarize_transcript(documents)
 
     result = {
@@ -21,6 +28,9 @@ try:
         "transcript": get_paragraphs(transcription),
         "transcript_word_count": summary_service.calculate_word_count( transcript)
     }
+
+    print('Done!!!')
+    
     print(json.dumps(result))
 except Exception as e:
     raise e

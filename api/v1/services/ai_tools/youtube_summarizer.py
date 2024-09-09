@@ -8,7 +8,7 @@ from typing_extensions import List
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains.llm import LLMChain
 from langchain_community.document_loaders.assemblyai import TranscriptFormat
-
+from langchain_community.document_loaders import AssemblyAIAudioTranscriptLoader
 
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
@@ -16,28 +16,30 @@ from langchain_openai import ChatOpenAI
 
 from api.utils.settings import settings
 
-from langchain_community.document_loaders import (
-    AssemblyAIAudioTranscriptLoader
-)
-
 
 class ChatOpenRouter(ChatOpenAI):
     openai_api_base: str
     openai_api_key: str
     model_name: str
 
-    def __init__(self,
-                 model_name: str,
-                 openai_api_key: Optional[str] = None,
-                 openai_api_base: str = "https://openrouter.ai/api/v1",
-                 **kwargs):
-        openai_api_key = openai_api_key or os.getenv('OPENROUTER_API_KEY')
-        super().__init__(openai_api_base=openai_api_base,
-                         openai_api_key=openai_api_key,
-                         model_name=model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: str,
+        openai_api_key: Optional[str] = None,
+        openai_api_base: str = "https://openrouter.ai/api/v1",
+        **kwargs
+    ):
+        openai_api_key = openai_api_key or settings.OPENROUTER_API_KEY
+        super().__init__(
+            openai_api_base=openai_api_base,
+            openai_api_key=openai_api_key,
+            model_name=model_name,
+            **kwargs
+        )
 
 
 class TranscriptionService:
+
     def __init__(self):
         self.assemblyai_api_key = settings.ASSEMBLYAI_API_KEY
 
@@ -46,15 +48,19 @@ class TranscriptionService:
         "{text}"
         CONCISE SUMMARY:"""
         prompt = PromptTemplate.from_template(prompt_template)
-        llm = ChatOpenRouter(temperature=0, model_name="gpt-3.5-turbo-16k",
-                             openai_api_key=settings.OPENAI_API_KEY)
+        llm = ChatOpenRouter(
+            temperature=0, 
+            model_name="gpt-3.5-turbo-16k",
+            openai_api_key=settings.OPENAI_API_KEY
+        )
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         return llm_chain
 
     def transcribe_audio(
-            self,
-            audio_file_path: str,
-            language: Optional[str] = None) -> Tuple[List, str]:
+        self,
+        audio_file_path: str,
+        language: Optional[str] = None
+    ) -> Tuple[List, str]:
         """
         Transcribes an audio file using AssemblyAI via LangChain.
 
@@ -70,6 +76,7 @@ class TranscriptionService:
             FileNotFoundError: If the audio file doesn't exist.
             Exception: If there's an error during transcription.
         """
+
         if not os.path.exists(audio_file_path):
             raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
 
@@ -112,7 +119,9 @@ class TranscriptionService:
 
         llm_chain = self.init_chain()
         stuff_chain = StuffDocumentsChain(
-            llm_chain=llm_chain, document_variable_name="text")
+            llm_chain=llm_chain, 
+            document_variable_name="text"
+        )
 
         summaries = []
         for doc in transcription:

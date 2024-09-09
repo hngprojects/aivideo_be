@@ -3,11 +3,13 @@ from fastapi import Depends, Form, APIRouter, File, UploadFile, Request
 from sqlalchemy.orm import Session
 
 from api.db.database import get_db
+from api.utils.minio_service import minio_service
+from api.utils import mime_types
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.utils.tool_limiter import track_tool_usage
 from api.utils.success_response import success_response
-from api.utils.files import upload_to_current_dir, contains_face
+from api.utils.files import delete_file, upload_to_current_dir, contains_face
 from api.v1.services.presets import preset_service
 from api.v1.services.job import job_service
 from api.v1.services.job import tifi_job_service
@@ -28,7 +30,7 @@ async def talking_head_image_upload(
     audio_id: Optional[str] = Form(None),
     file: UploadFile = File(...), 
     db: Session = Depends(get_db),
-    user: User = Depends(user_service.get_current_user_optional)
+    user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to Talking Avatar'''
 
@@ -42,19 +44,25 @@ async def talking_head_image_upload(
 
     # Check if image contains a face
     # contains_face(image_file)
+
+    # Upload image to minio and delete the file
+    image_url = minio_service.upload_to_tmp_bucket(source_file=image_file)
+    # Delete image file
+    delete_file(image_file)
     
     if audio_id:
         audio = preset_service.fetch_music_by_id(
             db=db, music_id=audio_id
         )
-        audio_file = audio.file_path
+        # audio_file = audio.file_path
+        audio_url = audio.file_url
 
     job, project = tifi_job_service.create(
         db=db,
         tool_name=ProjectToolsEnum.talking_avatar.value,
         payload={
-            'image_file': image_file,
-            'audio_file': audio_file if audio_id else None,
+            'image_url': image_url,
+            'audio_url': audio_url if audio_id else None,
             'aspect_ratio': aspect_ratio.lower(),
             'script': script,
             'voice_over': voice_over.lower(),
@@ -116,9 +124,31 @@ async def talking_head_avatar_selection(
         audio = preset_service.fetch_music_by_id(
             db=db, music_id=schema.audio_id
         )
-        audio_file = audio.file_path
+        audio_url = audio.file_url
 
-    image_file = avatar.file_path
+    image_url = avatar.file_url
+    
+    job, project = tifi_job_service.create(
+        db=db,
+        tool_name=ProjectToolsEnum.talking_avatar.value,
+        payload={
+            'image_url': image_url,
+            'audio_url': audio_url if schema.audio_id else None,
+            'aspect_ratio': schema.aspect_ratio.lower(),
+            'script': schema.script,
+            'voice_over': schema.voice_over.lower(),
+        },
+        user_id=user.id if user else None,
+    )
+
+    return success_response(
+        status_code=202,
+        message=f"{ProjectToolsEnum.talking_avatar.value} task initiated successfully",
+        data={
+            "job_id": job.id,
+            "project_id": project.id
+        }
+    )
 
     # task = generate_talking_avatar_task.apply_async(kwargs={
     #     'img_file': image_file,
@@ -137,24 +167,3 @@ async def talking_head_avatar_selection(
     #     project_type=ProjectToolsEnum.talking_avatar.value,
     # )
 
-    job, project = tifi_job_service.create(
-        db=db,
-        tool_name=ProjectToolsEnum.talking_avatar.value,
-        payload={
-            'image_file': image_file,
-            'audio_file': audio_file if schema.audio_id else None,
-            'aspect_ratio': schema.aspect_ratio.lower(),
-            'script': schema.script,
-            'voice_over': schema.voice_over.lower(),
-        },
-        user_id=user.id if user else None,
-    )
-
-    return success_response(
-        status_code=202,
-        message=f"{ProjectToolsEnum.talking_avatar.value} task initiated successfully",
-        data={
-            "job_id": job.id,
-            "project_id": project.id
-        }
-    )
