@@ -78,7 +78,7 @@ def update_job(target, connection, status, result=None, progress='0% complete'):
 def run_job(mapper, connection, target):
 
     # from api.core.dependencies.jobs.service import execute_job
-    from api.core.dependencies.celery.tasks.run_job import run_job_in_celery
+    # from api.core.dependencies.celery.tasks.run_job import run_job_in_celery
 
     try:
         # Update expiration time to 1 hour ahead
@@ -91,7 +91,7 @@ def run_job(mapper, connection, target):
         )
         
         # Initiate job in the background through celery
-        run_job_in_celery.delay(target.id)
+        # run_job_in_celery.delay(target.id)
 
         # update_job(
         #     target, 

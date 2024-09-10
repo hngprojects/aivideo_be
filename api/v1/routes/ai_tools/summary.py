@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import (
     Depends,
     status,
@@ -14,9 +15,9 @@ import json
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.utils.files import upload_file_to_current_dir
-from api.utils.files import upload_file, check_file_size
+from api.utils.files import upload_file, check_file_size, delete_file, upload_file_to_current_dir
 from api.utils.language_code import LANGUAGE_CODES
+from api.utils.minio_service import minio_service
 from api.v1.models.project import ProjectToolsEnum
 from api.v1.services.ai_tools.translator_service import translate_text
 from api.v1.schemas.translation import TranslationRequest
@@ -49,7 +50,7 @@ async def summarize_pdf(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    user: User = Depends(user_service.get_current_user_optional)
+    user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     """Endpoint to summarize PDF"""
 
@@ -78,10 +79,14 @@ async def summarize_pdf(
         save_extension="pdf"
     )
 
+    # Upload pdf file to temporary stirage bucket
+    pdf_file_url = minio_service.upload_to_tmp_bucket(source_file=pdf_file_path)
+    delete_file(pdf_file_path)
+
     job, project = tifi_job_service.create(
         db=db,
         tool_name=ProjectToolsEnum.pdf_summarizer.value,
-        payload={'pdf_file_path': pdf_file_path},
+        payload={'pdf_file_url': pdf_file_url},
         user_id=user.id if user else None,
     )
 
@@ -188,7 +193,7 @@ async def summarize_podcast(
     schema: PodcastRequest, 
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(user_service.get_current_user_optional)
+    user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
 
     podcast_details = summary_service.get_podcast_details(schema.podcast_url)
@@ -204,10 +209,13 @@ async def summarize_podcast(
             save_extension='mp3',
         )
 
+        final_audio_url = minio_service.upload_to_tmp_bucket(source_file=file_path)
+        delete_file(file_path)
+
         job, project = tifi_job_service.create(
             db=db,
             tool_name=ProjectToolsEnum.podcast_summarizer.value,
-            payload={'audio_file': file_path},
+            payload={'audio_url': final_audio_url},
             user_id=user.id if user else None,
         )
 

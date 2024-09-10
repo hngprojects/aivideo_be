@@ -16,12 +16,16 @@ class ScriptToVideoService:
 
     def __init__(self):
         self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.openrouter_client = openai.OpenAI(
+            base_url='https://openrouter.ai/api/v1',
+            api_key=settings.OPENROUTER_API_KEY
+        )
     
 
     def generate_scene_descriptions(self, script: str):
 
-        response = self.client.chat.completions.create(
-            model="gpt-4o-mini",
+        response = self.openrouter_client.chat.completions.create(
+            model="openai/gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": f"Generate five simple scene descriptions that can be used as an image description for the following script and I do not want any form of numbering or bulleting on them. Also, don not say anoy other thing other than the scene descriptions. Here is the script: :\n\n{script}\n\nScene Descriptions:"}
@@ -33,8 +37,8 @@ class ScriptToVideoService:
 
     def recompose_script(self, script: str):
 
-        response = self.client.chat.completions.create(
-            model="gpt-4o-mini",
+        response = self.openrouter_client.chat.completions.create(
+            model="openai/gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": f"I will add a script for you to recompose. Do not say anything else than the recomposition:\n\n{script}"}
@@ -108,13 +112,19 @@ class ScriptToVideoService:
         aspect_ratio: str,
         background_audio: Optional[str] = None, 
     ):
-
+        print('Generating audio from script...')
         audio_file = video_service.generate_audio_from_script(script, voice_over)
+
+        print('Generating subtitle file from generated audio...')
         subtitle_file = video_service.generate_subtitles_from_audio(audio_file)
-        # scenes = self.generate_scene_descriptions(script)
+
+        print('Generating images for scenes...')
         images = self.generate_images_for_scenes(scenes)
+        
+        print('Creating video...')
         video_file = self.create_video_with_images(images, audio_file)
         
+        print('Embedding subtitles in generated video...')
         # Add subtitles to video
         video_with_subtitles_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
         video_with_subtitles = video_service.add_subtitles_to_video(
@@ -124,6 +134,7 @@ class ScriptToVideoService:
         )
 
         if background_audio:
+            print('Applying background music to the video---')
             # Add background music to video
             video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
             video_with_audio = video_service.add_background_audio(
@@ -132,10 +143,12 @@ class ScriptToVideoService:
                 output_path=video_with_bg_music_path
             )
 
+        print('Setting up storage location...')
         # Set up for final result
         video_dir = os.path.join(settings.STORAGE_DIR, 'video')
         os.makedirs(video_dir, exist_ok=True)
         
+        print('Changing aspect ratio of video...')
         output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
         # Adjust aspect ratio
         final_result_file = video_service.change_aspect_ratio(
@@ -144,6 +157,7 @@ class ScriptToVideoService:
             aspect_ratio=aspect_ratio
         )
 
+        print('Cleaning up...')
         # Delete unnecessary files
         delete_file(audio_file)
         delete_file(subtitle_file)
@@ -156,6 +170,7 @@ class ScriptToVideoService:
         
         # save_url = f'{settings.APP_URL}/{final_result_file}'
 
+        print('Generating preview and download links for generated video')
         minio_save_file = f'ttvid-{str(uuid4())}.mp4'
         save_url, download_url = minio_service.upload_to_minio(
             bucket_name='text-to-video',
@@ -170,6 +185,8 @@ class ScriptToVideoService:
         }
 
         delete_file(final_result_file)
+        print('Done!!!')
+
         return data
 
 

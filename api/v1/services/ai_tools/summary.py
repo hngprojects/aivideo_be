@@ -11,12 +11,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from api.utils.settings import settings
 import pytesseract
-from typing import Optional
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.units import inch
-from reportlab.lib import colors
 from PIL import Image
 from io import BytesIO
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -41,17 +35,31 @@ import fitz
 class SummaryService():
     def __init__(self):
         self.translator = GoogleTranslator()
-        self.client = OI(api_key=settings.OPENAI_API_KEY)
+        self.client = OI(
+            base_url='https://openrouter.ai/api/v1',
+            api_key=settings.OPENROUTER_API_KEY,
+            # api_key=settings.OPENAI_API_KEY,
+        )
         self.llm = OpenAI(
-            temperature=0, openai_api_key=settings.OPENAI_API_KEY)
+            temperature=0, 
+            base_url='https://openrouter.ai/api/v1',
+            openai_api_key=settings.OPENROUTER_API_KEY,
+            # openai_api_key=settings.OPENAI_API_KEY,
+        )
 
     def init_chain(self):
         prompt_template = """Write a concise summary of the following:
             "{text}"
         CONCISE SUMMARY:"""
         prompt = PromptTemplate.from_template(prompt_template)
-        llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k",
-                         api_key=settings.OPENAI_API_KEY)
+        llm = ChatOpenAI(
+            temperature=0,
+            base_url='https://openrouter.ai/api/v1',
+            model_name="openai/gpt-3.5-turbo-16k",
+            api_key=settings.OPENROUTER_API_KEY
+            # model_name="gpt-3.5-turbo-16k",
+            # api_key=settings.OPENAI_API_KEY
+        )
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         return llm_chain
 
@@ -224,8 +232,7 @@ class SummaryService():
                 if stream_url:
                     return stream_url
         if not stream_url:
-            raise HTTPException(
-                status_code=404, detail="Unable to retrieve audio from the provided URL")
+            raise HTTPException(status_code=404, detail="Unable to retrieve audio from the provided URL")
 
     def summarize_audio(self, audio_file_path):
         """Summarizes an audio file by transcribing and then summarizing the transcript."""

@@ -1,13 +1,14 @@
 import json, sys
 import os
-from api.utils.minio_service import minio_service
+
 from uuid import uuid4
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from io import BytesIO
+
+from api.utils.minio_service import minio_service
+from api.utils.settings import settings
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.summary import summary_service
 from api.utils import mime_types
@@ -15,17 +16,17 @@ from api.utils import mime_types
 
 payload = json.loads(sys.argv[1])
 
-audio_file = payload.get('audio_file')
+audio_url = payload.get('audio_url')
+
+audio_file = minio_service.download_file_from_minio(audio_url)
 
 summary, transcription, transcribed_text = summary_service.summarize_podcast(audio_file)
 number_of_words = len(transcribed_text.split())
-estimated_read_time = (
-    number_of_words / 250
-)  # Assuming 250 words per minute reading speed
+estimated_read_time = (number_of_words / 250)  # Assuming 250 words per minute reading speed
 
 # Create the PDF with better formatting
 pdf_buffer = BytesIO()
-pdf_filename = os.path.join("media/uploads/pdf", f"summary_{str(uuid4())}.pdf")
+pdf_filename = os.path.join(settings.TEMP_DIR, f"summary-{str(uuid4())}.pdf")
 os.makedirs(os.path.dirname(pdf_filename), exist_ok=True)
 
 # Set up the document
@@ -63,7 +64,7 @@ with open(pdf_filename, "wb") as f:
     f.write(pdf_buffer.read())
 
 pdf_buffer.close()
-minio_save_file = f"pdsum-{str(uuid4())}.pdf"
+minio_save_file = f"podsum-{str(uuid4())}.pdf"
 save_url, download_url = minio_service.upload_to_minio(
     bucket_name="podcast-summary",
     source_file=pdf_filename,

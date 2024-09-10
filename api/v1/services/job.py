@@ -473,6 +473,18 @@ class TifiJobService:
         
         return jobs
     
+    def fetch_all_available(self, db: Session):
+        '''Fetches all available inexpired jobs'''
+
+        current_time = datetime.now().replace(tzinfo=None)
+
+        jobs = db.query(TifiJob).filter(
+            TifiJob.expiration_time >= current_time,
+            TifiJob.status == JobStatus.pending
+        ).all()
+        
+        return jobs
+    
 
     def fetch_all_pending(self, db: Session):
         '''Fetches all jobs'''
