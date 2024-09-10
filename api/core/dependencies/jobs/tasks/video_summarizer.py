@@ -40,7 +40,7 @@ try:
     print(json.dumps(result))
 
 except Exception as e:
-    raise e
+    print('Video summarization failed')
 
 finally:
     try:

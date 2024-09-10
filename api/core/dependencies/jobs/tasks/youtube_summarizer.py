@@ -33,7 +33,7 @@ try:
     
     print(json.dumps(result))
 except Exception as e:
-    raise e
+    print('Youtube summarization failed')
 finally:
     try:
         if audio_file:

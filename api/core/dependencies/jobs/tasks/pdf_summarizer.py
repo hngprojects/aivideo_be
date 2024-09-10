@@ -111,4 +111,5 @@ try:
 except Exception as e:
     if os.path.exists(pdf_file_path):
         os.remove(pdf_file_path)
-    raise Exception(f"Summarization failed: {str(e)}")
+        print(f"Error occurred while summarizing PDF")
+        

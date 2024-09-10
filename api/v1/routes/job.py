@@ -68,7 +68,7 @@ async def process_jobs_synchronous(db: Session = Depends(get_db)):
 
     return StreamingResponse(
         yield_service.run_pending_jobs(), 
-        media_type="text/plain"
+        media_type="text/event-stream"
     )
 
 

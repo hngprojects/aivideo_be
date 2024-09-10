@@ -22,7 +22,6 @@ def run_pending_jobs():
     while True:
         with SessionLocal() as db:
             current_time = datetime.now().replace(tzinfo=None)
-
             
             yield f'Fetching number of available jobs to be processed\n'
 
@@ -210,10 +209,8 @@ def execute_job(job: TifiJob):
         return result_output
     
     except subprocess.CalledProcessError as e:
-        
         yield f"Job failed: {str(e)}\n"
-        raise
+        # raise
     except Exception as e:
-        
         yield f"General job error: {str(e)}\n"
-        raise
+        # raise
