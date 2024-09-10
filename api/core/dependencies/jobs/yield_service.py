@@ -103,9 +103,7 @@ def process_job(job_id: str):
         output = None
         for result in execute_job(job):
             # Yield the result for streaming
-            
             yield result
-
             # Capture only the final result returned by execute_job
             output = result
 
@@ -202,7 +200,8 @@ def execute_job(job: TifiJob):
         if return_code != 0:
             stderr_output = process.stderr.read()
             process.stderr.close()
-            # raise Exception(f"Job failed with error: {stderr_output}")
+            # yield f"Job failed with error: {stderr_output}"
+            raise Exception(f"{stderr_output}")
         
         yield f'Closing script {script_path}\n'        
 
