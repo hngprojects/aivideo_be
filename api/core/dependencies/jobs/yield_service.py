@@ -210,7 +210,7 @@ def execute_job(job: TifiJob):
     
     except subprocess.CalledProcessError as e:
         yield f"Job failed: {str(e)}\n"
-        # raise
+        raise
     except Exception as e:
         yield f"General job error: {str(e)}\n"
-        # raise
+        raise

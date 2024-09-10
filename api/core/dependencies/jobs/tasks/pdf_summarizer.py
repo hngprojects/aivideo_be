@@ -108,8 +108,6 @@ try:
     result_json = json.dumps(result, default=str)
     print(result_json)
 
-except Exception as e:
+finally:
     if os.path.exists(pdf_file_path):
         os.remove(pdf_file_path)
-        print(f"Error occurred while summarizing PDF")
-        

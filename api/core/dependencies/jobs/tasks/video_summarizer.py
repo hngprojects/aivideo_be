@@ -39,13 +39,7 @@ try:
     
     print(json.dumps(result))
 
-except Exception as e:
-    print('Video summarization failed')
-
 finally:
-    try:
-        delete_file(video_file)
-        if audio_file:
-            delete_file(audio_file)
-    except Exception as deletion_error:
-        print(str(deletion_error))
+    delete_file(video_file)
+    if audio_file:
+        delete_file(audio_file)

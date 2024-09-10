@@ -32,11 +32,7 @@ try:
     print('Done!!!')
     
     print(json.dumps(result))
-except Exception as e:
-    print('Youtube summarization failed')
+    
 finally:
-    try:
-        if audio_file:
-            delete_file(audio_file)
-    except Exception as deletion_error:
-        print(str(deletion_error))
+    if audio_file:
+        delete_file(audio_file)
