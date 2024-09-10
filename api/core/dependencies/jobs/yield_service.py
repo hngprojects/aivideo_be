@@ -145,7 +145,7 @@ def process_job(job_id: str):
         # raise Exception(f'An exception occured: {str(e)}')
 
         yield f'Job with {job.id} for tool {job.tool_name} failed\n'
-        yield f'An exception occured: {str(e)}\n'
+        # yield f'An exception occured: {str(e)}\n'
 
 
 def execute_job(job: TifiJob):
