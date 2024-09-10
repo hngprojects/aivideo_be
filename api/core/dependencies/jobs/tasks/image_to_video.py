@@ -29,6 +29,7 @@ result = talking_avatar_service.process_script(
 )
 
 delete_file(image_file)
-delete_file(audio_file)
+if audio_file:
+    delete_file(audio_file)
 
 print(json.dumps(result))

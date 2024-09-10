@@ -72,7 +72,7 @@ async def convert_script_to_video(
             db=db, music_id=schema.audio_id
         )
 
-        audio_file = audio.file_path
+        audio_url = audio.file_url
 
     job, project = tifi_job_service.create(
         db=db,
@@ -81,7 +81,7 @@ async def convert_script_to_video(
             'script': schema.script,
             'scenes': schema.scenes,
             'aspect_ratio': schema.aspect_ratio.lower(),
-            'background_audio': audio_file if schema.audio_id else None,
+            'audio_url': audio_url if schema.audio_id else None,
             'voice_over': schema.voice_over.lower(),
         },
         user_id=user.id if user else None,
