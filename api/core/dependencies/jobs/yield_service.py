@@ -202,7 +202,7 @@ def execute_job(job: TifiJob):
         if return_code != 0:
             stderr_output = process.stderr.read()
             process.stderr.close()
-            raise Exception(f"Job failed with error: {stderr_output}")
+            # raise Exception(f"Job failed with error: {stderr_output}")
         
         yield f'Closing script {script_path}\n'        
 
