@@ -22,6 +22,8 @@ def run_pending_jobs():
     while True:
         with SessionLocal() as db:
             current_time = datetime.now().replace(tzinfo=None)
+            
+            yield f'Fetching number of available jobs to be processed\n'
 
             # Get all premium jobs i.e jobs for a premium user
             premium_pending_jobs = db.query(TifiJob).filter(
@@ -46,22 +48,37 @@ def run_pending_jobs():
             
             no_of_jobs = len(all_pending_jobs)
             if no_of_jobs > 0:
+                
+                yield f'Number of jobs to be processed: {no_of_jobs}\n'
 
                 for job_obj in all_pending_jobs:
+                    # job_obj = db.merge(job)
+                    # Check if job is expired before processing
+                    # if not job_obj.is_expired():
+                    # print(f'Job {job.id} with tool {job.tool_name} in execution')
                     try:
+                        
+                        yield f'Job with id {job_obj.id} for tool {job_obj.tool_name} received\n'
                         job_obj.status = JobStatus.received
                         job_obj.progress = '20% complete'
                         db.commit()
                         db.refresh(job_obj)
-                        process_job(job_id=job_obj.id)
+                        
+                        # Yield the output from process_job
+                        for output in process_job(job_id=job_obj.id):
+                            yield output
                     except Exception as e:
-                        print(f"Error processing job {job_obj.id}: {e}")
+                        yield f"Error processing job {job_obj.id}: {e}\n"
                     
                     time.sleep(2)
-            else:
-                print('No pending jobs available')
+                
+                yield f'All jobs processed and executed successfully\n'
+            else:     
+                yield 'No pending jobs available'
                 
             break
+
+            # time.sleep(6000)  # poll every two seconds
 
 
 def process_job(job_id: str):
@@ -73,15 +90,28 @@ def process_job(job_id: str):
     job = tifi_job_service.fetch(db=db, job_id=job_id)
 
     try:
+        # if not job.is_expired():
+        
+        yield f"Job with id: {job.id} for tool {job.tool_name} in progress\n"
+
         job.status = JobStatus.progress
         job.progress = '50% complete'
         db.commit()
 
-        output = execute_job(job)
+        
+        # Call the tool to process the job and yield outputs
+        output = None
+        for result in execute_job(job):
+            # Yield the result for streaming
+            yield result
+            # Capture only the final result returned by execute_job
+            output = result
 
         job.status = JobStatus.completed
         job.result = json.loads(output)
         job.progress = '100% complete'
+
+        yield f'Job with id {job.id} for tool {job.tool_name} completed successfully\n'
 
         # ------- PROJECT PROCESSING -------
         if job.project_id:
@@ -102,7 +132,7 @@ def process_job(job_id: str):
             job.project_id = project.id
 
         # Update project result
-        project.result = json.loads(output)
+        project.result = json.loads(result)
         project.is_active = True
 
         db.commit()
@@ -112,13 +142,17 @@ def process_job(job_id: str):
         job.progress = 'Job failed'
         job.result = {"error": f"{str(e)}"}
         db.commit()
-        raise Exception(f'An exception occured: {str(e)}')
+        # raise Exception(f'An exception occured: {str(e)}')
+
+        yield f'Job with {job.id} for tool {job.tool_name} failed\n\n'
+        # yield f'An exception occured: {str(e)}\n'
 
 
 def execute_job(job: TifiJob):
     '''THis function runs the tool to run the job script for each job'''
 
     try:
+        yield f'Job with id {job.id} for tool {job.tool_name} in execution\n'
 
         # Convert the payload to a JSON string
         payload_str = json.dumps(job.payload)
@@ -127,7 +161,10 @@ def execute_job(job: TifiJob):
         script_path = tool_to_script_mapping.get(job.tool_name, None)
 
         if not script_path:
+            yield f"No script found for tool: {job.tool_name}"
             raise ValueError(f"No script found for tool: {job.tool_name}")
+        
+        yield f'Opening script {script_path} for job {job.id} and tool {job.tool_name}\n'
 
         # Set PYTHONPATH in environment variables to the root directory
         env = os.environ.copy()
@@ -143,6 +180,14 @@ def execute_job(job: TifiJob):
         )
 
         # Stream output in real-time
+        while True:
+            output_line = process.stdout.readline()
+            if output_line:
+                yield output_line
+            if process.poll() is not None:
+                break
+
+        # Stream output in real-time
         result_output = ''
         for line in iter(process.stdout.readline, ''):
             result_output = line.strip()  # get the last line printed out to the console
@@ -155,11 +200,16 @@ def execute_job(job: TifiJob):
         if return_code != 0:
             stderr_output = process.stderr.read()
             process.stderr.close()
-            # raise Exception(f"Job failed with error: {stderr_output}")   
+            # yield f"Job failed with error: {stderr_output}"
+            raise Exception(f"{stderr_output}")
+        
+        yield f'Closing script {script_path}\n'        
 
         return result_output
     
     except subprocess.CalledProcessError as e:
+        yield f"Job failed: {str(e)}\n"
         raise
     except Exception as e:
+        yield f"General job error: {str(e)}\n"
         raise
