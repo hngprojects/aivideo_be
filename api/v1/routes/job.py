@@ -16,7 +16,7 @@ from api.v1.services.project import project_service
 from api.v1.services.job import job_service
 from api.v1.services.notification import notification_service
 from api.v1.services.job import tifi_job_service
-from api.core.dependencies.jobs.service import run_pending_jobs, process_job
+from api.core.dependencies.jobs import yield_service, service
 from api.core.dependencies.celery.tasks.run_job import run_job_in_celery, run_pending_jobs_in_celery
 import json
 import asyncio
@@ -55,12 +55,21 @@ async def get_all_available_jobs(db: Session = Depends(get_db)):
 async def process_jobs_synchronous(db: Session = Depends(get_db)):
     """This endpoint processes all pending jobs synchronously"""
 
-    def event_generator():
-        for log in run_pending_jobs(yield_output=True):
-            yield log  # Yielding each log in real-time
+    # async def event_generator():
+    #     try:
+    #         for log in run_pending_jobs():
+    #             yield log  # Yielding each log in real-time
+    #             await asyncio.sleep(1)  # Delay between output stream
+    #     except Exception as e:
+    #         yield str(e)
 
-    # Return the streaming response
-    return StreamingResponse(event_generator(), media_type="text/plain")
+    # # Return the streaming response
+    # return StreamingResponse(event_generator(), media_type="text/plain")
+
+    return StreamingResponse(
+        yield_service.run_pending_jobs(), 
+        media_type="text/plain"
+    )
 
 
 @job_router.get("/process-jobs-async", response_model=success_response, status_code=status.HTTP_200_OK)
@@ -119,7 +128,7 @@ async def process_and_execute_job(background_tasks: BackgroundTasks, job_id: str
     # Run job in celery
     # run_job_in_celery.delay(job_id)
 
-    process_job(job_id)
+    service.process_job(job_id)
 
     return success_response(
         status_code=200,
@@ -195,7 +204,6 @@ async def send_job_status_updates_over_sse(
     job_id: str,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(user_service.get_current_user_optional),
-    # save_project: bool = True  # Set to True if a project is to be saved after job execution. If not set it to False
 ):
     '''
     Function to send job status over server sent events and this updates the project associated with the job.
@@ -206,7 +214,6 @@ async def send_job_status_updates_over_sse(
         event_stream = job_process_event_generator(
             job_id=job_id, 
             user=current_user,
-            # save_project=save_project
         )
         return StreamingResponse(event_stream, media_type="text/event-stream")
     except Exception as e:

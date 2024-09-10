@@ -109,9 +109,6 @@ try:
     print(result_json)
 
 except Exception as e:
-    # Ensure that files are deleted even if an exception occurs
-    if os.path.exists(pdf_filename):
-        os.remove(pdf_filename)
     if os.path.exists(pdf_file_path):
         os.remove(pdf_file_path)
     raise Exception(f"Summarization failed: {str(e)}")

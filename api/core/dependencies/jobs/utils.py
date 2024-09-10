@@ -11,5 +11,5 @@ def yield_or_print_output(obj: str, yield_output: bool):
 
     if yield_output:
         yield obj
-    else:
-        print(obj, end='')
+    # else:
+    #     print(obj, end='')
