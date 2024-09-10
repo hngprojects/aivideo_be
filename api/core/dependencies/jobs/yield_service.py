@@ -144,7 +144,7 @@ def process_job(job_id: str):
         db.commit()
         # raise Exception(f'An exception occured: {str(e)}')
 
-        yield f'Job with {job.id} for tool {job.tool_name} failed\n'
+        yield f'Job with {job.id} for tool {job.tool_name} failed\n\n'
         # yield f'An exception occured: {str(e)}\n'
 
 
