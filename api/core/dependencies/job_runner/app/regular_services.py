@@ -2,6 +2,7 @@ import json, os, secrets
 from pathlib import Path
 import time, subprocess
 from datetime import datetime
+from sqlalchemy import asc
 
 from api.core.dependencies.job_runner.app.job_manager import tool_to_script_mapping
 from api.db.database import get_db, SessionLocal
@@ -28,20 +29,20 @@ def run_pending_jobs():
                 TifiJob.status == JobStatus.pending,
                 TifiJob.is_premium == True,
                 TifiJob.expiration_time >= current_time,
-            ).all()
+            ).order_by(asc(TifiJob.created_at)).all()
 
             # Get all free jobs i.e jobs for a free user
             free_pending_jobs = db.query(TifiJob).filter(
                 TifiJob.status == JobStatus.pending,
                 TifiJob.is_premium == False,
                 TifiJob.expiration_time >= current_time,
-            ).limit(5).all()
+            ).order_by(asc(TifiJob.created_at)).limit(5).all()
 
             # Get all jobs
             all_pending_jobs = db.query(TifiJob).filter(
                 TifiJob.status == JobStatus.pending,
                 TifiJob.expiration_time >= current_time,
-            ).all()
+            ).order_by(asc(TifiJob.created_at)).all()
 
             
             no_of_jobs = len(all_pending_jobs)
