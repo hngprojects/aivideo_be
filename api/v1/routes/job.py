@@ -153,7 +153,7 @@ async def job_process_event_generator(
             project = project_service.fetch(db=db, project_id=job.project_id)
 
             status = job.status
-            progress = job.progress
+            progress = int(job.progress.split('%')[0])
             result = job.result
 
             event_name = 'other'
@@ -161,17 +161,6 @@ async def job_process_event_generator(
             if status == JobStatus.failed:
                 event_name = 'failure'
                 yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result, "progress": progress})}\n\n'
-                
-                if user:
-                    # Send notification to user
-                    notification_service.send_notification(
-                        db=db,
-                        user=user,
-                        title="Project creation failed",
-                        message=f"The project '{project.title}' has failed to create.",
-                        type='warning'
-                    )
-
                 break
 
             elif status == JobStatus.progress:
@@ -181,16 +170,6 @@ async def job_process_event_generator(
             elif status == JobStatus.completed:
                 event_name = 'success'
                 yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result, "progress": progress})}\n\n'
-                
-                if user:
-                    # Send notification to user
-                    notification_service.send_notification(
-                        db=db,
-                        user=user,
-                        title="Project created",
-                        message=f"The project '{project.title}' has been created successfully."
-                    )
-
                 break
         
         finally:
