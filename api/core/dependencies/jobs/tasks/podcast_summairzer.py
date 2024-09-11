@@ -7,14 +7,23 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from io import BytesIO
 
-from api.utils.minio_service import minio_service
 from api.utils.settings import settings
 from api.utils.files import delete_file
 from api.v1.services.ai_tools.summary import summary_service
 from api.utils import mime_types
+from api.db.database import get_db
+from api.utils.minio_service import minio_service
+from api.v1.services.job import tifi_job_service
+from api.core.dependencies.jobs.utils import save_and_print_job_progress
 
+db = next(get_db())
 
 payload = json.loads(sys.argv[1])
+
+job_id = payload.get('job_id', None)
+job = tifi_job_service.fetch(db, job_id)
+
+save_and_print_job_progress(db, job, 10)
 
 audio_url = payload.get('audio_url')
 
@@ -73,14 +82,12 @@ save_url, download_url = minio_service.upload_to_minio(
 )
 delete_file(pdf_filename)
 
-result = json.dumps(
-    {
-        "summary": summary,
-        "transcript": transcription,
-        "estimated_read_time": f"{estimated_read_time:.2f} minutes",
-        "pdf_file_path": save_url,
-        "download_url": download_url,
-    }
-)
+result = json.dumps({
+    "summary": summary,
+    "transcript": transcription,
+    "estimated_read_time": f"{estimated_read_time:.2f} minutes",
+    "pdf_file_path": save_url,
+    "download_url": download_url,
+})
 
 print(result)

@@ -17,6 +17,48 @@ class TalkingAvatarService:
 
 	def __init__(self):
 		self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+
+	
+	def generate_talking_avatar_video(self, image_file, audio):
+		files = [
+			("input_face", open(image_file, "rb")),
+			("input_audio", open(audio, "rb")),
+		]
+		payload = {
+			"functions": None,
+			"variables": {},
+			"face_padding_top": 0,
+			"face_padding_bottom": 18,
+			"face_padding_left": 0,
+			"face_padding_right": 0,
+			"sadtalker_settings": {
+				"still": True,
+				"ref_pose": None,
+				"input_yaw": None,
+				"input_roll": None,
+				"pose_style": 0,
+				"preprocess": "resize",
+				"input_pitch": None,
+				"ref_eyeblink": None,
+				"expression_scale": 1,
+			},
+			"selected_model": "SadTalker",
+		}
+
+		print('Making API request to get talking avatar...')
+		response = requests.post(
+			"https://api.gooey.ai/v2/Lipsync/form/",
+			headers={
+				"Authorization": "Bearer " + settings.GOOEY_API_KEY,
+			},
+			files=files,
+			data={"json": json.dumps(payload)},
+		)
+
+		result = response.json()
+		url = result['output']['output_video']
+
+		return url
 		
 
 	def process_script(
@@ -41,6 +83,7 @@ class TalkingAvatarService:
 
 		print('Generating audio from script...')
 		audio = video_service.generate_audio_from_script(script=script, voice_over=voice_over)
+		url = self.generate_talking_avatar_video(image_file, audio)
 		files = [
 			("input_face", open(image_file, "rb")),
 			("input_audio", open(audio, "rb")),
