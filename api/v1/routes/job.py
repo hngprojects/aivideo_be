@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
-from typing import List, Annotated, Optional
-from api.v1.schemas.job import JobResponse
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
@@ -14,11 +13,11 @@ from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.project import project_service
 from api.v1.services.job import job_service
-from api.v1.services.notification import notification_service
 from api.v1.services.job import tifi_job_service
-from api.core.dependencies.jobs import yield_service, service
+from api.core.dependencies.job_runner.app import regular_services, yield_service
 from api.core.dependencies.celery.tasks.run_job import run_job_in_celery, run_pending_jobs_in_celery
-import json
+from api.utils.settings import settings
+import json, requests
 import asyncio
 
 job_router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -29,12 +28,17 @@ job_router = APIRouter(prefix="/jobs", tags=["Jobs"])
 async def get_all_jobs(db: Session = Depends(get_db)):
     """Fetch all jobs from the database."""
 
+
+    # response = requests.get(
+    #     url=f'{settings.JOB_APP_URL}/api/v1/jobs'
+    # )
     jobs = tifi_job_service.fetch_all(db=db)
 
     return success_response(
         status_code=200,
         message='Jobs fetched successfully',
         data=jsonable_encoder(jobs)
+        # data=jsonable_encoder(response.json()['data'])
     )
 
 
@@ -54,17 +58,6 @@ async def get_all_available_jobs(db: Session = Depends(get_db)):
 @job_router.get("/process-jobs-synchronous", status_code=status.HTTP_200_OK)
 async def process_jobs_synchronous(db: Session = Depends(get_db)):
     """This endpoint processes all pending jobs synchronously"""
-
-    # async def event_generator():
-    #     try:
-    #         for log in run_pending_jobs():
-    #             yield log  # Yielding each log in real-time
-    #             await asyncio.sleep(1)  # Delay between output stream
-    #     except Exception as e:
-    #         yield str(e)
-
-    # # Return the streaming response
-    # return StreamingResponse(event_generator(), media_type="text/plain")
 
     return StreamingResponse(
         yield_service.run_pending_jobs(), 
@@ -128,7 +121,7 @@ async def process_and_execute_job(background_tasks: BackgroundTasks, job_id: str
     # Run job in celery
     # run_job_in_celery.delay(job_id)
 
-    service.process_job(job_id)
+    regular_services.process_job(job_id)
 
     return success_response(
         status_code=200,

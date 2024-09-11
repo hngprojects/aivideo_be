@@ -1,7 +1,7 @@
 from api.v1.models.project import ProjectToolsEnum as tools
 
 
-BASE_DIR = 'api/core/dependencies/jobs/tasks'
+BASE_DIR = 'api/core/dependencies/job_runner/tasks'
 
 # Mapping between script names and their corresponding tools
 # This is basically to register task scripts

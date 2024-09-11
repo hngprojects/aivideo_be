@@ -1,7 +1,4 @@
-from slowapi import Limiter
-from slowapi.errors import RateLimitExceeded
-from fastapi.staticfiles import StaticFiles
-import uvicorn, os, asyncio
+import uvicorn, os
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Request
 from fastapi.templating import Jinja2Templates
@@ -31,16 +28,13 @@ async def lifespan(app: FastAPI):
     load_avatars_in_db()
     load_audio_in_db()
     load_billing_plans_in_db()
-    # check_and_expire_jobs_in_celery.delay()
-
     yield
 
 
 app = FastAPI(
     lifespan=lifespan,
-    title='Convey API'
+    title='Tifi.TV API'
 )
-
 
 # In-memory request counter by endpoint and IP address
 request_counter = defaultdict(lambda: defaultdict(int))

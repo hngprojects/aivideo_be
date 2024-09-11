@@ -9,7 +9,7 @@ from api.utils.minio_service import minio_service
 from api.utils.settings import settings
 from api.utils import mime_types
 from api.v1.services.job import tifi_job_service
-from api.core.dependencies.jobs.utils import save_and_print_job_progress
+from api.core.dependencies.job_runner.app.utils import save_and_print_job_progress
 
 db = next(get_db())
 
