@@ -1,4 +1,4 @@
-import json, os, sys
+import json, os, secrets
 from pathlib import Path
 import time, subprocess
 from datetime import datetime
@@ -13,6 +13,7 @@ from api.v1.services.job import tifi_job_service
 from api.v1.models.job import TifiJob, JobStatus
 
 
+# Get project root directory
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 
 
@@ -53,7 +54,6 @@ def run_pending_jobs():
                     try:
                         yield f'Job with id {job_obj.id} for tool {job_obj.tool_name} received\n'
                         job_obj.status = JobStatus.received
-                        # job_obj.progress = '20% complete'
                         db.commit()
                         db.refresh(job_obj)
                         
@@ -68,11 +68,9 @@ def run_pending_jobs():
                 
                 yield f'All jobs processed and executed successfully\n'
             else:     
-                yield 'No pending jobs available'
+                yield 'No pending jobs available\n'
                 
             break
-
-            # time.sleep(6000)  # poll every two seconds
 
 
 def process_job(job_id: str):
@@ -99,13 +97,12 @@ def process_job(job_id: str):
             result = output
 
         job.status = JobStatus.completed
-        yield f'See result: {result}'
         job.result = json.loads(result)
         db.commit()
 
         yield f'Job with id {job.id} for tool {job.tool_name} completed successfully\n'
 
-        yield f'Saving to user projects...\n'
+        yield f'Saving to user projects\n'
         # # ------- PROJECT PROCESSING -------
         if job.project_id:
             # Get project
@@ -115,7 +112,7 @@ def process_job(job_id: str):
             project = project_service.create(
                 db=db,
                 schema=CreateProject(
-                    title=f"New {job.tool_name} Project",
+                    title=f"New {job.tool_name} Project- {secrets.token_hex(5)}",
                     project_type=job.tool_name,
                     user_id=job.user_id
                 )
@@ -132,7 +129,7 @@ def process_job(job_id: str):
 
         if job.user_id:
             # Send notification to the user
-            yield 'Sending notification to the user...\n'
+            yield 'Sending notification to the user\n'
 
             user = user_service.fetch(db, job.user_id)
             notification_service.send_notification(
@@ -143,9 +140,10 @@ def process_job(job_id: str):
                 type='success'
             )
         
+        # Save job as completed
         job.progress = '100% complete'
         db.commit()
-        yield 'Job completed'
+        yield f'Job {job.id} completed\n'
 
     except Exception as e:
         # Rollback previous commit
@@ -159,7 +157,7 @@ def process_job(job_id: str):
         
         if job.user_id:
             # Send notification to the user
-            yield 'Sending notification to the user...\n'
+            yield 'Sending notification to the user\n'
 
             user = user_service.fetch(db, job.user_id)
             notification_service.send_notification(

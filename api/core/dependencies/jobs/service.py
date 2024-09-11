@@ -1,4 +1,4 @@
-import json, os, sys
+import json, os, secrets
 from pathlib import Path
 import time, subprocess
 from datetime import datetime
@@ -94,7 +94,7 @@ def process_job(job_id: str):
             project = project_service.create(
                 db=db,
                 schema=CreateProject(
-                    title=f"New {job.tool_name} Project",
+                    title=f"New {job.tool_name} Project-{secrets.token_hex(5)}",
                     project_type=job.tool_name,
                     user_id=job.user_id
                 )
@@ -119,6 +119,11 @@ def process_job(job_id: str):
                 message=f"The project '{job.tool_name}' created successfully.",
                 type='success'
             )
+        
+        # Save job as completed
+        job.progress = '100% complete'
+        db.commit()
+        yield f'Job {job.id} completed\n'
 
     except Exception as e:
         job.status = JobStatus.failed
