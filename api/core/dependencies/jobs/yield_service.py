@@ -100,8 +100,6 @@ def process_job(job_id: str):
         job.result = json.loads(result)
         db.commit()
 
-        yield f'Job with id {job.id} for tool {job.tool_name} completed successfully\n'
-
         yield f'Saving to user projects\n'
         # # ------- PROJECT PROCESSING -------
         if job.project_id:
@@ -143,7 +141,7 @@ def process_job(job_id: str):
         # Save job as completed
         job.progress = '100% complete'
         db.commit()
-        yield f'Job {job.id} completed\n'
+        yield f'Job {job.id} progress information: Job completed\n'
 
     except Exception as e:
         # Rollback previous commit
