@@ -14,7 +14,8 @@ from api.v1.services.job import tifi_job_service
 from api.v1.models.job import TifiJob, JobStatus
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent  # using uvicorn
 
 
 def run_pending_jobs():
@@ -121,7 +122,7 @@ def process_job(job_id: str):
         # Save job as completed
         job.progress = '100% complete'
         db.commit()
-        yield f'Job {job.id} completed\n'
+        print(f'Job {job.id} completed\n')
 
     except Exception as e:
         job.status = JobStatus.failed
@@ -139,8 +140,8 @@ def process_job(job_id: str):
                 type='warning'
             )
 
-        raise Exception(f'An exception occured: {str(e)}')
-        
+        # raise Exception(f'An exception occured: {str(e)}')
+        print(f'An exception occured: {str(e)}')
 
 
 def execute_job(job: TifiJob):
@@ -163,6 +164,8 @@ def execute_job(job: TifiJob):
         env = os.environ.copy()
         env["PYTHONPATH"] = BASE_DIR
 
+        print(BASE_DIR)
+
         process = subprocess.Popen(
             ['python3', '-u', script_path, payload_str],
             stdout=subprocess.PIPE,
@@ -175,6 +178,7 @@ def execute_job(job: TifiJob):
         # Stream output in real-time
         result_output = ''
         for line in iter(process.stdout.readline, ''):
+            print(line)
             result_output = line.strip()  # get the last line printed out to the console
 
         # Ensure the process is finished
@@ -185,11 +189,15 @@ def execute_job(job: TifiJob):
         if return_code != 0:
             stderr_output = process.stderr.read()
             process.stderr.close()
-            # raise Exception(f"Job failed with error: {stderr_output}")   
+            # raise Exception(f"Job failed with error: {stderr_output}")
+            print(f"Job failed with error: {stderr_output}")
 
         return result_output
     
     except subprocess.CalledProcessError as e:
-        raise
+        # raise
+        return json.dumps({'error': str(e)})
+        
     except Exception as e:
-        raise
+        # raise
+        return json.dumps({'error': str(e)})

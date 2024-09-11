@@ -14,7 +14,7 @@ from api.v1.services.user import user_service
 from api.v1.services.project import project_service
 from api.v1.services.job import job_service
 from api.v1.services.job import tifi_job_service
-from api.core.dependencies.job_runner.app import regular_services, yield_service
+from api.core.dependencies.job_runner.app.services import regular_service, yield_service
 from api.core.dependencies.celery.tasks.run_job import run_job_in_celery, run_pending_jobs_in_celery
 from api.utils.settings import settings
 import json, requests
@@ -121,7 +121,7 @@ async def process_and_execute_job(background_tasks: BackgroundTasks, job_id: str
     # Run job in celery
     # run_job_in_celery.delay(job_id)
 
-    regular_services.process_job(job_id)
+    regular_service.process_job(job_id)
 
     return success_response(
         status_code=200,

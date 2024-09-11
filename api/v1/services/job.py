@@ -415,7 +415,7 @@ class TifiJobService:
         tool_name: str,
         payload,
         user_id: Optional[str]=None,
-        # is_premium: bool = False,
+        is_parallel: bool = False,
         save_project: bool = True
     ):
         """Create a new Tifi job with a project if `save_project` is True"""
@@ -442,6 +442,7 @@ class TifiJobService:
         job = TifiJob(
             tool_name=tool_name,
             is_premium=(not user_on_free_plan) if user_id else False,
+            is_parallel=is_parallel,
             payload=payload,
             status='Pending',
             progress='0% complete',

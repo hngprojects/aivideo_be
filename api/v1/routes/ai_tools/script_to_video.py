@@ -85,6 +85,7 @@ async def convert_script_to_video(
             'voice_over': schema.voice_over.lower(),
         },
         user_id=user.id if user else None,
+        is_parallel=False
     )
 
     return success_response(
@@ -95,29 +96,3 @@ async def convert_script_to_video(
             "project_id": project.id
         }
     )
-    
-    # task = geenerate_video_from_script_task.apply_async(kwargs={
-    #     'background_audio': audio_file if schema.audio_id else None,
-    #     'scenes': schema.scenes,
-    #     'aspect_ratio': schema.aspect_ratio,
-    #     'script': schema.script,
-    #     'voice_over': schema.voice_over.lower(),
-    # })
-
-    # # Create project with job
-    # project = job_service.create_project_with_job(
-    #     db=db,
-    #     job=task,
-    #     project_title='New TTV Project',
-    #     project_type=ProjectToolsEnum.script_to_video.value,
-    #     # user_id = pass in the current user id for authenticated users
-    # )
-
-    # return success_response(
-    #     status_code=202,
-    #     message="Video generation initiated successfully",
-    #     data={
-    #         "job_id": task.id,
-    #         "project_id": project.id
-    #     }
-    # )

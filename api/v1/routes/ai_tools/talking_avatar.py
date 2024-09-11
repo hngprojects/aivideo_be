@@ -68,6 +68,7 @@ async def talking_head_image_upload(
             'voice_over': voice_over.lower(),
         },
         user_id=user.id if user else None,
+        is_parallel=False
     )
 
     return success_response(
@@ -78,32 +79,6 @@ async def talking_head_image_upload(
             "project_id": project.id
         }
     )
-
-    # task = generate_talking_avatar_task.apply_async(kwargs={
-    #     'img_file': image_file,
-    #     'audio_file': audio_file if audio_id else None,
-    #     'aspect_ratio': aspect_ratio.lower(),
-    #     'script': script,
-    #     'voice_over': voice_over.lower(),
-    #     'default': False
-    # })
-
-    # # Create project with job
-    # project = job_service.create_project_with_job(
-    #     db=db,
-    #     job=task,
-    #     project_title='New project',
-    #     project_type=ProjectToolsEnum.image_to_video.value,
-    # )
-
-    # return success_response(
-    #     status_code=202,
-    #     message="Talking Avatar generation task initiated successfully",
-    #     data={
-    #         "job_id": task.id,
-    #         "project_id": project.id
-    #     }
-    # )
 
 
 @video_router.post('/talking-head/avatar-selection', status_code=202, response_model=success_response)
@@ -139,6 +114,7 @@ async def talking_head_avatar_selection(
             'voice_over': schema.voice_over.lower(),
         },
         user_id=user.id if user else None,
+        is_parallel=False,
     )
 
     return success_response(
@@ -149,21 +125,3 @@ async def talking_head_avatar_selection(
             "project_id": project.id
         }
     )
-
-    # task = generate_talking_avatar_task.apply_async(kwargs={
-    #     'img_file': image_file,
-    #     'audio_file': audio_file if schema.audio_id else None,
-    #     'aspect_ratio': schema.aspect_ratio.lower(),
-    #     'script': schema.script,
-    #     'voice_over': schema.voice_over.lower(),
-    #     'default': True
-    # })
-
-    # # Create project with job
-    # project = job_service.create_project_with_job(
-    #     db=db,
-    #     job=task,
-    #     project_title='New project',
-    #     project_type=ProjectToolsEnum.talking_avatar.value,
-    # )
-

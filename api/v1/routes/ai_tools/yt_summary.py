@@ -74,6 +74,7 @@ async def summarize_up_vid(
         tool_name=ProjectToolsEnum.video_summarizer.value,
         payload={'video_url': video_url},
         user_id=user.id if user else None,
+        is_parallel=False
     )
 
     return success_response(
@@ -125,6 +126,7 @@ async def summarize_yt_vid(
         tool_name=ProjectToolsEnum.youtube_summarizer.value,
         payload={'link': schema.link},
         user_id=user.id if user else None,
+        is_parallel=True
     )
 
     return success_response(

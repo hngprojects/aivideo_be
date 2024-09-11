@@ -15,7 +15,8 @@ from api.v1.models.job import TifiJob, JobStatus
 
 
 # Get project root directory
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent  # using uvicorn
 
 
 def run_pending_jobs():

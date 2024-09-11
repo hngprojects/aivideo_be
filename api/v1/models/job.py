@@ -45,6 +45,7 @@ class TifiJob(BaseTableModel):
     payload = Column(JSON, nullable=True)
     result = Column(JSON, nullable=True)
     expiration_time = Column(DateTime(timezone=True), nullable=True)
+    is_parallel = Column(Boolean, server_default='false')  # New field to indicate parallel compatibility
 
     user = relationship("User", back_populates="tifi_jobs")
     project = relationship("Project", back_populates="tifi_job")
