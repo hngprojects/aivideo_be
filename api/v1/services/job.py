@@ -469,7 +469,7 @@ class TifiJobService:
         #     TifiJob.tool_name==tool_name
         # ).all() if tool_name is not None else db.query(TifiJob).filter(TifiJob.is_expired==is_expired,).all()
 
-        jobs = db.query(TifiJob).all()
+        jobs = db.query(TifiJob).order_by(desc(TifiJob.created_at)).all()
         
         return jobs
     
@@ -481,7 +481,7 @@ class TifiJobService:
         jobs = db.query(TifiJob).filter(
             TifiJob.expiration_time >= current_time,
             TifiJob.status == JobStatus.pending
-        ).all()
+        ).order_by(desc(TifiJob.created_at)).all()
         
         return jobs
     
@@ -489,7 +489,9 @@ class TifiJobService:
     def fetch_all_pending(self, db: Session):
         '''Fetches all jobs'''
 
-        jobs = db.query(TifiJob).filter(TifiJob.status == JobStatus.pending.value).all()
+        jobs = db.query(TifiJob).filter(
+            TifiJob.status == JobStatus.pending.value
+        ).order_by(desc(TifiJob.created_at)).all()
         
         return jobs
 

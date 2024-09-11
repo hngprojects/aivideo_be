@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     JWT_REFRESH_EXPIRY: int = config("JWT_REFRESH_EXPIRY")
 
     APP_URL: str = config("APP_URL")
+    JOB_APP_URL: str = config("JOB_APP_URL")
 
     MAIL_USERNAME: str = config("MAIL_USERNAME")
     MAIL_PASSWORD: str = config("MAIL_PASSWORD")

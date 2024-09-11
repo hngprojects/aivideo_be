@@ -2,19 +2,19 @@ import json, os, secrets
 from pathlib import Path
 import time, subprocess
 from datetime import datetime
+from sqlalchemy import asc
 
-from api.core.dependencies.jobs.runner import tool_to_script_mapping
+from api.core.dependencies.job_runner.app.job_manager import tool_to_script_mapping
 from api.db.database import get_db, SessionLocal
 from api.v1.schemas.project import CreateProject
-from api.v1.services.notification import notification_service
-from api.v1.services.user import user_service
 from api.v1.services.project import project_service
+from api.v1.services.user import user_service
+from api.v1.services.notification import notification_service
 from api.v1.services.job import tifi_job_service
 from api.v1.models.job import TifiJob, JobStatus
 
 
-# Get project root directory
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
 
 
 def run_pending_jobs():
@@ -23,52 +23,44 @@ def run_pending_jobs():
     while True:
         with SessionLocal() as db:
             current_time = datetime.now().replace(tzinfo=None)
-            
-            yield f'Fetching number of available jobs to be processed\n'
 
             # Get all premium jobs i.e jobs for a premium user
             premium_pending_jobs = db.query(TifiJob).filter(
                 TifiJob.status == JobStatus.pending,
                 TifiJob.is_premium == True,
                 TifiJob.expiration_time >= current_time,
-            ).all()
+            ).order_by(asc(TifiJob.created_at)).all()
 
             # Get all free jobs i.e jobs for a free user
             free_pending_jobs = db.query(TifiJob).filter(
                 TifiJob.status == JobStatus.pending,
                 TifiJob.is_premium == False,
                 TifiJob.expiration_time >= current_time,
-            ).limit(5).all()
+            ).order_by(asc(TifiJob.created_at)).limit(5).all()
 
             # Get all jobs
             all_pending_jobs = db.query(TifiJob).filter(
                 TifiJob.status == JobStatus.pending,
                 TifiJob.expiration_time >= current_time,
-            ).all()
+            ).order_by(asc(TifiJob.created_at)).all()
+
             
             no_of_jobs = len(all_pending_jobs)
             if no_of_jobs > 0:
-                yield f'Number of jobs to be processed: {no_of_jobs}\n'
 
                 for job_obj in all_pending_jobs:
                     try:
-                        yield f'Job with id {job_obj.id} for tool {job_obj.tool_name} received\n'
                         job_obj.status = JobStatus.received
                         db.commit()
                         db.refresh(job_obj)
-                        
-                        # Yield the output from process_job
-                        for output in process_job(job_id=job_obj.id):
-                            yield output
 
+                        process_job(job_id=job_obj.id)
                     except Exception as e:
-                        yield f"Error processing job {job_obj.id}: {e}\n"
+                        print(f"Error processing job {job_obj.id}: {e}")
                     
                     time.sleep(2)
-                
-                yield f'All jobs processed and executed successfully\n'
-            else:     
-                yield 'No pending jobs available\n'
+            else:
+                print('No pending jobs available')
                 
             break
 
@@ -81,27 +73,17 @@ def process_job(job_id: str):
     # Fetch job
     job = tifi_job_service.fetch(db=db, job_id=job_id)
 
-    try:        
-        yield f"Job with id: {job.id} for tool {job.tool_name} in progress\n"
-
+    try:
         job.status = JobStatus.progress
         db.commit()
-        
-        # # Call the tool to process the job and yield outputs
-        result = None
-        for output in execute_job(job):
-            # Yield the result for streaming
-            yield output
 
-            # Capture only the final result returned by execute_job
-            result = output
+        output = execute_job(job)
 
         job.status = JobStatus.completed
-        job.result = json.loads(result)
+        job.result = json.loads(output)
         db.commit()
 
-        yield f'Saving to user projects\n'
-        # # ------- PROJECT PROCESSING -------
+        # ------- PROJECT PROCESSING -------
         if job.project_id:
             # Get project
             project = project_service.fetch(db, job.project_id)
@@ -110,7 +92,7 @@ def process_job(job_id: str):
             project = project_service.create(
                 db=db,
                 schema=CreateProject(
-                    title=f"New {job.tool_name} Project- {secrets.token_hex(5)}",
+                    title=f"New {job.tool_name} Project-{secrets.token_hex(5)}",
                     project_type=job.tool_name,
                     user_id=job.user_id
                 )
@@ -120,15 +102,13 @@ def process_job(job_id: str):
             job.project_id = project.id
 
         # Update project result
-        project.result = json.loads(result)
+        project.result = json.loads(output)
         project.is_active = True
 
         db.commit()
 
         if job.user_id:
-            # Send notification to the user
-            yield 'Sending notification to the user\n'
-
+            # Send notification to the user            
             user = user_service.fetch(db, job.user_id)
             notification_service.send_notification(
                 db=db,
@@ -141,22 +121,15 @@ def process_job(job_id: str):
         # Save job as completed
         job.progress = '100% complete'
         db.commit()
-        yield f'Job {job.id} progress information: Job completed\n'
+        yield f'Job {job.id} completed\n'
 
     except Exception as e:
-        # Rollback previous commit
-        db.rollback()
-
-        # Update job status to failed
         job.status = JobStatus.failed
         job.result = {"error": f"{str(e)}"}
         db.commit()
-        # raise Exception(f'An exception occured: {str(e)}')
-        
+
         if job.user_id:
             # Send notification to the user
-            yield 'Sending notification to the user\n'
-
             user = user_service.fetch(db, job.user_id)
             notification_service.send_notification(
                 db=db,
@@ -166,16 +139,14 @@ def process_job(job_id: str):
                 type='warning'
             )
 
-        yield f'Job with {job.id} for tool {job.tool_name} failed\n'
-        yield f'An exception occured: {str(e)}\n\n'
+        raise Exception(f'An exception occured: {str(e)}')
+        
 
 
 def execute_job(job: TifiJob):
     '''THis function runs the tool to run the job script for each job'''
 
     try:
-        yield f'Job with id {job.id} for tool {job.tool_name} in execution\n'
-
         job_payload = job.payload
         job_payload['job_id'] = job.id
 
@@ -186,10 +157,7 @@ def execute_job(job: TifiJob):
         script_path = tool_to_script_mapping.get(job.tool_name, None)
 
         if not script_path:
-            yield f"No script found for tool: {job.tool_name}"
             raise ValueError(f"No script found for tool: {job.tool_name}")
-        
-        yield f'Opening script {script_path} for job {job.id} and tool {job.tool_name}\n'
 
         # Set PYTHONPATH in environment variables to the root directory
         env = os.environ.copy()
@@ -206,13 +174,8 @@ def execute_job(job: TifiJob):
 
         # Stream output in real-time
         result_output = ''
-        while True:
-            output_line = process.stdout.readline()
-            if output_line:
-                yield output_line
-                result_output = output_line.strip()  # Capture the last line in real-time
-            if process.poll() is not None:
-                break
+        for line in iter(process.stdout.readline, ''):
+            result_output = line.strip()  # get the last line printed out to the console
 
         # Ensure the process is finished
         process.stdout.close()
@@ -222,21 +185,11 @@ def execute_job(job: TifiJob):
         if return_code != 0:
             stderr_output = process.stderr.read()
             process.stderr.close()
-            # yield f"Job failed with error: {stderr_output}"
-            raise Exception(f"{stderr_output}")
-        
-        yield f'Closing script {script_path}\n'       
+            # raise Exception(f"Job failed with error: {stderr_output}")   
 
-        # If the final output is empty, handle it
-        if not result_output:
-            raise Exception("No output returned from job script") 
-
-        # return result_output
-        yield f'{result_output}\n'
+        return result_output
     
     except subprocess.CalledProcessError as e:
-        yield f"Job failed: {str(e)}\n"
         raise
     except Exception as e:
-        yield f"General job error: {str(e)}\n"
         raise
