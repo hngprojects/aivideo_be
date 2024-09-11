@@ -3,7 +3,7 @@ from pathlib import Path
 import time, subprocess
 from datetime import datetime
 
-from api.core.dependencies.jobs.runner import tool_to_script_mapping
+from api.core.dependencies.job_runner.app.job_manager import tool_to_script_mapping
 from api.db.database import get_db, SessionLocal
 from api.v1.schemas.project import CreateProject
 from api.v1.services.project import project_service
@@ -13,13 +13,11 @@ from api.v1.services.job import tifi_job_service
 from api.v1.models.job import TifiJob, JobStatus
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
 
 
 def run_pending_jobs():
     '''This function checks for and runs all pending jobs in the database'''
-
-    # db = next(get_db())
 
     while True:
         with SessionLocal() as db:
@@ -52,7 +50,6 @@ def run_pending_jobs():
                 for job_obj in all_pending_jobs:
                     try:
                         job_obj.status = JobStatus.received
-                        # job_obj.progress = '20% complete'
                         db.commit()
                         db.refresh(job_obj)
 

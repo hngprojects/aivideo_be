@@ -5,7 +5,7 @@ from api.v1.services.ai_tools.video_subtitles import transcribe_audio_segments
 from api.v1.services.ai_tools.summary import summary_service
 from api.db.database import get_db
 from api.v1.services.job import tifi_job_service
-from api.core.dependencies.jobs.utils import save_and_print_job_progress
+from api.core.dependencies.job_runner.app.utils import save_and_print_job_progress
 
 db = next(get_db())
 

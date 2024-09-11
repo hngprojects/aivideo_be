@@ -3,7 +3,7 @@ from pathlib import Path
 import time, subprocess
 from datetime import datetime
 
-from api.core.dependencies.jobs.runner import tool_to_script_mapping
+from api.core.dependencies.job_runner.app.job_manager import tool_to_script_mapping
 from api.db.database import get_db, SessionLocal
 from api.v1.schemas.project import CreateProject
 from api.v1.services.notification import notification_service
@@ -14,7 +14,7 @@ from api.v1.models.job import TifiJob, JobStatus
 
 
 # Get project root directory
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
 
 
 def run_pending_jobs():
