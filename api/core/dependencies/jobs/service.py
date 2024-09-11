@@ -7,6 +7,8 @@ from api.core.dependencies.jobs.runner import tool_to_script_mapping
 from api.db.database import get_db, SessionLocal
 from api.v1.schemas.project import CreateProject
 from api.v1.services.project import project_service
+from api.v1.services.user import user_service
+from api.v1.services.notification import notification_service
 from api.v1.services.job import tifi_job_service
 from api.v1.models.job import TifiJob, JobStatus
 
@@ -50,9 +52,10 @@ def run_pending_jobs():
                 for job_obj in all_pending_jobs:
                     try:
                         job_obj.status = JobStatus.received
-                        job_obj.progress = '20% complete'
+                        # job_obj.progress = '20% complete'
                         db.commit()
                         db.refresh(job_obj)
+
                         process_job(job_id=job_obj.id)
                     except Exception as e:
                         print(f"Error processing job {job_obj.id}: {e}")
@@ -74,14 +77,13 @@ def process_job(job_id: str):
 
     try:
         job.status = JobStatus.progress
-        job.progress = '50% complete'
         db.commit()
 
         output = execute_job(job)
 
         job.status = JobStatus.completed
         job.result = json.loads(output)
-        job.progress = '100% complete'
+        db.commit()
 
         # ------- PROJECT PROCESSING -------
         if job.project_id:
@@ -107,21 +109,46 @@ def process_job(job_id: str):
 
         db.commit()
 
+        if job.user_id:
+            # Send notification to the user            
+            user = user_service.fetch(db, job.user_id)
+            notification_service.send_notification(
+                db=db,
+                user=user,
+                title="Project created",
+                message=f"The project '{job.tool_name}' created successfully.",
+                type='success'
+            )
+
     except Exception as e:
         job.status = JobStatus.failed
-        job.progress = 'Job failed'
         job.result = {"error": f"{str(e)}"}
         db.commit()
+
+        if job.user_id:
+            # Send notification to the user
+            user = user_service.fetch(db, job.user_id)
+            notification_service.send_notification(
+                db=db,
+                user=user,
+                title="Project creation failed",
+                message=f"The project '{job.tool_name}' has failed to create.",
+                type='warning'
+            )
+
         raise Exception(f'An exception occured: {str(e)}')
+        
 
 
 def execute_job(job: TifiJob):
     '''THis function runs the tool to run the job script for each job'''
 
     try:
+        job_payload = job.payload
+        job_payload['job_id'] = job.id
 
         # Convert the payload to a JSON string
-        payload_str = json.dumps(job.payload)
+        payload_str = json.dumps(job_payload)
 
         # Get script path based on the task name
         script_path = tool_to_script_mapping.get(job.tool_name, None)
