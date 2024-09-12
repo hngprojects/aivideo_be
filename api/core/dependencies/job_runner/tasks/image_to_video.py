@@ -43,97 +43,102 @@ if audio_url:
 # )
 
 # Set up variables
-image_file=image_file,
-aspect_ratio=payload.get('aspect_ratio'),
-script=payload.get('script'),
-voice_over=payload.get('voice_over'),
+image_file=image_file
+aspect_ratio=payload.get('aspect_ratio')
+script=payload.get('script')
+voice_over=payload.get('voice_over')
 audio_file=audio_file
 
-save_and_print_job_progress(db, job, 20, 'Generating audio from script')
-audio = video_service.generate_audio_from_script(script=script, voice_over=voice_over)
 
-save_and_print_job_progress(db, job, 30, 'Generating talking avatar video')
-url = talking_avatar_service.generate_talking_avatar_video(image_file, audio)
+try:
+    save_and_print_job_progress(db, job, 20, 'Generating audio from script')
+    audio = video_service.generate_audio_from_script(script=script, voice_over=voice_over)
 
-save_and_print_job_progress(db, job, 45, 'Downloading and saving generated video')
-# Download video file to the current directory
-initial_save_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4())}.mp4')
-video_service.download_file(url, initial_save_path)
+    save_and_print_job_progress(db, job, 30, 'Generating talking avatar video')
+    url = talking_avatar_service.generate_talking_avatar_video(image_file, audio)
 
-if audio_file:
-    save_and_print_job_progress(db, job, 60, 'Applying background audio')
-    video_audio_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4())}.mp4')
-    # Add background audio to the file
-    video_service.add_background_audio(
-        video_path=initial_save_path,
-        audio_path=audio_file,
-        output_path=video_audio_path,
+    save_and_print_job_progress(db, job, 45, 'Downloading and saving generated video')
+    # Download video file to the current directory
+    initial_save_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4())}.mp4')
+    video_service.download_file(url, initial_save_path)
+
+    if audio_file:
+        save_and_print_job_progress(db, job, 60, 'Applying background audio')
+        video_audio_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4())}.mp4')
+        # Add background audio to the file
+        video_service.add_background_audio(
+            video_path=initial_save_path,
+            audio_path=audio_file,
+            output_path=video_audio_path,
+        )
+
+    video_dir = os.path.join(settings.STORAGE_DIR, 'video')
+    os.makedirs(video_dir, exist_ok=True)
+    final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
+
+    save_and_print_job_progress(db, job, 65, 'Changing aspect ratio')
+    # Perform aspect ratio resizing based on user input
+    video_service.change_aspect_ratio(
+        input_file=video_audio_path if audio_file else initial_save_path,
+        output_file=final_save_path,
+        aspect_ratio=aspect_ratio
     )
 
-video_dir = os.path.join(settings.STORAGE_DIR, 'video')
-os.makedirs(video_dir, exist_ok=True)
-final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
+    save_and_print_job_progress(db, job, 70, 'Cleaning up temporary files')
+    # Delete the temporary audio and video file after processing is done
+    if audio_file:
+        delete_file(video_audio_path)
+    delete_file(initial_save_path)
+    delete_file(audio)
 
-save_and_print_job_progress(db, job, 65, 'Changing aspect ratio')
-# Perform aspect ratio resizing based on user input
-video_service.change_aspect_ratio(
-    input_file=video_audio_path if audio_file else initial_save_path,
-    output_file=final_save_path,
-    aspect_ratio=aspect_ratio
-)
+    save_and_print_job_progress(db, job, 75, 'Generating video preview link')
+    minio_save_file = f'tavtr-{str(uuid4())}.mp4'
+    save_url, download_url = minio_service.upload_to_minio(
+        bucket_name='talking-avatar',
+        source_file=final_save_path,
+        destination_file=minio_save_file,
+        content_type=mime_types.VIDEO_MP4
+    )
 
-save_and_print_job_progress(db, job, 70, 'Cleaning up temporary files')
-# Delete the temporary audio and video file after processing is done
-if audio_file:
-    delete_file(video_audio_path)
-delete_file(initial_save_path)
-delete_file(audio)
+    save_and_print_job_progress(db, job, 80, 'Generating different video quality download links')
+    # Compress video and save to minio as well
+    low_quality = video_service.compress_video(input_file=final_save_path, bitrate=500)
+    low_quality_vid_preview, low_quality_vid_download = minio_service.upload_to_minio(
+        bucket_name='talking-avatar',
+        source_file=low_quality,
+        destination_file=f'tavtr-{str(uuid4())}.mp4',
+        content_type=mime_types.VIDEO_MP4
+    )
+    medium_quality = video_service.compress_video(input_file=final_save_path, bitrate=1080)
+    medium_quality_vid_preview, medium_quality_vid_download = minio_service.upload_to_minio(
+        bucket_name='talking-avatar',
+        source_file=medium_quality,
+        destination_file=f'tavtr-{str(uuid4())}.mp4',
+        content_type=mime_types.VIDEO_MP4
+    )
 
-save_and_print_job_progress(db, job, 75, 'Generating video preview link')
-minio_save_file = f'tavtr-{str(uuid4())}.mp4'
-save_url, download_url = minio_service.upload_to_minio(
-    bucket_name='talking-avatar',
-    source_file=final_save_path,
-    destination_file=minio_save_file,
-    content_type=mime_types.VIDEO_MP4
-)
+    save_and_print_job_progress(db, job, 85, 'Final cleanup and generating result')
+    delete_file(medium_quality)
+    delete_file(low_quality)
+    delete_file(final_save_path)
+    
 
-save_and_print_job_progress(db, job, 80, 'Generating different video quality download links')
-# Compress video and save to minio as well
-low_quality = video_service.compress_video(input_file=final_save_path, bitrate=500)
-low_quality_vid_preview, low_quality_vid_download = minio_service.upload_to_minio(
-    bucket_name='talking-avatar',
-    source_file=low_quality,
-    destination_file=f'tavtr-{str(uuid4())}.mp4',
-    content_type=mime_types.VIDEO_MP4
-)
-medium_quality = video_service.compress_video(input_file=final_save_path, bitrate=1080)
-medium_quality_vid_preview, medium_quality_vid_download = minio_service.upload_to_minio(
-    bucket_name='talking-avatar',
-    source_file=medium_quality,
-    destination_file=f'tavtr-{str(uuid4())}.mp4',
-    content_type=mime_types.VIDEO_MP4
-)
-
-save_and_print_job_progress(db, job, 85, 'Final cleanup and generating result')
-delete_file(medium_quality)
-delete_file(low_quality)
-delete_file(final_save_path)
-delete_file(image_file)
-if audio_file:
-    delete_file(audio_file)
-
-save_and_print_job_progress(db, job, 90, 'Gnerating result')
-result = {
-    'app_url': save_url,
-    'source': url,
-    'quality': {
-        "low_quality": low_quality_vid_download,
-        "medium_quality": medium_quality_vid_download,
-        "high_quality": download_url,
+    save_and_print_job_progress(db, job, 90, 'Gnerating result')
+    result = {
+        'app_url': save_url,
+        'source': url,
+        'quality': {
+            "low_quality": low_quality_vid_download,
+            "medium_quality": medium_quality_vid_download,
+            "high_quality": download_url,
+        }
     }
-}
 
-save_and_print_job_progress(db, job, 95)
+    save_and_print_job_progress(db, job, 95)
 
-print(json.dumps(result))
+    print(json.dumps(result))
+
+finally:
+    delete_file(image_file)
+    if audio_file:
+        delete_file(audio_file)

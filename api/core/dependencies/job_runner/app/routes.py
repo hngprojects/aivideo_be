@@ -53,8 +53,8 @@ async def process_jobs_synchronous(db: Session = Depends(get_db)):
     )
 
 
-@job_running_router.get("/process-jobs-asynchronous", status_code=status.HTTP_200_OK)
-async def process_jobs_asynchronous(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+@job_running_router.get("/retrieve-and-mark-as-processing", status_code=status.HTTP_200_OK)
+async def retrieve_and_mark_as_processing(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """This endpoint processes all pending jobs asynchronously"""
 
     # job_handling.process_all_jobs()  # This will handle both parallel and serial jobs

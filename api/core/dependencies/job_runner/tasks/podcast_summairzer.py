@@ -29,65 +29,70 @@ audio_url = payload.get('audio_url')
 
 audio_file = minio_service.download_file_from_minio(audio_url)
 
-summary, transcription, transcribed_text = summary_service.summarize_podcast(audio_file)
-number_of_words = len(transcribed_text.split())
-estimated_read_time = (number_of_words / 250)  # Assuming 250 words per minute reading speed
+try:
+    summary, transcription, transcribed_text = summary_service.summarize_podcast(audio_file)
+    number_of_words = len(transcribed_text.split())
+    estimated_read_time = (number_of_words / 250)  # Assuming 250 words per minute reading speed
 
-# Create the PDF with better formatting
-pdf_buffer = BytesIO()
-pdf_filename = os.path.join(settings.TEMP_DIR, f"summary-{str(uuid4())}.pdf")
-os.makedirs(os.path.dirname(pdf_filename), exist_ok=True)
+    # Create the PDF with better formatting
+    pdf_buffer = BytesIO()
+    pdf_filename = os.path.join(settings.TEMP_DIR, f"summary-{str(uuid4())}.pdf")
+    os.makedirs(os.path.dirname(pdf_filename), exist_ok=True)
 
-# Set up the document
-doc = SimpleDocTemplate(pdf_buffer, pagesize=letter)
-styles = getSampleStyleSheet()
-story = []
+    # Set up the document
+    doc = SimpleDocTemplate(pdf_buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
 
-# Title
-title_style = styles["Title"]
-story.append(Paragraph("Summary Report", title_style))
-story.append(Spacer(1, 12))
-
-normal_style = styles["Normal"]
-paragraphs = summary.split("\n\n")
-
-for paragraph in paragraphs:
-    story.append(Paragraph(paragraph, normal_style))
+    # Title
+    title_style = styles["Title"]
+    story.append(Paragraph("Summary Report", title_style))
     story.append(Spacer(1, 12))
 
-story.append(Paragraph("Transcript", title_style))
-story.append(Spacer(1, 12))
+    normal_style = styles["Normal"]
+    paragraphs = summary.split("\n\n")
 
-normal_style = styles["Normal"]
-paragraphs = transcribed_text.split("\n\n")
+    for paragraph in paragraphs:
+        story.append(Paragraph(paragraph, normal_style))
+        story.append(Spacer(1, 12))
 
-for paragraph in paragraphs:
-    story.append(Paragraph(paragraph, normal_style))
+    story.append(Paragraph("Transcript", title_style))
     story.append(Spacer(1, 12))
 
-doc.build(story)
+    normal_style = styles["Normal"]
+    paragraphs = transcribed_text.split("\n\n")
 
-# Save the PDF content to a file
-pdf_buffer.seek(0)
-with open(pdf_filename, "wb") as f:
-    f.write(pdf_buffer.read())
+    for paragraph in paragraphs:
+        story.append(Paragraph(paragraph, normal_style))
+        story.append(Spacer(1, 12))
 
-pdf_buffer.close()
-minio_save_file = f"podsum-{str(uuid4())}.pdf"
-save_url, download_url = minio_service.upload_to_minio(
-    bucket_name="podcast-summary",
-    source_file=pdf_filename,
-    destination_file=minio_save_file,
-    content_type=mime_types.APPLICATION_PDF,
-)
-delete_file(pdf_filename)
+    doc.build(story)
 
-result = json.dumps({
-    "summary": summary,
-    "transcript": transcription,
-    "estimated_read_time": f"{estimated_read_time:.2f} minutes",
-    "pdf_file_path": save_url,
-    "download_url": download_url,
-})
+    # Save the PDF content to a file
+    pdf_buffer.seek(0)
+    with open(pdf_filename, "wb") as f:
+        f.write(pdf_buffer.read())
 
-print(result)
+    pdf_buffer.close()
+    minio_save_file = f"podsum-{str(uuid4())}.pdf"
+    save_url, download_url = minio_service.upload_to_minio(
+        bucket_name="podcast-summary",
+        source_file=pdf_filename,
+        destination_file=minio_save_file,
+        content_type=mime_types.APPLICATION_PDF,
+    )
+    # delete_file(pdf_filename)
+
+    result = json.dumps({
+        "summary": summary,
+        "transcript": transcription,
+        "estimated_read_time": f"{estimated_read_time:.2f} minutes",
+        "pdf_file_path": save_url,
+        "download_url": download_url,
+    })
+
+    print(result)
+
+finally:
+    delete_file(pdf_filename)
+    delete_file(audio_file)

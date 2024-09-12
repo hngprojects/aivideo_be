@@ -24,31 +24,37 @@ video_url = payload.get('video_url')
 save_and_print_job_progress(db, job, 10, f'Downloading and opening video file from {video_url}')
 video_file = minio_service.download_file_from_minio(video_url)
 
-save_and_print_job_progress(db, job, 30, 'Extracting audio from video')
-audio_file = convert_video_to_audio(video_file)
+try:
+    save_and_print_job_progress(db, job, 30, 'Extracting audio from video')
+    audio_file = convert_video_to_audio(video_file)
 
-save_and_print_job_progress(db, job, 50, 'Transcribing audio')
-transcription = transcribe_audio_segments(audio_file)
+    save_and_print_job_progress(db, job, 50, 'Transcribing audio')
+    transcription = transcribe_audio_segments(audio_file)
 
-save_and_print_job_progress(db, job, 70, 'Generating transcript documents for summarization')
-documents, transcript = create_documents_from_transcript(transcription)
+    save_and_print_job_progress(db, job, 70, 'Generating transcript documents for summarization')
+    documents, transcript = create_documents_from_transcript(transcription)
 
-save_and_print_job_progress(db, job, 80, 'Summarizing transcript')
-summary = summary_service.summarize_transcript(documents)
+    save_and_print_job_progress(db, job, 80, 'Summarizing transcript')
+    summary = summary_service.summarize_transcript(documents)
 
-save_and_print_job_progress(db, job, 85, 'Cleaning up')
-delete_file(video_file)
-if audio_file:
-    delete_file(audio_file)
+    save_and_print_job_progress(db, job, 85, 'Cleaning up')
+    # delete_file(video_file)
+    # if audio_file:
+    #     delete_file(audio_file)
 
-save_and_print_job_progress(db, job, 90, 'Generating result data')
-result = {
-    "summary": summary,
-    "summary_word_count": summary_service.calculate_word_count(summary),
-    "transcript": get_paragraphs(transcription),
-    "transcript_word_count": summary_service.calculate_word_count(transcript)
-}
+    save_and_print_job_progress(db, job, 90, 'Generating result data')
+    result = {
+        "summary": summary,
+        "summary_word_count": summary_service.calculate_word_count(summary),
+        "transcript": get_paragraphs(transcription),
+        "transcript_word_count": summary_service.calculate_word_count(transcript)
+    }
 
-save_and_print_job_progress(db, job, 95)
+    save_and_print_job_progress(db, job, 95)
 
-print(json.dumps(result))
+    print(json.dumps(result))
+
+finally:
+    delete_file(video_file)
+    if audio_file:
+        delete_file(audio_file)

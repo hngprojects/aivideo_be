@@ -22,6 +22,8 @@ def handle_parallel_jobs(db: Session):
     if not parallel_jobs:
         print('No parallel jobs available')
         return
+
+    print('Running parallel jobs')
     
     futures = []
     
@@ -50,6 +52,8 @@ def handle_serial_jobs(db: Session):
     if not serial_jobs:
         print('No serial jobs available')
         return
+
+    print('Running serial jobs')
 
     # Process serial jobs one by one
     for job in serial_jobs:

@@ -14,8 +14,8 @@ from api.v1.services.job import tifi_job_service
 from api.v1.models.job import TifiJob, JobStatus
 
 
-# BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent
-BASE_DIR = Path(__file__).resolve().parent.parent  # using uvicorn
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent  # using uvicorn
 
 
 def run_pending_jobs():
@@ -163,8 +163,6 @@ def execute_job(job: TifiJob):
         # Set PYTHONPATH in environment variables to the root directory
         env = os.environ.copy()
         env["PYTHONPATH"] = BASE_DIR
-
-        print(BASE_DIR)
 
         process = subprocess.Popen(
             ['python3', '-u', script_path, payload_str],
