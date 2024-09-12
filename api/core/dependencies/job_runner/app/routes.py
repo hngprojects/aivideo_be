@@ -90,10 +90,10 @@ async def job_progress_stream_generator():
                 \nCan run in parallel: {job.is_parallel}\
                 \nJob result: {job.result}\n"
             
-            yield f"{job_progress}\n\n"
+            yield f"{job_progress}\n"
         
-        yield '------------------------------------------------------------'
-        yield '--------------------- NEXT ITERATION -----------------------'
+        yield '------------------------------------------------------------\n'
+        yield '--------------------- NEXT ITERATION -----------------------\n\n'
                         
         # Sleep for a short interval before checking again
         await asyncio.sleep(5)
