@@ -93,6 +93,9 @@ try:
 
     print(result)
 
+except Exception as e:
+    raise e
+
 finally:
     delete_file(pdf_filename)
     delete_file(audio_file)

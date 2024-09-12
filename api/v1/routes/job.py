@@ -143,32 +143,36 @@ async def job_process_event_generator(
 
         try:
             job = tifi_job_service.fetch(db=db, job_id=job_id)
-            project = project_service.fetch(db=db, project_id=job.project_id)
 
             status = job.status
             progress = int(job.progress.split('%')[0])
-            result = job.result
 
-            event_name = 'other'
+            data = {
+                "status": status, 
+                "result": job.result, 
+                "progress": progress,
+                'status_message': job.status_message
+            }
 
             if status == JobStatus.failed:
                 event_name = 'failure'
-                yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result, "progress": progress})}\n\n'
+                yield f'event: {event_name}\ndata: {json.dumps(data)}\n\n'
                 break
-
-            elif status == JobStatus.progress:
-                event_name = 'progress'
-                yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result, "progress": progress})}\n\n'
 
             elif status == JobStatus.completed:
                 event_name = 'success'
-                yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result, "progress": progress})}\n\n'
+                yield f'event: {event_name}\ndata: {json.dumps(data)}\n\n'
                 break
+
+            else:
+                event_name = 'other'
+                yield f'event: {event_name}\ndata: {json.dumps(data)}\n\n'
         
         finally:
             db.close()
 
         await asyncio.sleep(15)  # Delay between status checks
+
 
 
 @job_router.get("/{job_id}/sse/progress")

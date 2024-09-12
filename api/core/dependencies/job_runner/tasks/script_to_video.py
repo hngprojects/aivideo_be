@@ -127,6 +127,9 @@ try:
 
     print(json.dumps(result))
 
+except Exception as e:
+    raise e
+
 finally:
     if background_audio:
         delete_file(background_audio)

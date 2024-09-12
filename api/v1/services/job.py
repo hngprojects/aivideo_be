@@ -502,6 +502,20 @@ class TifiJobService:
 
         job = check_model_existence(db, TifiJob, job_id)
         return job
+
+
+    def fetch_with_lock(self, db: Session, job_id: str):
+        """Fetches the job details from the database with lock applied on the job object"""
+
+        job = db.query(TifiJob).with_for_update().filter(TifiJob.id == job_id).first()
+
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        if job.status != JobStatus.pending:
+            raise HTTPException(status_code=400, detail=f"Job is not in a pending state")
+        
+        return job
     
 
     def delete_expired_jobs(self, db: Session):

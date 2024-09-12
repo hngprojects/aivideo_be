@@ -29,7 +29,7 @@ def handle_parallel_jobs(db: Session):
     
     # Submit jobs to ThreadPoolExecutor
     for job in parallel_jobs:
-        futures.append(parallel_executor.submit(regular_service.process_job, job.id))
+        futures.append(parallel_executor.submit(regular_service.process_job, job.id, True))
 
     # Wait for all parallel jobs to complete
     for future in futures:
@@ -58,7 +58,7 @@ def handle_serial_jobs(db: Session):
     # Process serial jobs one by one
     for job in serial_jobs:
         with db_lock:
-            regular_service.process_job(job.id)
+            regular_service.process_job(job.id, with_lock=True)
     
     print('All serial jobs processed')
     

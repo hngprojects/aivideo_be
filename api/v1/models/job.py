@@ -42,6 +42,7 @@ class TifiJob(BaseTableModel):
     is_premium = Column(Boolean, server_default='false', nullable=True)
     status = Column(saEnum('Pending', 'Received', 'Progress', 'Completed', 'Failed', 'Canceled', name='job_status'), server_default='Pending')
     progress = Column(String)
+    status_message = Column(String, nullable=True)
     payload = Column(JSON, nullable=True)
     result = Column(JSON, nullable=True)
     expiration_time = Column(DateTime(timezone=True), nullable=True)

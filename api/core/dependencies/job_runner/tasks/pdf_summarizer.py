@@ -2,6 +2,7 @@ import json, sys
 from uuid import uuid4
 from api.utils.files import delete_file
 from api.utils import mime_types
+from api.v1.models.job import JobStatus
 from api.v1.services.ai_tools.summary import pdf_summary_service
 from api.db.database import get_db
 from api.utils.minio_service import minio_service
@@ -82,5 +83,8 @@ try:
 
     print(result)
 
+except Exception as e:
+    raise e
+    
 finally:
     delete_file(pdf_file_path)

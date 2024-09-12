@@ -139,6 +139,9 @@ try:
 
     print(json.dumps(result))
 
+except Exception as e:
+    raise e
+    
 finally:
     delete_file(image_file)
     if audio_file:

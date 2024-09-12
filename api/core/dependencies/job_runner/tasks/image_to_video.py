@@ -1,6 +1,7 @@
 import sys, json, os
 from uuid import uuid4
 from api.utils.files import delete_file
+from api.v1.models.job import JobStatus
 from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
 from api.v1.services.ai_tools.general_video_service import video_service
 from api.db.database import get_db
@@ -138,7 +139,11 @@ try:
 
     print(json.dumps(result))
 
+except Exception as e:
+    raise e
+
 finally:
     delete_file(image_file)
     if audio_file:
         delete_file(audio_file)
+        

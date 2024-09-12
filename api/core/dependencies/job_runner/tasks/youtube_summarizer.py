@@ -47,6 +47,9 @@ try:
 
     print(json.dumps(result))
 
+except Exception as e:
+    raise e
+    
 finally:
     if audio_file:
         delete_file(audio_file)
