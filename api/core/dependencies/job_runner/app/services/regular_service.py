@@ -153,7 +153,8 @@ def process_job(job_id: str, with_lock: bool = False):
                 message=f"The project '{job.tool_name}' has failed to create.",
                 type='warning'
             )
-
+        
+        print(f'Job with {job.id} for tool {job.tool_name} failed')
         print(f'An exception occured: {str(e)}')
 
 
@@ -192,7 +193,7 @@ def run_pending_jobs():
                         job_obj.status = JobStatus.received
                         db.commit()
                         db.refresh(job_obj)
-                        
+
                         process_job(job_id=job_obj.id)
                     except Exception as e:
                         print(f"Error processing job {job_obj.id}: {e}")

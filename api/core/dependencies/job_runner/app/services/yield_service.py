@@ -168,7 +168,6 @@ def process_job(job_id: str, with_lock: bool = False):
         yield f'Job {job.id} progress information: Job completed\n'
 
     except Exception as e:
-
         # Update job status to failed
         job.status = JobStatus.failed
         job.status_message = str(e)
