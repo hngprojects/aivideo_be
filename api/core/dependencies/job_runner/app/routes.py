@@ -83,12 +83,17 @@ async def job_progress_stream_generator():
         # Send progress for each pending job
         for job in all_jobs:
             job_progress = f"Job ID: {job.id}\
+                \nTool: {job.tool_name}\
                 \nJob status: {job.status}\
                 \nJob progress: {job.progress}\
                 \nJob message: {job.status_message}\
+                \nCan run in parallel: {job.is_parallel}\
                 \nJob result: {job.result}\n"
             
             yield f"{job_progress}\n\n"
+        
+        yield '------------------------------------------------------------'
+        yield '--------------------- NEXT ITERATION -----------------------'
                         
         # Sleep for a short interval before checking again
         await asyncio.sleep(5)
