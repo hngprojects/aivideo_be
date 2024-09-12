@@ -1,5 +1,5 @@
 from api.core.dependencies.celery.celery_app import worker
-from api.core.dependencies.job_runner.app.regular_services import process_job, run_pending_jobs
+from api.core.dependencies.job_runner.app.services.regular_service import process_job, run_pending_jobs
 
 
 @worker.task()

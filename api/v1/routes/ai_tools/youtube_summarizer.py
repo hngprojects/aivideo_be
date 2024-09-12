@@ -72,15 +72,8 @@ async def enqueue_summarize_batch_job(
             tool_name=ProjectToolsEnum.video_summarizer.value,
             payload={'video_url': video_url},
             user_id=user.id if user else None,
+            is_parallel=False
         )
-        # job = generate_video_summary_task.delay(file)
-
-        # project = job_service.create_project_with_job(
-        #     db=db,
-        #     job=job, 
-        #     project_title="New project",
-        #     project_type=ProjectToolsEnum.youtube_summarizer.value
-        # )
 
         jobs.append({
             "job_id": job.id,
@@ -116,16 +109,9 @@ async def summarize_yt_vid(
             tool_name=ProjectToolsEnum.youtube_summarizer.value,
             payload={'link': link},
             user_id=user.id if user else None,
+            is_parallel=True
         )
-        # task = download_and_generate_video_summmary_task.delay(link)
-        # logging.info(f"Background task started {task.id}")
-
-        # project = job_service.create_project_with_job(
-        #     db=db,
-        #     job=task,
-        #     project_title="New project",
-        #     project_type=ProjectToolsEnum.youtube_summarizer.value
-        # )
+        
         jobs.append({
             "job_id": job.id,
             "project_id": project.id,

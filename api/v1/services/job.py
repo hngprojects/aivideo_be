@@ -415,7 +415,7 @@ class TifiJobService:
         tool_name: str,
         payload,
         user_id: Optional[str]=None,
-        # is_premium: bool = False,
+        is_parallel: bool = False,
         save_project: bool = True
     ):
         """Create a new Tifi job with a project if `save_project` is True"""
@@ -442,6 +442,7 @@ class TifiJobService:
         job = TifiJob(
             tool_name=tool_name,
             is_premium=(not user_on_free_plan) if user_id else False,
+            is_parallel=is_parallel,
             payload=payload,
             status='Pending',
             progress='0% complete',
@@ -458,20 +459,24 @@ class TifiJobService:
 
     def fetch_all(
         self, 
-        db: Session, 
-        # is_expired: bool=False, 
-        # tool_name: Optional[str]=None
+        db: Session
     ):
         '''Fetches all jobs'''
 
-        # jobs = db.query(TifiJob).filter(
-        #     TifiJob.is_expired==is_expired,
-        #     TifiJob.tool_name==tool_name
-        # ).all() if tool_name is not None else db.query(TifiJob).filter(TifiJob.is_expired==is_expired,).all()
-
         jobs = db.query(TifiJob).order_by(desc(TifiJob.created_at)).all()
-        
         return jobs
+    
+
+    def fetch_all_in_progress(self, db: Session):
+        current_time = datetime.now().replace(tzinfo=None)
+
+        jobs = db.query(TifiJob).filter(
+            TifiJob.expiration_time >= current_time,
+            TifiJob.status == JobStatus.progress
+        ).order_by(desc(TifiJob.created_at)).all()
+
+        return jobs
+
     
     def fetch_all_available(self, db: Session):
         '''Fetches all available inexpired jobs'''
@@ -500,6 +505,20 @@ class TifiJobService:
         """Fetches the job details from the database"""
 
         job = check_model_existence(db, TifiJob, job_id)
+        return job
+
+
+    def fetch_with_lock(self, db: Session, job_id: str):
+        """Fetches the job details from the database with lock applied on the job object"""
+
+        job = db.query(TifiJob).with_for_update().filter(TifiJob.id == job_id).first()
+
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        if job.status != JobStatus.pending:
+            raise HTTPException(status_code=400, detail=f"Job is not in a pending state")
+        
         return job
     
 

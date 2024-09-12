@@ -1,16 +1,17 @@
+import json, asyncio
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from fastapi import APIRouter, Depends
+from fastapi.concurrency import run_in_threadpool
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from api.core.dependencies.job_runner.app.async_runner import job_handling
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.v1.models.job import JobStatus
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.job import tifi_job_service
-from api.core.dependencies.job_runner.app import regular_services, yield_service
-from api.core.dependencies.celery.tasks.run_job import run_job_in_celery, run_pending_jobs_in_celery
+from api.core.dependencies.job_runner.app.services import regular_service, yield_service
 
 
 job_running_router = APIRouter(prefix="/api/v1/jobs", tags=["Jobs"])
@@ -53,27 +54,51 @@ async def process_jobs_synchronous(db: Session = Depends(get_db)):
     )
 
 
-@job_running_router.get("/process-jobs-async", response_model=success_response, status_code=status.HTTP_200_OK)
-async def process_jobs_asynchronous(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+@job_running_router.get("/retrieve-and-mark-as-processing", status_code=status.HTTP_200_OK)
+async def retrieve_and_mark_as_processing(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """This endpoint processes all pending jobs asynchronously"""
 
-    # background_tasks.add_task(run_pending_jobs)
-    # run_pending_jobs_in_celery.delay()
+    # job_handling.process_all_jobs()  # This will handle both parallel and serial jobs
 
-    jobs = tifi_job_service.fetch_all_pending(db=db)
-    for job in jobs:
-        run_job_in_celery.delay(job_id=job.id)
-
-    #     def event_generator():
-    #         for log in run_job_in_celery.delay(job_id=job.id):
-    #             yield log  # Yielding each log in real-time
-    
-    # return StreamingResponse(event_generator(), media_type="text/plain")
+    # Add the job processing task to run in the background
+    background_tasks.add_task(run_in_threadpool, job_handling.process_all_jobs)
 
     return success_response(
         status_code=200,
-        message='Pending jobs executing in the background',
+        message='Pending jobs executing in the background'
     )
+
+
+async def job_progress_stream_generator():
+    # Loop to continuously check for jobs in the 'pending' state
+    while True:
+        db = next(get_db())
+
+        all_jobs = tifi_job_service.fetch_all_in_progress(db)
+
+        if not all_jobs:
+            yield 'No jobs currently in progress'
+            break
+
+        # Send progress for each pending job
+        for job in all_jobs:
+            job_progress = f"Job ID: {job.id}\
+                \nJob status: {job.status}\
+                \nJob progress: {job.progress}\
+                \nJob message: {job.status_message}\
+                \nJob result: {job.result}\n"
+            
+            yield f"{job_progress}\n\n"
+                        
+        # Sleep for a short interval before checking again
+        await asyncio.sleep(5)
+
+
+@job_running_router.get("/stream-job-progress", response_class=StreamingResponse)
+async def stream_job_progress(db: Session = Depends(get_db)):
+    """Stream job progress updates for all jobs in progress"""
+    
+    return StreamingResponse(job_progress_stream_generator(), media_type="text/event-stream")
 
 
 @job_running_router.get("/{job_id}", response_model=success_response, status_code=status.HTTP_200_OK)
@@ -109,7 +134,7 @@ async def process_and_execute_job(background_tasks: BackgroundTasks, job_id: str
     # Run job in celery
     # run_job_in_celery.delay(job_id)
 
-    regular_services.process_job(job_id)
+    regular_service.process_job(job_id)
 
     return success_response(
         status_code=200,
