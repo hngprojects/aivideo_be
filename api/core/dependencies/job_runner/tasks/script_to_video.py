@@ -38,90 +38,98 @@ if audio_url:
 #     background_audio=background_audio
 # )
 
-script=payload.get('script'),
-scenes=payload.get('scenes'),
-voice_over=payload.get('voice_over'),
-aspect_ratio=payload.get('aspect_ratio'),
+script=payload.get('script')
+scenes=payload.get('scenes')
+voice_over=payload.get('voice_over')
+aspect_ratio=payload.get('aspect_ratio')
 background_audio=background_audio
 
-save_and_print_job_progress(db, job, 15, 'Generating audio from script')
-audio_file = video_service.generate_audio_from_script(script, voice_over)
+try:
+    save_and_print_job_progress(db, job, 15, 'Generating audio from script')
+    audio_file = video_service.generate_audio_from_script(script, voice_over)
 
-save_and_print_job_progress(db, job, 25, 'Generating subtitle file from generated audio')
-subtitle_file = video_service.generate_subtitles_from_audio(audio_file)
+    save_and_print_job_progress(db, job, 25, 'Generating subtitle file from generated audio')
+    subtitle_file = video_service.generate_subtitles_from_audio(audio_file)
 
-save_and_print_job_progress(db, job, 30, 'Generating images for scenes')
-images = ttv_service.generate_images_for_scenes(scenes)
+    save_and_print_job_progress(db, job, 30, 'Generating images for scenes')
+    images = ttv_service.generate_images_for_scenes(scenes)
 
-save_and_print_job_progress(db, job, 45, 'Creating video')
-video_file = ttv_service.create_video_with_images(images, audio_file)
+    save_and_print_job_progress(db, job, 45, 'Creating video')
+    video_file = ttv_service.create_video_with_images(images, audio_file)
 
-save_and_print_job_progress(db, job, 55, 'Embedding subtitles in generated video')
-# Add subtitles to video
-video_with_subtitles_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
-video_with_subtitles = video_service.add_subtitles_to_video(
-    input_video=video_file, 
-    subtitles_file=subtitle_file, 
-    output_video=video_with_subtitles_path
-)
-
-if background_audio:
-    save_and_print_job_progress(db, job, 60, 'Applying background music to the video')
-    # Add background music to video
-    video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
-    video_with_audio = video_service.add_background_audio(
-        video_path=video_with_subtitles, 
-        audio_path=background_audio, 
-        output_path=video_with_bg_music_path
+    save_and_print_job_progress(db, job, 55, 'Embedding subtitles in generated video')
+    # Add subtitles to video
+    video_with_subtitles_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
+    video_with_subtitles = video_service.add_subtitles_to_video(
+        input_video=video_file, 
+        subtitles_file=subtitle_file, 
+        output_video=video_with_subtitles_path
     )
 
-save_and_print_job_progress(db, job, 65, 'Setting up storage location')
-# Set up for final result
-video_dir = os.path.join(settings.STORAGE_DIR, 'video')
-os.makedirs(video_dir, exist_ok=True)
+    if background_audio:
+        save_and_print_job_progress(db, job, 60, 'Applying background music to the video')
+        # Add background music to video
+        video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
+        video_with_audio = video_service.add_background_audio(
+            video_path=video_with_subtitles, 
+            audio_path=background_audio, 
+            output_path=video_with_bg_music_path
+        )
 
-save_and_print_job_progress(db, job, 75, 'Changing aspect ratio of video')
-output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
-# Adjust aspect ratio
-final_result_file = video_service.change_aspect_ratio(
-    input_file=video_with_audio if background_audio is not None else video_with_subtitles, 
-    output_file=output_video_file, 
-    aspect_ratio=aspect_ratio
-)
+    save_and_print_job_progress(db, job, 65, 'Setting up storage location')
+    # Set up for final result
+    video_dir = os.path.join(settings.STORAGE_DIR, 'video')
+    os.makedirs(video_dir, exist_ok=True)
 
-save_and_print_job_progress(db, job, 80, 'Cleaning up')
-# Delete unnecessary files
-delete_file(audio_file)
-delete_file(subtitle_file)
-delete_file(video_file)
-delete_file(video_with_subtitles_path)
-if background_audio:
-    delete_file(video_with_bg_music_path)
-for img in images:
-    delete_file(img)
+    save_and_print_job_progress(db, job, 75, 'Changing aspect ratio of video')
+    output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
+    # Adjust aspect ratio
+    final_result_file = video_service.change_aspect_ratio(
+        input_file=video_with_audio if background_audio is not None else video_with_subtitles, 
+        output_file=output_video_file, 
+        aspect_ratio=aspect_ratio
+    )
 
-# save_url = f'{settings.APP_URL}/{final_result_file}'
+    save_and_print_job_progress(db, job, 80, 'Cleaning up')
+    # Delete unnecessary files
+    delete_file(audio_file)
+    delete_file(subtitle_file)
+    delete_file(video_file)
+    delete_file(video_with_subtitles_path)
+    if background_audio:
+        delete_file(video_with_bg_music_path)
+    for img in images:
+        delete_file(img)
 
-save_and_print_job_progress(db, job, 85, 'Generating preview and download links for generated video')
-minio_save_file = f'ttvid-{str(uuid4())}.mp4'
-save_url, download_url = minio_service.upload_to_minio(
-    bucket_name='text-to-video',
-    source_file=final_result_file,
-    destination_file=minio_save_file,
-    content_type=mime_types.VIDEO_MP4
-)
+    # save_url = f'{settings.APP_URL}/{final_result_file}'
 
-save_and_print_job_progress(db, job, 90, 'Generating result and final cleanup')
-result = {
-    "url": save_url,
-    "download_url": download_url,
-}
+    save_and_print_job_progress(db, job, 85, 'Generating preview and download links for generated video')
+    minio_save_file = f'ttvid-{str(uuid4())}.mp4'
+    save_url, download_url = minio_service.upload_to_minio(
+        bucket_name='text-to-video',
+        source_file=final_result_file,
+        destination_file=minio_save_file,
+        content_type=mime_types.VIDEO_MP4
+    )
 
-delete_file(final_result_file)
+    save_and_print_job_progress(db, job, 90, 'Generating result and final cleanup')
+    result = {
+        "url": save_url,
+        "download_url": download_url,
+    }
 
-if background_audio:
-    delete_file(background_audio)
+    delete_file(final_result_file)
 
-save_and_print_job_progress(db, job, 95)
+    if background_audio:
+        delete_file(background_audio)
 
-print(json.dumps(result))
+    save_and_print_job_progress(db, job, 95)
+
+    print(json.dumps(result))
+
+except Exception as e:
+    raise e
+
+finally:
+    if background_audio:
+        delete_file(background_audio)

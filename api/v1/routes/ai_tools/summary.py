@@ -88,6 +88,7 @@ async def summarize_pdf(
         tool_name=ProjectToolsEnum.pdf_summarizer.value,
         payload={'pdf_file_url': pdf_file_url},
         user_id=user.id if user else None,
+        is_parallel=True
     )
 
     return success_response(
@@ -99,29 +100,6 @@ async def summarize_pdf(
             "file_name": file.filename,
         }
     )
-    
-    # Run task
-    # task = generate_pdf_summary_task.delay(pdf_file_path)
-
-    # # Create project with job
-    # project = job_service.create_project_with_job(
-    #     db=db,
-    #     job=task,
-    #     project_title='New project',
-    #     project_type=ProjectToolsEnum.pdf_summarizer.value,
-    #     # user_id = pass in the current user id for authenticated users
-    # )
-
-
-    # return success_response(
-    #     status_code=202,
-    #     message="Summary generation job initiated successfully",
-    #     data={
-    #         "job_id": task.id,
-    #         "project_id": project.id,
-    #         "file_name": file.filename,
-    #     },
-    # )
 
 
 
@@ -217,6 +195,7 @@ async def summarize_podcast(
             tool_name=ProjectToolsEnum.podcast_summarizer.value,
             payload={'audio_url': final_audio_url},
             user_id=user.id if user else None,
+            is_parallel=True
         )
 
         return success_response(
@@ -229,25 +208,6 @@ async def summarize_podcast(
             }
         )
     
-        # task = generate_podcast_summary_task.delay(file_path)
-   
-        # # Create project with job
-        # project = job_service.create_project_with_job(
-        #     job=task,
-        #     project_title='New project',
-        #     project_type=ProjectToolsEnum.podcast_summarizer.value
-        #     # user_id = pass in the current user id for authenticated users
-        # )
-
-        # return success_response(
-        #     status_code=202,
-        #     message="Podcast Summary generation job initiated successfully",
-        #     data={
-        #         "job_id": task.id,
-        #         "project_id": project.id,
-        #         "podcast_details": podcast_details,
-        #     }
-        # )
     else:
         return success_response(
             status_code=404,

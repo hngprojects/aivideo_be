@@ -411,8 +411,8 @@ class PDFSummaryService:
     def get_reading_time(self, text: str):
         '''This function gets the reading time of a text'''
 
-        read_time = len(text.split()) / 250
-        return round(read_time)
+        read_time = round(len(text.split()) / 250)
+        return read_time
 
     
     def extract_pdf_data(self, pdf_file_path: str):
@@ -433,12 +433,15 @@ class PDFSummaryService:
             # Get number of words in the text
             no_of_words = len(text.split())
 
+            read_time = self.get_reading_time(text)
+            estimated_read_time = f'{read_time} minute' if read_time == 1 else f'{read_time} minutes'
+
             # return text, no_of_pages, no_of_words
             return {
                 'text': text,
                 'number_of_pages': no_of_pages,
                 'number_of_words': no_of_words,
-                'estimated_read_time': f'{self.get_reading_time(text)} minutes'
+                'estimated_read_time': estimated_read_time
             }
 
     

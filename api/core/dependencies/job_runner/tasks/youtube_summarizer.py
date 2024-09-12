@@ -18,30 +18,38 @@ save_and_print_job_progress(db, job, 0, 'Job started')
 
 audio_file = None
 
-save_and_print_job_progress(db, job, 20, 'Downloading and extracting audio from youtube video')
-audio_file = download_audio_yt(payload.get('link'))
+try:
+    save_and_print_job_progress(db, job, 20, 'Downloading and extracting audio from youtube video')
+    audio_file = download_audio_yt(payload.get('link'))
 
-save_and_print_job_progress(db, job, 40, 'Transcribing audio')
-transcription = transcribe_audio_segments(audio_file)
+    save_and_print_job_progress(db, job, 40, 'Transcribing audio')
+    transcription = transcribe_audio_segments(audio_file)
 
-save_and_print_job_progress(db, job, 60, 'Generating transcript documents for summarization')
-documents, transcript = create_documents_from_transcript(transcription)
+    save_and_print_job_progress(db, job, 60, 'Generating transcript documents for summarization')
+    documents, transcript = create_documents_from_transcript(transcription)
 
-save_and_print_job_progress(db, job, 80, 'Summarizing transcript')
-summary = summary_service.summarize_transcript(documents)
+    save_and_print_job_progress(db, job, 80, 'Summarizing transcript')
+    summary = summary_service.summarize_transcript(documents)
 
-if audio_file:
-    save_and_print_job_progress(db, job, 85, 'Cleaning up')
-    delete_file(audio_file)
+    if audio_file:
+        save_and_print_job_progress(db, job, 85, 'Cleaning up')
+        # delete_file(audio_file)
 
-save_and_print_job_progress(db, job, 90, 'Generating result')
-result = {
-    "summary": summary,
-    "summary_word_count": summary_service.calculate_word_count(summary),
-    "transcript": get_paragraphs(transcription),
-    "transcript_word_count": summary_service.calculate_word_count(transcript)
-}
+    save_and_print_job_progress(db, job, 90, 'Generating result')
+    result = {
+        "summary": summary,
+        "summary_word_count": summary_service.calculate_word_count(summary),
+        "transcript": get_paragraphs(transcription),
+        "transcript_word_count": summary_service.calculate_word_count(transcript)
+    }
 
-save_and_print_job_progress(db, job, 95)
+    save_and_print_job_progress(db, job, 95)
 
-print(json.dumps(result))
+    print(json.dumps(result))
+
+except Exception as e:
+    raise e
+    
+finally:
+    if audio_file:
+        delete_file(audio_file)

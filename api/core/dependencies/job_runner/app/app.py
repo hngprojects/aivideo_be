@@ -8,6 +8,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
 # Add BASE_DIR to sys.path
 sys.path.insert(0, str(BASE_DIR))
 
+# ----------------------------------------------------------------------
+
+# Print registered tasks
+from api.core.dependencies.job_runner.app.job_manager import tool_to_script_mapping
+
+for tool, script in tool_to_script_mapping.items():
+    print(f"`{tool}` task registered ----> `{script}`")
+
+
+# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------
+
 
 import uvicorn
 from sqlalchemy.exc import IntegrityError
