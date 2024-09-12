@@ -171,7 +171,7 @@ async def job_process_event_generator(
         finally:
             db.close()
 
-        await asyncio.sleep(15)  # Delay between status checks
+        await asyncio.sleep(5)  # Delay between status checks
 
 
 

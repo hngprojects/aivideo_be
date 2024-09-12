@@ -459,20 +459,24 @@ class TifiJobService:
 
     def fetch_all(
         self, 
-        db: Session, 
-        # is_expired: bool=False, 
-        # tool_name: Optional[str]=None
+        db: Session
     ):
         '''Fetches all jobs'''
 
-        # jobs = db.query(TifiJob).filter(
-        #     TifiJob.is_expired==is_expired,
-        #     TifiJob.tool_name==tool_name
-        # ).all() if tool_name is not None else db.query(TifiJob).filter(TifiJob.is_expired==is_expired,).all()
-
         jobs = db.query(TifiJob).order_by(desc(TifiJob.created_at)).all()
-        
         return jobs
+    
+
+    def fetch_all_in_progress(self, db: Session):
+        current_time = datetime.now().replace(tzinfo=None)
+
+        jobs = db.query(TifiJob).filter(
+            TifiJob.expiration_time >= current_time,
+            TifiJob.status == JobStatus.progress
+        ).order_by(desc(TifiJob.created_at)).all()
+
+        return jobs
+
     
     def fetch_all_available(self, db: Session):
         '''Fetches all available inexpired jobs'''
