@@ -11,37 +11,37 @@ payload = json.loads(sys.argv[1])
 job_id = payload.get('job_id', None)
 job = tifi_job_service.fetch(db, job_id)
 
+print(payload.get('text', None))
+
 try:
-    print(payload.get('text', None))
-    
     save_and_print_job_progress(db, job, 0, 'Job started')
     time.sleep(5)
 
-    save_and_print_job_progress(db, job, 10)
+    save_and_print_job_progress(db, job, 10, 'Job in progress')
     time.sleep(5)
     
-    save_and_print_job_progress(db, job, 20)
+    save_and_print_job_progress(db, job, 20, 'Job in progress')
     time.sleep(5)
     
-    save_and_print_job_progress(db, job, 30)
+    save_and_print_job_progress(db, job, 30, 'Job in progress')
     time.sleep(5)
     
-    save_and_print_job_progress(db, job, 40)
+    save_and_print_job_progress(db, job, 40, 'Job in progress')
     time.sleep(5)
     
-    save_and_print_job_progress(db, job, 50)
+    save_and_print_job_progress(db, job, 50, 'Job in progress')
     time.sleep(5)
     
-    save_and_print_job_progress(db, job, 60)
+    save_and_print_job_progress(db, job, 60, 'Job in progress')
     time.sleep(5)
     
-    save_and_print_job_progress(db, job, 70)
+    save_and_print_job_progress(db, job, 70, 'Job in progress')
     time.sleep(5)
     
-    save_and_print_job_progress(db, job, 80)
+    save_and_print_job_progress(db, job, 80, 'Preparing to round up')
     time.sleep(10)
     
-    save_and_print_job_progress(db, job, 90)
+    save_and_print_job_progress(db, job, 90, 'Rounding up')
     time.sleep(10)
 
     print(json.dumps({"status": "Job has been executed"}))

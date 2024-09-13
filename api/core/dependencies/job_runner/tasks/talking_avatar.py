@@ -32,16 +32,6 @@ if audio_url:
     save_and_print_job_progress(db, job, 15, f'Downloading and opening audio file from {audio_url}')
     audio_file = minio_service.download_file_from_minio(audio_url)
 
-
-# Run task
-# result = talking_avatar_service.process_script(
-#     image_file=image_file,
-#     aspect_ratio=payload.get('aspect_ratio'),
-#     script=payload.get('script'),
-#     voice_over=payload.get('voice_over'),
-#     audio_file=audio_file
-# )
-
 # Set up variables
 image_file=image_file
 aspect_ratio=payload.get('aspect_ratio')
@@ -130,10 +120,6 @@ try:
             "high_quality": download_url,
         }
     }
-
-    # delete_file(image_file)
-    # if audio_file:
-    #     delete_file(audio_file)
 
     save_and_print_job_progress(db, job, 95)
 
