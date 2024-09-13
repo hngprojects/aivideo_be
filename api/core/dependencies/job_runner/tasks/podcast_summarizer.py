@@ -81,7 +81,7 @@ try:
         destination_file=minio_save_file,
         content_type=mime_types.APPLICATION_PDF,
     )
-    # delete_file(pdf_filename)
+    delete_file(pdf_filename)
 
     result = json.dumps({
         "summary": summary,
@@ -97,5 +97,4 @@ except Exception as e:
     raise e
 
 finally:
-    delete_file(pdf_filename)
     delete_file(audio_file)

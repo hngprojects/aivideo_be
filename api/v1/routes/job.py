@@ -9,13 +9,14 @@ from sse_starlette import EventSourceResponse
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.v1.models.job import Job, TifiJob, JobStatus
+from api.v1.models.project import ProjectToolsEnum
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.project import project_service
 from api.v1.services.job import job_service
 from api.v1.services.job import tifi_job_service
 from api.core.dependencies.job_runner.app.services import regular_service, yield_service
-from api.core.dependencies.celery.tasks.run_job import run_job_in_celery, run_pending_jobs_in_celery
+from api.core.dependencies.celery.tasks.run_job import run_job_in_celery, run_available_jobs_in_celery
 from api.utils.settings import settings
 import json, requests
 import asyncio
@@ -28,17 +29,12 @@ job_router = APIRouter(prefix="/jobs", tags=["Jobs"])
 async def get_all_jobs(db: Session = Depends(get_db)):
     """Fetch all jobs from the database."""
 
-
-    # response = requests.get(
-    #     url=f'{settings.JOB_APP_URL}/api/v1/jobs'
-    # )
     jobs = tifi_job_service.fetch_all(db=db)
 
     return success_response(
         status_code=200,
         message='Jobs fetched successfully',
         data=jsonable_encoder(jobs)
-        # data=jsonable_encoder(response.json()['data'])
     )
 
 
@@ -46,7 +42,14 @@ async def get_all_jobs(db: Session = Depends(get_db)):
 async def get_all_available_jobs(db: Session = Depends(get_db)):
     """Fetch all jobs from the database."""
 
-    jobs = tifi_job_service.fetch_all_available(db=db)
+    jobs = tifi_job_service.fetch_jobs_by_status(
+        db=db, 
+        status=[
+            JobStatus.pending, 
+            JobStatus.processing, 
+            JobStatus.failed
+        ]
+    )
 
     return success_response(
         status_code=200,
@@ -55,36 +58,64 @@ async def get_all_available_jobs(db: Session = Depends(get_db)):
     )
 
 
-@job_router.get("/process-jobs-synchronous", status_code=status.HTTP_200_OK)
-async def process_jobs_synchronous(db: Session = Depends(get_db)):
-    """This endpoint processes all pending jobs synchronously"""
+@job_router.get("/retrieve-and-mark-as-processing", status_code=status.HTTP_200_OK)
+async def retrieve_and_mark_as_processing(db: Session = Depends(get_db)):
+    """This endpoint marks all pending jobs as processing"""
 
-    return StreamingResponse(
-        yield_service.run_pending_jobs(), 
-        media_type="text/event-stream"
-    )
-
-
-@job_router.get("/process-jobs-async", response_model=success_response, status_code=status.HTTP_200_OK)
-async def process_jobs_asynchronous(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    """This endpoint processes all pending jobs asynchronously"""
-
-    # background_tasks.add_task(run_pending_jobs)
-    # run_pending_jobs_in_celery.delay()
-
-    jobs = tifi_job_service.fetch_all_pending(db=db)
-    for job in jobs:
-        run_job_in_celery.delay(job_id=job.id)
-
-    #     def event_generator():
-    #         for log in run_job_in_celery.delay(job_id=job.id):
-    #             yield log  # Yielding each log in real-time
-    
-    # return StreamingResponse(event_generator(), media_type="text/plain")
+    jobs = tifi_job_service.mark_jobs_as_processing(db)
 
     return success_response(
         status_code=200,
-        message='Pending jobs executing in the background',
+        message='Jobs fetehced successfully',
+        data=jsonable_encoder(jobs)
+    )
+
+
+@job_router.get("/create-test-parallel-job", response_model=success_response, status_code=202)
+async def create_test_parallel_job(db: Session = Depends(get_db)):
+    '''This endpoint just creates a test job'''
+
+    job = tifi_job_service.create(
+        db=db,
+        tool_name='Test Job',
+        payload={
+            'text': 'This is a test parallel job'
+        },
+        user_id=None,
+        is_parallel=True,
+        save_project=False
+    )
+
+    return success_response(
+        status_code=202,
+        message=f"Test Job task initiated successfully",
+        data={
+            "job_id": job.id
+        }
+    )
+
+
+@job_router.get("/create-test-serial-job", response_model=success_response, status_code=202)
+async def create_test_serial_job(db: Session = Depends(get_db)):
+    '''This endpoint just creates a test serial job'''
+
+    job = tifi_job_service.create(
+        db=db,
+        tool_name='Test Job',
+        payload={
+            'text': 'This is a test serial job'
+        },
+        user_id=None,
+        is_parallel=False,
+        save_project=False
+    )
+
+    return success_response(
+        status_code=202,
+        message=f"Test Job task initiated successfully",
+        data={
+            "job_id": job.id
+        }
     )
 
 
@@ -113,13 +144,8 @@ async def process_and_execute_job(background_tasks: BackgroundTasks, job_id: str
         raise HTTPException(status_code=400, detail="Job has expired")
     
     # Check if job state is valid
-    if job.status not in [JobStatus.pending, JobStatus.failed]:
+    if job.status not in [JobStatus.pending, JobStatus.processing, JobStatus.failed]:
         raise HTTPException(status_code=400, detail="Job is not in pending or failed state")
-
-    # background_tasks.add_task(process_job,job_id=job_id)
-
-    # Run job in celery
-    # run_job_in_celery.delay(job_id)
 
     regular_service.process_job(job_id)
 
@@ -194,8 +220,6 @@ async def send_job_status_updates_over_sse(
         return StreamingResponse(event_stream, media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
 
 
 # ------------------------------------------------------------------------------------

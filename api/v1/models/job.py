@@ -25,7 +25,7 @@ class Job(BaseTableModel):
 class JobStatus(str, Enum):
 
     pending = 'Pending'
-    received = 'Received'
+    processing = 'Processing'
     progress = 'Progress'
     completed = 'Completed'
     failed = 'Failed'
@@ -40,7 +40,7 @@ class TifiJob(BaseTableModel):
     project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=True)
     tool_name = Column(String, nullable=False)
     is_premium = Column(Boolean, server_default='false', nullable=True)
-    status = Column(saEnum('Pending', 'Received', 'Progress', 'Completed', 'Failed', 'Canceled', name='job_status'), server_default='Pending')
+    status = Column(String, server_default='Pending')
     progress = Column(String)
     status_message = Column(String, nullable=True)
     payload = Column(JSON, nullable=True)
