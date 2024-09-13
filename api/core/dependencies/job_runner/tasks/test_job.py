@@ -6,11 +6,16 @@ from api.core.dependencies.job_runner.app.utils import save_and_print_job_progre
 
 db = next(get_db())
 
-payload = json.loads(sys.argv[1])
+if len(sys.argv) > 1:
+    payload = json.loads(sys.argv[1])
+else:
+    raise ValueError("No payload provided to the script.")
+
+# payload = json.loads(sys.argv[1])
 
 job_id = payload.get('job_id', None)
-if not job_id:
-    raise ValueError("Invalid payload: job_id not found.")
+# if not job_id:
+#     raise ValueError("Invalid payload: job_id not found.")
 
 job = tifi_job_service.fetch(db, job_id)
 
