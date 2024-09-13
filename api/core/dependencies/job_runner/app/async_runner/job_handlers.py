@@ -14,13 +14,13 @@ def handle_parallel_jobs(db: Session):
 
     # Get all jobs
     parallel_jobs = db.query(TifiJob).filter(
-        TifiJob.status == JobStatus.pending,
+        TifiJob.status == JobStatus.processing,
         TifiJob.expiration_time >= current_time,
         TifiJob.is_parallel == True
     ).order_by(asc(TifiJob.created_at)).all()
 
     if not parallel_jobs:
-        print('No parallel jobs available')
+        print('No parallel jobs available for processing at this time.')
         return
 
     print('Running parallel jobs')
@@ -44,13 +44,13 @@ def handle_serial_jobs(db: Session):
     current_time = datetime.now()  # Get current time
 
     serial_jobs = db.query(TifiJob).filter(
-        TifiJob.status == JobStatus.pending,
+        TifiJob.status == JobStatus.processing,
         TifiJob.expiration_time >= current_time,
         TifiJob.is_parallel == False
     ).order_by(asc(TifiJob.created_at)).all()
 
     if not serial_jobs:
-        print('No serial jobs available')
+        print('No serial jobs available for processing at this time.')
         return
 
     print('Running serial jobs')

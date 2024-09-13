@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 import json
 from time import sleep
-from typing import Optional
+from typing import List, Optional
 from fastapi import HTTPException
 from fastapi import status as HTTPStatus
 from fastapi.encoders import jsonable_encoder
@@ -421,6 +421,7 @@ class TifiJobService:
         """Create a new Tifi job with a project if `save_project` is True"""
 
         # Check if there is a need to create a project and create a project with the job
+        project=None
         if save_project:
             project = Project(
                 title=f"New {tool_name} Project",
@@ -444,60 +445,49 @@ class TifiJobService:
             is_premium=(not user_on_free_plan) if user_id else False,
             is_parallel=is_parallel,
             payload=payload,
-            status='Pending',
+            status=JobStatus.pending,
             progress='0% complete',
             user_id=user_id,
-            project_id=project.id if save_project else None,
+            project_id=project.id if project else None,
         )
 
         db.add(job)
         db.commit()
         db.refresh(job)
 
-        return (job, project) if save_project else job
+        return (job, project) if project else job
 
 
-    def fetch_all(
-        self, 
-        db: Session
-    ):
+    def fetch_all(self, db: Session):
         '''Fetches all jobs'''
 
         jobs = db.query(TifiJob).order_by(desc(TifiJob.created_at)).all()
         return jobs
-    
-
-    def fetch_all_in_progress(self, db: Session):
-        current_time = datetime.now().replace(tzinfo=None)
-
-        jobs = db.query(TifiJob).filter(
-            TifiJob.expiration_time >= current_time,
-            TifiJob.status == JobStatus.progress
-        ).order_by(desc(TifiJob.created_at)).all()
-
-        return jobs
 
     
-    def fetch_all_available(self, db: Session):
-        '''Fetches all available inexpired jobs'''
+    def fetch_jobs_by_status(
+        self, 
+        db: Session, 
+        status: str | List[str], 
+        fetch_expired: bool = False
+    ):
+        '''THis function fetches all jobs by their status'''
 
         current_time = datetime.now().replace(tzinfo=None)
 
-        jobs = db.query(TifiJob).filter(
-            TifiJob.expiration_time >= current_time,
-            TifiJob.status == JobStatus.pending
-        ).order_by(desc(TifiJob.created_at)).all()
-        
-        return jobs
-    
+        if fetch_expired:
+            base_query = db.query(TifiJob)
+        else:
+            base_query = db.query(TifiJob).filter(TifiJob.expiration_time >= current_time)
 
-    def fetch_all_pending(self, db: Session):
-        '''Fetches all jobs'''
+        # Check if status is a list or a single string
+        if isinstance(status, list):
+            query = base_query.filter(TifiJob.status.in_(status))
+        else:
+            query = base_query.filter(TifiJob.status == status)
 
-        jobs = db.query(TifiJob).filter(
-            TifiJob.status == JobStatus.pending.value
-        ).order_by(desc(TifiJob.created_at)).all()
-        
+        jobs = query.order_by(desc(TifiJob.created_at)).all()
+
         return jobs
 
 
@@ -505,6 +495,7 @@ class TifiJobService:
         """Fetches the job details from the database"""
 
         job = check_model_existence(db, TifiJob, job_id)
+        
         return job
 
 
@@ -516,21 +507,40 @@ class TifiJobService:
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
         
-        if job.status != JobStatus.pending:
-            raise HTTPException(status_code=400, detail=f"Job is not in a pending state")
+        if job.status not in [JobStatus.pending, JobStatus.processing]:
+            raise HTTPException(status_code=400, detail=f"Job is not available anymore for processing")
         
         return job
     
+    
+    def mark_jobs_as_processing(self, db: Session):
+        '''This function retrieves all available jobs and mark them as processing'''
 
-    def delete_expired_jobs(self, db: Session):
-        '''Delete expired jobs'''
+        jobs = self.fetch_jobs_by_status(db=db, status=JobStatus.pending)
 
-        # Get all expired jobs
-        expired_jobs = db.query(TifiJob).filter(TifiJob.is_expired).all()
+        processing_jobs = []
+
+        if jobs:
+            for job in jobs:
+                job.status = JobStatus.processing
+                db.commit()
+                db.refresh(job)
+
+                processing_jobs.append(job.to_dict())
+            
+        return processing_jobs
+    
+
+    # def delete_expired_jobs(self, db: Session):
+    #     '''Delete expired jobs'''
+
+    #     # Get all expired jobs
+    #     expired_jobs = db.query(TifiJob).filter(TifiJob.is_expired).all()
         
-        # Delete expired jobs
-        for job in expired_jobs:
-            db.delete(job)
+    #     # Delete expired jobs
+    #     for job in expired_jobs:
+    #         db.delete(job)
+    #         db.commit()
 
 
 tifi_job_service = TifiJobService()
