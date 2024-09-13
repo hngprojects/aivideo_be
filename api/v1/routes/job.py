@@ -44,7 +44,11 @@ async def get_all_available_jobs(db: Session = Depends(get_db)):
 
     jobs = tifi_job_service.fetch_jobs_by_status(
         db=db, 
-        status=[JobStatus.pending, JobStatus.processing]
+        status=[
+            JobStatus.pending, 
+            JobStatus.processing, 
+            JobStatus.failed
+        ]
     )
 
     return success_response(
