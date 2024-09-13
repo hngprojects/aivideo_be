@@ -9,12 +9,7 @@ db = next(get_db())
 if len(sys.argv) > 1:
     payload = json.loads(sys.argv[1])
 
-    # payload = json.loads(sys.argv[1])
-
     job_id = payload.get('job_id', None)
-    # if not job_id:
-    #     raise ValueError("Invalid payload: job_id not found.")
-
     job = tifi_job_service.fetch(db, job_id)
 
     print(payload.get('text', None))
