@@ -55,19 +55,14 @@ async def get_all_available_jobs(db: Session = Depends(get_db)):
 
 
 @job_router.get("/retrieve-and-mark-as-processing", status_code=status.HTTP_200_OK)
-async def retrieve_and_mark_as_processing(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    """This endpoint processes all pending jobs asynchronously"""
-
-    # job_handling.process_all_jobs()  # This will handle both parallel and serial jobs
-
-    # Add the job processing task to run in the background
-    # background_tasks.add_task(run_in_threadpool, job_handling.process_all_jobs)
+async def retrieve_and_mark_as_processing(db: Session = Depends(get_db)):
+    """This endpoint marks all pending jobs as processing"""
 
     jobs = tifi_job_service.mark_jobs_as_processing(db)
 
     return success_response(
         status_code=200,
-        message='All available jobs marked as processing',
+        message='Jobs fetehced successfully',
         data=jsonable_encoder(jobs)
     )
 

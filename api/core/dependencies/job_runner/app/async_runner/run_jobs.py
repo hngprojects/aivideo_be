@@ -23,5 +23,8 @@ try:
     # Process serial jobs (FFmpeg-like jobs) after parallel jobs are done
     job_handlers.handle_serial_jobs(db)
 
+except Exception as e:
+    print(str(e))
+
 finally:
     db.close()

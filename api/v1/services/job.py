@@ -507,8 +507,8 @@ class TifiJobService:
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
         
-        if job.status not in [JobStatus.pending, JobStatus.processing]:
-            raise HTTPException(status_code=400, detail=f"Job is not available anymore for processing")
+        # if job.status not in [JobStatus.pending, JobStatus.processing]:
+        #     raise HTTPException(status_code=400, detail=f"Job is not available anymore for processing")
         
         return job
     
