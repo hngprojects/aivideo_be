@@ -14,4 +14,5 @@ tool_to_script_mapping = {
     tools.youtube_summarizer.value: f'{BASE_DIR}/youtube_summarizer.py',
     tools.video_summarizer.value: f'{BASE_DIR}/video_summarizer.py',
     tools.pdf_summarizer.value: f'{BASE_DIR}/pdf_summarizer.py',
+    'Test Job': f'{BASE_DIR}/test_job.py',
 }

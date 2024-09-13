@@ -84,10 +84,8 @@ def run_job_script(job: TifiJob):
         yield f'{result_output}\n'
     
     except subprocess.CalledProcessError as e:
-        # yield f"Job failed: {str(e)}\n"
         raise e
     except Exception as e:
-        # yield f"General job error: {str(e)}\n"
         raise e
 
 
@@ -103,8 +101,7 @@ def process_job(job_id: str, with_lock: bool = False):
         job = tifi_job_service.fetch(db=db, job_id=job_id)
 
     try:        
-        yield f"Job with id: {job.id} for tool {job.tool_name} in progress\n"
-
+        # Mark job as in progress
         job.status = JobStatus.progress
         db.commit()
         
@@ -113,7 +110,6 @@ def process_job(job_id: str, with_lock: bool = False):
         for output in run_job_script(job):
             # Yield the result for streaming
             yield output
-
             # Capture only the final result returned by run_job_script
             result = output
 
@@ -122,31 +118,16 @@ def process_job(job_id: str, with_lock: bool = False):
         # job.result = json.loads(result)
         db.commit()
 
-        yield f'Saving to user projects\n'
         # # ------- PROJECT PROCESSING -------
         if job.project_id:
+            yield f'Saving to user projects\n'
             # Get project
             project = project_service.fetch(db, job.project_id)
-        else:
-            # Create project for user
-            project = project_service.create(
-                db=db,
-                schema=CreateProject(
-                    title=f"New {job.tool_name} Project- {secrets.token_hex(5)}",
-                    project_type=job.tool_name,
-                    user_id=job.user_id
-                )
-            )
+            # Update project result
+            project.result = parse_json_string(result)
+            project.is_active = True
 
-            # Link created project to the corresponding job
-            job.project_id = project.id
-
-        # Update project result
-        project.result = parse_json_string(result)
-        # project.result = json.loads(result)
-        project.is_active = True
-
-        db.commit()
+            db.commit()
 
         if job.user_id:
             # Send notification to the user
@@ -165,7 +146,7 @@ def process_job(job_id: str, with_lock: bool = False):
         job.progress = '100% complete'
         job.status_message = 'Job completed successfully'
         db.commit()
-        yield f'Job {job.id} progress information: Job completed\n'
+        yield f'Job {job.id} progress information: Job completed\n\n'
 
     except Exception as e:
         # Update job status to failed
@@ -191,7 +172,7 @@ def process_job(job_id: str, with_lock: bool = False):
         yield f'An exception occured: {str(e)}\n\n'
 
 
-def run_pending_jobs():
+def run_available_jobs():
     '''This function checks for and runs all pending jobs in the database'''
 
     while True:
@@ -200,25 +181,19 @@ def run_pending_jobs():
             
             yield f'Fetching number of available jobs to be processed\n'
 
-            # Get all premium jobs i.e jobs for a premium user
-            premium_pending_jobs = db.query(TifiJob).filter(
-                TifiJob.status == JobStatus.pending,
-                TifiJob.is_premium == True,
+            query = db.query(TifiJob).filter(
+                TifiJob.status == JobStatus.processing,
                 TifiJob.expiration_time >= current_time,
-            ).order_by(asc(TifiJob.created_at)).all()
+            ).order_by(asc(TifiJob.created_at))
+
+            # Get all premium jobs i.e jobs for a premium user
+            premium_jobs = query.filter(TifiJob.is_premium == True,).all()
 
             # Get all free jobs i.e jobs for a free user
-            free_pending_jobs = db.query(TifiJob).filter(
-                TifiJob.status == JobStatus.pending,
-                TifiJob.is_premium == False,
-                TifiJob.expiration_time >= current_time,
-            ).order_by(asc(TifiJob.created_at)).limit(5).all()
+            free_jobs = query.filter(TifiJob.is_premium == False,).all()
 
             # Get all jobs
-            all_pending_jobs = db.query(TifiJob).filter(
-                TifiJob.status == JobStatus.pending,
-                TifiJob.expiration_time >= current_time,
-            ).order_by(asc(TifiJob.created_at)).all()
+            all_pending_jobs = query.all()
             
             no_of_jobs = len(all_pending_jobs)
             if no_of_jobs > 0:
@@ -226,10 +201,7 @@ def run_pending_jobs():
 
                 for job_obj in all_pending_jobs:
                     try:
-                        yield f'Job with id {job_obj.id} for tool {job_obj.tool_name} received\n'
-                        job_obj.status = JobStatus.received
-                        db.commit()
-                        db.refresh(job_obj)
+                        yield f'Job with id {job_obj.id} for tool {job_obj.tool_name} in progress\n'
                         
                         # Yield the output from process_job
                         for output in process_job(job_id=job_obj.id):
