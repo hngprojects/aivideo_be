@@ -51,32 +51,32 @@ jobs:
             pip install -r requirements.txt --no-deps --use-deprecated=legacy-resolver
             pm2 reload aivideo_celery_staging
 
-  release:
-    runs-on: aivid
-    timeout-minutes: 10
-    needs: deploy
-    permissions:
-      contents: write
-      issues: write 
-      pull-requests: write 
-      id-token: write
+  # release:
+  #   runs-on: aivid
+  #   timeout-minutes: 10
+  #   needs: deploy
+  #   permissions:
+  #     contents: write
+  #     issues: write 
+  #     pull-requests: write 
+  #     id-token: write
       
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "lts/*"
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: "lts/*"
           
-      - name: Install depedencies
-        run: pnpm install --no-frozen-lockfile
+  #     - name: Install depedencies
+  #       run: pnpm install --no-frozen-lockfile
         
-      - name: Install semantic-release and plugins
-        run: pnpm add semantic-release @semantic-release/git @semantic-release/github --save-dev
+  #     - name: Install semantic-release and plugins
+  #       run: pnpm add semantic-release @semantic-release/git @semantic-release/github --save-dev
         
       - name: Release
         env:
