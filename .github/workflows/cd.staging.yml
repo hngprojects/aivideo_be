@@ -78,7 +78,7 @@ jobs:
   #     - name: Install semantic-release and plugins
   #       run: pnpm add semantic-release @semantic-release/git @semantic-release/github --save-dev
         
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpx semantic-release
+  #     - name: Release
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: pnpx semantic-release
