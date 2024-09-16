@@ -506,6 +506,25 @@ class TifiJobService:
         db.commit()
 
     
+    def retry_job(self, db: Session, job_id: str):
+        '''This function retries a job especially if it failed'''
+
+        job = self.fetch(db=db, job_id=job_id)
+
+        if job.is_expired():
+            raise HTTPException(status_code=400, detail="Job has expired")
+        
+        if job.status not in [JobStatus.failed]:
+            raise HTTPException(status_code=400, detail="Job cannot be retried")
+        
+        job.status = JobStatus.pending
+        job.status_message = None
+        job.progress = "0% complete"
+        db.commit()
+
+        return job
+
+    
     def export_jobs_as_csv(self, db: Session):
         # get videos
         jobs = db.query(TifiJob).all()
