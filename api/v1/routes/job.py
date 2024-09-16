@@ -142,8 +142,7 @@ async def retry_failed_job(job_id: str, db: Session = Depends(get_db)):
 
     return success_response(
         status_code=200,
-        message='Job retried successfully',
-        data=jsonable_encoder(job)
+        message='Job retried successfully'
     )
 
 
