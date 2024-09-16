@@ -382,8 +382,6 @@ class TifiJobService:
     ):  
         """Create a new Tifi job with a project if `save_project` is True"""
 
-        # from api.core.dependencies.job_runner.app.async_runner.run_jobs import job_available_event
-
         # Check if there is a need to create a project and create a project with the job
         project=None
         if save_project:

@@ -39,7 +39,7 @@ def job_runner():
         if job_handlers.check_available_jobs():  # Check if there are any jobs in the DB
             print("New jobs available in the DB, processing immediately.")
         else:
-            # Wait for a job to become available with a timeout of 60 seconds
+            # Wait for 60 seconds before runnung jobs
             job_available_event.wait(60)
 
         try:

@@ -82,5 +82,6 @@ def check_available_jobs():
 
     db = next(get_db())
 
+    # Get pending jobs ready for processing
     jobs = tifi_job_service.fetch_jobs_by_status(db, JobStatus.pending)
     return len(jobs) > 0

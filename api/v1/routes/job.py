@@ -7,8 +7,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import event
 from sse_starlette import EventSourceResponse
 from api.db.database import get_db
+from api.utils.pagination import paginated_response
 from api.utils.success_response import success_response
-from api.v1.models.job import Job, JobStatus
+from api.v1.models.job import Job, JobStatus, TifiJob
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.v1.services.job import job_service
@@ -21,15 +22,18 @@ job_router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 # Get all jobs
 @job_router.get("", response_model=success_response, status_code=status.HTTP_200_OK)
-async def get_all_jobs(db: Session = Depends(get_db)):
+async def get_all_jobs(
+    db: Session = Depends(get_db),
+    limit: int = Query(10),
+    skip: int = Query(0)
+):
     """Fetch all jobs from the database."""
 
-    jobs = tifi_job_service.fetch_all(db=db)
-
-    return success_response(
-        status_code=200,
-        message='Jobs fetched successfully',
-        data=jsonable_encoder(jobs)
+    return paginated_response(
+        db=db,
+        model=TifiJob,
+        limit=limit,
+        skip=skip
     )
 
 
