@@ -1,26 +1,46 @@
-from datetime import datetime
-from sqlalchemy.orm import Session
-from sqlalchemy import asc
+import requests
 
-from api.db.database import SessionLocal
-from api.v1.models.job import TifiJob, JobStatus
-from api.core.dependencies.job_runner.app.async_runner.thread_config import db_lock, parallel_executor
-from api.core.dependencies.job_runner.app.services import regular_service, yield_service
+from api.core.dependencies.job_runner.app.async_runner import thread_config
+from api.core.dependencies.job_runner.app.services import regular_service
+from api.utils.settings import settings
+from api.core.dependencies.job_runner.app.logger import logger
+from api.db.database import get_db
+from api.v1.models.job import JobStatus
+from api.v1.services.job import tifi_job_service
 
-def handle_parallel_jobs(db: Session):
+
+def fetch_and_mark_jobs_as_processing(fetch_parallel: bool=True):
+    '''This function fetches all jobs from the database'''
+
+    try:
+        url = f'{settings.APP_URL}/api/v1/jobs/retrieve-and-mark-as-processing?is_parallel={fetch_parallel}'
+        response = requests.get(url=url)
+
+        if response.status_code == 200:
+            jobs = response.json()['data']
+
+            # Check for available jobs
+            if len(jobs) == 0:
+                print('No jobs available at this time')
+                return None
+            
+            return jobs
+        else:
+            logger.error(f'Error retrieving jobs: {response.status_code} - {response.json()} - {url}')
+            return None
+        
+    except Exception as e:
+        logger.error(f'Error fetching and marking jobs as processing: {str(e)}')
+        return None
+
+
+def handle_parallel_jobs():
     '''This function handles jobs that can be processed in parallel to each other'''
 
-    current_time = datetime.now()  # Get current time
+    # Get all marked as processing jobs
+    jobs = fetch_and_mark_jobs_as_processing(fetch_parallel=True)
 
-    # Get all jobs
-    parallel_jobs = db.query(TifiJob).filter(
-        TifiJob.status == JobStatus.processing,
-        TifiJob.expiration_time >= current_time,
-        TifiJob.is_parallel == True
-    ).order_by(asc(TifiJob.created_at)).all()
-
-    if not parallel_jobs:
-        print('No parallel jobs available for processing at this time.')
+    if not jobs:
         return
 
     print('Running parallel jobs')
@@ -28,8 +48,8 @@ def handle_parallel_jobs(db: Session):
     futures = []
     
     # Submit jobs to ThreadPoolExecutor
-    for job in parallel_jobs:
-        futures.append(parallel_executor.submit(regular_service.process_job, job.id, True))
+    for job in jobs:
+        futures.append(thread_config.parallel_executor.submit(regular_service.process_job, job['id'], True))
 
     # Wait for all parallel jobs to complete
     for future in futures:
@@ -38,51 +58,29 @@ def handle_parallel_jobs(db: Session):
     print('All parallel jobs completed')
 
 
-def handle_serial_jobs(db: Session):
+def handle_serial_jobs():
     '''This function handles heavy jobs that mus be processed one by one'''
 
-    current_time = datetime.now()  # Get current time
+    # Get all marked as processing jobs
+    jobs = fetch_and_mark_jobs_as_processing(fetch_parallel=False)
 
-    serial_jobs = db.query(TifiJob).filter(
-        TifiJob.status == JobStatus.processing,
-        TifiJob.expiration_time >= current_time,
-        TifiJob.is_parallel == False
-    ).order_by(asc(TifiJob.created_at)).all()
-
-    if not serial_jobs:
-        print('No serial jobs available for processing at this time.')
+    if not jobs:
         return
 
     print('Running serial jobs')
 
     # Process serial jobs one by one
-    for job in serial_jobs:
-        with db_lock:
-            regular_service.process_job(job.id, with_lock=True)
+    for job in jobs:
+        with thread_config.db_lock:
+            regular_service.process_job(job['id'], with_lock=True)
     
     print('All serial jobs processed')
-    
 
-def process_all_jobs():
-    """Main job processing function."""
 
-    # Create a database session for each request
-    # This ensures that each request gets a fresh session,
-    # preventing data from being shared between requests
-    # and allowing for proper cleanup of resources when done.
+def check_available_jobs():
+    '''Returns true if there are any available jobs in the db ready for processing'''
 
-    # Create a lock for managing database transactions
-    # This ensures that only one thread can access the database at a time,
-    # preventing conflicts and data corruption.
+    db = next(get_db())
 
-    db = SessionLocal()
-
-    try:
-        # Process parallel jobs first
-        handle_parallel_jobs(db)
-
-        # Process serial jobs (FFmpeg-like jobs) after parallel jobs are done
-        handle_serial_jobs(db)
-
-    finally:
-        db.close()
+    jobs = tifi_job_service.fetch_jobs_by_status(db, JobStatus.pending)
+    return len(jobs) > 0

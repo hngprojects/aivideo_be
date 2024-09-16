@@ -12,8 +12,6 @@ if len(sys.argv) > 1:
     job_id = payload.get('job_id', None)
     job = tifi_job_service.fetch(db, job_id)
 
-    print(payload.get('text', None))
-
     try:
         save_and_print_job_progress(db, job, 0, 'Job started')
         time.sleep(5)
