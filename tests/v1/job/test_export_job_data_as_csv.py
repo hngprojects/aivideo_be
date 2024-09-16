@@ -32,7 +32,7 @@ def test_export_success(
     mock_csv = mock_csv_content()
 
     with patch(
-        "api.v1.services.job.job_service.export_jobs_as_csv",
+        "api.v1.services.job.tifi_job_service.export_jobs_as_csv",
         return_value=mock_csv,
     ) as mock_export:
         response = client.get(

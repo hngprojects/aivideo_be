@@ -10,6 +10,8 @@ from fastapi import status as HTTPStatus
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from celery.result import AsyncResult
+from sqlalchemy.orm import joinedload
+from sqlalchemy import or_, desc
 
 from api.core.dependencies.celery.celery_app import worker
 from api.utils.db_validators import check_model_existence
@@ -20,8 +22,6 @@ from api.v1.schemas.project import CreateProject
 from api.v1.services.project import project_service
 from api.v1.services.billing_plan import billing_plan_service
 from api.v1.services.user import user_service
-from sqlalchemy.orm import joinedload
-from sqlalchemy import or_, desc
 
 
 class JobService:
@@ -247,44 +247,6 @@ class JobService:
             },
         }
 
-    def export_jobs_as_csv(self, db: Session):
-        # get videos
-
-        data = db.query(Job).all()
-
-        csv_file = StringIO()
-        csv_writer = csv.writer(csv_file)
-
-        csv_writer.writerow(
-            [
-                "ID",
-                "Firstname",
-                "Lastname",
-                "Email",
-                "Task ID",
-                "Project Type",
-                "Date Created",
-                "Status",
-            ]
-        )
-
-        for datum in data:
-            csv_writer.writerow(
-                [
-                    datum.id,
-                    datum.user.first_name if datum.user else None,
-                    datum.user.last_name if datum.user else None,
-                    datum.user.email if datum.user else None,
-                    datum.job_id,
-                    datum.project.project_type if datum.project else None,
-                    datum.created_at,
-                    datum.status,
-                ]
-            )
-
-        csv_file.seek(0)
-
-        return csv_file
 
     def get_job_statistics(self, db: Session):
         stats = {}
@@ -417,7 +379,7 @@ class TifiJobService:
         user_id: Optional[str]=None,
         is_parallel: bool = False,
         save_project: bool = True
-    ):
+    ):  
         """Create a new Tifi job with a project if `save_project` is True"""
 
         # Check if there is a need to create a project and create a project with the job
@@ -469,22 +431,24 @@ class TifiJobService:
         self, 
         db: Session, 
         status: str | List[str], 
-        fetch_expired: bool = False
+        fetch_expired: bool = False,
+        is_parallel: bool = True
     ):
-        '''THis function fetches all jobs by their status'''
+        '''THis function fetches all jobs by their status and checks if the jobs can be run in parallel or not'''
 
         current_time = datetime.now().replace(tzinfo=None)
 
-        if fetch_expired:
-            base_query = db.query(TifiJob)
-        else:
+        base_query = db.query(TifiJob)
+        if not fetch_expired:
             base_query = db.query(TifiJob).filter(TifiJob.expiration_time >= current_time)
+        
+        parallel_query = base_query.filter(TifiJob.is_parallel == is_parallel)
 
         # Check if status is a list or a single string
         if isinstance(status, list):
-            query = base_query.filter(TifiJob.status.in_(status))
+            query = parallel_query.filter(TifiJob.status.in_(status))
         else:
-            query = base_query.filter(TifiJob.status == status)
+            query = parallel_query.filter(TifiJob.status == status)
 
         jobs = query.order_by(desc(TifiJob.created_at)).all()
 
@@ -507,16 +471,13 @@ class TifiJobService:
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
         
-        # if job.status not in [JobStatus.pending, JobStatus.processing]:
-        #     raise HTTPException(status_code=400, detail=f"Job is not available anymore for processing")
-        
         return job
     
     
-    def mark_jobs_as_processing(self, db: Session):
+    def mark_jobs_as_processing(self, db: Session, is_parallel: bool):
         '''This function retrieves all available jobs and mark them as processing'''
 
-        jobs = self.fetch_jobs_by_status(db=db, status=JobStatus.pending)
+        jobs = self.fetch_jobs_by_status(db=db, status=JobStatus.pending, is_parallel=is_parallel)
 
         processing_jobs = []
 
@@ -531,16 +492,56 @@ class TifiJobService:
         return processing_jobs
     
 
-    # def delete_expired_jobs(self, db: Session):
-    #     '''Delete expired jobs'''
+    def delete_expired_jobs(self, db: Session):
+        '''Delete expired jobs'''
 
-    #     # Get all expired jobs
-    #     expired_jobs = db.query(TifiJob).filter(TifiJob.is_expired).all()
+        # Get all expired jobs
+        current_time = datetime.now().replace(tzinfo=None)
+        expired_jobs = db.query(TifiJob).filter(TifiJob.expiration_time >= current_time).all()
         
-    #     # Delete expired jobs
-    #     for job in expired_jobs:
-    #         db.delete(job)
-    #         db.commit()
+        # Delete expired jobs
+        for job in expired_jobs:
+            db.delete(job)
+        
+        db.commit()
+
+    
+    def export_jobs_as_csv(self, db: Session):
+        # get videos
+        jobs = db.query(TifiJob).all()
+
+        csv_file = StringIO()
+        csv_writer = csv.writer(csv_file)
+
+        csv_writer.writerow(
+            [
+                "ID",
+                "Firstname",
+                "Lastname",
+                "Email",
+                "Task ID",
+                "Project Type",
+                "Date Created",
+                "Status",
+            ]
+        )
+
+        for job in jobs:
+            csv_writer.writerow(
+                [
+                    job.id,
+                    job.user.first_name if job.user else None,
+                    job.user.last_name if job.user else None,
+                    job.user.email if job.user else None,
+                    job.project.project_type if job.project else None,
+                    job.created_at,
+                    job.status,
+                ]
+            )
+
+        csv_file.seek(0)
+
+        return csv_file
 
 
 tifi_job_service = TifiJobService()

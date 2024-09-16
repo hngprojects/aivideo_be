@@ -1,5 +1,6 @@
 from fastapi import BackgroundTasks, Request, requests
 
+from api.v1.models.contact_us import ContactUs
 from api.v1.models.user import User
 from api.core.dependencies.email.email_sender import send_email
 
@@ -72,6 +73,21 @@ class EmailSendingService:
             context={
                 "request": request,
                 "user": user,
+            }
+        )
+    
+
+    def send_contact_us_success_email(self, request: Request, background_tasks: BackgroundTasks, contact_message: ContactUs):
+        '''This function sends a contact us success email to the specified email'''
+
+        background_tasks.add_task(
+            send_email,
+            recipient=contact_message.email,
+            template_name="contact-us-success.html",
+            subject="Contact us message sent successfully",
+            context={
+                "request": request,
+                "message": contact_message,
             }
         )
 
