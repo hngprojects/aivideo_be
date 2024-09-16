@@ -134,6 +134,18 @@ async def get_single_job(job_id: str, db: Session = Depends(get_db)):
     )
 
 
+@job_router.get("/{job_id}/retry", response_model=success_response, status_code=status.HTTP_200_OK)
+async def retry_failed_job(job_id: str, db: Session = Depends(get_db)):
+    """Endpoint to retry a failed job."""
+
+    job = tifi_job_service.retry_job(db=db, job_id=job_id)
+
+    return success_response(
+        status_code=200,
+        message='Job retried successfully'
+    )
+
+
 # ------------------------ SSE ------------------------
 
 async def job_progress_event_generator(job_id: str):
