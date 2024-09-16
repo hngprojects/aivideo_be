@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session, subqueryload
 from api.db.database import Base
+from sqlalchemy import desc
 
 from api.utils.success_response import success_response
 
@@ -90,8 +91,15 @@ def paginated_response(
                 )
 
     total = query.count()
-    results = jsonable_encoder(query.offset(skip).limit(limit).all())
+    results = (
+        query
+        .order_by(desc(model.created_at))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
     items = jsonable_encoder(results)
+
     try:
         total_pages = int(total / limit) + (total % limit > 0)
     except:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
@@ -7,18 +7,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import event
 from sse_starlette import EventSourceResponse
 from api.db.database import get_db
+from api.utils.pagination import paginated_response
 from api.utils.success_response import success_response
-from api.v1.models.job import Job, TifiJob, JobStatus
-from api.v1.models.project import ProjectToolsEnum
+from api.v1.models.job import Job, JobStatus, TifiJob
 from api.v1.models.user import User
 from api.v1.services.user import user_service
-from api.v1.services.project import project_service
 from api.v1.services.job import job_service
 from api.v1.services.job import tifi_job_service
-from api.core.dependencies.job_runner.app.services import regular_service, yield_service
-from api.core.dependencies.celery.tasks.run_job import run_job_in_celery, run_available_jobs_in_celery
-from api.utils.settings import settings
-import json, requests
+import json
 import asyncio
 
 job_router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -26,15 +22,18 @@ job_router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 # Get all jobs
 @job_router.get("", response_model=success_response, status_code=status.HTTP_200_OK)
-async def get_all_jobs(db: Session = Depends(get_db)):
+async def get_all_jobs(
+    db: Session = Depends(get_db),
+    limit: int = Query(10),
+    skip: int = Query(0)
+):
     """Fetch all jobs from the database."""
 
-    jobs = tifi_job_service.fetch_all(db=db)
-
-    return success_response(
-        status_code=200,
-        message='Jobs fetched successfully',
-        data=jsonable_encoder(jobs)
+    return paginated_response(
+        db=db,
+        model=TifiJob,
+        limit=limit,
+        skip=skip
     )
 
 
@@ -59,14 +58,17 @@ async def get_all_available_jobs(db: Session = Depends(get_db)):
 
 
 @job_router.get("/retrieve-and-mark-as-processing", status_code=status.HTTP_200_OK)
-async def retrieve_and_mark_as_processing(db: Session = Depends(get_db)):
+async def retrieve_and_mark_as_processing(
+    db: Session = Depends(get_db),
+    is_parallel: bool = Query(True)
+):
     """This endpoint marks all pending jobs as processing"""
 
-    jobs = tifi_job_service.mark_jobs_as_processing(db)
+    jobs = tifi_job_service.mark_jobs_as_processing(db, is_parallel=is_parallel)
 
     return success_response(
         status_code=200,
-        message='Jobs fetehced successfully',
+        message='Jobs fetched successfully',
         data=jsonable_encoder(jobs)
     )
 
@@ -132,35 +134,9 @@ async def get_single_job(job_id: str, db: Session = Depends(get_db)):
     )
 
 
-@job_router.get("/{job_id}/process", response_model=success_response, status_code=status.HTTP_200_OK)
-async def process_and_execute_job(background_tasks: BackgroundTasks, job_id: str, db: Session = Depends(get_db)):
-    """Processes and executes a single job from the database as long as it is pending or failed.
-    This is done in the background.
-    """
-
-    job = tifi_job_service.fetch(db=db, job_id=job_id)
-
-    if job.is_expired():
-        raise HTTPException(status_code=400, detail="Job has expired")
-    
-    # Check if job state is valid
-    if job.status not in [JobStatus.pending, JobStatus.processing, JobStatus.failed]:
-        raise HTTPException(status_code=400, detail="Job is not in pending or failed state")
-
-    regular_service.process_job(job_id)
-
-    return success_response(
-        status_code=200,
-        message='Job processing started in the background',
-    )
-
-
 # ------------------------ SSE ------------------------
 
-async def job_process_event_generator(
-    job_id: str, 
-    user: Optional[User] = None
-):
+async def job_progress_event_generator(job_id: str):
     '''Generates events for job processing'''
 
     while True:
@@ -182,6 +158,7 @@ async def job_process_event_generator(
 
             if status == JobStatus.failed:
                 event_name = 'failure'
+                data['status_message'] = 'An error occured.'
                 yield f'event: {event_name}\ndata: {json.dumps(data)}\n\n'
                 break
 
@@ -200,7 +177,6 @@ async def job_process_event_generator(
         await asyncio.sleep(5)  # Delay between status checks
 
 
-
 @job_router.get("/{job_id}/sse/progress")
 async def send_job_status_updates_over_sse(
     job_id: str,
@@ -213,13 +189,24 @@ async def send_job_status_updates_over_sse(
     '''
 
     try:
-        event_stream = job_process_event_generator(
-            job_id=job_id, 
-            user=current_user,
-        )
+        event_stream = job_progress_event_generator(job_id=job_id)
         return StreamingResponse(event_stream, media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@job_router.get("/export")
+async def export_jobs_as_csv(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(user_service.get_current_super_admin),
+):
+    csv_file = tifi_job_service.export_jobs_as_csv(db)
+
+    response = StreamingResponse(csv_file, media_type="text/csv")
+    response.headers["Content-Disposition"] = f"attachment; filename=job-data.csv"
+    response.status_code = 200
+
+    return response
 
 
 # ------------------------------------------------------------------------------------
@@ -269,20 +256,6 @@ async def get_managed_jobs(
         status=status,
         project_type=project_type,
     )
-
-
-@job_router.get("/export")
-async def export_jobs_as_csv(
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(user_service.get_current_super_admin),
-):
-    csv_file = job_service.export_jobs_as_csv(db)
-
-    response = StreamingResponse(csv_file, media_type="text/csv")
-    response.headers["Content-Disposition"] = f"attachment; filename=job-data.csv"
-    response.status_code = 200
-
-    return response
 
 
 @job_router.get("/activity/sse", summary="Get job activity via SSE")

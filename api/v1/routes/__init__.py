@@ -12,6 +12,7 @@ from api.v1.routes.ai_tools.yt_summary import yt_summary, download
 from api.v1.routes.notification_settings import notification_setting
 from api.v1.routes.faq import faq
 from api.v1.routes.resource import resource
+from api.v1.routes.contact_us import contact_us
 from api.v1.routes.presets import preset_router
 from api.v1.routes.google_auth import google_auth
 from api.v1.routes.lang_region_settings import regions
@@ -63,6 +64,7 @@ api_version_one.include_router(notification)
 api_version_one.include_router(preset_router)
 api_version_one.include_router(regions)
 api_version_one.include_router(privacy)
+api_version_one.include_router(contact_us)
 api_version_one.include_router(background_router)
 api_version_one.include_router(save_summary)
 api_version_one.include_router(video_summary)
