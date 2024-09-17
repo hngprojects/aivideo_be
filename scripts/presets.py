@@ -1,12 +1,12 @@
 import os
 from pathlib import Path
-from fastapi import HTTPException
-from uuid_extensions import uuid7
+import json
 
 from api.utils.settings import settings
 from api.db.database import get_db
 from api.v1.models.presets import Avatar, BackgroundMusic
 from api.v1.models.billing_plan import BillingPlan
+from api.v1.models.resource import Resource
 
 db = next(get_db())
 
@@ -134,3 +134,18 @@ def load_billing_plans_in_db():
                 db.refresh(plan)
             return True
 
+
+def load_resources():
+    with open('resources.json', 'r') as file:
+        data = json.load(file)
+
+    data = [ i for i in data if i['is_published'] == True ]
+    for resource in data:
+        existing = db.query(Resource).filter(Resource.title == resource['title']).first()
+        if existing is None:
+            resource = Resource(**resource)
+            db.add(resource)
+            db.commit()
+            db.refresh(resource)
+
+    return True

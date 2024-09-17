@@ -17,29 +17,9 @@ class TalkingAvatarService:
 
 	def __init__(self):
 		self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-		
 
-	def process_script(
-		self, 
-		image_file: str, 
-		aspect_ratio: str, 
-		script: str, 
-		voice_over: str, 
-		audio_file: Optional[str]=None
-	):
-		"""This is to precess the whole talking avatar script
-
-		Args:
-			image_file (str): Path to image file
-			aspect_ratio (str): Can be one of square, horizontal, vertical
-			script (str): Script to be converted to audio
-			voice_over (str): Either one of man, woman or neutral
-			audio_file Optional{str}: Path to audio file
-		Returns:
-			str: A string json for the save url and the source of the video
-		"""
-
-		audio = video_service.generate_audio_from_script(script=script, voice_over=voice_over)
+	
+	def generate_talking_avatar_video(self, image_file, audio):
 		files = [
 			("input_face", open(image_file, "rb")),
 			("input_audio", open(audio, "rb")),
@@ -65,6 +45,7 @@ class TalkingAvatarService:
 			"selected_model": "SadTalker",
 		}
 
+		print('Making API request to get talking avatar...')
 		response = requests.post(
 			"https://api.gooey.ai/v2/Lipsync/form/",
 			headers={
@@ -75,9 +56,36 @@ class TalkingAvatarService:
 		)
 
 		result = response.json()
-		print(result)
 		url = result['output']['output_video']
 
+		return url
+		
+
+	def process_script(
+		self, 
+		image_file: str, 
+		aspect_ratio: str, 
+		script: str, 
+		voice_over: str, 
+		audio_file: Optional[str]=None,
+	):
+		"""This is to precess the whole talking avatar script
+
+		Args:
+			image_file (str): Path to image file
+			aspect_ratio (str): Can be one of square, horizontal, vertical
+			script (str): Script to be converted to audio
+			voice_over (str): Either one of man, woman or neutral
+			audio_file Optional{str}: Path to audio file
+		Returns:
+			str: A string json for the save url and the source of the video
+		"""
+
+		print('Generating audio from script...')
+		audio = video_service.generate_audio_from_script(script=script, voice_over=voice_over)
+		url = self.generate_talking_avatar_video(image_file, audio)
+
+		print('Downloading generated video...')
 		video_dir = os.path.join(settings.STORAGE_DIR, 'video')
 		os.makedirs(video_dir, exist_ok=True)
 
@@ -86,6 +94,7 @@ class TalkingAvatarService:
 		video_service.download_file(url, initial_save_path)
 
 		if audio_file:
+			print('Adding background music...')
 			video_audio_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4())}.mp4')
 			# Add background audio to the file
 			video_service.add_background_audio(
@@ -98,6 +107,7 @@ class TalkingAvatarService:
 		os.makedirs(video_dir, exist_ok=True)
 		final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
 
+		print('Changing aspect ratio...')
 		# Perform aspect ratio resizing based on user input
 		video_service.change_aspect_ratio(
 			input_file=video_audio_path if audio_file else initial_save_path,
@@ -105,12 +115,14 @@ class TalkingAvatarService:
 			aspect_ratio=aspect_ratio
 		)
 
+		print('Cleaning up...')
 		# Delete the temporary audio and video file after processing is done
 		if audio_file:
 			delete_file(video_audio_path)
 		delete_file(initial_save_path)
 		delete_file(audio)
 
+		print('Generating video preview and download links...')
 		minio_save_file = f'tavtr-{str(uuid4())}.mp4'
 		save_url, download_url = minio_service.upload_to_minio(
 			bucket_name='talking-avatar',
@@ -135,10 +147,12 @@ class TalkingAvatarService:
 			content_type=mime_types.VIDEO_MP4
 		)
 
+		print('Adding finishing touches')
 		delete_file(medium_quality)
 		delete_file(low_quality)
 		delete_file(final_save_path)
 		
+		print('Done!!!')
 		return {
 			'app_url': save_url,
 			'source': url,

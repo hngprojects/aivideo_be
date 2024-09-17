@@ -6,6 +6,8 @@ from uuid import uuid4
 import openai
 from sqlalchemy.orm import Session
 from api.utils.settings import settings
+from api.utils.minio_service import minio_service
+from api.utils import mime_types
 from api.v1.models.presets import Avatar, BackgroundMusic
 from api.utils.db_validators import check_model_existence
 from api.v1.services.ai_tools.general_video_service import video_service
@@ -23,11 +25,20 @@ class PresetService:
 
         for root, dir, files in os.walk(AVATAR_FOLDER):
             for file_name in files:
-                file_url = f'{settings.APP_URL}/{AVATAR_FOLDER}/{file_name}'
                 file_path = os.path.join(root, file_name)
+
+                # file_url = f'{settings.APP_URL}/{AVATAR_FOLDER}/{file_name}'
 
                 # Check if avatar already exists in the database
                 if not db.query(Avatar).filter(Avatar.file_name==file_name).first():
+                    # Upload file to minio
+                    file_url, download_url = minio_service.upload_to_minio(
+                        bucket_name='preset-avatars',
+                        source_file=file_path,
+                        destination_file=file_name,
+                        content_type=mime_types.IMAGE_PNG
+                    )
+
                     # Store URL in database
                     avatar = Avatar(
                         file_url=file_url,
@@ -45,11 +56,19 @@ class PresetService:
 
         for root, dir, files in os.walk(MUSIC_FOLDER):
             for file_name in files:
-                file_url = f'{settings.APP_URL}/{MUSIC_FOLDER}/{file_name}'
+                # file_url = f'{settings.APP_URL}/{MUSIC_FOLDER}/{file_name}'
                 file_path = os.path.join(root, file_name)
 
-                # Check if avatar already exists in the database
+                # Check if audio already exists in the database
                 if not db.query(BackgroundMusic).filter(BackgroundMusic.file_name==file_name).first():
+                    # Upload file to minio
+                    file_url, download_url = minio_service.upload_to_minio(
+                        bucket_name='preset-audio',
+                        source_file=file_path,
+                        destination_file=file_name,
+                        content_type=mime_types.AUDIO_MP3
+                    )
+
                     # Store URL in database
                     audio = BackgroundMusic(
                         file_url=file_url,

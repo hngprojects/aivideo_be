@@ -1,8 +1,3 @@
-import uvicorn
-import slowapi
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from fastapi.staticfiles import StaticFiles
 import uvicorn, os
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Request
@@ -38,7 +33,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    title='Convey API'
+    title='Tifi.TV API'
 )
 
 # In-memory request counter by endpoint and IP address
@@ -76,6 +71,8 @@ app.add_middleware(SlowAPIMiddleware)
 
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')
+EMAIL_STATIC_DIR = 'api/core/dependencies/email/static'
+app.mount(f'/{EMAIL_STATIC_DIR}', StaticFiles(directory=EMAIL_STATIC_DIR), name='email-static')
 
 MEDIA_DIR = './media'
 os.makedirs(MEDIA_DIR, exist_ok=True)
@@ -113,11 +110,6 @@ async def get_root(request: Request) -> dict:
         status_code=status.HTTP_200_OK, 
         data={"URL": ""}
     )
-
-
-@app.get("/probe", tags=["Home"])
-async def probe():
-    return {"message": "I am the Python FastAPI API responding"}
 
 
 # REGISTER EXCEPTION HANDLERS

@@ -6,31 +6,28 @@ from api.utils.success_response import success_response
 from api.v1.models.user import User
 from api.v1.schemas import request_password_reset
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from fastapi import BackgroundTasks
-from api.v1.services.email_services import EmailService 
 from passlib.context import CryptContext
 from typing import Optional
 from api.utils.settings import settings
-from fastapi.templating import Jinja2Templates
 from api.v1.models.user import User
+from api.v1.services.user import user_service
 
-templates = Jinja2Templates(directory="./api/v1/templates")
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Token serializer
 SECRET_KEY = settings.SECRET_KEY
-FRONTEND_MAGIKLINK_URL = settings.FRONTEND_MAGICLINK_URL
+FRONTEND_BASE_URL = settings.FRONTEND_MAGICLINK_URL
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 
 
 # Helper functions
-def create_reset_token(email: str) -> str:
+def create_token(email: str) -> str:
     return serializer.dumps(email, salt=SECRET_KEY)
 
 
-def verify_reset_token(token: str, expiration: int = 3600) -> Optional[str]:
+def verify_token(token: str, expiration: int = 3600) -> Optional[str]:
     try:
         email = serializer.loads(token, salt=SECRET_KEY, max_age=expiration)
         return email
@@ -50,54 +47,27 @@ class RequestPasswordService:
     
     @staticmethod
     async def create(
-        email: request_password_reset.RequestEmail,
-        request: Request,
+        schema: request_password_reset.RequestEmail,
         session: Session,
-        background_tasks: BackgroundTasks,
-        url: str,
-        template_file: str,
-        subject: str
+        url: str
     ):
 
-        user = session.query(User).filter_by(email=email.user_email).first()
+        user = session.query(User).filter_by(email=schema.user_email).first()
 
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        token = create_reset_token(email.user_email)
-
+        token = create_token(schema.user_email)
        
-        reset_link = f"{FRONTEND_MAGIKLINK_URL}{url}?token={token}"
-        html_content = templates.TemplateResponse(f"{template_file}", {"url": reset_link, "user": user, "request": request}).body.decode("utf-8")
+        link = f"{FRONTEND_BASE_URL}{url}?token={token}"
 
-        # Sending the email
-
-        
-        email_service = EmailService()
-        email_subject = subject
-        body = html_content
-
-        await email_service.send_email(
-            background_tasks=background_tasks,
-            to_email=email.user_email,
-            subject=email_subject,
-            body=body,
-            from_name="Tifi.tv"
-        )
-
-
-        # Return the success response
-        return {
-            "message": "Password reset link sent successfully",
-            "data": {"reset_link": reset_link},
-            "status_code": status.HTTP_201_CREATED
-        }
+        return user, link
 
 
     @staticmethod
     def process_reset_link(token: str = Query(...), session: Session = Depends(get_db)):
 
-        email = verify_reset_token(token)
+        email = verify_token(token)
 
         if not email:
             raise HTTPException(status_code=400, detail="Invalid or expired token")
@@ -115,7 +85,7 @@ class RequestPasswordService:
     @staticmethod
     def verify_magic_link(token: str = Query(...), session: Session = Depends(get_db)):
 
-        email = verify_reset_token(token)
+        email = verify_token(token)
 
         if not email:
             raise HTTPException(status_code=400, detail="Invalid or expired token")
@@ -134,7 +104,7 @@ class RequestPasswordService:
         session: Session = Depends(get_db),
     ):
         try:
-            email = verify_reset_token(token)
+            email = verify_token(token)
 
             if not email:
                 raise HTTPException(status_code=400, detail="Invalid or expired token")
@@ -149,10 +119,7 @@ class RequestPasswordService:
             user.password = get_password_hash(data.new_password)
             session.commit()
 
-            return success_response(
-                message="Password has been reset successfully",
-                status_code=status.HTTP_200_OK,
-            )
+            return user
         
         except SQLAlchemyError as e:
             session.rollback()  # Rollback the session in case of an error
@@ -171,7 +138,6 @@ class RequestPasswordService:
     ):
         
         try:
-
             if data.new_password != data.confirm_password:
                 raise HTTPException(status_code=400, detail="Passwords do not match")
 

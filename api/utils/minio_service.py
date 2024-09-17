@@ -1,10 +1,11 @@
 from datetime import timedelta
-import json
+import json, requests, os
 from uuid import uuid4
 from minio import Minio
 from minio.error import S3Error
 
 from api.utils.settings import settings
+from api.utils.mime_types import mime_types
 
 
 class MinioService:
@@ -71,6 +72,9 @@ class MinioService:
             destination_file (str): Path to where the file should be saved in minio bucket
         """
 
+        # file_extension = source_file.split('.')[-1]
+        # content_type = mime_types[file_extension]
+
         try:
             if not self.minio_client.bucket_exists(bucket_name):
                 self.minio_client.make_bucket(bucket_name)
@@ -102,17 +106,20 @@ class MinioService:
 
         except S3Error as s3_error:
             print(f'An error occured: {s3_error}')
+
     
+    def upload_to_tmp_bucket(
+        self,
+        source_file: str,
+        # content_type: str = 'application/octet-stream'
+    ):
+        '''This function uploads a file to temporary bucket in minio'''
 
-    def download_from_minio(self, bucket_name: str, source_file: str, destination_file: str):
-        """This function gets an object from minio and downloads it
-
-        Args:
-            bucket_name (str): Name of bucket to get the object from
-            source_file (str): _description_
-            destination_file (str): _description_
-        """
-
+        bucket_name = 'tmp'
+        file_extension = source_file.split('.')[-1]
+        content_type = mime_types[file_extension]
+        destination_file = f"tmp-{str(uuid4())}.{file_extension}"
+        
         try:
             if not self.minio_client.bucket_exists(bucket_name):
                 self.minio_client.make_bucket(bucket_name)
@@ -120,15 +127,49 @@ class MinioService:
             self.__make_public(bucket_name)
 
             # Upload file
-            url = self.minio_client.presigned_get_object(
+            self.minio_client.fput_object(
                 bucket_name=bucket_name,
                 object_name=destination_file,
+                file_path=source_file,
+                content_type=content_type
+            )
+
+            preview_url = self.generate_presigned_url(
+                bucket_name=bucket_name,
+                object_name=destination_file,
+                response_content_disposition="inline"
             ).split('?')[0]
 
-            return url
+            return preview_url
 
         except S3Error as s3_error:
             print(f'An error occured: {s3_error}')
+
+    
+    def download_file_from_minio(self, url: str):
+        """This downloads a file from a minio url to a temporary folder
+
+        Args:
+            url (str): File url
+        """
+
+        try:
+            # Get save file extension from url
+            save_file_extension = url.split('.')[-1]
+
+            # Configure save path to save file to temporary directory
+            save_path = os.path.join(settings.TEMP_DIR, f'tmp-{str(uuid4())}.{save_file_extension}')
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
+
+            with open(save_path, 'wb') as file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    file.write(chunk)
+
+            return save_path
+        
+        except requests.RequestException as e:
+            print(f"Error downloading large file: {e}")
 
 
 minio_service = MinioService()

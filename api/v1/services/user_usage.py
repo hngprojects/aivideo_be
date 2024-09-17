@@ -6,7 +6,7 @@ from api.v1.models.usage_store import UserUsageStore, UserToolAccess
 
 class UserUsageStoreService:
     
-    def create_tool_access(db: Session, usage_store_id: int, tool_name: str, access_count: int) -> UserToolAccess:
+    def create_tool_access(self, db: Session, usage_store_id: int, tool_name: str, access_count: int) -> UserToolAccess:
         """
         Creates a new UserToolAccess record in the database.
 
@@ -77,7 +77,7 @@ class UserUsageStoreService:
         :param tool_name: Name of the tool to retrieve the value for
         :return: Value of the tool if found, otherwise None
         """
-        tools_usage = self.get_tools_usage_by_id(db, id)
+        tools_usage = self.fetch_by_id(db, id)
         if tools_usage is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND ,detail="Tool Usage record not found")
 
@@ -95,7 +95,7 @@ class UserUsageStoreService:
         :return: Total access count for all tools in the ToolsUsage record.
         :raises HTTPException: If the ToolsUsage record with the given ID is not found.
         """
-        tools_usage = self.get_tools_usage_by_id(db, id)
+        tools_usage = self.fetch_by_id(db, id)
         if tools_usage is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usage record not found")
         return tools_usage.tool_access_count
@@ -110,15 +110,16 @@ class UserUsageStoreService:
         :param tool_name: Name of the tool to retrieve the value for
         :return: Value of the tool
         """
-        tools_usage = self.get_tools_usage_by_id(db, id)
+        tools_usage = self.fetch_by_id(db, id)
         if tools_usage is None:
             raise ValueError("ToolsUsage record not found")
 
         # Retrieve the dictionary
-        tool = [tool.tool_name for tool in tools_usage.tools]
+        tools = [tool.tool_name for tool in tools_usage.tools]
 
         # Check if the tool exists in the dictionary
-        if tool_name in tool:
+        if tool_name in tools:
+            tool = next(tool for tool in tools_usage.tools if tool_name == tool.tool_name)
             value = tool.access_count
         else:
             # Tool does not exist, create it with a default value of 0
@@ -127,7 +128,7 @@ class UserUsageStoreService:
                 id,
                 tool_name,
                 0
-            )
+            ).access_count
 
         return value
     

@@ -4,32 +4,30 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 import json
 from time import sleep
-from typing import Optional
+from typing import List, Optional
 from fastapi import HTTPException
 from fastapi import status as HTTPStatus
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from celery.result import AsyncResult
+from sqlalchemy.orm import joinedload
+from sqlalchemy import or_, desc
 
 from api.core.dependencies.celery.celery_app import worker
-from api.db.database import get_db
-from api.v1.models.job import Job
+from api.utils.db_validators import check_model_existence
+from api.v1.models.job import Job, TifiJob, JobStatus
 from api.v1.models.project import Project
 from api.v1.models.user import User
 from api.v1.schemas.project import CreateProject
 from api.v1.services.project import project_service
-from sqlalchemy.orm import joinedload
-from sqlalchemy import or_, desc
-
-
-db = next(get_db())
+from api.v1.services.billing_plan import billing_plan_service
+from api.v1.services.user import user_service
 
 
 class JobService:
     """This is for job db operations"""
 
-    def get_job_status(self, job_id: str):
+    def get_job_status(self, db: Session, job_id: str):
         """Returns the status of a partiular job"""
 
         task_result = AsyncResult(job_id, app=worker)
@@ -37,6 +35,7 @@ class JobService:
 
     def create_project_with_job(
         self,
+        db: Session,
         job,
         project_title: str,
         project_type: str,
@@ -55,12 +54,13 @@ class JobService:
         project = project_service.create(db=db, schema=project_schema)
 
         # Create celery task
-        self.create_job(job_id=job.id, project_id=project.id, user_id=user_id)
+        self.create_job(db=db,job_id=job.id, project_id=project.id, user_id=user_id)
 
         return project
 
     def create_job(
         self,
+        db: Session,
         job_id: str,
         project_id: Optional[str] = None,
         user_id: Optional[str] = None,
@@ -69,7 +69,10 @@ class JobService:
 
         try:
             job = Job(
-                job_id=job_id, project_id=project_id, user_id=user_id, status="Pending"
+                job_id=job_id, 
+                project_id=project_id, 
+                user_id=user_id, 
+                status="Pending"
             )
             db.add(job)
             db.commit()
@@ -79,13 +82,13 @@ class JobService:
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Error {e}")
 
-    def fetch_all_jobs(self):
+    def fetch_all_jobs(self, db: Session):
         """Fetches all celery jobs from the database"""
 
         jobs = db.query(Job).all()
         return jobs
 
-    def fetch_by_job_id(self, job_id: str):
+    def fetch_by_job_id(self, db: Session, job_id: str):
         """Fetches the job details from the database"""
 
         job = db.query(Job).filter(Job.job_id == job_id).first()
@@ -93,13 +96,21 @@ class JobService:
             raise HTTPException(status_code=404, detail="Celery job not found")
         return job
 
-    def update_job(self, job_id: str, status: str, result: Optional[str] = None):
-        """Updates the job details"""
+    def update_job(
+        self, 
+        db: Session,
+        job_id: str, 
+        status: str, 
+        result: Optional[str] = None, 
+        user_id: Optional[str] = None
+    ):
+        """Updates the job details with option to link to a user"""
 
         try:
-            job = self.fetch_by_job_id(job_id=job_id)
+            job = self.fetch_by_job_id(db=db, job_id=job_id)
             job.status = status
             job.result = result if result is not None else None
+            job.user_id = user_id if user_id is not None else None
             db.commit()
             db.refresh(job)
             return job
@@ -109,10 +120,10 @@ class JobService:
                 status_code=400, detail=f"{type(e).__name__} occurred. {repr(e)}"
             )
 
-    def get_project_from_job(self, job_id: str):
+    def get_project_from_job(self, db: Session, job_id: str):
         """Returns the project from the job details"""
 
-        job = self.fetch_by_job_id(job_id=job_id)
+        job = self.fetch_by_job_id(db=db, job_id=job_id)
         project = db.query(Project).filter(Project.id == job.project_id).first()
 
         if not project:
@@ -120,15 +131,15 @@ class JobService:
 
         return project
 
-    def update_job_result(self, job_id: str):
+    def update_job_result(self, db: Session, job_id: str):
         """Fetches the result from celery and updates the job"""
         task_result = AsyncResult(job_id, app=worker)
 
         if task_result.state == "SUCCESS":
             result = task_result.get()
-            self.update_job(job_id=job_id, status=task_result.state, result=result)
+            self.update_job(db=db, job_id=job_id, status=task_result.state, result=result)
         elif task_result.state in ["FAILURE", "REVOKED"]:
-            self.update_job(job_id=job_id, status=task_result.state)
+            self.update_job(db=db, job_id=job_id, status=task_result.state)
 
     def fetch_job_activity(
         self,
@@ -236,44 +247,6 @@ class JobService:
             },
         }
 
-    def export_jobs_as_csv(self, db: Session):
-        # get videos
-
-        data = db.query(Job).all()
-
-        csv_file = StringIO()
-        csv_writer = csv.writer(csv_file)
-
-        csv_writer.writerow(
-            [
-                "ID",
-                "Firstname",
-                "Lastname",
-                "Email",
-                "Task ID",
-                "Project Type",
-                "Date Created",
-                "Status",
-            ]
-        )
-
-        for datum in data:
-            csv_writer.writerow(
-                [
-                    datum.id,
-                    datum.user.first_name if datum.user else None,
-                    datum.user.last_name if datum.user else None,
-                    datum.user.email if datum.user else None,
-                    datum.job_id,
-                    datum.project.project_type if datum.project else None,
-                    datum.created_at,
-                    datum.status,
-                ]
-            )
-
-        csv_file.seek(0)
-
-        return csv_file
 
     def get_job_statistics(self, db: Session):
         stats = {}
@@ -393,3 +366,201 @@ class JobService:
 
 
 job_service = JobService()
+
+
+
+class TifiJobService:
+
+    def create(
+        self,
+        db: Session,
+        tool_name: str,
+        payload,
+        user_id: Optional[str]=None,
+        is_parallel: bool = False,
+        save_project: bool = True
+    ):  
+        """Create a new Tifi job with a project if `save_project` is True"""
+
+        # Check if there is a need to create a project and create a project with the job
+        project=None
+        if save_project:
+            project = Project(
+                title=f"New {tool_name} Project",
+                project_type=tool_name,
+                user_id=user_id
+            )
+
+            db.add(project)
+            db.commit()
+            db.refresh(project)
+        
+        if user_id:
+            # Check user
+            user = user_service.fetch(db=db, id=user_id)
+
+            # Check if user is on a free plan
+            user_on_free_plan = billing_plan_service.confirm_user_is_on_plan(db=db, user=user, plan_name='Free')
+
+        job = TifiJob(
+            tool_name=tool_name,
+            is_premium=(not user_on_free_plan) if user_id else False,
+            is_parallel=is_parallel,
+            payload=payload,
+            status=JobStatus.pending,
+            progress='0% complete',
+            user_id=user_id,
+            project_id=project.id if project else None,
+        )
+
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+
+        return (job, project) if project else job
+
+
+    def fetch_all(self, db: Session):
+        '''Fetches all jobs'''
+
+        jobs = db.query(TifiJob).order_by(desc(TifiJob.created_at)).all()
+        return jobs
+
+    
+    def fetch_jobs_by_status(
+        self, 
+        db: Session, 
+        status: str | List[str], 
+        fetch_expired: bool = False,
+        is_parallel: bool = True
+    ):
+        '''THis function fetches all jobs by their status and checks if the jobs can be run in parallel or not'''
+
+        current_time = datetime.now().replace(tzinfo=None)
+
+        base_query = db.query(TifiJob)
+        if not fetch_expired:
+            base_query = db.query(TifiJob).filter(TifiJob.expiration_time >= current_time)
+        
+        parallel_query = base_query.filter(TifiJob.is_parallel == is_parallel)
+
+        # Check if status is a list or a single string
+        if isinstance(status, list):
+            query = parallel_query.filter(TifiJob.status.in_(status))
+        else:
+            query = parallel_query.filter(TifiJob.status == status)
+
+        jobs = query.order_by(desc(TifiJob.created_at)).all()
+
+        return jobs
+
+
+    def fetch(self, db: Session, job_id: str):
+        """Fetches the job details from the database"""
+
+        job = check_model_existence(db, TifiJob, job_id)
+        
+        return job
+
+
+    def fetch_with_lock(self, db: Session, job_id: str):
+        """Fetches the job details from the database with lock applied on the job object"""
+
+        job = db.query(TifiJob).with_for_update().filter(TifiJob.id == job_id).first()
+
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        return job
+    
+    
+    def mark_jobs_as_processing(self, db: Session, is_parallel: bool):
+        '''This function retrieves all available jobs and mark them as processing'''
+
+        jobs = self.fetch_jobs_by_status(db=db, status=JobStatus.pending, is_parallel=is_parallel)
+
+        processing_jobs = []
+
+        if jobs:
+            for job in jobs:
+                job.status = JobStatus.processing
+                db.commit()
+                db.refresh(job)
+
+                processing_jobs.append(job.to_dict())
+            
+        return processing_jobs
+    
+
+    def delete_expired_jobs(self, db: Session):
+        '''Delete expired jobs'''
+
+        # Get all expired jobs
+        current_time = datetime.now().replace(tzinfo=None)
+        expired_jobs = db.query(TifiJob).filter(TifiJob.expiration_time >= current_time).all()
+        
+        # Delete expired jobs
+        for job in expired_jobs:
+            db.delete(job)
+        
+        db.commit()
+
+    
+    def retry_job(self, db: Session, job_id: str):
+        '''This function retries a job especially if it failed'''
+
+        job = self.fetch(db=db, job_id=job_id)
+
+        if job.is_expired():
+            raise HTTPException(status_code=400, detail="Job has expired")
+        
+        if job.status not in [JobStatus.failed]:
+            raise HTTPException(status_code=400, detail="Job cannot be retried")
+        
+        job.status = JobStatus.pending
+        job.status_message = None
+        job.progress = "0% complete"
+        db.commit()
+
+        return job
+
+    
+    def export_jobs_as_csv(self, db: Session):
+        # get videos
+        jobs = db.query(TifiJob).all()
+
+        csv_file = StringIO()
+        csv_writer = csv.writer(csv_file)
+
+        csv_writer.writerow(
+            [
+                "ID",
+                "Firstname",
+                "Lastname",
+                "Email",
+                "Task ID",
+                "Project Type",
+                "Date Created",
+                "Status",
+            ]
+        )
+
+        for job in jobs:
+            csv_writer.writerow(
+                [
+                    job.id,
+                    job.user.first_name if job.user else None,
+                    job.user.last_name if job.user else None,
+                    job.user.email if job.user else None,
+                    job.project.project_type if job.project else None,
+                    job.created_at,
+                    job.status,
+                ]
+            )
+
+        csv_file.seek(0)
+
+        return csv_file
+
+
+tifi_job_service = TifiJobService()

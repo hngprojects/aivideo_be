@@ -66,7 +66,7 @@ def register(
     refresh_token = user_service.create_refresh_token(user_id=user.id)
 
     # Send email in the background
-    email_sending_service.send_welcome_email(background_tasks, user)
+    email_sending_service.send_welcome_email(request, background_tasks, user)
 
     response = JSONResponse(
         status_code=201,
@@ -242,33 +242,31 @@ def refresh_access_token(
 @auth.post("/magic-link", status_code=status.HTTP_200_OK, response_model=MagicLinkResponse)
 @limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
 async def request_magic_link(
-    reset_schema: RequestEmail,
+    magic_link_request_schema: RequestEmail,
     request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    subject = "Magic Link"
-    url = "/magic-link/verify"
-    template_file = "magic_link.html"
-    data = await magic_link_service.create(
-        reset_schema,
-        request,
+    
+    user, link = await magic_link_service.create(
+        magic_link_request_schema,
         db,
-        background_tasks,
-        subject=subject,
-        template_file=template_file,
-        url=url,
+        url='/magic-link/verify',
     )
-    link = data["data"]["reset_link"]
-    data.update(
-        {
-            "message": "Magic link sent sucessfully.",
-            "data": {"magic-link": link},
-            "status_code": status.HTTP_200_OK,
-        }
-    )
-    return success_response(**data)
 
+    # Send email
+    email_sending_service.send_magic_link_email(
+        request=request,
+        background_tasks=background_tasks,
+        user=user,
+        magic_link_url=link
+    )
+
+    return success_response(
+        message='Magic link sent successfully',
+        status_code=200,
+        data={"magic-link": link}
+    )
 
 @auth.get(
     "/magic-link/verify",

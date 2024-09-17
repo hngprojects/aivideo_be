@@ -22,13 +22,26 @@ async def event_generator(job_id: str, db: Session, request: Request):
     user = None
     if not job_id:
         return 
+    
     refresh_token = request.cookies.get('refresh_token')
     if refresh_token:
         user = user_service.get_user_from_refresh_token(refresh_token=refresh_token, db=db)
+        if user:
+            # Refresh user in session
+            db.add(user)
+            db.refresh(user)
+            
+            # Link user to job
+            job_service.update_job(
+                db=db,
+                job_id=job_id,
+                status='Pending',
+                user_id=user.id
+            )
 
     while True:
         task_result = AsyncResult(job_id, app=worker)
-        project = job_service.get_project_from_job(job_id=job_id)
+        project = job_service.get_project_from_job(db=db,job_id=job_id)
 
         status = task_result.state
         result = None
@@ -41,7 +54,7 @@ async def event_generator(job_id: str, db: Session, request: Request):
                 is_active=False
             )
         
-        job_service.update_job(job_id, status.capitalize())
+        job_service.update_job(db=db, job_id=job_id, status=status.capitalize())
 
         event_name = 'other'
 
@@ -49,7 +62,7 @@ async def event_generator(job_id: str, db: Session, request: Request):
             # Safely convert task_result.info to a string
             result = str(task_result.info) if task_result.info else "Unknown error"
             event_name = 'failure'
-            job_service.update_job(job_id, 'Failed', result)
+            job_service.update_job(db=db, job_id=job_id, status='Failed', result=result)
 
             # Use json.loads on the result as it is already a stringified json
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
@@ -59,7 +72,7 @@ async def event_generator(job_id: str, db: Session, request: Request):
                 notification_service.send_notification(
                     db=db,
                     user=user,
-                    title="Project Failed",
+                    title="Project creation failed",
                     message=f"The project '{project.title}' has failed to create.",
                     type='warning'
                 )
@@ -68,14 +81,14 @@ async def event_generator(job_id: str, db: Session, request: Request):
         elif status == 'PROGRESS':
             result = task_result.result
             event_name = 'progress'
-            job_service.update_job(job_id, 'Progress', json.dumps(result))
+            job_service.update_job(db=db, job_id=job_id, status='Progress', result=json.dumps(result))
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
 
         elif status == 'SUCCESS':
             result = task_result.result
             event_name = 'success'
-            job_service.update_job(job_id, 'Success', result)
+            job_service.update_job(db=db, job_id=job_id, status='Success', result=result)
             
             if user:
                 # Send notification to user
@@ -95,13 +108,12 @@ async def event_generator(job_id: str, db: Session, request: Request):
                     is_active=True,
                     user=user
                 )
-                project_service.set_file_url(project, db)
+                project_service.set_file_url(db, project)
             except Exception as e:
                 print(f"Error saving project {e}")
                 db.rollback()
             finally:
                 db.close()
-                print('Session closed')
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": json.loads(result)})}\n\n'
             break
@@ -110,7 +122,7 @@ async def event_generator(job_id: str, db: Session, request: Request):
         await asyncio.sleep(15)  # Delay between status checks
 
 
-async def event_generator_for_job(job_id: str):
+async def event_generator_for_job(job_id: str, db: Session):
     '''Generates events for SSE but for jobs'''
 
     while True:
@@ -118,7 +130,7 @@ async def event_generator_for_job(job_id: str):
         status = task_result.state
 
         result = None
-        job_service.update_job(job_id, status.capitalize())
+        job_service.update_job(db, job_id, status.capitalize())
         event_name = 'other'
 
         if status == 'FAILURE':
@@ -126,7 +138,7 @@ async def event_generator_for_job(job_id: str):
             result = str(
                 task_result.info) if task_result.info else "Unknown error"
             event_name = 'failure'
-            job_service.update_job(job_id, 'Failed', result)
+            job_service.update_job(db, job_id, 'Failed', result)
 
             # Use json.loads on the result as it is already a stringified json
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
@@ -135,15 +147,14 @@ async def event_generator_for_job(job_id: str):
         elif status == 'PROGRESS':
             result = task_result.result
             event_name = 'progress'
-            job_service.update_job(job_id, 'Progress', json.dumps(result))
+            job_service.update_job(db, job_id, 'Progress', json.dumps(result))
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": result})}\n\n'
-            # await asyncio.sleep(1)
 
         elif status == 'SUCCESS':
             result = task_result.result
             event_name = 'success'
-            job_service.update_job(job_id, 'Success', result)
+            job_service.update_job(db, job_id, 'Success', result)
 
             yield f'event: {event_name}\ndata: {json.dumps({"status": status.capitalize(), "result": json.loads(result)})}\n\n'
             break
@@ -152,7 +163,7 @@ async def event_generator_for_job(job_id: str):
         await asyncio.sleep(5)  # Delay between status checks
 
 
-@background_router.get("/{job_id}/sse/progress")
+@background_router.get("/{job_id}/sse/progress-old")
 async def send_job_status_updates_over_sse(
     job_id: str,
     request: Request,
@@ -167,7 +178,7 @@ async def send_job_status_updates_over_sse(
         raise HTTPException(status_code=400, detail="job_id is required")
 
     try:
-        event_stream = event_generator(job_id, db, request) if save_project else event_generator_for_job(job_id)
+        event_stream = event_generator(job_id, db, request) if save_project else event_generator_for_job(job_id, db)
         return StreamingResponse(event_stream, media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

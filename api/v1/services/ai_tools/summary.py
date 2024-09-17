@@ -7,16 +7,8 @@ from api.utils.minio_service import minio_service
 from api.v1.services.ai_tools.video_subtitles import transcribe_audio_segments
 from api.utils.transcripts import get_paragraphs
 from openai.types.audio.transcription import Transcription
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
 from api.utils.settings import settings
 import pytesseract
-from typing import Optional
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.units import inch
-from reportlab.lib import colors
 from PIL import Image
 from io import BytesIO
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -37,21 +29,40 @@ from fastapi import HTTPException
 import json
 import fitz
 
+import PyPDF2, tiktoken
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
 class SummaryService():
     def __init__(self):
         self.translator = GoogleTranslator()
-        self.client = OI(api_key=settings.OPENAI_API_KEY)
+        self.client = OI(
+            base_url='https://openrouter.ai/api/v1',
+            api_key=settings.OPENROUTER_API_KEY,
+            # api_key=settings.OPENAI_API_KEY,
+        )
         self.llm = OpenAI(
-            temperature=0, openai_api_key=settings.OPENAI_API_KEY)
+            temperature=0, 
+            base_url='https://openrouter.ai/api/v1',
+            openai_api_key=settings.OPENROUTER_API_KEY,
+            # openai_api_key=settings.OPENAI_API_KEY,
+        )
 
     def init_chain(self):
         prompt_template = """Write a concise summary of the following:
             "{text}"
         CONCISE SUMMARY:"""
         prompt = PromptTemplate.from_template(prompt_template)
-        llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k",
-                         api_key=settings.OPENAI_API_KEY)
+        llm = ChatOpenAI(
+            temperature=0,
+            base_url='https://openrouter.ai/api/v1',
+            model_name="openai/gpt-3.5-turbo-16k",
+            api_key=settings.OPENROUTER_API_KEY
+            # model_name="gpt-3.5-turbo-16k",
+            # api_key=settings.OPENAI_API_KEY
+        )
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         return llm_chain
 
@@ -224,8 +235,7 @@ class SummaryService():
                 if stream_url:
                     return stream_url
         if not stream_url:
-            raise HTTPException(
-                status_code=404, detail="Unable to retrieve audio from the provided URL")
+            raise HTTPException(status_code=404, detail="Unable to retrieve audio from the provided URL")
 
     def summarize_audio(self, audio_file_path):
         """Summarizes an audio file by transcribing and then summarizing the transcript."""
@@ -385,3 +395,141 @@ class SummaryService():
 
 
 summary_service = SummaryService()
+
+
+class PDFSummaryService:
+
+    def __init__(self):
+        self.translator = GoogleTranslator()
+
+        self.client = OI(
+            base_url='https://openrouter.ai/api/v1',
+            api_key=settings.OPENROUTER_API_KEY,
+        )
+
+    
+    def get_reading_time(self, text: str):
+        '''This function gets the reading time of a text'''
+
+        read_time = round(len(text.split()) / 250)
+        return read_time
+
+    
+    def extract_pdf_data(self, pdf_file_path: str):
+        '''This function extracts and returns data from pdf'''
+
+        with open(file=pdf_file_path, mode='rb') as pdf:
+            pdf_reader = PyPDF2.PdfReader(pdf)
+            text = ''
+
+            # Get number of pages in text
+            no_of_pages = len(pdf_reader.pages)
+
+            for page_no in range(no_of_pages):
+                # Extract text from a single page
+                page = pdf_reader.pages[page_no]
+                text += page.extract_text()
+
+            # Get number of words in the text
+            no_of_words = len(text.split())
+
+            read_time = self.get_reading_time(text)
+            estimated_read_time = f'{read_time} minute' if read_time == 1 else f'{read_time} minutes'
+
+            # return text, no_of_pages, no_of_words
+            return {
+                'text': text,
+                'number_of_pages': no_of_pages,
+                'number_of_words': no_of_words,
+                'estimated_read_time': estimated_read_time
+            }
+
+    
+    def split_text_into_chunks(self, text: str, max_tokens: int=2000):
+        '''This function splits text into chunks based on the openai model'''
+
+        encoding = tiktoken.encoding_for_model("gpt-4o-mini")
+        
+        tokens = encoding.encode(text)
+        chunk_size = max_tokens
+        chunks = []
+        current_chunk = []
+        current_token_count = 0
+        
+        # Loop through the list of encoded tokens
+        for token in tokens:
+            # Append a token to the current chunk and increment the current token count
+            current_chunk.append(token)
+            current_token_count += 1
+
+            # Check if the current token count has reached its limit
+            if current_token_count >= chunk_size:
+                # Append the decoded current chunk to the list of chunks and reset the current chunk and token count
+                chunks.append(encoding.decode(current_chunk))
+                current_chunk = []
+                current_token_count = 0
+
+        if current_chunk:
+            chunks.append(encoding.decode(current_chunk))
+        
+        return chunks
+
+
+    def summarize_text(self, text: str, max_tokens: int=2000):
+        response = self.client.chat.completions.create(
+            model="openai/gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a summarization assistant."},
+                {"role": "user", "content": f"Generate a conside summary of the following text: {text}. Separate the summary into paragraphs if need be but do not add anything else except the summary alone."}
+            ],
+            max_tokens=max_tokens  # Adjust based on the token limit
+        )
+        return response.choices[0].message.content
+
+    
+    def translate_summary(self, text, target_lang):
+        """Translates the summary to the target language using GoogleTranslator."""
+        
+        translated_text = self.translator.translate(text, target_lang=target_lang)
+        return translated_text
+    
+
+    def save_summary_to_pdf(self, text: str):
+        '''This saves the generated text to a file as a pdf'''
+
+        pdf_buffer = BytesIO()
+
+        file_path = os.path.join(settings.TEMP_DIR, f"summary-{uuid.uuid4()}.pdf")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        # Set up the document
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Title
+        title_style = styles["Title"]
+        story.append(Paragraph("Summary Report", title_style))
+        story.append(Spacer(1, 12))
+
+        # Body
+        normal_style = styles["Normal"]
+        paragraphs = text.split("\n\n")
+
+        for paragraph in paragraphs:
+            story.append(Paragraph(paragraph, normal_style))
+            story.append(Spacer(1, 12))
+
+        doc.build(story)
+
+        # Save the PDF content to a file
+        pdf_buffer.seek(0)
+        with open(file_path, "wb") as f:
+            f.write(pdf_buffer.read())
+
+        pdf_buffer.close()
+
+        return file_path
+    
+
+pdf_summary_service = PDFSummaryService()

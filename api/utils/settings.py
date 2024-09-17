@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     JWT_REFRESH_EXPIRY: int = config("JWT_REFRESH_EXPIRY")
 
     APP_URL: str = config("APP_URL")
+    JOB_APP_URL: str = config("JOB_APP_URL")
 
     MAIL_USERNAME: str = config("MAIL_USERNAME")
     MAIL_PASSWORD: str = config("MAIL_PASSWORD")
@@ -48,6 +49,7 @@ class Settings(BaseSettings):
     GOOEY_API_KEY: str = config("GOOEY_API_KEY")
     DEEPGRAM_API_KEY: str = config("DEEPGRAM_API_KEY")
     UNREAL_SPEECH_API_KEY: str = config("UNREAL_SPEECH_API_KEY")
+    REPLICATE_API_TOKEN: str = config("REPLICATE_API_TOKEN")
 
     MEDIA_DIR: str = config("MEDIA_DIR")
     MAX_FILE_SIZE: int = config("MAX_FILE_SIZE")
@@ -62,6 +64,13 @@ class Settings(BaseSettings):
     STORAGE_DIR: str = os.path.join('media', 'downloads')
     FRONTEND_MAGICLINK_URL : str = config("FRONTEND_MAGICLINK_URL")
     
+    @property
+    def ACTIVATE_TOOL_TRACKING(self) -> bool:
+        # Get the environment variable as a string
+        activate_tool_tracking_str = config("ACTIVATE_TOOL_TRACKING", default="True")
+        # Convert the string to a boolean, defaulting to True if conversion fails
+        return activate_tool_tracking_str.lower() in {"true", "1", "yes"}  
+      
     @property
     def ALLOWED_EXTENSIONS(self) -> set[str]:
         raw_extensions = config("ALLOWED_EXTENSIONS", default="")

@@ -75,8 +75,9 @@ class ToolStatsData(BaseModel):
     pdf_summarizer: float = 0
     podcast_summarizer: float = 0
     youtube_summarizer: float = 0
+    video_summarizer: float = 0
     audio_transcriber: float = 0
-    text_to_video: float = 0
+    script_to_video: float = 0
     image_to_video: float = 0
     thumbnail_generator: float = 0
 
@@ -86,21 +87,3 @@ class ToolStatsResponse(BaseModel):
     status_code: int
     status: str
     data: Union[ToolStatsData, None]
-
-
-class ProjectToolsEnum(str, Enum):
-    youtube_summarizer = "Youtube Summarizer"
-    video_summarizer = "Video Summarizer"
-    text_to_video = "Text To Video"
-    talking_avatar = "Talking Avatar"
-    audio_transcriber = "Audio Transcriber"
-    audio_summarizer = "Audio Summarizer"
-    image_to_video = "Image To Video"
-    podcast_summarizer = "Podcast Summarizer"
-    thumbnail_generator = "Thumbnail Generator"
-    pdf_summarizer = "PDF Summarizer"
-    subtitle_translator = "Subtitle Translator"
-    audio_extractor = "Audio Extractor"
-    video_format_conversion = "Video Format Compression"
-    video_compression = "Video Compression"
-    merge_videos = "Merge Videos"
