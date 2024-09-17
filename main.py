@@ -88,14 +88,15 @@ app.mount('/presets', StaticFiles(directory='./presets'), name='presets')
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
-    "https://staging.tifi.tv"
+    "https://staging.tifi.tv",
+    "https://tifi.tv"
 ]
 
 
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
