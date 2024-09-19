@@ -136,7 +136,7 @@ async def upload_file_to_current_dir(
     return SAVE_FILE_DIR
 
 
-async def upload_to_current_dir(
+async def upload_to_temp_dir(
     file,
     allowed_extensions: Optional[list],
     max_file_size: int,

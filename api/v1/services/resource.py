@@ -68,7 +68,7 @@ class ResourceService(Service):
 
         minio_save_file = f"resource-{resource_id}-{str(uuid7())}.{extension}"
         minio_response = minio_service.upload_to_minio(
-            bucket_name="resources",
+            folder_name="resources",
             source_file=file_path,
             destination_file=minio_save_file,
             content_type=mime,

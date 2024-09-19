@@ -6,6 +6,7 @@ from api.v1.models.base_model import BaseTableModel
 
 
 class ProjectToolsEnum(str, Enum):
+    # AI TOOLS
     youtube_summarizer = "Youtube Summarizer"
     video_summarizer = "Video Summarizer"
     script_to_video = "Script To Video"
@@ -17,6 +18,12 @@ class ProjectToolsEnum(str, Enum):
     thumbnail_generator = "Thumbnail Generator"
     pdf_summarizer = "PDF Summarizer"
     subtitle_translator = "Subtitle Translator"
+
+    # FFMPEG TOOLS
+    audio_extractor = 'Audio Extractor'
+    resize_video = 'Resize Video'
+    video_compressor = 'Video Compressor'
+
 
 class Project(BaseTableModel):
     __tablename__ = 'projects'
@@ -34,5 +41,5 @@ class Project(BaseTableModel):
     thumbnail = Column(String, nullable=True)
     
     user = relationship('User', back_populates='projects')
-    tifi_job = relationship("TifiJob", back_populates="project", uselist=False)
+    # tifi_job = relationship("TifiJob", back_populates="project", uselist=False)
     job = relationship("Job", back_populates="project", uselist=False)

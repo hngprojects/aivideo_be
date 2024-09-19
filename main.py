@@ -10,16 +10,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware  # required by google oauth
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from api.utils.logger import logger
 from api.utils.success_response import success_response
 from api.v1.routes import api_version_one
 from api.utils.settings import settings
 from starlette.middleware.base import BaseHTTPMiddleware
-from slowapi.middleware import SlowAPIMiddleware
 from collections import defaultdict
-from slowapi.errors import RateLimitExceeded
 from scripts.presets import load_avatars_in_db, load_audio_in_db, load_billing_plans_in_db
 
 
@@ -56,18 +52,18 @@ app.add_middleware(RequestCountMiddleware)
 async def get_request_stats():
     return success_response(
         status_code=status.HTTP_200_OK, 
-        message="endpoints request retreived successfully", 
+        message="Endpoints request retreived successfully", 
         data={"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}}
     )
 
 
 # Initialize the limiter
-limiter = Limiter(key_func=get_remote_address)
+# limiter = Limiter(key_func=get_remote_address)
 
 # Register the rate limit exceeded handler
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, lambda request, exc: JSONResponse({"detail": "Rate limit exceeded"}, status_code=429))
-app.add_middleware(SlowAPIMiddleware)
+# app.state.limiter = limiter
+# app.add_exception_handler(RateLimitExceeded, lambda request, exc: JSONResponse({"detail": "Rate limit exceeded"}, status_code=429))
+# app.add_middleware(SlowAPIMiddleware)
 
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')

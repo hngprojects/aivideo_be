@@ -10,7 +10,7 @@ from api.v1.routes.ai_tools.talking_avatar import video_router
 client = TestClient(app)
 
 # @pytest.mark.asyncio
-# @patch('api.v1.routes.ai_tools.talking_avatar.upload_to_current_dir')
+# @patch('api.v1.routes.ai_tools.talking_avatar.upload_to_temp_dir')
 # @patch('api.v1.routes.ai_tools.talking_avatar.preset_service.fetch_music_by_id')
 # @patch('api.v1.services.job.tifi_job_service.create')
 # # @patch('api.v1.routes.ai_tools.talking_avatar.contains_face')
@@ -21,7 +21,7 @@ client = TestClient(app)
 #     # mock_apply_async, 
 #     # mock_contains_face
 #     mock_fetch_music_by_id, 
-#     mock_upload_to_current_dir,
+#     mock_upload_to_temp_dir,
 #     mock_create,
 # ):
 #     TifiJob = namedtuple('TifiJob', ['id'])
@@ -29,7 +29,7 @@ client = TestClient(app)
 #     BackgroundMusic = namedtuple('BackgroundMusic', ['file_path'])
     
 #     # Arrange
-#     mock_upload_to_current_dir.return_value = "test_image.jpg"
+#     mock_upload_to_temp_dir.return_value = "test_image.jpg"
 #     mock_fetch_music_by_id.return_value = BackgroundMusic(file_path="test_audio.mp3")
 #     mock_create.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
 #     # mock_fetch_music_by_id.return_value = MagicMock(file_path="test_audio.mp3")

@@ -171,9 +171,9 @@ class ScriptToVideoService:
         # save_url = f'{settings.APP_URL}/{final_result_file}'
 
         print('Generating preview and download links for generated video')
-        minio_save_file = f'ttvid-{str(uuid4())}.mp4'
+        minio_save_file = f'scrtovid-{str(uuid4())}.mp4'
         save_url, download_url = minio_service.upload_to_minio(
-            bucket_name='text-to-video',
+            folder_name='script-to-video',
             source_file=final_result_file,
             destination_file=minio_save_file,
             content_type=mime_types.VIDEO_MP4

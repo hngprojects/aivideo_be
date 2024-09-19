@@ -125,7 +125,7 @@ class TalkingAvatarService:
 		print('Generating video preview and download links...')
 		minio_save_file = f'tavtr-{str(uuid4())}.mp4'
 		save_url, download_url = minio_service.upload_to_minio(
-			bucket_name='talking-avatar',
+			folder_name='talking-avatar',
 			source_file=final_save_path,
 			destination_file=minio_save_file,
 			content_type=mime_types.VIDEO_MP4
@@ -134,14 +134,14 @@ class TalkingAvatarService:
 		# Compress video and save to minio as well
 		low_quality = video_service.compress_video(input_file=final_save_path, bitrate=500)
 		low_quality_vid_preview, low_quality_vid_download = minio_service.upload_to_minio(
-			bucket_name='talking-avatar',
+			folder_name='talking-avatar',
 			source_file=low_quality,
 			destination_file=f'tavtr-{str(uuid4())}.mp4',
 			content_type=mime_types.VIDEO_MP4
 		)
 		medium_quality = video_service.compress_video(input_file=final_save_path, bitrate=1080)
 		medium_quality_vid_preview, medium_quality_vid_download = minio_service.upload_to_minio(
-			bucket_name='talking-avatar',
+			folder_name='talking-avatar',
 			source_file=medium_quality,
 			destination_file=f'tavtr-{str(uuid4())}.mp4',
 			content_type=mime_types.VIDEO_MP4

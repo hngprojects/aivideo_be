@@ -1,7 +1,7 @@
-import sys, json, os
+import sys, json, os, requests
 from uuid import uuid4
+
 from api.utils.files import delete_file
-from api.v1.models.job import JobStatus
 from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
 from api.v1.services.ai_tools.general_video_service import video_service
 from api.db.database import get_db
@@ -23,7 +23,6 @@ save_and_print_job_progress(db, job, 0, 'Job started')
 image_url = payload.get('image_url')
 audio_url = payload.get('audio_url', None)
 
-
 # Download image and audio files from minio
 save_and_print_job_progress(db, job, 10, f'Downloading and opening image file from {image_url}')
 image_file = minio_service.download_file_from_minio(image_url)
@@ -33,23 +32,12 @@ if audio_url:
     save_and_print_job_progress(db, job, 15, f'Downloading and opening audio file from {audio_url}')
     audio_file = minio_service.download_file_from_minio(audio_url)
 
-
-# Run task
-# result = talking_avatar_service.process_script(
-#     image_file=image_file,
-#     aspect_ratio=payload.get('aspect_ratio'),
-#     script=payload.get('script'),
-#     voice_over=payload.get('voice_over'),
-#     audio_file=audio_file
-# )
-
 # Set up variables
 image_file=image_file
 aspect_ratio=payload.get('aspect_ratio')
 script=payload.get('script')
 voice_over=payload.get('voice_over')
 audio_file=audio_file
-
 
 try:
     save_and_print_job_progress(db, job, 20, 'Generating audio from script')
@@ -64,7 +52,7 @@ try:
     video_service.download_file(url, initial_save_path)
 
     if audio_file:
-        save_and_print_job_progress(db, job, 60, 'Applying background audio')
+        save_and_print_job_progress(db, job, 55, 'Applying background audio')
         video_audio_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4())}.mp4')
         # Add background audio to the file
         video_service.add_background_audio(
@@ -77,7 +65,7 @@ try:
     os.makedirs(video_dir, exist_ok=True)
     final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
 
-    save_and_print_job_progress(db, job, 65, 'Changing aspect ratio')
+    save_and_print_job_progress(db, job, 60, 'Changing aspect ratio')
     # Perform aspect ratio resizing based on user input
     video_service.change_aspect_ratio(
         input_file=video_audio_path if audio_file else initial_save_path,
@@ -95,36 +83,34 @@ try:
     save_and_print_job_progress(db, job, 75, 'Generating video preview link')
     minio_save_file = f'tavtr-{str(uuid4())}.mp4'
     save_url, download_url = minio_service.upload_to_minio(
-        bucket_name='talking-avatar',
+        folder_name='talking-avatar',
         source_file=final_save_path,
         destination_file=minio_save_file,
         content_type=mime_types.VIDEO_MP4
     )
 
-    save_and_print_job_progress(db, job, 80, 'Generating different video quality download links')
+    save_and_print_job_progress(db, job, 85, 'Generating different video quality download links')
     # Compress video and save to minio as well
     low_quality = video_service.compress_video(input_file=final_save_path, bitrate=500)
     low_quality_vid_preview, low_quality_vid_download = minio_service.upload_to_minio(
-        bucket_name='talking-avatar',
+        folder_name='talking-avatar',
         source_file=low_quality,
         destination_file=f'tavtr-{str(uuid4())}.mp4',
         content_type=mime_types.VIDEO_MP4
     )
     medium_quality = video_service.compress_video(input_file=final_save_path, bitrate=1080)
     medium_quality_vid_preview, medium_quality_vid_download = minio_service.upload_to_minio(
-        bucket_name='talking-avatar',
+        folder_name='talking-avatar',
         source_file=medium_quality,
         destination_file=f'tavtr-{str(uuid4())}.mp4',
         content_type=mime_types.VIDEO_MP4
     )
 
-    save_and_print_job_progress(db, job, 85, 'Final cleanup and generating result')
+    save_and_print_job_progress(db, job, 90, 'Final cleanup')
     delete_file(medium_quality)
     delete_file(low_quality)
     delete_file(final_save_path)
-    
 
-    save_and_print_job_progress(db, job, 90, 'Gnerating result')
     result = {
         'app_url': save_url,
         'source': url,
@@ -141,9 +127,8 @@ try:
 
 except Exception as e:
     raise e
-
+    
 finally:
     delete_file(image_file)
     if audio_file:
         delete_file(audio_file)
-        
