@@ -75,7 +75,7 @@ def test_enqueue_summarize_batch_job(
     }
 
     # Send a POST request to the summarize_batch endpoint
-    response = client.post("/api/v1/tools/summary/youtube_batch", json=link)
+    response = client.post("/api/v1/tools/summary/batch-youtube-summarize", json=link)
 
     # Assertions
     assert response.status_code == 202

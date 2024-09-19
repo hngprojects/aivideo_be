@@ -77,7 +77,7 @@ def test_enqueue_summarize_batch_job(
 
     # Send a POST request to the summarize_batch endpoint
     response = client.post(
-        "/api/v1/tools/summary/youtube",
+        "/api/v1/tools/summary/summarize-youtube-video",
         json=link,
     )
 
@@ -109,7 +109,7 @@ def test_youtube_summarize_job_limiting(
     for i in range(ACCESS_LIMIT):
         # Send a POST request to the summarize multiple times to test limiter
         response = client.post(
-            "/api/v1/tools/summary/youtube",
+            "/api/v1/tools/summary/summarize-youtube-video",
             json=link,
         )
 
