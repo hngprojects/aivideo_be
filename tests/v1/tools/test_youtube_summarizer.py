@@ -37,13 +37,17 @@ def mock_upload_files():
 
 
 @pytest.fixture
+def mock_upload_file_to_minio_tmp():
+    with patch("api.utils.minio_service.minio_service.upload_to_tmp_bucket") as mock:
+        mock.return_value = 'https://minio.example.com/tmp/test-video.mp4'
+        yield mock
+
+
+@pytest.fixture
 def mock_create():
     with patch("api.v1.services.job.tifi_job_service.create") as mock:
 
         TifiJob = namedtuple('TifiJob', ['id'])
-        # Project = namedtuple('Project', ['id'])
-
-        # mock.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
         mock.return_value = TifiJob(id="test_job_id")
         yield mock
 
@@ -55,7 +59,12 @@ def override_get_db(mock_db):
     app.dependency_overrides = {}
 
 
-def test_enqueue_summarize_batch_job(mock_upload_files, mock_create, override_get_db):
+def test_enqueue_summarize_batch_job(
+    mock_upload_files, 
+    mock_upload_file_to_minio_tmp, 
+    mock_create, 
+    override_get_db
+):
     # Prepare test files
     files = {
         "files": ("video.mp4", b"dummy video data", "video/mp4")
