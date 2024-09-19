@@ -1,3 +1,5 @@
+#disable versions
+
 name: aivideo-dev
 services:
   app:
