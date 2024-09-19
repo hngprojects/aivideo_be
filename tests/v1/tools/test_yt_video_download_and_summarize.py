@@ -29,18 +29,6 @@ def mock_db_session():
     return MagicMock()
 
 
-# Mock the upload_files function and the Celery task
-
-
-# @pytest.fixture
-# def moch_download_and_generate_video_summmary_task():
-#     with patch(
-#         "api.core.dependencies.celery.tasks.video_summary_tasks.download_and_generate_video_summmary_task.delay"
-#     ) as mock:
-#         mock.return_value.id = "mock_job_id"
-#         yield mock
-
-
 @pytest.fixture
 # def mock_create_project_with_job():
 def mock_create():
@@ -49,9 +37,10 @@ def mock_create():
         # mock.return_value = AsyncMock(id="mock_project_id")
 
         TifiJob = namedtuple('TifiJob', ['id'])
-        Project = namedtuple('Project', ['id'])
+        # Project = namedtuple('Project', ['id'])
 
-        mock.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
+        # mock.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
+        mock.return_value = TifiJob(id="test_job_id")
         yield mock
 
 
