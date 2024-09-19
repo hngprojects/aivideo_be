@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: aivid
+    runs-on: hng-runner
     timeout-minutes: 10
     steps:
       - name: Checkout code
@@ -38,7 +38,7 @@ jobs:
             pm2 restart aivideo_be_staging --update-env
 
   release:
-    runs-on: aivid
+    runs-on: hng-runner
     timeout-minutes: 10
     needs: deploy
     permissions:
