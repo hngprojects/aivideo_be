@@ -29,29 +29,13 @@ def mock_db_session():
     return MagicMock()
 
 
-# Mock the upload_files function and the Celery task
-
-
-# @pytest.fixture
-# def moch_download_and_generate_video_summmary_task():
-#     with patch(
-#         "api.core.dependencies.celery.tasks.video_summary_tasks.download_and_generate_video_summmary_task.delay"
-#     ) as mock:
-#         mock.return_value.id = "mock_job_id"
-#         yield mock
-
-
 @pytest.fixture
 # def mock_create_project_with_job():
 def mock_create():
     with patch("api.v1.services.job.tifi_job_service.create") as mock:
-    # with patch("api.v1.services.job.job_service.create_project_with_job") as mock:
-        # mock.return_value = AsyncMock(id="mock_project_id")
 
         TifiJob = namedtuple('TifiJob', ['id'])
-        Project = namedtuple('Project', ['id'])
-
-        mock.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
+        mock.return_value = TifiJob(id="test_job_id")
         yield mock
 
 
@@ -64,7 +48,6 @@ def override_get_db(mock_db):
 
 # Test the endpoint
 def test_enqueue_summarize_batch_job(
-    # moch_download_and_generate_video_summmary_task,
     mock_create,
     override_get_db,
 ):
@@ -77,7 +60,7 @@ def test_enqueue_summarize_batch_job(
 
     # Send a POST request to the summarize_batch endpoint
     response = client.post(
-        "/api/v1/tools/summary/youtube",
+        "/api/v1/tools/summary/summarize-youtube-video",
         json=link,
     )
 
@@ -109,7 +92,7 @@ def test_youtube_summarize_job_limiting(
     for i in range(ACCESS_LIMIT):
         # Send a POST request to the summarize multiple times to test limiter
         response = client.post(
-            "/api/v1/tools/summary/youtube",
+            "/api/v1/tools/summary/summarize-youtube-video",
             json=link,
         )
 

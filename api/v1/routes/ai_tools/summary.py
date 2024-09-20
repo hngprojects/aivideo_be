@@ -37,7 +37,7 @@ from api.v1.models.user import User
 
 summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
 
-MAX_FILE_SIZE = 15 * 1024 * 1024
+MAX_FILE_SIZE = 25 * 1024 * 1024
 
 
 @summary.post(
@@ -63,9 +63,7 @@ async def summarize_pdf(
 
     # Check if the uploaded file exceeds the maximum file size
     if file_size > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=413, detail="File size exceeds the maximum limit of 10 MB"
-        )
+        raise HTTPException(status_code=413, detail="File size exceeds the maximum limit of 25 MB")
 
     # Check if the uploaded file is empty
     if file_size == 0:
@@ -83,7 +81,7 @@ async def summarize_pdf(
     pdf_file_url = minio_service.upload_to_tmp_bucket(source_file=pdf_file_path)
     delete_file(pdf_file_path)
 
-    job, project = tifi_job_service.create(
+    job = tifi_job_service.create(
         db=db,
         tool_name=ProjectToolsEnum.pdf_summarizer.value,
         payload={'pdf_file_url': pdf_file_url},
@@ -96,7 +94,7 @@ async def summarize_pdf(
         message=f"{ProjectToolsEnum.pdf_summarizer.value} task initiated successfully",
         data={
             "job_id": job.id,
-            "project_id": project.id,
+            # "project_id": project.id,
             "file_name": file.filename,
         }
     )
@@ -190,7 +188,7 @@ async def summarize_podcast(
         final_audio_url = minio_service.upload_to_tmp_bucket(source_file=file_path)
         delete_file(file_path)
 
-        job, project = tifi_job_service.create(
+        job = tifi_job_service.create(
             db=db,
             tool_name=ProjectToolsEnum.podcast_summarizer.value,
             payload={'audio_url': final_audio_url},
@@ -203,7 +201,7 @@ async def summarize_podcast(
             message=f"{ProjectToolsEnum.podcast_summarizer.value} task initiated successfully",
             data={
                 "job_id": job.id,
-                "project_id": project.id,
+                # "project_id": project.id,
                 "podcast_details": podcast_details,
             }
         )

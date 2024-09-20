@@ -94,14 +94,14 @@ def process_job(job_id: str, with_lock: bool = False):
         db.commit()
 
         # ------- PROJECT PROCESSING -------
-        if job.project_id:
-            # Get project
-            project = project_service.fetch(db, job.project_id)
-            # Update project result
-            project.result = parse_json_string(output)
-            project.is_active = True
+        # if job.project_id:
+        #     # Get project
+        #     project = project_service.fetch(db, job.project_id)
+        #     # Update project result
+        #     project.result = parse_json_string(output)
+        #     project.is_active = True
 
-            db.commit()
+        #     db.commit()
 
         if job.user_id:
             # Send notification to the user            
@@ -109,8 +109,8 @@ def process_job(job_id: str, with_lock: bool = False):
             notification_service.send_notification(
                 db=db,
                 user=user,
-                title="Project created",
-                message=f"The project '{job.tool_name}' created successfully.",
+                title="Job successful",
+                message=f"The job for '{job.tool_name}' was successful",
                 type='success'
             )
         
@@ -132,8 +132,8 @@ def process_job(job_id: str, with_lock: bool = False):
             notification_service.send_notification(
                 db=db,
                 user=user,
-                title="Project creation failed",
-                message=f"The project '{job.tool_name}' has failed to create.",
+                title="Job failed",
+                message=f"The job '{job.tool_name}' was unsuccessful",
                 type='warning'
             )
         

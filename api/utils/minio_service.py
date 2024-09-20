@@ -40,10 +40,10 @@ class MinioService:
     
     def generate_presigned_url(
         self, 
-        bucket_name: str, 
         object_name: str, 
         response_content_disposition: str = None
     ):
+        bucket_name = 'tifi'
         try:
             url = self.minio_client.presigned_get_object(
                 bucket_name=bucket_name,
@@ -59,7 +59,7 @@ class MinioService:
     
     def upload_to_minio(
         self, 
-        bucket_name: str, 
+        folder_name: str, 
         source_file: str, 
         destination_file: str = str(uuid4()),
         content_type: str = 'application/octet-stream'
@@ -67,13 +67,15 @@ class MinioService:
         """This function saves a file to a minio bucket
 
         Args:
-            bucket_name (str): Name of the bucket to save the file to
+            folder_name (str): Name of the bucket to save the file to
             source_file (str): File path to the file to be save to minio bucket
             destination_file (str): Path to where the file should be saved in minio bucket
         """
 
         # file_extension = source_file.split('.')[-1]
         # content_type = mime_types[file_extension]
+        bucket_name = 'tifi'
+        destination = f"{folder_name}/{destination_file}"
 
         try:
             if not self.minio_client.bucket_exists(bucket_name):
@@ -84,22 +86,20 @@ class MinioService:
             # Upload file
             self.minio_client.fput_object(
                 bucket_name=bucket_name,
-                object_name=destination_file,
+                object_name=destination,
                 file_path=source_file,
                 content_type=content_type
             )
 
             preview_url = self.generate_presigned_url(
-                bucket_name=bucket_name,
-                object_name=destination_file,
+                object_name=destination,
                 response_content_disposition="inline"
             ).split('?')[0]
 
             # Generate download URL (attachment content disposition)
             download_url = self.generate_presigned_url(
-                bucket_name=bucket_name,
-                object_name=destination_file,
-                response_content_disposition=f"attachment; filename={destination_file}"
+                object_name=destination,
+                response_content_disposition=f"attachment; filename={destination}"
             )
 
             return preview_url, download_url
@@ -115,10 +115,10 @@ class MinioService:
     ):
         '''This function uploads a file to temporary bucket in minio'''
 
-        bucket_name = 'tmp'
+        bucket_name = 'tifi'
         file_extension = source_file.split('.')[-1]
         content_type = mime_types[file_extension]
-        destination_file = f"tmp-{str(uuid4())}.{file_extension}"
+        destination = f"tmp/tmp-{str(uuid4())}.{file_extension}"
         
         try:
             if not self.minio_client.bucket_exists(bucket_name):
@@ -129,21 +129,20 @@ class MinioService:
             # Upload file
             self.minio_client.fput_object(
                 bucket_name=bucket_name,
-                object_name=destination_file,
+                object_name=destination,
                 file_path=source_file,
                 content_type=content_type
             )
 
             preview_url = self.generate_presigned_url(
-                bucket_name=bucket_name,
-                object_name=destination_file,
+                object_name=destination,
                 response_content_disposition="inline"
             ).split('?')[0]
 
             return preview_url
 
         except S3Error as s3_error:
-            print(f'An error occured: {s3_error}')
+            raise s3_error
 
     
     def download_file_from_minio(self, url: str):

@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: aivid
+    runs-on: hng-runner
     timeout-minutes: 10
     steps:
       - name: Checkout code
@@ -35,24 +35,10 @@ jobs:
             pip install -r requirements.txt --no-deps --use-deprecated=legacy-resolver
             alembic revision --autogenerate
             alembic upgrade head
-        
-      - name: Deploy to Worker Server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.WORKER_HOST }}
-          username: ${{ secrets.WORKER_USERNAME }}
-          password: ${{ secrets.WORKER_PASSWORD }}
-          script: |
-            cd aivideo_be/staging
-            git add .
-            git stash
-            git pull origin staging
-            source venv/bin/activate
-            pip install -r requirements.txt --no-deps --use-deprecated=legacy-resolver
-            pm2 reload aivideo_celery_staging
+            pm2 restart aivideo_be_staging --update-env
 
   release:
-    runs-on: aivid
+    runs-on: hng-runner
     timeout-minutes: 10
     needs: deploy
     permissions:

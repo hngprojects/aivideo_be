@@ -37,7 +37,7 @@ class TifiJob(BaseTableModel):
     __tablename__ = "tifi_jobs"
 
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=True)
+    # project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=True)
     tool_name = Column(String, nullable=False)
     is_premium = Column(Boolean, server_default='false', nullable=True)
     status = Column(String, server_default='Pending')
@@ -48,40 +48,14 @@ class TifiJob(BaseTableModel):
     expiration_time = Column(DateTime(timezone=True), nullable=True)
     is_parallel = Column(Boolean, server_default='false')  # New field to indicate parallel compatibility
 
-    user = relationship("User", back_populates="tifi_jobs")
-    project = relationship("Project", back_populates="tifi_job")
+    # user = relationship("User", back_populates="tifi_jobs")
+    # project = relationship("Project", back_populates="tifi_job")
 
     def is_expired(self) -> bool:
         return self.expiration_time.replace(tzinfo=None) <= datetime.now().replace(tzinfo=None)
 
 
-def update_job(target, connection, status, result=None, progress='0% complete'):
-    """This function updates a job
-
-    Args:
-        target (TifiJob): This is the specific job object you want to run the update on
-        connection: This is the db connection
-        status (str): Status you want to update the job status to
-        result (JSON, optional): Result you want to update job result to. Defaults to None.
-        progress (str, optional): The progress you want to update job progress to. Defaults to '0% complete'.
-    """
-
-    connection.execute(
-        update(TifiJob)
-        .where(TifiJob.id == target.id)
-        .values(
-            status=status,
-            result=result,
-            progress=progress
-        )
-    )
-
-
 def run_job(mapper, connection, target):
-
-    # from api.core.dependencies.jobs.service import execute_job
-    # from api.core.dependencies.celery.tasks.run_job import run_job_in_celery
-
     try:
         # Update expiration time to 1 hour ahead
         connection.execute(
@@ -91,45 +65,8 @@ def run_job(mapper, connection, target):
                 expiration_time=target.created_at + timedelta(hours=1)
             )
         )
-        
-        # Initiate job in the background through celery
-        # run_job_in_celery.delay(target.id)
-
-        # update_job(
-        #     target, 
-        #     connection, 
-        #     JobStatus.progress, 
-        #     progress='50% complete'
-        # )
-
-        # # Call the tool to execute the job
-        # job_result = execute_job(job=target)
-        # update_job(
-        #     target, 
-        #     connection, 
-        #     JobStatus.completed, 
-        #     result=json.loads(job_result), 
-        #     progress='100% complete'
-        # )
-
-        # # Update project result as well
-        # connection.execute(
-        #     update(Project)
-        #     .where(Project.id == target.project_id)
-        #     .values(
-        #         result=json.loads(job_result),
-        #         is_active=True
-        #     )
-        # )
     
     except Exception as e:
-        # update_job(
-        #     target, 
-        #     connection, 
-        #     JobStatus.failed, 
-        #     result = {"error": f"{str(e)}"},
-        #     progress='Job failed'
-        # )
         print(f'An exception occured: {str(e)}')
 
         

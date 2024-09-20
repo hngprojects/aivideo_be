@@ -57,6 +57,24 @@ async def get_all_available_jobs(db: Session = Depends(get_db)):
     )
 
 
+@job_router.get("/user", response_model=success_response, status_code=status.HTTP_200_OK)
+async def get_current_user_jobs(
+    db: Session = Depends(get_db), 
+    user: User = Depends(user_service.get_current_user),
+    limit: int = Query(10),
+    skip: int = Query(0)
+):
+    """Fetch all current user jobs."""
+
+    return paginated_response(
+        db=db,
+        model=TifiJob,
+        limit=limit,
+        skip=skip,
+        filters={"user_id": user.id}
+    )
+
+
 @job_router.get("/retrieve-and-mark-as-processing", status_code=status.HTTP_200_OK)
 async def retrieve_and_mark_as_processing(
     db: Session = Depends(get_db),
@@ -71,6 +89,22 @@ async def retrieve_and_mark_as_processing(
         message='Jobs fetched successfully',
         data=jsonable_encoder(jobs)
     )
+
+
+@job_router.get("/export")
+async def export_jobs_as_csv(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(user_service.get_current_super_admin),
+):
+    '''This endpoint expots a job to a CSV file'''
+    
+    csv_file = tifi_job_service.export_jobs_as_csv(db)
+
+    response = StreamingResponse(csv_file, media_type="text/csv")
+    response.headers["Content-Disposition"] = f"attachment; filename=job-data.csv"
+    response.status_code = 200
+
+    return response
 
 
 @job_router.get("/create-test-parallel-job", response_model=success_response, status_code=202)
@@ -168,12 +202,20 @@ async def job_progress_event_generator(job_id: str):
                 'status_message': job.status_message
             }
 
-            if status == JobStatus.failed:
+            if status == JobStatus.pending:
+                data['status_message'] = 'Pending'
+                yield f'event: {event_name}\ndata: {json.dumps(data)}\n\n'
+            
+            elif status == JobStatus.processing:
+                data['status_message'] = 'Processing started'
+                yield f'event: {event_name}\ndata: {json.dumps(data)}\n\n'
+        
+            elif status == JobStatus.failed:
                 event_name = 'failure'
-                data['status_message'] = 'An error occured.'
+                data['status_message'] = 'An error occured'
                 yield f'event: {event_name}\ndata: {json.dumps(data)}\n\n'
                 break
-
+            
             elif status == JobStatus.completed:
                 event_name = 'success'
                 yield f'event: {event_name}\ndata: {json.dumps(data)}\n\n'
@@ -205,20 +247,6 @@ async def send_job_status_updates_over_sse(
         return StreamingResponse(event_stream, media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-
-@job_router.get("/export")
-async def export_jobs_as_csv(
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(user_service.get_current_super_admin),
-):
-    csv_file = tifi_job_service.export_jobs_as_csv(db)
-
-    response = StreamingResponse(csv_file, media_type="text/csv")
-    response.headers["Content-Disposition"] = f"attachment; filename=job-data.csv"
-    response.status_code = 200
-
-    return response
 
 
 # ------------------------------------------------------------------------------------

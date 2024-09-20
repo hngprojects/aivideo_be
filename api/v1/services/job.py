@@ -14,6 +14,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, desc
 
 from api.core.dependencies.celery.celery_app import worker
+from api.core.dependencies.job_runner.app.async_runner.job_notifier import notify_job_runner
 from api.utils.db_validators import check_model_existence
 from api.v1.models.job import Job, TifiJob, JobStatus
 from api.v1.models.project import Project
@@ -368,7 +369,6 @@ class JobService:
 job_service = JobService()
 
 
-
 class TifiJobService:
 
     def create(
@@ -378,22 +378,21 @@ class TifiJobService:
         payload,
         user_id: Optional[str]=None,
         is_parallel: bool = False,
-        save_project: bool = True
     ):  
         """Create a new Tifi job with a project if `save_project` is True"""
 
         # Check if there is a need to create a project and create a project with the job
-        project=None
-        if save_project:
-            project = Project(
-                title=f"New {tool_name} Project",
-                project_type=tool_name,
-                user_id=user_id
-            )
+        # project=None
+        # if save_project:
+        #     project = Project(
+        #         title=f"New {tool_name} Project",
+        #         project_type=tool_name,
+        #         user_id=user_id
+        #     )
 
-            db.add(project)
-            db.commit()
-            db.refresh(project)
+        #     db.add(project)
+        #     db.commit()
+        #     db.refresh(project)
         
         if user_id:
             # Check user
@@ -410,14 +409,19 @@ class TifiJobService:
             status=JobStatus.pending,
             progress='0% complete',
             user_id=user_id,
-            project_id=project.id if project else None,
+            # project_id=project.id if project else None,
         )
 
         db.add(job)
         db.commit()
         db.refresh(job)
+        
+        # Notify jobs runner to start executing jobs
+        # Or queue up the jobs in case there are jobs in execution
+        notify_job_runner()
 
-        return (job, project) if project else job
+        # return (job, project) if project else job
+        return job
 
 
     def fetch_all(self, db: Session):
@@ -452,6 +456,13 @@ class TifiJobService:
 
         jobs = query.order_by(desc(TifiJob.created_at)).all()
 
+        return jobs
+    
+
+    def fetch_user_jobs(self, db: Session, user_id: str):
+        '''This function returns all jobs for a particular user'''
+
+        jobs = db.query(TifiJob).filter(TifiJob.user_id == user_id).all()
         return jobs
 
 

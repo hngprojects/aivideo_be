@@ -9,7 +9,7 @@ from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.utils.tool_limiter import track_tool_usage
 from api.utils.success_response import success_response
-from api.utils.files import delete_file, upload_to_current_dir, contains_face
+from api.utils.files import delete_file, upload_to_temp_dir, contains_face
 from api.v1.services.presets import preset_service
 from api.v1.services.job import job_service
 from api.v1.services.job import tifi_job_service
@@ -35,7 +35,7 @@ async def talking_head_image_upload(
     '''Endpoint to Talking Avatar'''
 
     file_extension = file.filename.split(".")[-1]
-    image_file = await upload_to_current_dir(
+    image_file = await upload_to_temp_dir(
         file, 
         allowed_extensions=['jpg', 'jpeg', 'png'],
         save_extension=file_extension,
@@ -57,7 +57,7 @@ async def talking_head_image_upload(
         # audio_file = audio.file_path
         audio_url = audio.file_url
 
-    job, project = tifi_job_service.create(
+    job = tifi_job_service.create(
         db=db,
         tool_name=ProjectToolsEnum.talking_avatar.value,
         payload={
@@ -76,7 +76,7 @@ async def talking_head_image_upload(
         message=f"{ProjectToolsEnum.talking_avatar.value} task initiated successfully",
         data={
             "job_id": job.id,
-            "project_id": project.id
+            # "project_id": project.id
         }
     )
 
@@ -103,7 +103,7 @@ async def talking_head_avatar_selection(
 
     image_url = avatar.file_url
     
-    job, project = tifi_job_service.create(
+    job = tifi_job_service.create(
         db=db,
         tool_name=ProjectToolsEnum.talking_avatar.value,
         payload={
@@ -122,6 +122,6 @@ async def talking_head_avatar_selection(
         message=f"{ProjectToolsEnum.talking_avatar.value} task initiated successfully",
         data={
             "job_id": job.id,
-            "project_id": project.id
+            # "project_id": project.id
         }
     )

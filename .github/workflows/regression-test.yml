@@ -1,8 +1,8 @@
 name: Run Regression Tests
 
 on:
-  schedule:
-    - cron: '*/60 * * * *' # Runs every 60 minutes
+  # schedule:
+  #   - cron: '*/60 * * * *' # Runs every 60 minutes
   workflow_dispatch: 
 
 jobs:
