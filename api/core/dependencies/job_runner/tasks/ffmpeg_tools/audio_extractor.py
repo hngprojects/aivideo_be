@@ -34,7 +34,7 @@ try:
     save_and_print_job_progress(db, job, 40, f'Extracting audio from video')
     # Use ffmpeg to extract audio from the video
     ffmpeg_service.extract_audio_from_video(
-        video_path=video_file,
+        input_video=video_file,
         output_path=audio_path,
         audio_extension=audio_extension
     )

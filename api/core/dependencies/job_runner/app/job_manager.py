@@ -21,6 +21,8 @@ tool_to_script_mapping = {
     tools.audio_extractor.value: f'{FFMPEG_BASE_DIR}/audio_extractor.py',
     tools.resize_video.value: f'{FFMPEG_BASE_DIR}/resize_video.py',
     tools.video_compressor.value: f'{FFMPEG_BASE_DIR}/video_compressor.py',
+    tools.gif_creator.value: f'{FFMPEG_BASE_DIR}/gif_creator.py',
+    tools.video_watermarker.value: f'{FFMPEG_BASE_DIR}/video_watermarker.py',
 
     # TESTING
     'Test Job': f'{BASE_DIR}/test_job.py',  # for debugging purposes only

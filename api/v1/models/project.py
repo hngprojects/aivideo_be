@@ -23,6 +23,8 @@ class ProjectToolsEnum(str, Enum):
     audio_extractor = 'Audio Extractor'
     resize_video = 'Resize Video'
     video_compressor = 'Video Compressor'
+    gif_creator = 'GIF Creator'
+    video_watermarker = 'Video Watermarker'
 
 
 class Project(BaseTableModel):

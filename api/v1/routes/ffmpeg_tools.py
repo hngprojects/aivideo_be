@@ -46,6 +46,27 @@ async def upload_video_file(file):
     return video_url
 
 
+async def upload_image_file(file):
+    file_extension = file.filename.split(".")[-1]
+    image_file = await upload_to_temp_dir(
+        file, 
+        allowed_extensions=[
+            'jpg',
+            'png',
+            'jpeg',
+            'jfif'
+        ],
+        save_extension=file_extension,
+        max_file_size=10 * 1024 * 1024
+    )
+
+    # Upload video file to temporary stirage bucket
+    image_url = minio_service.upload_to_tmp_bucket(source_file=image_file)
+    delete_file(image_file)
+
+    return image_url
+
+
 @ffmpeg_router.post('/audio-extractor', status_code=202, response_model=success_response)
 # @track_tool_usage(ProjectToolsEnum.audio_extractor)
 async def extract_audio_from_video(
@@ -139,5 +160,72 @@ async def compress_video(
     return success_response(
         status_code=202,
         message=f"{ProjectToolsEnum.video_compressor.value} task initiated successfully",
+        data={"job_id": job.id}
+    )
+
+
+@ffmpeg_router.post('/create-gif', status_code=202, response_model=success_response)
+# @track_tool_usage(ProjectToolsEnum.gif_creator)
+async def create_gif_from_video(
+    request: Request,
+    file: UploadFile = File(...),
+    start_time: int = Form(default=0),
+    gif_duration: int = Form(default=5),
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(user_service.get_current_user_optional)
+):
+    '''Endpoint to create gif from a video'''
+
+    video_url = await upload_video_file(file)
+
+    job = tifi_job_service.create(
+        db=db,
+        tool_name=ProjectToolsEnum.gif_creator.value,
+        payload={
+            'video_url': video_url,
+            'start_time': start_time,
+            'duration': gif_duration,
+        },
+        user_id=user.id if user else None,
+        is_parallel=False
+    )
+
+    return success_response(
+        status_code=202,
+        message=f"{ProjectToolsEnum.gif_creator.value} task initiated successfully",
+        data={"job_id": job.id}
+    )
+
+
+@ffmpeg_router.post('/add-watermark-to-video', status_code=202, response_model=success_response)
+# @track_tool_usage(ProjectToolsEnum.video_watermarker)
+async def add_watermark_to_video(
+    request: Request,
+    video_file: UploadFile = File(...),
+    watermark_image_file: UploadFile = File(...),
+    position: str = Form(default='top-right'),
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(user_service.get_current_user_optional)
+):
+    '''Endpoint to add watermark a video'''
+
+    video_url = await upload_video_file(video_file)
+    watermark_image_url = await upload_image_file(watermark_image_file)
+
+    job = tifi_job_service.create(
+        db=db,
+        tool_name=ProjectToolsEnum.video_watermarker.value,
+        payload={
+            'video_url': video_url,
+            'watermark_image_url': watermark_image_url,
+            'position': position,
+        },
+        user_id=user.id if user else None,
+        is_parallel=False
+    )
+
+    return success_response(
+        status_code=202,
+        message=f"{ProjectToolsEnum.video_watermarker.value} task initiated successfully",
         data={"job_id": job.id}
     )

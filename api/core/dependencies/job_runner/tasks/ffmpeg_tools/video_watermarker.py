@@ -21,29 +21,34 @@ job = tifi_job_service.fetch(db, job_id)
 save_and_print_job_progress(db, job, 0, 'Job started')
 
 video_url = payload.get('video_url')
-compression_speed = payload.get('compression_speed')
+watermark_image_url = payload.get('watermark_image_url')
+position = payload.get('position')
 
 # Download video file from minio
 save_and_print_job_progress(db, job, 10, f'Downloading and opening video file from {video_url}')
 video_file = minio_service.download_file_from_minio(video_url)
 
+# Download watermark image from minio
+save_and_print_job_progress(db, job, 20, f'Downloading and opening watermark image file from {watermark_image_url}')
+watermark_image = minio_service.download_file_from_minio(watermark_image_url)
+
 try:
-    save_and_print_job_progress(db, job, 25, f'Setting up video storage location')
+    save_and_print_job_progress(db, job, 30, f'Setting up video storage location')
     output_video = os.path.join(settings.TEMP_DIR, f'video-{uuid4()}.mp4')
 
-    save_and_print_job_progress(db, job, 40, f'Compressing video')
-    # Use ffmpeg to extract audio from the video
-    ffmpeg_service.compress_video(
+    save_and_print_job_progress(db, job, 40, f'Creating video with watermark')
+    ffmpeg_service.add_watermark_to_video(
         input_video=video_file,
-        output_path=output_video,
-        compression_speed=compression_speed,
+        output_video=output_video,
+        watermark_image=watermark_image,
+        position=position
     )
 
-    save_and_print_job_progress(db, job, 70, f'Generating preview and download links for compressed video')
+    save_and_print_job_progress(db, job, 70, f'Generating preview and download links for watermarked video')
     save_url, download_url = minio_service.upload_to_minio(
-        folder_name='video-compressor',
+        folder_name='watermark-adder',
         source_file=output_video,
-        destination_file=f'vidcmprs-{uuid4()}.mp4',
+        destination_file=f'watrmrk-{uuid4()}.mp4',
         content_type=mime_types.VIDEO_MP4
     )
 
@@ -67,3 +72,4 @@ except Exception as e:
 
 finally:
     delete_file(video_file)
+    delete_file(watermark_image)

@@ -31,12 +31,12 @@ video_file = minio_service.download_file_from_minio(video_url)
 
 try:
     save_and_print_job_progress(db, job, 25, f'Setting up video storage location')
-    output_video = os.path.join(settings.TEMP_DIR, f'audio-{uuid4()}.mp4')
+    output_video = os.path.join(settings.TEMP_DIR, f'video-{uuid4()}.mp4')
 
     save_and_print_job_progress(db, job, 40, f'Resizing video')
     # Use ffmpeg to extract audio from the video
     ffmpeg_service.resize_video(
-        video_path=video_file,
+        input_video=video_file,
         output_path=output_video,
         width=width,
         height=height,

@@ -33,13 +33,8 @@ def mock_db_session():
 # def mock_create_project_with_job():
 def mock_create():
     with patch("api.v1.services.job.tifi_job_service.create") as mock:
-    # with patch("api.v1.services.job.job_service.create_project_with_job") as mock:
-        # mock.return_value = AsyncMock(id="mock_project_id")
 
         TifiJob = namedtuple('TifiJob', ['id'])
-        # Project = namedtuple('Project', ['id'])
-
-        # mock.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
         mock.return_value = TifiJob(id="test_job_id")
         yield mock
 
@@ -53,7 +48,6 @@ def override_get_db(mock_db):
 
 # Test the endpoint
 def test_enqueue_summarize_batch_job(
-    # moch_download_and_generate_video_summmary_task,
     mock_create,
     override_get_db,
 ):

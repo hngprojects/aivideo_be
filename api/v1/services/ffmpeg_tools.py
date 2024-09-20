@@ -6,7 +6,7 @@ class FfmpegService:
 
     def extract_audio_from_video(
         self, 
-        video_path: str, 
+        input_video: str, 
         output_path: str, 
         audio_extension: str = 'mp3'
     ):
@@ -15,7 +15,7 @@ class FfmpegService:
         try:
             (
                 ffmpeg
-                .input(video_path)
+                .input(input_video)
                 .output(output_path, format=audio_extension)
                 .run(overwrite_output=True)
             )
@@ -26,7 +26,7 @@ class FfmpegService:
     
     def resize_video(
         self,
-        video_path: str,
+        input_video: str,
         output_path: str,
         # aspect_ratio: str,
         width: int,
@@ -36,7 +36,7 @@ class FfmpegService:
         Resizes a video to the specified width and height.
 
         Args:
-            video_path (str): The path to the input video file.
+            input_video (str): The path to the input video file.
             output_path (str): The path to the output (resized) video file.
             width (int): The desired width of the output video.
             height (int): The desired height of the output video.
@@ -57,7 +57,7 @@ class FfmpegService:
 
             (
                 ffmpeg
-                .input(video_path)
+                .input(input_video)
                 .output(output_path, vf=filter_complex)
                 .run(overwrite_output=True)
             )
@@ -68,7 +68,7 @@ class FfmpegService:
 
     def compress_video(
         self, 
-        video_path: str,
+        input_video: str,
         output_path: str,
         compression_speed: str = 'medium'
     ):
@@ -76,7 +76,7 @@ class FfmpegService:
         Compress a video file while maintaining quality using ffmpeg.
 
         Args:
-            video_path (str): Path to the input video file.
+            input_video (str): Path to the input video file.
             output_path (str): Path to save the compressed output video.
             compression_speed (str): Compression speed preset (default is 'medium'). Options: 'ultrafast', 'superfast', 
                         'veryfast', 'faster', 'fast', 'medium', 'slow', 'slower', 'veryslow'.
@@ -89,7 +89,7 @@ class FfmpegService:
 
         try:
             # Get video stream info using ffmpeg.probe
-            probe = ffmpeg.probe(video_path)
+            probe = ffmpeg.probe(input_video)
             
             # Extract the video stream metadata
             video_stream = next(stream for stream in probe['streams'] if stream['codec_type'] == 'video')
@@ -113,7 +113,7 @@ class FfmpegService:
 
             (
                 ffmpeg
-                .input(video_path)
+                .input(input_video)
                 .output(
                     output_path, 
                     crf=quality, 
@@ -123,7 +123,91 @@ class FfmpegService:
                 )
                 .run(overwrite_output=True)
             )
-            
+
+        except ffmpeg.Error as e:
+            raise e
+    
+
+    def create_gif_from_video(
+        self, 
+        input_video, 
+        output_gif, 
+        start_time=0, 
+        duration=5, 
+    ):
+        """
+        Convert a segment of a video to a GIF using ffmpeg-python.
+        
+        Args:
+            input_video (str): Path to the input video file.
+            output_gif (str): Path to save the output GIF file.
+            start_time (int): Start time (in seconds) of the video to begin the GIF.
+            duration (int): Duration (in seconds) of the GIF.
+            width (int): Width of the output GIF.
+        """
+
+        try:
+            # Use ffmpeg to create a GIF
+            (
+                ffmpeg
+                .input(input_video, ss=start_time, t=duration)  # Input file, start time, and duration
+                .filter('fps', fps=15)  # Set frame rate
+                .filter('scale', 360, -1)  # Resize, keep aspect ratio (-1)
+                .output(output_gif, loop=0)  # Output as a GIF
+                .run()
+            )
+
+        except ffmpeg.Error as e:
+            raise e
+        
+
+    def add_watermark_to_video(
+        self, 
+        input_video, 
+        watermark_image, 
+        output_video, 
+        position="top-right"
+    ):
+        """
+        Adds a watermark image to a video using ffmpeg-python.
+        
+        Args:
+            input_video (str): Path to the input video file.
+            watermark_image (str): Path to the watermark image (PNG/JPG) file.
+            output_video (str): Path to save the watermarked output video.
+            position (str): Position of the watermark on the video (options: 'top-right', 'top-left', 'bottom-right', 'bottom-left').
+            watermark_scale (float): Scale factor for the watermark image size.
+        """
+
+        # Define positions
+        positions = {
+            'top-right': 'main_w-overlay_w-10:10',
+            'top-left': '10:10',
+            'bottom-right': 'main_w-overlay_w-10:main_h-overlay_h-10',
+            'bottom-left': '10:main_h-overlay_h-10',
+            'center': '(main_w-overlay_w)/2:(main_h-overlay_h)/2'
+        }
+        
+        # Get the chosen position coordinates
+        if position not in positions:
+            raise ValueError(f"Invalid position argument: {position}. Valid options: {list(positions.keys())}")
+        
+        position_coords = positions[position]
+        
+        try:
+
+            (
+                ffmpeg
+                .input(input_video)
+                .output(
+                    output_video, 
+                    vf=f"movie={watermark_image},\
+                        scale=50:50 [watermark];\
+                        [in][watermark] overlay={position_coords}"
+                )
+                .run()
+            )
+
         except ffmpeg.Error as e:
             raise e
 

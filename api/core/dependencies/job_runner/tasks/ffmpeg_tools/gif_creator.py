@@ -21,34 +21,36 @@ job = tifi_job_service.fetch(db, job_id)
 save_and_print_job_progress(db, job, 0, 'Job started')
 
 video_url = payload.get('video_url')
-compression_speed = payload.get('compression_speed')
+start_time = payload.get('start_time')
+duration = payload.get('duration')
 
 # Download video file from minio
 save_and_print_job_progress(db, job, 10, f'Downloading and opening video file from {video_url}')
 video_file = minio_service.download_file_from_minio(video_url)
 
 try:
-    save_and_print_job_progress(db, job, 25, f'Setting up video storage location')
-    output_video = os.path.join(settings.TEMP_DIR, f'video-{uuid4()}.mp4')
+    save_and_print_job_progress(db, job, 25, f'Setting up GIF storage location')
+    output_gif = os.path.join(settings.TEMP_DIR, f'gif-{uuid4()}.gif')
 
-    save_and_print_job_progress(db, job, 40, f'Compressing video')
+    save_and_print_job_progress(db, job, 40, f'Creating GIF')
     # Use ffmpeg to extract audio from the video
-    ffmpeg_service.compress_video(
+    ffmpeg_service.create_gif_from_video(
         input_video=video_file,
-        output_path=output_video,
-        compression_speed=compression_speed,
+        output_gif=output_gif,
+        start_time=start_time,
+        duration=duration
     )
 
-    save_and_print_job_progress(db, job, 70, f'Generating preview and download links for compressed video')
+    save_and_print_job_progress(db, job, 70, f'Generating preview and download links for GIF')
     save_url, download_url = minio_service.upload_to_minio(
-        folder_name='video-compressor',
-        source_file=output_video,
-        destination_file=f'vidcmprs-{uuid4()}.mp4',
-        content_type=mime_types.VIDEO_MP4
+        folder_name='create-gif',
+        source_file=output_gif,
+        destination_file=f'gif-{uuid4()}.gif',
+        content_type=mime_types.IMAGE_GIF
     )
 
     save_and_print_job_progress(db, job, 80, 'Cleaning up')
-    delete_file(output_video)
+    delete_file(output_gif)
 
     save_and_print_job_progress(db, job, 90, 'Generating result')
     result = {
