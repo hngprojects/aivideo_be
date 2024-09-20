@@ -3,7 +3,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from api.v1.services.user import user_service
-from api.v1.services.job import job_service
+from api.v1.services.job import tifi_job_service
 from api.v1.models import User
 from main import app
 
