@@ -87,10 +87,10 @@ def generate_pdf_summary_task(pdf_file_path):
 
         pdf_buffer.close()
 
-        bucket_name = "pdf-summarizer"
+        folder_name = "pdf-summarizer"
         minio_save_file = pdf_filename
         preview_url, download_url = minio_service.upload_to_minio(
-            bucket_name=bucket_name,
+            folder_name=folder_name,
             source_file=pdf_filename,
             destination_file=minio_save_file,
             content_type=APPLICATION_PDF,
@@ -184,7 +184,7 @@ def generate_podcast_summary_task(audio_file):
     pdf_buffer.close()
     minio_save_file = f"pdsum-{str(uuid4())}.pdf"
     save_url, download_url = minio_service.upload_to_minio(
-        bucket_name="podcast-summary",
+        folder_name="podcast-summary",
         source_file=pdf_filename,
         destination_file=minio_save_file,
         content_type=mime_types.APPLICATION_PDF,

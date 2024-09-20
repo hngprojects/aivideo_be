@@ -1,4 +1,3 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from api.utils.db_validators import check_model_existence
@@ -21,19 +20,16 @@ class BlogService:
     def fetch_all(self, db: Session):
         """Fetch all blogs"""
 
-        blogs = db.query(Blog).filter(Blog.is_deleted == False).all()
+        blogs = db.query(Blog).all()
         return blogs
+    
 
     def fetch(self, db: Session, blog_id: str):
         """Fetch a blog by its ID"""
     
         blog = check_model_existence(db, Blog, blog_id)
-        if not blog.is_deleted:
-            return blog
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Blog not found"
-            )
+        return blog
+    
 
     def update(self, db: Session, blog_id: str, blog_update: BlogUpdate):
         """
@@ -48,9 +44,8 @@ class BlogService:
         Optional[Blog]: The updated blog post if found and updated successfully.
                         Returns None if the blog post is not found.
         """
+
         blog = self.fetch(db, blog_id=blog_id)
-        if not blog:
-            return None
 
         for key, value in blog_update.dict(exclude_unset=True).items():
             setattr(blog, key, value)
@@ -58,6 +53,7 @@ class BlogService:
         db.commit()
         db.refresh(blog)
         return blog
+    
 
     def delete(self, db: Session, blog_id: str):
         """
@@ -72,14 +68,11 @@ class BlogService:
                         Returns None if the blog post is not found.
         """
         blog = self.fetch(db, blog_id=blog_id)
-        if blog is None:
-            return None
 
         blog.is_deleted = True
         db.commit()
         db.refresh(blog)
         return blog
-    
 
 
 blog_service = BlogService()

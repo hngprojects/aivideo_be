@@ -4,12 +4,14 @@ import requests, os
 
 from api.utils.files import get_media_type_from_extension
 from api.utils.settings import settings
-from api.v1.schemas.ai_tools.talking_avatar import DownloadRequest
+from api.utils.success_response import success_response
+from api.v1.schemas.utilities import DownloadRequest, TextTranslateRequest
+from api.v1.services.text_translation import translation_service
 
-downloader = APIRouter(prefix="/download", tags=["Download"])
+utilities = APIRouter(tags=["Utilities"])
 
 
-@downloader.post("")
+@utilities.post("/download")
 async def download_file(schema: DownloadRequest):
     try:
         # Fetch the file from the URL
@@ -29,3 +31,20 @@ async def download_file(schema: DownloadRequest):
 
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Error downloading file: {str(e)}")
+
+
+@utilities.post('/translate-text')
+async def translate_text(schema: TextTranslateRequest):
+
+    translated_text = translation_service.translate_text(
+        source_text=schema.text,
+        target_language=schema.target_language
+    )
+
+    return success_response(
+        status_code=200,
+        message="Translation successful",
+        data={
+            'translated_text': translated_text
+        }
+    )

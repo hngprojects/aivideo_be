@@ -333,7 +333,7 @@ class SummaryService():
         """Upload the PDF to MinIO using the file path"""
         minio_save_file = os.path.basename(temp_file_path)
         save_url, download_url = minio_service.upload_to_minio(
-            bucket_name='summaries',
+            folder_name='summaries',
             source_file=temp_file_path,
             destination_file=minio_save_file,
             content_type=mime_types.APPLICATION_PDF

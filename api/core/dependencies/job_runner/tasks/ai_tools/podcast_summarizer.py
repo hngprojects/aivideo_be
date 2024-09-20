@@ -76,7 +76,7 @@ try:
     pdf_buffer.close()
     minio_save_file = f"podsum-{str(uuid4())}.pdf"
     save_url, download_url = minio_service.upload_to_minio(
-        bucket_name="podcast-summary",
+        folder_name="podcast-summary",
         source_file=pdf_filename,
         destination_file=minio_save_file,
         content_type=mime_types.APPLICATION_PDF,

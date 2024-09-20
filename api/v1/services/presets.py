@@ -33,7 +33,7 @@ class PresetService:
                 if not db.query(Avatar).filter(Avatar.file_name==file_name).first():
                     # Upload file to minio
                     file_url, download_url = minio_service.upload_to_minio(
-                        bucket_name='preset-avatars',
+                        folder_name='preset-avatars',
                         source_file=file_path,
                         destination_file=file_name,
                         content_type=mime_types.IMAGE_PNG
@@ -63,7 +63,7 @@ class PresetService:
                 if not db.query(BackgroundMusic).filter(BackgroundMusic.file_name==file_name).first():
                     # Upload file to minio
                     file_url, download_url = minio_service.upload_to_minio(
-                        bucket_name='preset-audio',
+                        folder_name='preset-audio',
                         source_file=file_path,
                         destination_file=file_name,
                         content_type=mime_types.AUDIO_MP3

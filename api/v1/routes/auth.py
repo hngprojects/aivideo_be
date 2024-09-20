@@ -1,6 +1,4 @@
 from datetime import timedelta
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from fastapi import (
     BackgroundTasks,
     Depends,
@@ -16,7 +14,6 @@ from sqlalchemy.orm import Session
 
 from api.utils.success_response import success_response
 from api.v1.models import User
-
 from api.v1.schemas.user import (
     LoginRequest,
     UserCreate,
@@ -25,28 +22,21 @@ from api.v1.schemas.user import (
     LogoutResponse,
     MagicLinkResponse
 )
-
 from api.db.database import get_db
 from api.v1.services.user import user_service
 from api.v1.schemas.request_password_reset import RequestEmail
 from api.v1.services.request_pwd import reset_service as magic_link_service
-from slowapi import Limiter
 from api.v1.services.billing_plan import billing_plan_service
 from api.v1.services.email_sending import email_sending_service
 
 
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
-
-
 @auth.post(
     "/register",
     status_code=status.HTTP_201_CREATED,
     response_model=RegisterUserResponse,
 )
-@limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
 def register(
     background_tasks: BackgroundTasks,
     request: Request,
@@ -77,10 +67,12 @@ def register(
             "refresh_token": refresh_token,
             "data": {
                 "user": jsonable_encoder(
-                    user, exclude=["password", "is_deleted", "updated_at"]
+                    user, 
+                    exclude=["password", "is_deleted", "updated_at"]
                 ),
                 "user_subscription" : jsonable_encoder(
-                    user_subscription , exclude=["user_id"]
+                    user_subscription , 
+                    exclude=["user_id"]
                 )
             },
         },
@@ -104,7 +96,6 @@ def register(
     status_code=status.HTTP_201_CREATED,
     response_model=RegisterUserResponse,
 )
-@limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
 def register_as_super_admin(user: UserCreate, request: Request, db: Session = Depends(get_db)):
     """Endpoint for super admin creation"""
 
@@ -141,10 +132,10 @@ def register_as_super_admin(user: UserCreate, request: Request, db: Session = De
 
     return response
 
+
 @auth.post(
     "/login", status_code=status.HTTP_200_OK, response_model=RegisterUserResponse
 )
-@limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
 def login(login_request: LoginRequest, request: Request, db: Session = Depends(get_db)):
     """Endpoint to log in a user"""
 
@@ -166,7 +157,8 @@ def login(login_request: LoginRequest, request: Request, db: Session = Depends(g
             "refresh_token": refresh_token,
             "data": {
                 "user": jsonable_encoder(
-                    user, exclude=["password", "is_deleted", "updated_at"]
+                    user, 
+                    exclude=["password", "is_deleted", "updated_at"]
                 )
             },
         },
@@ -193,7 +185,10 @@ def logout(
 ):
     """Endpoint to log a user out of their account"""
 
-    response = success_response(status_code=200, message="User logged put successfully")
+    response = success_response(
+        status_code=200, 
+        message="User logged put successfully"
+    )
 
     # Delete refresh token from cookies
     response.delete_cookie(key="refresh_token")
@@ -201,8 +196,11 @@ def logout(
     return response
 
 
-@auth.post("/refresh-access-token", status_code=status.HTTP_200_OK, response_model=RefreshAccessTokenResponse)
-@limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
+@auth.post(
+    "/refresh-access-token", 
+    status_code=status.HTTP_200_OK, 
+    response_model=RefreshAccessTokenResponse
+)
 def refresh_access_token(
     request: Request, response: Response, db: Session = Depends(get_db)
 ):
@@ -240,7 +238,6 @@ def refresh_access_token(
 
 
 @auth.post("/magic-link", status_code=status.HTTP_200_OK, response_model=MagicLinkResponse)
-@limiter.limit("20/minute")  # Limit to 20 requests per minute per IP
 async def request_magic_link(
     magic_link_request_schema: RequestEmail,
     request: Request,
@@ -268,6 +265,7 @@ async def request_magic_link(
         data={"magic-link": link}
     )
 
+
 @auth.get(
     "/magic-link/verify",
     status_code=status.HTTP_200_OK,
@@ -292,7 +290,8 @@ def verify_magic_link(token: str = Query(...), db: Session = Depends(get_db)):
             "refresh_token": refresh_token,
             "data": {
                 "user": jsonable_encoder(
-                    user, exclude=["password", "is_deleted", "updated_at"]
+                    user, 
+                    exclude=["password", "is_deleted", "updated_at"]
                 )
             },
         },

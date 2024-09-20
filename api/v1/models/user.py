@@ -35,7 +35,7 @@ class User(BaseTableModel):
         "LanguageRegionTimezoneSetting", back_populates="user"
     )
     jobs = relationship("Job", back_populates="user")
-    tifi_jobs = relationship("TifiJob", back_populates="user")
+    # tifi_jobs = relationship("TifiJob", back_populates="user")
     tool_usage = relationship('UserUsageStore', back_populates='user')
     
     def to_dict(self):

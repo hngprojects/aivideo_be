@@ -20,10 +20,11 @@ async def test_script_to_video_success_validation_error(
     # Arrange
     # mock_apply_async.return_value.id = "test_task_id"
     # mock_create_project_with_job.return_value.id = "test_project_id"
-    Job = namedtuple('Job', ['id'])
-    Project = namedtuple('Project', ['id'])
+    TifiJob = namedtuple('TifiJob', ['id'])
+    # Project = namedtuple('Project', ['id'])
 
-    mock_create.return_value = (Job(id="test_job_id"), Project(id="test_project_id"))
+    # mock_create.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
+    mock_create.return_value = TifiJob(id="test_job_id")
 
     # Act
     response = client.post(

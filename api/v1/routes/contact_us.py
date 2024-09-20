@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, status, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, status, BackgroundTasks, Request, Query
 from sqlalchemy.orm import Session
 from api.db.database import get_db
 from typing import Annotated
 from api.core.responses import SUCCESS
+from api.utils.pagination import paginated_response
 from api.utils.success_response import success_response
 from api.v1.services.contact_us import contact_us_service
 from api.v1.services.email_sending import email_sending_service
@@ -60,14 +61,16 @@ async def create_contact_us(
 def retrieve_contact_us(
     db: Session = Depends(get_db),
     user: User = Depends(user_service.get_current_super_admin),
+    limit: int = Query(10),
+    skip: int = Query(0)
 ):
     """
     Retrieve all contact-us submissions from database
     """
 
-    all_submissions = contact_us_service.fetch_all(db)
-    return success_response(
-        message="Submissions retrieved successfully",
-        status_code=200,
-        data=jsonable_encoder(all_submissions),
+    return paginated_response(
+        db=db,
+        model=ContactUs,
+        skip=skip,
+        limit=limit
     )
