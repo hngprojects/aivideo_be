@@ -7,7 +7,7 @@ from collections import namedtuple
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
-from api.v1.routes.ai_tools.youtube_summarizer import video_summary
+from api.v1.routes.ai_tools.youtube_video_summarizer import video_summary
 from api.db.database import get_db
 from main import app
 from api.v1.models.project import ProjectToolsEnum

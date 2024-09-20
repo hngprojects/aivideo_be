@@ -46,8 +46,16 @@
 
 
 
-from api.utils.minio_service import minio_service
+# from api.utils.minio_service import minio_service
 
-minio_service.download_file_from_minio(
-    'https://media.tifi.tv/text-to-video/ttvid-02b81068-c5c2-4b38-b540-4f68f22576b2.mp4',
-)
+# minio_service.download_file_from_minio(
+#     'https://media.tifi.tv/text-to-video/ttvid-02b81068-c5c2-4b38-b540-4f68f22576b2.mp4',
+# )
+
+from api.v1.services.ai_tools.youtube_video_summarizer import ytvid_service
+
+# transcript = ytvid_service.transcribe_audio('./scripts/audio-33f13549-6781-49d0-8dba-cfc284ab0d32.wav')
+transcript_with_timestamp = ytvid_service.generate_transcript_with_timestamp('./scripts/audio-33f13549-6781-49d0-8dba-cfc284ab0d32.wav')
+# print(transcript)
+# print(transcript_with_timestamp)
+# print(ytvid_service.summarize_transcript(transcript))

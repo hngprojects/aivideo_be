@@ -11,11 +11,9 @@ from api.utils.tool_limiter import track_tool_usage
 from api.utils.success_response import success_response
 from api.utils.files import delete_file, upload_to_temp_dir, contains_face
 from api.v1.services.presets import preset_service
-from api.v1.services.job import job_service
 from api.v1.services.job import tifi_job_service
 from api.v1.schemas.ai_tools.talking_avatar import TalkingHeadRequest
 from api.v1.models.project import ProjectToolsEnum
-from api.core.dependencies.celery.tasks.video_tasks import generate_talking_avatar_task
 
 
 video_router = APIRouter(prefix="/tools/video", tags=["Tools"])

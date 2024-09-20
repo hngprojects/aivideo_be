@@ -1,6 +1,7 @@
 from typing import Optional
 from fastapi import (
     Depends,
+    Form,
     status,
     APIRouter,
     HTTPException,
@@ -11,26 +12,15 @@ from fastapi import (
 from sqlalchemy.orm import Session
 import requests
 import io
-import json
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.utils.files import upload_file, check_file_size, delete_file, upload_file_to_current_dir
-from api.utils.language_code import LANGUAGE_CODES
+from api.utils.files import delete_file, upload_file_to_current_dir, upload_to_temp_dir
 from api.utils.minio_service import minio_service
 from api.v1.models.project import ProjectToolsEnum
-from api.v1.services.ai_tools.translator_service import translate_text
-from api.v1.schemas.translation import TranslationRequest
 from api.v1.schemas.ai_tools.audio_transcriber import PodcastRequest
 from api.v1.services.ai_tools.summary import summary_service
-from api.v1.services.job import job_service
 from api.v1.services.job import tifi_job_service
-from api.core.dependencies.celery.tasks.summary_tasks import (
-    generate_pdf_summary_task, 
-    generate_podcast_summary_task, 
-    generate_audio_summary_task, 
-    transcribe_audio_task
-)
 from api.v1.services.user import user_service
 from api.utils.tool_limiter import track_tool_usage
 from api.v1.models.user import User
@@ -49,32 +39,23 @@ MAX_FILE_SIZE = 25 * 1024 * 1024
 async def summarize_pdf(
     request: Request,
     file: UploadFile = File(...),
+    detail_level: str = Form(default='short'),
     db: Session = Depends(get_db),
     user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     """Endpoint to summarize PDF"""
 
-    # Read the file content to determine its size
-    contents = await file.read()
-    file_size = len(contents)
+    if detail_level not in ['short', 'detailed', 'very short']:
+        raise HTTPException(
+            status_code=400, 
+            detail='Detail level must be one of short, detailed, very short'
+        )
 
-    # Rewind the file pointer to the beginning
-    await file.seek(0)
-
-    # Check if the uploaded file exceeds the maximum file size
-    if file_size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=413, detail="File size exceeds the maximum limit of 25 MB")
-
-    # Check if the uploaded file is empty
-    if file_size == 0:
-        raise HTTPException(status_code=400, detail="The uploaded PDF file is empty")
-
-    # Upload the file and get its path
-    pdf_file_path = await upload_file(
-        file, 
-        allowed_extensions=["pdf"], 
-        upload_folder="pdf", 
-        save_extension="pdf"
+    pdf_file_path = await upload_to_temp_dir(
+        file,
+        allowed_extensions=['pdf'],
+        save_extension="pdf",
+        max_file_size=20 * 1024 * 1024,
     )
 
     # Upload pdf file to temporary stirage bucket
@@ -84,7 +65,7 @@ async def summarize_pdf(
     job = tifi_job_service.create(
         db=db,
         tool_name=ProjectToolsEnum.pdf_summarizer.value,
-        payload={'pdf_file_url': pdf_file_url},
+        payload={'pdf_file_url': pdf_file_url, 'detail_level': detail_level},
         user_id=user.id if user else None,
         is_parallel=True
     )
@@ -94,73 +75,9 @@ async def summarize_pdf(
         message=f"{ProjectToolsEnum.pdf_summarizer.value} task initiated successfully",
         data={
             "job_id": job.id,
-            # "project_id": project.id,
             "file_name": file.filename,
         }
     )
-
-
-
-@summary.post(
-    "/translate-summary",
-    status_code=status.HTTP_200_OK,
-    response_model=success_response,
-)
-async def translate_summary(translation_request: TranslationRequest):
-    """Endpoint to translate summary into different languages"""
-
-    target_language = translation_request.target_language.lower().replace(" ", "_")
-
-    if target_language not in LANGUAGE_CODES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported language. Supported languages are: {', '.join(LANGUAGE_CODES.keys())}",
-        )
-
-    try:
-        translated_text = translate_text(
-            translation_request.summary, 
-            LANGUAGE_CODES[target_language]
-        )
-
-        return success_response(
-            status_code=200,
-            message="Translation successful",
-            data={
-                "original_summary": translation_request.summary,
-                "translated_summary": translated_text,
-                "target_language": target_language,
-            },
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"An error occurred during translation: {str(e)}"
-        )
-    
-
-@summary.get("/download-summary/{job_id}", response_model=success_response)
-async def download_summary(job_id: str, db: Session = Depends(get_db)):
-    """Return the generated summary's download URL from MinIO"""
-    task_result = job_service.fetch_by_job_id(job_id)
-    if not task_result or not task_result.result:
-        job_service.update_job_result(job_id)
-        task_result = job_service.fetch_by_job_id(job_id)
-        if not task_result or not task_result.result:
-            raise HTTPException(status_code=404, detail="Summary not found")
-    try:
-        task_result_data = json.loads(task_result.result)
-        download_url = task_result_data.get('download_url')
-        preview_url = task_result_data.get('preview_url')
-        if not download_url:
-            raise HTTPException(status_code=404, detail="Download URL not found")
-        return success_response(
-            status_code=200,
-            message="Download URL retrieved successfully",
-            data={"download_url": download_url, "preview_url": preview_url}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve download URL: {str(e)}")
-
 
 
 @summary.post("/summarize-podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)
@@ -201,7 +118,6 @@ async def summarize_podcast(
             message=f"{ProjectToolsEnum.podcast_summarizer.value} task initiated successfully",
             data={
                 "job_id": job.id,
-                # "project_id": project.id,
                 "podcast_details": podcast_details,
             }
         )
@@ -213,48 +129,48 @@ async def summarize_podcast(
             data={}
         )
 
-@summary.post('/audio-summarizer', status_code=status.HTTP_200_OK, response_model=success_response)
-@track_tool_usage(ProjectToolsEnum.audio_summarizer)
-async def summarize_audio(
-    request: Request,
-    file: UploadFile = File(...), 
-    target_lang: str = "es",  # Default to Spanish
-    db: Session = Depends(get_db),
-    user: User = Depends(user_service.get_current_user_optional)
-):
-    '''Endpoint to summarize an audio file'''
+# @summary.post('/audio-summarizer', status_code=status.HTTP_200_OK, response_model=success_response)
+# @track_tool_usage(ProjectToolsEnum.audio_summarizer)
+# async def summarize_audio(
+#     request: Request,
+#     file: UploadFile = File(...), 
+#     target_lang: str = "es",  # Default to Spanish
+#     db: Session = Depends(get_db),
+#     user: User = Depends(user_service.get_current_user_optional)
+# ):
+#     '''Endpoint to summarize an audio file'''
     
-    audio_file = await upload_file(
-        file, 
-        allowed_extensions=['mp3', 'wav'],
-        upload_folder='audio', 
-        save_extension='mp3' 
-    )
-    await check_file_size(file)
+#     audio_file = await upload_file(
+#         file, 
+#         allowed_extensions=['mp3', 'wav'],
+#         upload_folder='audio', 
+#         save_extension='mp3' 
+#     )
+#     await check_file_size(file)
     
-    task_transcribe = transcribe_audio_task.delay(audio_file)
-    task = generate_audio_summary_task.delay(audio_file, target_lang)
+#     task_transcribe = transcribe_audio_task.delay(audio_file)
+#     task = generate_audio_summary_task.delay(audio_file, target_lang)
 
-    project = job_service.create_project_with_job(
-        job=task,
-        project_title='New Audio Summarization Project',
-        project_type=ProjectToolsEnum.audio_summarizer.value
-    )
+#     project = job_service.create_project_with_job(
+#         job=task,
+#         project_title='New Audio Summarization Project',
+#         project_type=ProjectToolsEnum.audio_summarizer.value
+#     )
 
-    project_transcribe = job_service.create_project_with_job(
-        job=task_transcribe,
-        project_title='New Audio transcription Project',
-        project_type=ProjectToolsEnum.audio_transcriber.value
-    )
+#     project_transcribe = job_service.create_project_with_job(
+#         job=task_transcribe,
+#         project_title='New Audio transcription Project',
+#         project_type=ProjectToolsEnum.audio_transcriber.value
+#     )
 
-    return success_response(
-        status_code=202,
-        message="Audio summary generation and transcription  job initiated successfully",
-        data={
-            "job_id": task.id,
-            "project_id": project.id,
-            "transcription_job_id": task_transcribe.id,
-            "transcription_project_id": project_transcribe.id,
+#     return success_response(
+#         status_code=202,
+#         message="Audio summary generation and transcription  job initiated successfully",
+#         data={
+#             "job_id": task.id,
+#             "project_id": project.id,
+#             "transcription_job_id": task_transcribe.id,
+#             "transcription_project_id": project_transcribe.id,
 
-        }
-    )
+#         }
+#     )

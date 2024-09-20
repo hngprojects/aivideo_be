@@ -7,7 +7,7 @@ from collections import namedtuple
 from unittest.mock import AsyncMock, patch, Mock
 import pytest
 from fastapi.testclient import TestClient
-from api.v1.routes.ai_tools.youtube_summarizer import video_summary
+from api.v1.routes.ai_tools.youtube_video_summarizer import video_summary
 from main import app
 from api.db.database import get_db
 
@@ -24,7 +24,6 @@ def mock_db():
 @pytest.fixture
 def mock_create():
     with patch("api.v1.services.job.tifi_job_service.create") as mock:
-        # mock.return_value = AsyncMock(id="mock_project_id")
         TifiJob = namedtuple('TifiJob', ['id'])
         mock.return_value = TifiJob(id="test_job_id")
         yield mock

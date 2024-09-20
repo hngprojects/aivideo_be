@@ -7,7 +7,7 @@ from collections import namedtuple
 import pytest
 from unittest.mock import AsyncMock, patch, Mock
 from fastapi.testclient import TestClient
-from api.v1.routes.ai_tools.youtube_summarizer import video_summary
+from api.v1.routes.ai_tools.youtube_video_summarizer import video_summary
 from api.db.database import get_db
 from main import app
 
@@ -31,7 +31,7 @@ def mock_db():
 
 @pytest.fixture
 def mock_upload_files():
-    with patch("api.utils.files.upload_files") as mock:
+    with patch("api.utils.files.upload_multiple_files_to_tmp_dir") as mock:
         mock.return_value = ["test_video.mp4"]
         yield mock
 

@@ -28,8 +28,8 @@ def mock_pdf_reader():
 
 
 @pytest.fixture
-def mock_upload_file(mocker):
-    mocker.patch("api.utils.files.upload_file", return_value="test_files/sample.pdf", max_file_size=10*1024*1024)
+def mock_upload_to_temp_dir(mocker):
+    mocker.patch("api.utils.files.upload_to_temp_dir", return_value="test_files/sample.pdf", max_file_size=10*1024*1024)
 
 
 @pytest.fixture
