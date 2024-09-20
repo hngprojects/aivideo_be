@@ -74,7 +74,7 @@ async def convert_script_to_video(
 
         audio_url = audio.file_url
 
-    job, project = tifi_job_service.create(
+    job = tifi_job_service.create(
         db=db,
         tool_name=ProjectToolsEnum.script_to_video.value,
         payload={
@@ -93,6 +93,6 @@ async def convert_script_to_video(
         message=f"{ProjectToolsEnum.script_to_video.value} task initiated successfully",
         data={
             "job_id": job.id,
-            "project_id": project.id
+            # "project_id": project.id
         }
     )

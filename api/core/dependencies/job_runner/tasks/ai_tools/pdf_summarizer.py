@@ -58,7 +58,7 @@ try:
 
     save_and_print_job_progress(db, job, 85, 'Generating summary PDF preview and download link')
     preview_url, download_url = minio_service.upload_to_minio(
-        bucket_name='pdf-summarizer',
+        folder_name='pdf-summarizer',
         source_file=summary_pdf_file,
         destination_file=f"pdfsum-{str(uuid4())}.pdf",
         content_type=mime_types.APPLICATION_PDF,
