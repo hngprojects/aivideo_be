@@ -47,12 +47,15 @@ def override_get_db(mock_db):
 
 
 # Test the endpoint
-def test_enqueue_summarize_batch_job(
+def test_youtube_summarizer_single(
     mock_create,
     override_get_db,
 ):
     # Prepare test files
-    link = {"link": "https://www.youtube.com/watch?v=testvideo"}
+    data = {
+        "link": "https://www.youtube.com/watch?v=testvideo",
+        "detail_level": "short"
+    }
 
     mocked_db = mock_db_session()
 
@@ -61,7 +64,7 @@ def test_enqueue_summarize_batch_job(
     # Send a POST request to the summarize_batch endpoint
     response = client.post(
         "/api/v1/tools/summary/summarize-youtube-video",
-        json=link,
+        json=data,
     )
 
     # Assertions

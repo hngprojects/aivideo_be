@@ -23,47 +23,47 @@ class YtVidSummarizerService:
 
     
     # TODO: Fix inconsistency with download of youtube videos
-    def download_youtube_video(self, youtube_url: str):
-        '''This function downloads a youtube video(s) and saves it to a temporary storage'''
-
-        output_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
-
-        try:
-            # Create YouTube object
-            yt = YouTube(youtube_url)
-            
-            # Get the stream with the worst (lowest) quality
-            worst_quality_stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').first()
-            
-            # Download the worst quality video
-            file = worst_quality_stream.download(
-                output_path=settings.TEMP_DIR,
-                filename=f'ytvid-{uuid4()}.mp4'
-            )
-
-            return file
-
-        except Exception as e:
-            raise e
-
-    
     # def download_youtube_video(self, youtube_url: str):
     #     '''This function downloads a youtube video(s) and saves it to a temporary storage'''
 
     #     output_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
-    #     ydl_opts = {
-    #         'format': 'worst',  # Select the worst quality
-    #         'outtmpl': output_path,
-    #         'nocheckcertificate': True,
-    #     }
 
     #     try:
-    #         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-    #             ydl.download([youtube_url])
-    #             return output_path
+    #         # Create YouTube object
+    #         yt = YouTube(youtube_url)
             
+    #         # Get the stream with the worst (lowest) quality
+    #         worst_quality_stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').first()
+            
+    #         # Download the worst quality video
+    #         file = worst_quality_stream.download(
+    #             output_path=settings.TEMP_DIR,
+    #             filename=f'ytvid-{uuid4()}.mp4'
+    #         )
+
+    #         return file
+
     #     except Exception as e:
-    #         raise e 
+    #         raise e
+
+    
+    def download_youtube_video(self, youtube_url: str):
+        '''This function downloads a youtube video(s) and saves it to a temporary storage'''
+
+        output_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
+        ydl_opts = {
+            'format': 'worst',  # Select the worst quality
+            'outtmpl': output_path,
+            'nocheckcertificate': True,
+        }
+
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([youtube_url])
+                return output_path
+            
+        except Exception as e:
+            raise e 
         
     
     def extract_audio_from_video(self, video_path: str):
