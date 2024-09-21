@@ -29,7 +29,18 @@ def mock_pdf_reader():
 
 @pytest.fixture
 def mock_upload_to_temp_dir(mocker):
-    mocker.patch("api.utils.files.upload_to_temp_dir", return_value="test_files/sample.pdf", max_file_size=10*1024*1024)
+    mocker.patch(
+        "api.utils.files.upload_to_temp_dir", 
+        return_value="test_files/sample.pdf", 
+        max_file_size=10*1024*1024
+    )
+
+
+@pytest.fixture
+def mock_upload_file_to_minio_tmp():
+    with patch("api.utils.minio_service.minio_service.upload_to_tmp_bucket") as mock:
+        mock.return_value = 'https://minio.example.com/tmp/test-video.mp4'
+        yield mock
 
 
 @pytest.fixture
@@ -50,7 +61,10 @@ def test_summarize_pdf_invalid_file_type():
     assert response.status_code == 400 or response.status_code == 403
 
 
-def test_summarize_pdf_empty_file():
+def test_summarize_pdf_empty_file(
+    mock_upload_to_temp_dir,
+    mock_upload_file_to_minio_tmp
+):
     response = client.post(
         "/api/v1/tools/summary/pdf-summarizer",
         files={"file": ("empty.pdf", b"", "application/pdf")},

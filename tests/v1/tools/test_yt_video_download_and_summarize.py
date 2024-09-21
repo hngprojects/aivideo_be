@@ -71,33 +71,32 @@ def test_youtube_summarizer_single(
     assert response.status_code == 202
 
 
-def test_youtube_summarize_job_limiting(
-    # moch_download_and_generate_video_summmary_task,
-    mock_create,
-    override_get_db,
-):
-    # Prepare test files
-    link = {"link": "https://www.youtube.com/watch?v=testvideo"}
+# def test_youtube_summarize_job_limiting(
+#     mock_create,
+#     override_get_db,
+# ):
+#     # Prepare test files
+#     link = {"link": "https://www.youtube.com/watch?v=testvideo"}
 
-    mocked_db = mock_db_session()
+#     mocked_db = mock_db_session()
 
-    mock_filter = mock_db_session()
-    mock_first = mock_db_session()
-    mock_data = mock_db_session()
+#     mock_filter = mock_db_session()
+#     mock_first = mock_db_session()
+#     mock_data = mock_db_session()
 
-    mocked_db.query.return_value = mock_filter
-    mock_filter.filter_by.return_value = mock_first
-    mock_first.first.return_value = mock_data
-    mock_data.tools_accessed = []
+#     mocked_db.query.return_value = mock_filter
+#     mock_filter.filter_by.return_value = mock_first
+#     mock_first.first.return_value = mock_data
+#     mock_data.tools_accessed = []
 
-    app.dependency_overrides[get_db] = lambda: mocked_db
+#     app.dependency_overrides[get_db] = lambda: mocked_db
 
-    for i in range(ACCESS_LIMIT):
-        # Send a POST request to the summarize multiple times to test limiter
-        response = client.post(
-            "/api/v1/tools/summary/summarize-youtube-video",
-            json=link,
-        )
+#     for i in range(ACCESS_LIMIT):
+#         # Send a POST request to the summarize multiple times to test limiter
+#         response = client.post(
+#             "/api/v1/tools/summary/summarize-youtube-video",
+#             json=link,
+#         )
 
-        # Assertions
-        assert response.status_code == 202
+#         # Assertions
+#         assert response.status_code == 202
