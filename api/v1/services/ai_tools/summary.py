@@ -4,7 +4,6 @@ from typing import List
 import uuid
 from api.utils import mime_types
 from api.utils.minio_service import minio_service
-# from api.utils.transcripts import get_paragraphs
 from openai.types.audio.transcription import Transcription
 from api.utils.settings import settings
 import pytesseract
@@ -18,21 +17,14 @@ from langchain_openai import ChatOpenAI, OpenAI
 from deep_translator import GoogleTranslator
 from openai import OpenAI as OI
 from langchain.docstore.document import Document
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.chains.summarize import load_summarize_chain
 import requests
 from bs4 import BeautifulSoup
-from api.utils.files import delete_file
 from io import BytesIO
 from fastapi import HTTPException
 import json
 import fitz
-
-import PyPDF2, tiktoken
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
 class SummaryService():
     def __init__(self):
@@ -40,13 +32,11 @@ class SummaryService():
         self.client = OI(
             base_url='https://openrouter.ai/api/v1',
             api_key=settings.OPENROUTER_API_KEY,
-            # api_key=settings.OPENAI_API_KEY,
         )
         self.llm = OpenAI(
             temperature=0, 
             base_url='https://openrouter.ai/api/v1',
-            openai_api_key=settings.OPENROUTER_API_KEY,
-            # openai_api_key=settings.OPENAI_API_KEY,
+            api_key=settings.OPENROUTER_API_KEY,
         )
 
     def init_chain(self):
