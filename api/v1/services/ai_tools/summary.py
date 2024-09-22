@@ -33,11 +33,11 @@ class SummaryService():
             base_url='https://openrouter.ai/api/v1',
             api_key=settings.OPENROUTER_API_KEY,
         )
-        self.llm = OpenAI(
-            temperature=0, 
-            base_url='https://openrouter.ai/api/v1',
-            api_key=settings.OPENROUTER_API_KEY,
-        )
+        # self.llm = OpenAI(
+        #     temperature=0, 
+        #     base_url='https://openrouter.ai/api/v1',
+        #     api_key=settings.OPENROUTER_API_KEY,
+        # )
 
     def init_chain(self):
         prompt_template = """Write a concise summary of the following:
