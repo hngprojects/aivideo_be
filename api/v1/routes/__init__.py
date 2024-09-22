@@ -22,7 +22,6 @@ from api.v1.routes.notification import notification
 from api.v1.routes.user_subscription import user_subs
 from api.v1.routes.ai_tools.talking_avatar import video_router
 from api.v1.routes.testimonial import testimonial
-from api.v1.routes.project import project_router
 from api.v1.routes.job import job_router
 from api.v1.routes.ai_tools.script_to_video import ttv_router
 from api.v1.routes.utilities import utilities
@@ -43,6 +42,7 @@ api_version_one.include_router(video_router)
 api_version_one.include_router(video_summary)
 api_version_one.include_router(ttv_router)
 api_version_one.include_router(ffmpeg_router)
+api_version_one.include_router(job_router)
 api_version_one.include_router(profile)
 api_version_one.include_router(payments)
 api_version_one.include_router(billing_plan)
@@ -50,8 +50,6 @@ api_version_one.include_router(notification_setting)
 api_version_one.include_router(faq)
 api_version_one.include_router(resource)
 api_version_one.include_router(testimonial)
-api_version_one.include_router(project_router)
-api_version_one.include_router(job_router)
 api_version_one.include_router(pwd_reset)
 api_version_one.include_router(notification)
 api_version_one.include_router(preset_router)

@@ -28,32 +28,46 @@ video_data = {}
 videos_list = []  # to store list of dictionaries for every processed video data
 
 # Initialize final result dict
-final_result = {}
+final_result = {}  # for batch upload
 
 number_of_videos_to_process = len(links)
 progress_per_video = round(100 / number_of_videos_to_process)
 
+# Set up save path for csv file for batch upload
 csv_save_path = os.path.join(settings.TEMP_DIR, f"ytvidsum-{uuid4()}.csv")
-try:      
+
+video_file = None
+audio_file = None
+
+try: 
     for id, link in enumerate(links):
-        if not batch:
-            save_and_print_job_progress(db, job, 10, 'Downloading youtube video')
-        
-        # Download video based on video type
-        # Video is downloaded from youtube if it is a youtube video, 
-        # else it is downloaded from minio as it would be an uploaded video
         if vid_type == 'youtube':
-            video_file = ytvid_service.download_youtube_video(link)
+            if not batch:
+                save_and_print_job_progress(db, job, 10, 'Extracting audio stream from youtube video')
+            audio_url = ytvid_service.get_audio_stream(link)
+
+            if not batch:
+                save_and_print_job_progress(db, job, 25, 'Downloading audio file from audio stream')
+            # Download audio file
+            audio_file = ytvid_service.download_audio_file(audio_url)
+
+            if not batch:
+                save_and_print_job_progress(db, job, 35, 'Trnascribing audio')
+            transcript = ytvid_service.transcribe_audio(audio_file)
+
         else:
+            if not batch:
+                save_and_print_job_progress(db, job, 10, 'Downloading video file from minio')
             video_file = minio_service.download_file_from_minio(link)
 
-        if not batch:
-            save_and_print_job_progress(db, job, 25, 'Extracting audio from downloaded video')
-        audio_file = ytvid_service.extract_audio_from_video(video_file)
+            if not batch:
+                save_and_print_job_progress(db, job, 25, 'Extracting audio from downloaded video')
+            # Extract the audio from video downloaded from minio
+            audio_file = ytvid_service.extract_audio_from_video(video_file)
 
-        if not batch:
-            save_and_print_job_progress(db, job, 35, 'Trnascribing audio')
-        transcript = ytvid_service.transcribe_audio(audio_file)
+            if not batch:
+                save_and_print_job_progress(db, job, 35, 'Trnascribing audio')
+            transcript = ytvid_service.transcribe_audio(audio_file)
 
         if not batch:
             save_and_print_job_progress(db, job, 45, 'Summarizing transcript')
@@ -62,7 +76,7 @@ try:
         if not batch:
             save_and_print_job_progress(db, job, 55, 'Generating transcript with timestamp')
         transcript_with_timestamp = ytvid_service.generate_transcript_with_timestamp(audio_file)
-        transcript_with_timestamp_as_srt = ytvid_service.generate_transcript_with_timestamp(audio_file, as_srt=True)
+        transcript_with_timestamp_srt = ytvid_service.generate_transcript_with_timestamp(audio_file, as_srt=True)
 
         if not batch:
             save_and_print_job_progress(db, job, 65, 'Saving to PDF')
@@ -78,6 +92,7 @@ try:
                 transcript=transcript,
                 summary=transcript_summary,
                 transcript_with_timestamp=transcript_with_timestamp,
+                transcript_with_timestamp_srt=transcript_with_timestamp_srt,
                 save_path=csv_save_path
             )
 
@@ -90,12 +105,14 @@ try:
             destination_file=f"ytvidsum-{str(uuid4())}.pdf",
             content_type=mime_types.APPLICATION_PDF,
         )
-
     
         if not batch:
             save_and_print_job_progress(db, job, 90, 'Cleaning up')
-        delete_file(video_file)
-        delete_file(audio_file) 
+        if video_file:
+            delete_file(video_file)
+        if audio_file:
+            delete_file(audio_file)
+        delete_file(pdf_file)
 
         if not batch:
             save_and_print_job_progress(db, job, 95, 'Generating result')
@@ -105,6 +122,7 @@ try:
             "summary_word_count": len(transcript_summary.split()),
             "transcript": transcript_with_timestamp,
             "transcript_word_count": len(transcript.split()),
+            'subtitles': transcript_with_timestamp_srt,
             "pdf_preview_url": pdf_preview_url,
             "pdf_download_url": pdf_download_url
         }
@@ -137,6 +155,7 @@ try:
         )
         delete_file(csv_save_path)
 
+        # Add csv file to the result 
         final_result['csv'] = {
             "csv_preview_url": csv_preview_url,
             "csv_download_url": csv_download_url,

@@ -1,17 +1,16 @@
-import csv
-import os
+import os, requests, csv, yt_dlp, pickle
 from io import BytesIO
 import assemblyai as aai
-import yt_dlp
-from pytubefix import YouTube
 from uuid import uuid4
-from langchain_community.document_loaders import AssemblyAIAudioTranscriptLoader
-from langchain_community.document_loaders.assemblyai import TranscriptFormat
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from google.auth.transport.requests import Request
 
 from api.utils.settings import settings
 from api.utils.pdf_builder import PDFBuilder
 from api.v1.services.ffmpeg_tools import ffmpeg_service
 from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
+from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
 
 
 class YtVidSummarizerService:
@@ -21,49 +20,99 @@ class YtVidSummarizerService:
         aai.settings.api_key = settings.ASSEMBLYAI_API_KEY
         self.transcriber = aai.Transcriber()
 
+        # # Authenticate youtube request with Google
+        # CLIENT_SECRETS_FILE = "google_secret.json"
+        # SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
+
+        # credentials = None
+        # token_pickle = 'token.pickle'
+
+        # # Check if we have saved credentials
+        # if os.path.exists(token_pickle):
+        #     with open(token_pickle, 'rb') as token:
+        #         credentials = pickle.load(token)
+
+        # # If no valid credentials are available, let the user log in.
+        # if not credentials or not credentials.valid:
+        #     if credentials and credentials.expired and credentials.refresh_token:
+        #         credentials.refresh(Request())
+        #     else:
+        #         flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
+        #         credentials = flow.run_local_server(host='0.0.0.0', port=7003)
+
+        #     # Save the credentials for the next run
+        #     with open(token_pickle, 'wb') as token:
+        #         pickle.dump(credentials, token)
+
+        # self.oauth_token = credentials.token
+
+
+    def get_audio_stream(self, youtube_url: str):
+        '''This function gets only the audio stream of the youtube video'''
+
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'noplaylist': True,
+            'quiet': True,
+            'outtmpl': '-',
+            'extractaudio': True,
+            'audioformat': 'mp3',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+            'no_warnings': True,
+            # 'http_headers': {
+            #     'Authorization': f'Bearer {self.oauth_token}',  # Add the OAuth token to the request
+            # },
+            # 'cookiefile': 'youtube_cookies.txt',  # Path to the cookies.txt file
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            try:
+                info_dict = ydl.extract_info(youtube_url, download=False)
+                audio_url = info_dict['url']
+                return audio_url
+            except Exception as e:
+                raise e
+        
     
-    # TODO: Fix inconsistency with download of youtube videos
+    def download_audio_file(self, audio_url: str):
+        '''Download audio file from generated audio stream'''
+
+        try:
+            response = requests.get(audio_url, stream=True)
+            response.raise_for_status()  # Check for errors in the response
+            
+            file_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
+            with open(file_path, "wb") as file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    file.write(chunk)
+
+            return file_path
+
+        except requests.RequestException as e:
+            raise e
+
+    
     # def download_youtube_video(self, youtube_url: str):
     #     '''This function downloads a youtube video(s) and saves it to a temporary storage'''
 
     #     output_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
+    #     ydl_opts = {
+    #         'format': 'worst',  # Select the worst quality
+    #         'outtmpl': output_path,
+    #         'nocheckcertificate': True,
+    #     }
 
     #     try:
-    #         # Create YouTube object
-    #         yt = YouTube(youtube_url)
+    #         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    #             ydl.download([youtube_url])
+    #             return output_path
             
-    #         # Get the stream with the worst (lowest) quality
-    #         worst_quality_stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').first()
-            
-    #         # Download the worst quality video
-    #         file = worst_quality_stream.download(
-    #             output_path=settings.TEMP_DIR,
-    #             filename=f'ytvid-{uuid4()}.mp4'
-    #         )
-
-    #         return file
-
     #     except Exception as e:
-    #         raise e
-
-    
-    def download_youtube_video(self, youtube_url: str):
-        '''This function downloads a youtube video(s) and saves it to a temporary storage'''
-
-        output_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
-        ydl_opts = {
-            'format': 'worst',  # Select the worst quality
-            'outtmpl': output_path,
-            'nocheckcertificate': True,
-        }
-
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([youtube_url])
-                return output_path
-            
-        except Exception as e:
-            raise e 
+    #         raise e 
         
     
     def extract_audio_from_video(self, video_path: str):
@@ -81,11 +130,7 @@ class YtVidSummarizerService:
     def transcribe_audio(self, audio_path_or_url: str):
         '''This function transcribes audio into text'''
 
-        transcript = self.transcriber.transcribe(audio_path_or_url)
-        if transcript.error:
-            raise Exception(f'Error transcribing audio: {transcript.error}')
-        
-        return transcript.text
+        return audio_summary_service.transcribe_audio(audio_path_or_url)
     
 
     def summarize_transcript(self, transcript: str, detail_level: str = 'short'):
@@ -100,14 +145,10 @@ class YtVidSummarizerService:
     def generate_transcript_with_timestamp(self, audio_path_or_url: str, as_srt: bool = False):
         '''This function generates a transcript with timestamps'''
 
-        loader = AssemblyAIAudioTranscriptLoader(
-            file_path=audio_path_or_url,
-            api_key=settings.ASSEMBLYAI_API_KEY,
-            transcript_format=TranscriptFormat.SUBTITLES_VTT if not as_srt else TranscriptFormat.SUBTITLES_SRT
+        return audio_summary_service.generate_transcript_with_timestamp(
+            audio_path_or_url,
+            as_srt=as_srt
         )
-        docs = loader.load()
-
-        return docs[0].page_content
     
 
     def save_transcript_and_summary_to_pdf(
@@ -151,6 +192,7 @@ class YtVidSummarizerService:
         transcript: str, 
         summary: str, 
         transcript_with_timestamp: str,
+        transcript_with_timestamp_srt: str,
         save_path: str
     ):
         '''This function saves the transcript and summary of the transcript to a csv file'''
@@ -164,9 +206,9 @@ class YtVidSummarizerService:
             writer = csv.writer(f)
 
             if not file_exists:
-                writer.writerow(['Transcript', 'Summary', 'Transcript with Timestamp'])
+                writer.writerow(['Transcript', 'Summary', 'Transcript with Timestamp', 'Subtitles'])
 
-            writer.writerow([transcript, summary, transcript_with_timestamp])
+            writer.writerow([transcript, summary, transcript_with_timestamp, transcript_with_timestamp_srt])
 
 
 ytvid_service = YtVidSummarizerService()

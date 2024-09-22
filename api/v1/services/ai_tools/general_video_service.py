@@ -16,6 +16,7 @@ from deepgram import (
 )
 
 from api.utils.settings import settings
+from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
 
 
 class GeneralVideoService:
@@ -93,24 +94,29 @@ class GeneralVideoService:
 
     def generate_subtitles_from_audio(self, audio_file: str):
         try:
-            deepgram = DeepgramClient(settings.DEEPGRAM_API_KEY)
+            # deepgram = DeepgramClient(settings.DEEPGRAM_API_KEY)
 
-            with open(audio_file, "rb") as file:
-                buffer_data = file.read()
+            # with open(audio_file, "rb") as file:
+            #     buffer_data = file.read()
 
-            payload: FileSource = {
-                "buffer": buffer_data,
-            }
+            # payload: FileSource = {
+            #     "buffer": buffer_data,
+            # }
 
-            options = PrerecordedOptions(
-                model="nova-2",
-                smart_format=True,
+            # options = PrerecordedOptions(
+            #     model="nova-2",
+            #     smart_format=True,
+            # )
+
+            # response = deepgram.listen.prerecorded.v("1").transcribe_file(payload, options)
+
+            # transcription = DeepgramConverter(dg_response=response)
+            # captions = srt(transcription)
+
+            captions = audio_summary_service.generate_transcript_with_timestamp(
+                audio_file,
+                as_srt=True
             )
-
-            response = deepgram.listen.prerecorded.v("1").transcribe_file(payload, options)
-
-            transcription = DeepgramConverter(dg_response=response)
-            captions = srt(transcription)
 
             subtitles_file = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4()}.srt')
             with open(subtitles_file, 'w') as subtitles:

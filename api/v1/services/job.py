@@ -16,10 +16,7 @@ from sqlalchemy import or_, desc
 from api.core.dependencies.job_runner.app.async_runner.job_notifier import notify_job_runner
 from api.utils.db_validators import check_model_existence
 from api.v1.models.job import Job, TifiJob, JobStatus
-from api.v1.models.project import Project
 from api.v1.models.user import User
-from api.v1.schemas.project import CreateProject
-from api.v1.services.project import project_service
 from api.v1.services.billing_plan import billing_plan_service
 from api.v1.services.user import user_service
 
@@ -33,28 +30,23 @@ class TifiJobService:
         payload,
         user_id: Optional[str]=None,
         is_parallel: bool = False,
+        is_premium: bool = False,
     ):  
         """Create a new Tifi job with a project if `save_project` is True"""
-
-        # Check if there is a need to create a project and create a project with the job
-        # project=None
-        # if save_project:
-        #     project = Project(
-        #         title=f"New {tool_name} Project",
-        #         project_type=tool_name,
-        #         user_id=user_id
-        #     )
-
-        #     db.add(project)
-        #     db.commit()
-        #     db.refresh(project)
         
         if user_id:
             # Check user
             user = user_service.fetch(db=db, id=user_id)
-
             # Check if user is on a free plan
             user_on_free_plan = billing_plan_service.confirm_user_is_on_plan(db=db, user=user, plan_name='Free')
+
+            # Check if user is on a premium plan if the job is a premium job
+            if is_premium and not user_on_free_plan:
+                raise HTTPException(
+                    status_code=403,
+                    detail="User is on a free plan. Please upgrade to a premium plan to use this feature."
+                )
+
 
         job = TifiJob(
             tool_name=tool_name,
@@ -64,7 +56,6 @@ class TifiJobService:
             status=JobStatus.pending,
             progress='0% complete',
             user_id=user_id,
-            # project_id=project.id if project else None,
         )
 
         db.add(job)

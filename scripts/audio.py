@@ -52,10 +52,56 @@
 #     'https://media.tifi.tv/text-to-video/ttvid-02b81068-c5c2-4b38-b540-4f68f22576b2.mp4',
 # )
 
-from api.v1.services.ai_tools.youtube_video_summarizer import ytvid_service
+# from api.v1.services.ai_tools.youtube_video_summarizer import ytvid_service
 
 # transcript = ytvid_service.transcribe_audio('./scripts/audio-33f13549-6781-49d0-8dba-cfc284ab0d32.wav')
-transcript_with_timestamp = ytvid_service.generate_transcript_with_timestamp('./scripts/audio-33f13549-6781-49d0-8dba-cfc284ab0d32.wav')
+# transcript_with_timestamp = ytvid_service.generate_transcript_with_timestamp('./scripts/audio-33f13549-6781-49d0-8dba-cfc284ab0d32.wav')
 # print(transcript)
 # print(transcript_with_timestamp)
 # print(ytvid_service.summarize_transcript(transcript))
+
+
+import yt_dlp, requests, os
+
+def get_audio_stream(youtube_url):
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'noplaylist': True,
+        'quiet': True,
+        'outtmpl': '-',
+        'extractaudio': True,
+        'audioformat': 'mp3',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'no_warnings': True
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(youtube_url, download=False)
+        audio_url = info_dict['url']
+        try:
+            response = requests.get(audio_url, stream=True)
+            response.raise_for_status()  # Check for errors in the response
+            
+            file_path = os.path.join(f'ytaud.mp3')
+            with open(file_path, "wb") as file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    file.write(chunk)
+
+            return file_path
+
+        except requests.RequestException as e:
+            raise e
+
+# Example usage
+audio_url = get_audio_stream("https://www.youtube.com/watch?v=NHqEFZ9zZuA")
+print("Audio Stream URL:", audio_url)
+
+# {
+#   "links": [
+#     "https://www.youtube.com/watch?v=BTeuI6j_66c", "https://www.youtube.com/watch?v=NHqEFZ9zZuA", "https://www.youtube.com/watch?v=58Zi8K-2frc"
+#   ]
+# }
