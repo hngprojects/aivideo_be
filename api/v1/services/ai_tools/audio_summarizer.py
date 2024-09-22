@@ -5,7 +5,6 @@ from langchain_community.document_loaders.assemblyai import TranscriptFormat
 
 from api.utils.settings import settings
 from api.utils.pdf_builder import PDFBuilder
-from api.v1.services.ffmpeg_tools import ffmpeg_service
 from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
 
 

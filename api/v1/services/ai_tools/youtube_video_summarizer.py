@@ -16,9 +16,9 @@ from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
 class YtVidSummarizerService:
     '''Youtube and video summarizer service'''
 
-    def __init__(self):
-        aai.settings.api_key = settings.ASSEMBLYAI_API_KEY
-        self.transcriber = aai.Transcriber()
+    # def __init__(self):
+        # aai.settings.api_key = settings.ASSEMBLYAI_API_KEY
+        # self.transcriber = aai.Transcriber()
 
         # # Authenticate youtube request with Google
         # CLIENT_SECRETS_FILE = "google_secret.json"
