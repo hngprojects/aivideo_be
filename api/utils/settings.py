@@ -49,7 +49,6 @@ class Settings(BaseSettings):
     MINIO_ACCESS_KEY: str = config("MINIO_ACCESS_KEY")
     MINIO_SECRET_KEY: str = config("MINIO_SECRET_KEY")
 
-    BASE_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent)
     TEMP_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent, 'tmp', 'media')
     FRONTEND_MAGICLINK_URL : str = config("FRONTEND_MAGICLINK_URL")
     
