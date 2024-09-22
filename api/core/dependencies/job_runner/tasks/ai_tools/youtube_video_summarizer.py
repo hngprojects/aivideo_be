@@ -108,10 +108,6 @@ try:
     
         if not batch:
             save_and_print_job_progress(db, job, 90, 'Cleaning up')
-        if video_file:
-            delete_file(video_file)
-        if audio_file:
-            delete_file(audio_file)
         delete_file(pdf_file)
 
         if not batch:
@@ -165,3 +161,10 @@ try:
 
 except Exception as e:
     raise e
+
+finally:
+    if video_file:
+        delete_file(video_file)
+    if audio_file:
+        delete_file(audio_file)
+        
