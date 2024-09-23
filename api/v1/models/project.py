@@ -7,17 +7,13 @@ from api.v1.models.base_model import BaseTableModel
 
 class ProjectToolsEnum(str, Enum):
     # AI TOOLS
-    youtube_summarizer = "Youtube Summarizer"
-    video_summarizer = "Video Summarizer"
+    youtube_video_summarizer = "Youtube/Video Summarizer"
     script_to_video = "Script To Video"
     talking_avatar = "Talking Avatar"
-    audio_transcriber = "Audio Transcriber"
     audio_summarizer = "Audio Summarizer"
     image_to_video = "Image To Video"
     podcast_summarizer = "Podcast Summarizer"
-    thumbnail_generator = "Thumbnail Generator"
     pdf_summarizer = "PDF Summarizer"
-    subtitle_translator = "Subtitle Translator"
 
     # FFMPEG TOOLS
     audio_extractor = 'Audio Extractor'

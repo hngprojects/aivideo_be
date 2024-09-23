@@ -13,8 +13,7 @@ tool_to_script_mapping = {
     tools.script_to_video.value: f'{AI_TOOLS_BASE_DIR}/script_to_video.py',
     tools.image_to_video.value: f'{AI_TOOLS_BASE_DIR}/image_to_video.py',
     tools.podcast_summarizer.value: f'{AI_TOOLS_BASE_DIR}/podcast_summarizer.py',
-    tools.youtube_summarizer.value: f'{AI_TOOLS_BASE_DIR}/youtube_summarizer.py',
-    tools.video_summarizer.value: f'{AI_TOOLS_BASE_DIR}/video_summarizer.py',
+    tools.youtube_video_summarizer.value: f'{AI_TOOLS_BASE_DIR}/youtube_video_summarizer.py',
     tools.pdf_summarizer.value: f'{AI_TOOLS_BASE_DIR}/pdf_summarizer.py',
 
     # FFMPEG TOOLS

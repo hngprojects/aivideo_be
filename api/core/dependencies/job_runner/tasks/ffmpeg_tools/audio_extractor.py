@@ -43,7 +43,7 @@ try:
     save_url, download_url = minio_service.upload_to_minio(
         folder_name='audio-extractor',
         source_file=audio_path,
-        destination_file=f'audioextr-{uuid4()}',
+        destination_file=f'audioextr-{uuid4()}.{audio_extension}',
         content_type=mime_types.VIDEO_MP4
     )
 

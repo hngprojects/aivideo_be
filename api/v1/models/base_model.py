@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """ This is the Base Model Class
 """
 from uuid_extensions import uuid7
