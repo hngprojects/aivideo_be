@@ -86,7 +86,7 @@ class YtVidSummarizerService:
                 "-x",  # Extract audio
                 "--audio-format", "mp3",  # Specify the audio format (e.g., mp3, m4a, etc.)
                 "-o", output_path,  # Output path where audio will be saved
-                "--cookies", 'youtube_cookies.txt',  # Use the cookies file for authentication
+                # "--cookies", 'youtube_cookies.txt',  # Use the cookies file for authentication
                 youtube_url  # YouTube video URL
             ]
             
