@@ -19,7 +19,7 @@ from api.v1.models.project import ProjectToolsEnum
 video_router = APIRouter(prefix="/tools/video", tags=["Tools"])
 
 @video_router.post('/talking-head/image-upload', status_code=202, response_model=success_response)
-@track_tool_usage(ProjectToolsEnum.image_to_video)
+# @track_tool_usage(ProjectToolsEnum.image_to_video)
 async def talking_head_image_upload(
     request: Request,
     script: str = Form(..., max_length=2500),
@@ -72,15 +72,12 @@ async def talking_head_image_upload(
     return success_response(
         status_code=202,
         message=f"{ProjectToolsEnum.talking_avatar.value} task initiated successfully",
-        data={
-            "job_id": job.id,
-            # "project_id": project.id
-        }
+        data={"job_id": job.id}
     )
 
 
 @video_router.post('/talking-head/avatar-selection', status_code=202, response_model=success_response)
-@track_tool_usage(ProjectToolsEnum.talking_avatar)
+# @track_tool_usage(ProjectToolsEnum.talking_avatar)
 async def talking_head_avatar_selection(
     request: Request,
     schema: TalkingHeadRequest,
@@ -118,8 +115,5 @@ async def talking_head_avatar_selection(
     return success_response(
         status_code=202,
         message=f"{ProjectToolsEnum.talking_avatar.value} task initiated successfully",
-        data={
-            "job_id": job.id,
-            # "project_id": project.id
-        }
+        data={"job_id": job.id}
     )

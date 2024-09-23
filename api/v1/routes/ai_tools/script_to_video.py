@@ -56,7 +56,7 @@ async def generate_video_scenes(
 
 
 @ttv_router.post('/text-to-video/generate-video', status_code=202, response_model=success_response)
-@track_tool_usage(ProjectToolsEnum.script_to_video)
+# @track_tool_usage(ProjectToolsEnum.script_to_video)
 async def convert_script_to_video(
     schema: TTVSchema,
     request: Request,

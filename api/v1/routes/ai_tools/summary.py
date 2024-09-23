@@ -35,7 +35,7 @@ MAX_FILE_SIZE = 25 * 1024 * 1024
     status_code=status.HTTP_202_ACCEPTED,
     response_model=success_response,
 )
-@track_tool_usage(ProjectToolsEnum.pdf_summarizer)
+# @track_tool_usage(ProjectToolsEnum.pdf_summarizer)
 async def summarize_pdf(
     request: Request,
     file: UploadFile = File(...),
@@ -81,7 +81,7 @@ async def summarize_pdf(
 
 
 @summary.post("/summarize-podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)
-@track_tool_usage(ProjectToolsEnum.podcast_summarizer)
+# @track_tool_usage(ProjectToolsEnum.podcast_summarizer)
 async def summarize_podcast(
     schema: PodcastRequest, 
     request: Request,

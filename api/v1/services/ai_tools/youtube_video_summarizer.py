@@ -1,10 +1,6 @@
-import os, requests, csv, yt_dlp, pickle, subprocess
+import os, requests, csv, yt_dlp, pickle, subprocess, requests, json
 from io import BytesIO
-import assemblyai as aai
 from uuid import uuid4
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from google.auth.transport.requests import Request
 
 from api.utils.settings import settings
 from api.utils.pdf_builder import PDFBuilder
@@ -16,69 +12,39 @@ from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
 class YtVidSummarizerService:
     '''Youtube and video summarizer service'''
 
-    # def __init__(self):
-        # aai.settings.api_key = settings.ASSEMBLYAI_API_KEY
-        # self.transcriber = aai.Transcriber()
-
-        # # Authenticate youtube request with Google
-        # CLIENT_SECRETS_FILE = "google_secret.json"
-        # SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
-
-        # credentials = None
-        # token_pickle = 'token.pickle'
-
-        # # Check if we have saved credentials
-        # if os.path.exists(token_pickle):
-        #     with open(token_pickle, 'rb') as token:
-        #         credentials = pickle.load(token)
-
-        # # If no valid credentials are available, let the user log in.
-        # if not credentials or not credentials.valid:
-        #     if credentials and credentials.expired and credentials.refresh_token:
-        #         credentials.refresh(Request())
-        #     else:
-        #         flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
-        #         credentials = flow.run_local_server(host='0.0.0.0', port=7003)
-
-        #     # Save the credentials for the next run
-        #     with open(token_pickle, 'wb') as token:
-        #         pickle.dump(credentials, token)
-
-        # self.oauth_token = credentials.token
-
-
     def get_audio_stream(self, youtube_url: str):
         '''This function gets only the audio stream of the youtube video'''
 
-        # ydl_opts = {
-        #     'format': 'bestaudio/best',
-        #     'noplaylist': True,
-        #     'quiet': True,
-        #     'outtmpl': '-',
-        #     'extractaudio': True,
-        #     'audioformat': 'mp3',
-        #     'postprocessors': [{
-        #         'key': 'FFmpegExtractAudio',
-        #         'preferredcodec': 'mp3',
-        #         'preferredquality': '192',
-        #     }],
-        #     'no_warnings': True,
-        #     # 'http_headers': {
-        #     #     'Authorization': f'Bearer {self.oauth_token}',  # Add the OAuth token to the request
-        #     # },
-        #     # 'cookiefile': 'youtube_cookies.txt',  # Path to the cookies.txt file
-        # }
+    #     # ydl_opts = {
+    #     #     'format': 'bestaudio/best',
+    #     #     'noplaylist': True,
+    #     #     'quiet': True,
+    #     #     'outtmpl': '-',
+    #     #     'extractaudio': True,
+    #     #     'audioformat': 'mp3',
+    #     #     'postprocessors': [{
+    #     #         'key': 'FFmpegExtractAudio',
+    #     #         'preferredcodec': 'mp3',
+    #     #         'preferredquality': '192',
+    #     #     }],
+    #     #     'no_warnings': True,
+    #     #     # 'http_headers': {
+    #     #     #     'Authorization': f'Bearer {self.oauth_token}',  # Add the OAuth token to the request
+    #     #     # },
+    #     #     # 'cookiefile': 'youtube_cookies.txt',  # Path to the cookies.txt file
+    #     # }
 
-        # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        #     try:
-        #         info_dict = ydl.extract_info(youtube_url, download=False)
-        #         audio_url = info_dict['url']
-        #         return audio_url
-        #     except Exception as e:
-        #         raise e
+    #     # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    #     #     try:
+    #     #         info_dict = ydl.extract_info(youtube_url, download=False)
+    #     #         audio_url = info_dict['url']
+    #     #         return audio_url
+    #     #     except Exception as e:
+    #     #         raise e
 
         try:
             output_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
+            # output_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
 
             # The command to run yt-dlp to download audio only
             command = [
@@ -86,9 +52,15 @@ class YtVidSummarizerService:
                 "-x",  # Extract audio
                 "--audio-format", "mp3",  # Specify the audio format (e.g., mp3, m4a, etc.)
                 "-o", output_path,  # Output path where audio will be saved
-                # "--cookies", 'youtube_cookies.txt',  # Use the cookies file for authentication
                 youtube_url  # YouTube video URL
             ]
+
+            # command = [
+            #     "yt-dlp",
+            #     "-f", "worst",  # Specify worst quality video
+            #     "-o", output_path,  # Output path where the video will be saved
+            #     youtube_url  # YouTube video URL
+            # ]
             
             # Run the command using subprocess
             result = subprocess.run(
@@ -98,23 +70,74 @@ class YtVidSummarizerService:
                 stderr=subprocess.PIPE, 
                 text=True
             )  
-            print(result.stdout)  
+            print(result.stdout)
+
             return output_path
         
-        except subprocess.CalledProcessError as e:
-            print(f"An error occurred: {e}")
-            print("Error details:", e.stderr)
+        except subprocess.CalledProcessError as subp_e:
+            print(f"An error occurred")
+            print("Error details:", subp_e.stderr)
+            print('Trying alternative')
+            
+            video_url = self.get_video_stream_alternative(youtube_url)
+            video_file = self.download_video_file(video_url)
+            audio_path = self.extract_audio_from_video(video_file)
+            
+            return audio_path
+        
+        except Exception as e:
             raise e
+        
     
+    def get_video_stream_alternative(self, youtube_url: str):
+        '''Fetch audio url'''
 
-    def download_audio_file(self, audio_url: str):
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0',
+                'Accept': 'application/json',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Referer': 'https://cobalt.tools/',
+                'Content-Type': 'application/json',
+                'Origin': 'https://cobalt.tools',
+                'Connection': 'keep-alive',
+                'Sec-Fetch-Dest': 'empty',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Site': 'same-site',
+                'Priority': 'u=4'
+            }
+            data = {
+                "url": youtube_url
+            }
+            response = requests.post(
+                'https://api.cobalt.tools/', 
+                headers=headers, 
+                data=json.dumps(data)
+            )
+
+            # # Parse response data
+            data = response.json()
+
+            # Check if the response contains a valid download URL
+            if data and 'url' in data:
+                return data['url']
+            else:
+                raise Exception('Error converting video from youtube.com')
+            
+        except Exception as e:
+            raise e
+        
+
+    # def download_audio_file(self, audio_url: str):
+    def download_video_file(self, audio_url: str):
         '''Download audio file from generated audio stream'''
 
         try:
             response = requests.get(audio_url, stream=True)
             response.raise_for_status()  # Check for errors in the response
             
-            file_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
+            # file_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
+            file_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
             with open(file_path, "wb") as file:
                 for chunk in response.iter_content(chunk_size=8192):
                     file.write(chunk)
@@ -123,31 +146,12 @@ class YtVidSummarizerService:
 
         except requests.RequestException as e:
             raise e
-
-    
-    # def download_youtube_video(self, youtube_url: str):
-    #     '''This function downloads a youtube video(s) and saves it to a temporary storage'''
-
-    #     output_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
-    #     ydl_opts = {
-    #         'format': 'worst',  # Select the worst quality
-    #         'outtmpl': output_path,
-    #         'nocheckcertificate': True,
-    #     }
-
-    #     try:
-    #         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-    #             ydl.download([youtube_url])
-    #             return output_path
-            
-    #     except Exception as e:
-    #         raise e 
         
     
     def extract_audio_from_video(self, video_path: str):
         '''This function extracts audio from a video and returns the audio file'''
 
-        output_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}')
+        output_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
         # Use ffmpeg to extract the audio from the video
         ffmpeg_service.extract_audio_from_video(
             input_video=video_path,

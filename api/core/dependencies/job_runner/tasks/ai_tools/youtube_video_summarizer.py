@@ -43,17 +43,17 @@ try:
     for id, link in enumerate(links):
         if vid_type == 'youtube':
             if not batch:
-                save_and_print_job_progress(db, job, 10, 'Extracting audio stream from youtube video')
-            # audio_url = ytvid_service.get_audio_stream(link)
+                save_and_print_job_progress(db, job, 15, 'Extracting audio stream from youtube video')
+            # video_file = ytvid_service.get_video_stream(link)
             audio_file = ytvid_service.get_audio_stream(link)
 
             # if not batch:
-            #     save_and_print_job_progress(db, job, 25, 'Downloading audio file from audio stream')
+            #     save_and_print_job_progress(db, job, 30, 'Extracting audio from downloaded video')
             # # Download audio file
-            # audio_file = ytvid_service.download_audio_file(audio_url)
+            # audio_file = ytvid_service.extract_audio_from_video(video_file)
 
             if not batch:
-                save_and_print_job_progress(db, job, 35, 'Trnascribing audio')
+                save_and_print_job_progress(db, job, 35, 'Transcribing audio')
             transcript = ytvid_service.transcribe_audio(audio_file)
 
         else:
@@ -67,7 +67,7 @@ try:
             audio_file = ytvid_service.extract_audio_from_video(video_file)
 
             if not batch:
-                save_and_print_job_progress(db, job, 35, 'Trnascribing audio')
+                save_and_print_job_progress(db, job, 35, 'Transcribing audio')
             transcript = ytvid_service.transcribe_audio(audio_file)
 
         if not batch:
