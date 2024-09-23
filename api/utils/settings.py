@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 # Use this to build paths inside the project
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 class Settings(BaseSettings):
     """ Class to hold application's config values."""
@@ -35,15 +35,10 @@ class Settings(BaseSettings):
     DB_URL: str = config("DB_URL")
 
     FLUTTERWAVE_SECRET: str = config("FLUTTERWAVE_SECRET")
-    STRIPE_SECRET: str = config("STRIPE_SECRET")
     FLW_SECRET_HASH: str = config("FLW_SECRET_HASH")
-
-    TWILIO_ACCOUNT_SID: str = config("TWILIO_ACCOUNT_SID")
-    TWILIO_AUTH_TOKEN: str = config("TWILIO_AUTH_TOKEN")
-    TWILIO_PHONE_NUMBER: str = config("TWILIO_PHONE_NUMBER")
+    STRIPE_SECRET: str = config("STRIPE_SECRET")
 
     OPENAI_API_KEY: str = config("OPENAI_API_KEY")
-    CELERY_BROKER_URL: str = config("CELERY_BROKER_URL")
     ASSEMBLYAI_API_KEY: str = config("ASSEMBLYAI_API_KEY")
     OPENROUTER_API_KEY: str = config("OPENROUTER_API_KEY")
     GOOEY_API_KEY: str = config("GOOEY_API_KEY")
@@ -51,17 +46,10 @@ class Settings(BaseSettings):
     UNREAL_SPEECH_API_KEY: str = config("UNREAL_SPEECH_API_KEY")
     REPLICATE_API_TOKEN: str = config("REPLICATE_API_TOKEN")
 
-    MEDIA_DIR: str = config("MEDIA_DIR")
-    MAX_FILE_SIZE: int = config("MAX_FILE_SIZE")
-    
-    X_RAPIDAPI_KEY: str = config("X_RAPIDAPI_KEY")
-    X_RAPIDAPI_HOST: str = config("X_RAPIDAPI_HOST")
-
     MINIO_ACCESS_KEY: str = config("MINIO_ACCESS_KEY")
     MINIO_SECRET_KEY: str = config("MINIO_SECRET_KEY")
 
     TEMP_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent, 'tmp', 'media')
-    STORAGE_DIR: str = os.path.join('media', 'downloads')
     FRONTEND_MAGICLINK_URL : str = config("FRONTEND_MAGICLINK_URL")
     
     @property
@@ -70,11 +58,6 @@ class Settings(BaseSettings):
         activate_tool_tracking_str = config("ACTIVATE_TOOL_TRACKING", default="True")
         # Convert the string to a boolean, defaulting to True if conversion fails
         return activate_tool_tracking_str.lower() in {"true", "1", "yes"}  
-      
-    @property
-    def ALLOWED_EXTENSIONS(self) -> set[str]:
-        raw_extensions = config("ALLOWED_EXTENSIONS", default="")
-        return set(ext.strip() for ext in raw_extensions.split(",") if ext.strip())
 
 
 settings = Settings()

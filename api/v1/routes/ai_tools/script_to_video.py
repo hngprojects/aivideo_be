@@ -7,13 +7,11 @@ from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.utils.tool_limiter import track_tool_usage
 from api.utils.success_response import success_response
-from api.v1.services.job import job_service
 from api.v1.services.job import tifi_job_service
 from api.v1.services.ai_tools.script_to_video import ttv_service
 from api.v1.services.presets import preset_service
 from api.v1.models.project import ProjectToolsEnum
 from api.v1.schemas.ai_tools.script_to_video import SceneGeneration, TTVSchema
-from api.core.dependencies.celery.tasks.video_tasks import geenerate_video_from_script_task, generate_video_scenes_task
 
 
 ttv_router = APIRouter(prefix='/tools/video', tags=['Tools'])
@@ -58,7 +56,7 @@ async def generate_video_scenes(
 
 
 @ttv_router.post('/text-to-video/generate-video', status_code=202, response_model=success_response)
-@track_tool_usage(ProjectToolsEnum.script_to_video)
+# @track_tool_usage(ProjectToolsEnum.script_to_video)
 async def convert_script_to_video(
     schema: TTVSchema,
     request: Request,
@@ -91,8 +89,5 @@ async def convert_script_to_video(
     return success_response(
         status_code=202,
         message=f"{ProjectToolsEnum.script_to_video.value} task initiated successfully",
-        data={
-            "job_id": job.id,
-            # "project_id": project.id
-        }
+        data={"job_id": job.id,}
     )

@@ -20,7 +20,8 @@ async def download_file(schema: DownloadRequest):
         
         file_path = os.path.join(settings.TEMP_DIR, schema.file_url.split("/")[-1])
         with open(file_path, "wb") as video_file:
-            video_file.write(response.content)
+            for chunk in response.iter_content(chunk_size=8192):
+                video_file.write(chunk)
 
         # Return the file as a FileResponse
         return FileResponse(

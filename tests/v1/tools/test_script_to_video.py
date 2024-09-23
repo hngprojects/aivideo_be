@@ -9,21 +9,12 @@ from api.v1.routes.ai_tools.talking_avatar import video_router
 client = TestClient(app)
 
 @pytest.mark.asyncio
-# @patch('api.core.dependencies.celery.tasks.video_tasks.geenerate_video_from_script_task.apply_async')
-# @patch('api.v1.services.job.job_service.create_project_with_job')
 @patch('api.v1.services.job.tifi_job_service.create')
 async def test_script_to_video_success_validation_error(
-    # mock_create_project_with_job,
-    # mock_apply_async
     mock_create
 ):
     # Arrange
-    # mock_apply_async.return_value.id = "test_task_id"
-    # mock_create_project_with_job.return_value.id = "test_project_id"
     TifiJob = namedtuple('TifiJob', ['id'])
-    # Project = namedtuple('Project', ['id'])
-
-    # mock_create.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
     mock_create.return_value = TifiJob(id="test_job_id")
 
     # Act
@@ -39,8 +30,6 @@ async def test_script_to_video_success_validation_error(
     
 
 # @pytest.mark.asyncio
-# # @patch('api.core.dependencies.celery.tasks.video_tasks.geenerate_video_from_script_task.apply_async')
-# # @patch('api.v1.services.job.job_service.create_project_with_job')
 # @patch('api.v1.services.job.tifi_job_service.create')
 # @patch('api.v1.services.presets.preset_service.fetch_music_by_id')
 # async def test_script_to_video_success(
@@ -50,14 +39,10 @@ async def test_script_to_video_success_validation_error(
 #     mock_music_by_id
 # ):
 #     # Arrange
-#     # mock_apply_async.return_value.id = "test_task_id"
-#     # mock_create_project_with_job.return_value.id = "test_project_id"
-
 #     TifiJob = namedtuple('TifiJob', ['id'])
-#     Project = namedtuple('Project', ['id'])
 #     BackgroundMusic = namedtuple('BackgroundMusic', ['file_path'])
 
-#     mock_create.return_value = (TifiJob(id="test_job_id"), Project(id="test_project_id"))
+#     mock_create.return_value = TifiJob(id="test_job_id")
 
 #     # Mock the audio object with a file_path attribute
 #     mock_music_by_id.return_value = BackgroundMusic(file_path="path/to/audio/file")

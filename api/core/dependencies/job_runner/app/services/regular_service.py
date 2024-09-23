@@ -7,8 +7,6 @@ from sqlalchemy import asc
 from api.core.dependencies.job_runner.app.job_manager import tool_to_script_mapping
 from api.core.dependencies.job_runner.app.utils import parse_json_string
 from api.db.database import get_db, SessionLocal
-from api.v1.schemas.project import CreateProject
-from api.v1.services.project import project_service
 from api.v1.services.user import user_service
 from api.v1.services.notification import notification_service
 from api.v1.services.job import tifi_job_service
@@ -92,16 +90,6 @@ def process_job(job_id: str, with_lock: bool = False):
         job.status = JobStatus.completed
         job.result = parse_json_string(output)
         db.commit()
-
-        # ------- PROJECT PROCESSING -------
-        # if job.project_id:
-        #     # Get project
-        #     project = project_service.fetch(db, job.project_id)
-        #     # Update project result
-        #     project.result = parse_json_string(output)
-        #     project.is_active = True
-
-        #     db.commit()
 
         if job.user_id:
             # Send notification to the user            

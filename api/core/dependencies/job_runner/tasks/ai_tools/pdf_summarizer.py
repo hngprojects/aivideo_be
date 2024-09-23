@@ -2,8 +2,7 @@ import json, sys
 from uuid import uuid4
 from api.utils.files import delete_file
 from api.utils import mime_types
-from api.v1.models.job import JobStatus
-from api.v1.services.ai_tools.summary import pdf_summary_service
+from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
 from api.db.database import get_db
 from api.utils.minio_service import minio_service
 from api.v1.services.job import tifi_job_service
@@ -19,6 +18,7 @@ job = tifi_job_service.fetch(db, job_id)
 save_and_print_job_progress(db, job, 0, 'Job started')
 
 pdf_file_url = payload.get('pdf_file_url')
+detail_level = payload.get('detail_level')
 
 save_and_print_job_progress(db, job, 10, f'Downloading and opening PDF file from {pdf_file_url}')
 pdf_file_path = minio_service.download_file_from_minio(pdf_file_url)
@@ -36,7 +36,7 @@ try:
     save_and_print_job_progress(db, job, 50, 'Generating summary for PDF chunks')
     summaries = []
     for chunk in chunks:
-        summary = pdf_summary_service.summarize_text(chunk)
+        summary = pdf_summary_service.summarize_text(chunk, detail_level=detail_level)
         summaries.append(summary)
 
     # Combine the summaries
