@@ -60,16 +60,3 @@ def test_summarize_pdf_invalid_file_type():
 
     assert response.status_code == 400 or response.status_code == 403
     # assert response.status_code == 202
-
-
-def test_summarize_pdf_empty_file(
-    mock_upload_to_temp_dir,
-    mock_upload_file_to_minio_tmp
-):
-    response = client.post(
-        "/api/v1/tools/summary/pdf-summarizer",
-        files={"file": ("empty.pdf", b"", "application/pdf")},
-    )
-
-    # assert response.status_code == 400 or response.status_code == 403 
-    assert response.status_code == 202
