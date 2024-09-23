@@ -44,12 +44,13 @@ try:
         if vid_type == 'youtube':
             if not batch:
                 save_and_print_job_progress(db, job, 10, 'Extracting audio stream from youtube video')
-            audio_url = ytvid_service.get_audio_stream(link)
+            # audio_url = ytvid_service.get_audio_stream(link)
+            audio_file = ytvid_service.get_audio_stream(link)
 
-            if not batch:
-                save_and_print_job_progress(db, job, 25, 'Downloading audio file from audio stream')
-            # Download audio file
-            audio_file = ytvid_service.download_audio_file(audio_url)
+            # if not batch:
+            #     save_and_print_job_progress(db, job, 25, 'Downloading audio file from audio stream')
+            # # Download audio file
+            # audio_file = ytvid_service.download_audio_file(audio_url)
 
             if not batch:
                 save_and_print_job_progress(db, job, 35, 'Trnascribing audio')
@@ -167,4 +168,3 @@ finally:
         delete_file(video_file)
     if audio_file:
         delete_file(audio_file)
-        

@@ -1,4 +1,4 @@
-import os, requests, csv, yt_dlp, pickle
+import os, requests, csv, yt_dlp, pickle, subprocess
 from io import BytesIO
 import assemblyai as aai
 from uuid import uuid4
@@ -50,34 +50,63 @@ class YtVidSummarizerService:
     def get_audio_stream(self, youtube_url: str):
         '''This function gets only the audio stream of the youtube video'''
 
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'noplaylist': True,
-            'quiet': True,
-            'outtmpl': '-',
-            'extractaudio': True,
-            'audioformat': 'mp3',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'no_warnings': True,
-            # 'http_headers': {
-            #     'Authorization': f'Bearer {self.oauth_token}',  # Add the OAuth token to the request
-            # },
-            # 'cookiefile': 'youtube_cookies.txt',  # Path to the cookies.txt file
-        }
+        # ydl_opts = {
+        #     'format': 'bestaudio/best',
+        #     'noplaylist': True,
+        #     'quiet': True,
+        #     'outtmpl': '-',
+        #     'extractaudio': True,
+        #     'audioformat': 'mp3',
+        #     'postprocessors': [{
+        #         'key': 'FFmpegExtractAudio',
+        #         'preferredcodec': 'mp3',
+        #         'preferredquality': '192',
+        #     }],
+        #     'no_warnings': True,
+        #     # 'http_headers': {
+        #     #     'Authorization': f'Bearer {self.oauth_token}',  # Add the OAuth token to the request
+        #     # },
+        #     # 'cookiefile': 'youtube_cookies.txt',  # Path to the cookies.txt file
+        # }
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            try:
-                info_dict = ydl.extract_info(youtube_url, download=False)
-                audio_url = info_dict['url']
-                return audio_url
-            except Exception as e:
-                raise e
+        # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        #     try:
+        #         info_dict = ydl.extract_info(youtube_url, download=False)
+        #         audio_url = info_dict['url']
+        #         return audio_url
+        #     except Exception as e:
+        #         raise e
+
+        try:
+            output_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
+
+            # The command to run yt-dlp to download audio only
+            command = [
+                "yt-dlp",
+                "-x",  # Extract audio
+                "--audio-format", "mp3",  # Specify the audio format (e.g., mp3, m4a, etc.)
+                "-o", output_path,  # Output path where audio will be saved
+                "--cookies", 'youtube_cookies.txt',  # Use the cookies file for authentication
+                youtube_url  # YouTube video URL
+            ]
+            
+            # Run the command using subprocess
+            result = subprocess.run(
+                command, 
+                check=True,
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE, 
+                text=True
+            )  
+            print(result.stdout)  
+            return output_path
         
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred: {e}")
+            print("Error details:", e.stderr)
+            raise e
     
+
     def download_audio_file(self, audio_url: str):
         '''Download audio file from generated audio stream'''
 
