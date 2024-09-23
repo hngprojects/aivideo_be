@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 import assemblyai as aai
 from uuid import uuid4
 from langchain_community.document_loaders import AssemblyAIAudioTranscriptLoader
@@ -11,7 +13,8 @@ from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
 class AudioSummaryService:
 
     def __init__(self):
-        aai.settings.api_key = settings.ASSEMBLYAI_API_KEY
+        load_dotenv()
+        aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
         self.transcriber = aai.Transcriber()
 
     
