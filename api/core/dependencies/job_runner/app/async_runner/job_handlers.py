@@ -3,7 +3,7 @@ import requests
 from api.core.dependencies.job_runner.app.async_runner import thread_config
 from api.core.dependencies.job_runner.app.services import regular_service
 from api.utils.settings import settings
-from api.core.dependencies.job_runner.app.logger import logger
+from api.log.job_error_logger import job_error_logger
 from api.db.database import get_db
 from api.v1.models.job import JobStatus
 from api.v1.services.job import tifi_job_service
@@ -26,11 +26,11 @@ def fetch_and_mark_jobs_as_processing(fetch_parallel: bool=True):
             
             return jobs
         else:
-            logger.error(f'Error retrieving jobs: {response.status_code} - {response.json()} - {url}')
+            job_error_logger.error(f'Error retrieving jobs: {response.status_code} - {response.json()} - {url}')
             return None
         
     except Exception as e:
-        logger.error(f'Error fetching and marking jobs as processing: {str(e)}')
+        job_error_logger.error(f'Error fetching and marking jobs as processing: {str(e)}')
         return None
 
 

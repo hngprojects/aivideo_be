@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware  # required by google oauth
-from api.utils.logger import logger
+from api.log.app_logger import error_logger
 from api.utils.success_response import success_response
 from api.v1.routes import api_version_one
 from api.utils.settings import settings
@@ -148,7 +148,7 @@ async def validation_exception(request: Request, exc: RequestValidationError):
 async def integrity_exception(request: Request, exc: IntegrityError):
     """Integrity error exception handlers"""
 
-    logger.exception(f"Exception occured; {exc}")
+    error_logger.exception(f"Exception occured; {exc}")
 
     return JSONResponse(
         status_code=400,
@@ -164,7 +164,7 @@ async def integrity_exception(request: Request, exc: IntegrityError):
 async def exception(request: Request, exc: Exception):
     """Other exception handlers"""
 
-    logger.exception(f"Exception occured; {exc}")
+    error_logger.exception(f"Exception occured; {exc}")
 
     return JSONResponse(
         status_code=500,

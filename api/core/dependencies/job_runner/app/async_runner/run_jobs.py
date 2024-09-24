@@ -30,7 +30,7 @@ from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 from api.core.dependencies.job_runner.app.async_runner import job_handlers
-from api.core.dependencies.job_runner.app.logger import logger
+from api.log.job_error_logger import job_error_logger
 from api.utils.settings import settings
 
 
@@ -63,7 +63,7 @@ def job_runner():
             job_available_event.clear()
 
         except Exception as e:
-            logger.error(f"Error processing jobs: {e}")
+            job_error_logger.error(f"Error processing jobs: {e}")
         
         finally:
             # Delay before next execution
