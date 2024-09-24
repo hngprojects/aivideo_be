@@ -49,7 +49,8 @@ def run_job_script(job: TifiJob):
         # Stream output in real-time
         result_output = ''
         for line in iter(process.stdout.readline, ''):
-            print(line)
+            # print(line)
+            job_info_logger.info(line)
             result_output = line.strip()  # get the last line printed out to the console
 
         # Ensure the process is finished
@@ -128,8 +129,8 @@ def process_job(job_id: str, with_lock: bool = False):
                 type='warning'
             )
         
-        print(f'Job with {job.id} for tool {job.tool_name} failed')
-        print(f'An exception occured: {str(e)}')
+        # print(f'Job with {job.id} for tool {job.tool_name} failed')
+        # print(f'An exception occured: {str(e)}')
         job_info_logger.info(f'Error processing job {job_id}: {str(e)}')
 
 

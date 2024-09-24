@@ -100,7 +100,8 @@ class PDFSummaryService:
             str: The summarized version of the input text
         """
 
-        prompt = f'Generate a {detail_level} summary of the following text: {text}. Separate the summary into paragraphs if need be but do not add anything else except the summary alone.'
+        prompt = f'Generate a {detail_level} summary of the following text: {text}. Separate the summary into paragraphs if need be but do not add anything else except the summary alone. Although, please ensure that the summary is shorter than the text itself.'
+        
         response = self.client.chat.completions.create(
             model="openai/gpt-4o-mini",
             messages=[
