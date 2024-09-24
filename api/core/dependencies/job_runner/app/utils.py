@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from api.v1.models.job import TifiJob
-from api.log.job_info_logger import job_info_logger
+from api.loggers.job_info_logger import job_info_logger
 
 
 def save_and_print_job_progress(

@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware  # required by google oauth
-from api.log.app_logger import error_logger
+from api.loggers.app_logger import error_logger
 from api.utils.success_response import success_response
 from api.v1.routes import api_version_one
 from api.utils.settings import settings

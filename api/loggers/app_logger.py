@@ -4,7 +4,7 @@ import logging
 logging.basicConfig(
     level=logging.ERROR,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("job_logs.log"), logging.StreamHandler()],
+    handlers=[logging.FileHandler("logs/app_logs.log"), logging.StreamHandler()],
 )
 
-job_error_logger = logging.getLogger(__name__)
+error_logger = logging.getLogger(__name__)

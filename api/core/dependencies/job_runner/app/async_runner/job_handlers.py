@@ -3,7 +3,7 @@ import requests
 from api.core.dependencies.job_runner.app.async_runner import thread_config
 from api.core.dependencies.job_runner.app.services import regular_service
 from api.utils.settings import settings
-from api.log.job_error_logger import job_error_logger
+from api.loggers.job_error_logger import job_error_logger
 from api.db.database import get_db
 from api.v1.models.job import JobStatus
 from api.v1.services.job import tifi_job_service

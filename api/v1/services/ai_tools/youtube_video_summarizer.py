@@ -7,7 +7,7 @@ from api.utils.pdf_builder import PDFBuilder
 from api.v1.services.ffmpeg_tools import ffmpeg_service
 from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
 from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
-from api.log.job_info_logger import job_info_logger
+from api.loggers.job_info_logger import job_info_logger
 
 
 class YtVidSummarizerService:

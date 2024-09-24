@@ -30,7 +30,7 @@ from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 from api.core.dependencies.job_runner.app.async_runner import job_handlers
-from api.log.job_error_logger import job_error_logger
+from api.loggers.job_error_logger import job_error_logger
 from api.utils.settings import settings
 
 

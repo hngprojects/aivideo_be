@@ -11,7 +11,7 @@ from api.v1.services.user import user_service
 from api.v1.services.notification import notification_service
 from api.v1.services.job import tifi_job_service
 from api.v1.models.job import TifiJob, JobStatus
-from api.log.job_info_logger import job_info_logger
+from api.loggers.job_info_logger import job_info_logger
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent
