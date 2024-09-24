@@ -14,7 +14,6 @@ def save_and_print_job_progress(
 ):
     if progress_info:
         print(f'Job {job.id} progress information: {progress_info}')
-        job_info_logger.info(f'Job {job.id} progress information: {progress_info}')
         
         job.status_message = progress_info
         db.commit()
@@ -25,7 +24,6 @@ def save_and_print_job_progress(
     db.refresh(job)
 
     print(f'Job {job.id} progress: {job.progress}')
-    job_info_logger.info(f'Job {job.id} progress: {job.progress}')
 
 
 def parse_json_string(output: str):
