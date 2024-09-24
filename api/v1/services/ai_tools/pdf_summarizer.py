@@ -24,7 +24,7 @@ class PDFSummaryService:
     def get_reading_time(self, text: str):
         '''This function gets the reading time of a text'''
 
-        read_time = round(len(text.split()) / 250)
+        read_time = round(len(text.split()) / 250) 
         return read_time
 
     
@@ -101,7 +101,7 @@ class PDFSummaryService:
         """
 
         prompt = f'Generate a {detail_level} summary of the following text: {text}. Separate the summary into paragraphs if need be but do not add anything else except the summary alone. Although, please ensure that the summary is shorter than the text itself.'
-        
+
         response = self.client.chat.completions.create(
             model="openai/gpt-4o-mini",
             messages=[
