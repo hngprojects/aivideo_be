@@ -31,7 +31,7 @@ videos_list = []  # to store list of dictionaries for every processed video data
 final_result = {}  # for batch upload
 
 number_of_videos_to_process = len(links)
-progress_per_video = round(100 / number_of_videos_to_process)
+progress_per_video = round(95 / number_of_videos_to_process)
 
 # Set up save path for csv file for batch upload
 csv_save_path = os.path.join(settings.TEMP_DIR, f"ytvidsum-{uuid4()}.csv")
@@ -44,13 +44,7 @@ try:
         if vid_type == 'youtube':
             if not batch:
                 save_and_print_job_progress(db, job, 15, 'Extracting audio stream from youtube video')
-            # video_file = ytvid_service.get_video_stream(link)
             audio_file = ytvid_service.get_audio_stream(link)
-
-            # if not batch:
-            #     save_and_print_job_progress(db, job, 30, 'Extracting audio from downloaded video')
-            # # Download audio file
-            # audio_file = ytvid_service.extract_audio_from_video(video_file)
 
             if not batch:
                 save_and_print_job_progress(db, job, 35, 'Transcribing audio')
@@ -120,8 +114,8 @@ try:
             "transcript": transcript_with_timestamp,
             "transcript_word_count": len(transcript.split()),
             'subtitles': transcript_with_timestamp_srt,
-            "pdf_preview_url": pdf_preview_url,
-            "pdf_download_url": pdf_download_url
+            "preview_url": pdf_preview_url,
+            "download_url": pdf_download_url
         }
 
         if batch:
@@ -130,7 +124,7 @@ try:
             save_and_print_job_progress(
                 db, 
                 job, 
-                progress = 95 if id+1 == len(links) else (id+1) * progress_per_video, 
+                progress = (id+1) * progress_per_video, 
                 progress_info = f'Video {id+1} of {number_of_videos_to_process} processed'
             )
 
@@ -154,8 +148,8 @@ try:
 
         # Add csv file to the result 
         final_result['csv'] = {
-            "csv_preview_url": csv_preview_url,
-            "csv_download_url": csv_download_url,
+            "preview_url": csv_preview_url,
+            "download_url": csv_download_url,
         }
 
     print(json.dumps(final_result if batch else video_data))

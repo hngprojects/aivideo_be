@@ -8,10 +8,6 @@ from openai import OpenAI
 from io import BytesIO
 
 import PyPDF2, tiktoken
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
 
 class PDFSummaryService:
@@ -104,11 +100,7 @@ class PDFSummaryService:
             str: The summarized version of the input text
         """
 
-        # if detail_level == 'short':
         prompt = f'Generate a {detail_level} summary of the following text: {text}. Separate the summary into paragraphs if need be but do not add anything else except the summary alone.'
-        # else:
-            # prompt = f'Generate a very detailed summary of the following text: {text}. Separate the summary into paragraphs if need be but do not add anything else except the summary alone.'
-
         response = self.client.chat.completions.create(
             model="openai/gpt-4o-mini",
             messages=[

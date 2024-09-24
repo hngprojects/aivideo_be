@@ -15,6 +15,7 @@ tool_to_script_mapping = {
     tools.podcast_summarizer.value: f'{AI_TOOLS_BASE_DIR}/podcast_summarizer.py',
     tools.youtube_video_summarizer.value: f'{AI_TOOLS_BASE_DIR}/youtube_video_summarizer.py',
     tools.pdf_summarizer.value: f'{AI_TOOLS_BASE_DIR}/pdf_summarizer.py',
+    tools.article_translator.value: f'{AI_TOOLS_BASE_DIR}/article_translator.py',
 
     # FFMPEG TOOLS
     tools.audio_extractor.value: f'{FFMPEG_BASE_DIR}/audio_extractor.py',
