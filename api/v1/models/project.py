@@ -14,6 +14,7 @@ class ProjectToolsEnum(str, Enum):
     image_to_video = "Image To Video"
     podcast_summarizer = "Podcast Summarizer"
     pdf_summarizer = "PDF Summarizer"
+    article_translator = "Article Translator"
 
     # FFMPEG TOOLS
     audio_extractor = 'Audio Extractor'

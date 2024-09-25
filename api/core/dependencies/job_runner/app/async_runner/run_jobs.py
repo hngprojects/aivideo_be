@@ -27,11 +27,12 @@ print('\n')
 import threading, asyncio
 from uvicorn import Config, Server
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, StreamingResponse
 from starlette.routing import Route
 from api.core.dependencies.job_runner.app.async_runner import job_handlers
-from api.core.dependencies.job_runner.app.logger import logger
+from api.loggers.job_error_logger import job_error_logger
 from api.utils.settings import settings
+from api.utils.log_streamer import log_streamer
 
 
 job_available_event = threading.Event()
@@ -63,7 +64,7 @@ def job_runner():
             job_available_event.clear()
 
         except Exception as e:
-            logger.error(f"Error processing jobs: {e}")
+            job_error_logger.error(f"Error processing jobs: {e}")
         
         finally:
             # Delay before next execution
@@ -90,11 +91,20 @@ def notify_new_job(request):
         content={"message": "Job notification received, processing jobs"}
     )
 
+# Endpoint to stream logs
+async def stream_logs(request):
+    """Stream the log file to the client."""
+
+    return StreamingResponse(log_streamer('logs/job_info_logs.log'), media_type="text/plain")
 
 # Starlette app definition
 app = Starlette(debug=True, routes=[
     Route('/notify-job', notify_new_job, methods=['GET']),
+    Route('/logs', stream_logs, methods=['GET']),
 ])
+
+# -------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 
 # Set up port to listen for job notifications
 def job_listener():

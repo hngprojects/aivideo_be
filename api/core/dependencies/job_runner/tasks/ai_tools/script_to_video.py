@@ -29,15 +29,6 @@ if audio_url:
     background_audio = minio_service.download_file_from_minio(audio_url)
 
 
-# Run task
-# result = ttv_service.process_script(
-#     script=payload.get('script'),
-#     scenes=payload.get('scenes'),
-#     voice_over=payload.get('voice_over'),
-#     aspect_ratio=payload.get('aspect_ratio'),
-#     background_audio=background_audio
-# )
-
 script=payload.get('script')
 scenes=payload.get('scenes')
 voice_over=payload.get('voice_over')

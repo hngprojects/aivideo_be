@@ -3,20 +3,21 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware  # required by google oauth
-from api.utils.logger import logger
+from api.loggers.app_logger import app_logger
 from api.utils.success_response import success_response
 from api.v1.routes import api_version_one
 from api.utils.settings import settings
 from starlette.middleware.base import BaseHTTPMiddleware
 from collections import defaultdict
 from scripts.presets import load_avatars_in_db, load_audio_in_db, load_billing_plans_in_db
+from api.utils.log_streamer import log_streamer
 
 
 @asynccontextmanager
@@ -55,15 +56,6 @@ async def get_request_stats():
         message="Endpoints request retreived successfully", 
         data={"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}}
     )
-
-
-# Initialize the limiter
-# limiter = Limiter(key_func=get_remote_address)
-
-# Register the rate limit exceeded handler
-# app.state.limiter = limiter
-# app.add_exception_handler(RateLimitExceeded, lambda request, exc: JSONResponse({"detail": "Rate limit exceeded"}, status_code=429))
-# app.add_middleware(SlowAPIMiddleware)
 
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')
@@ -108,11 +100,19 @@ async def get_root(request: Request) -> dict:
         data={"URL": ""}
     )
 
+@app.get("/logs", tags=["Home"])
+async def stream_logs():
+    '''Endpoint to stream logs'''
+    
+    return StreamingResponse(log_streamer('logs/app_logs.log'), media_type="text/plain")
+
 
 # REGISTER EXCEPTION HANDLERS
 @app.exception_handler(HTTPException)
 async def http_exception(request: Request, exc: HTTPException):
     """HTTP exception handler"""
+
+    app_logger.info(f"HTTPException: {request.url.path} | {exc.status_code} | {exc.detail}")
 
     return JSONResponse(
         status_code=exc.status_code,
@@ -133,6 +133,8 @@ async def validation_exception(request: Request, exc: RequestValidationError):
         for error in exc.errors()
     ]
 
+    app_logger.info(f"RequestValidationError: {request.url.path} | {errors}")
+
     return JSONResponse(
         status_code=422,
         content={
@@ -148,7 +150,7 @@ async def validation_exception(request: Request, exc: RequestValidationError):
 async def integrity_exception(request: Request, exc: IntegrityError):
     """Integrity error exception handlers"""
 
-    logger.exception(f"Exception occured; {exc}")
+    app_logger.info(f"Exception occured: {request.url.path} | {exc}")
 
     return JSONResponse(
         status_code=400,
@@ -164,7 +166,7 @@ async def integrity_exception(request: Request, exc: IntegrityError):
 async def exception(request: Request, exc: Exception):
     """Other exception handlers"""
 
-    logger.exception(f"Exception occured; {exc}")
+    app_logger.info(f"Exception occured | {request.url.path} | {exc}")
 
     return JSONResponse(
         status_code=500,

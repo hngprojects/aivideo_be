@@ -3,6 +3,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from api.v1.models.job import TifiJob
+from api.loggers.job_info_logger import job_info_logger
 
 
 def save_and_print_job_progress(
@@ -13,6 +14,7 @@ def save_and_print_job_progress(
 ):
     if progress_info:
         print(f'Job {job.id} progress information: {progress_info}')
+        
         job.status_message = progress_info
         db.commit()
         db.refresh(job)

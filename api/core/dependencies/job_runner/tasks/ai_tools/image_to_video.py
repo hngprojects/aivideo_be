@@ -2,6 +2,7 @@ import sys, json, os
 from uuid import uuid4
 from api.utils.files import delete_file
 from api.v1.models.job import JobStatus
+from api.v1.services.ai_tools.general import general_service
 from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
 from api.v1.services.ai_tools.general_video_service import video_service
 from api.db.database import get_db
@@ -50,8 +51,12 @@ try:
 
     save_and_print_job_progress(db, job, 45, 'Downloading and saving generated video')
     # Download video file to the current directory
-    initial_save_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4())}.mp4')
-    video_service.download_file(url, initial_save_path)
+    initial_save_path = general_service.download_file(
+        url=url,
+        extension='mp4',
+        prefix_file_name='video'
+    )
+    # video_service.download_file(url, initial_save_path)
 
     if audio_file:
         save_and_print_job_progress(db, job, 60, 'Applying background audio')

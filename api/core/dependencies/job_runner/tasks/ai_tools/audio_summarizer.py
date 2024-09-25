@@ -2,7 +2,7 @@ import json, sys
 from uuid import uuid4
 
 from api.utils.files import delete_file
-from api.v1.services.ai_tools.podcast_summarizer import podcast_summary_service
+from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
 from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
 from api.utils import mime_types
 from api.db.database import get_db
@@ -19,35 +19,31 @@ job = tifi_job_service.fetch(db, job_id)
 
 save_and_print_job_progress(db, job, 0, 'Job started')
 
-podcast_url = payload.get('podcast_url')
+audio_url = payload.get('audio_url')
 detail_level = payload.get('detail_level')
 
+save_and_print_job_progress(db, job, 10, f'Downloading and opening audio file from {audio_url}')
+audio_file = minio_service.download_file_from_minio(audio_url)
 
 try:
-    save_and_print_job_progress(db, job, 10, 'Getting audio url for download')
-    audio_url = podcast_summary_service.get_audio_url(podcast_url)
-
-    save_and_print_job_progress(db, job, 20, f'Downloading audio file from {audio_url}')
-    audio_file = podcast_summary_service.download_audio(audio_url)
-
-    save_and_print_job_progress(db, job, 35, 'Transcribing audio')
-    transcript = podcast_summary_service.transcribe_audio(audio_file)
+    save_and_print_job_progress(db, job, 30, 'Transcribing audio')
+    transcript = audio_summary_service.transcribe_audio(audio_file)
         
     save_and_print_job_progress(db, job, 45, 'Summarizing transcript')
-    transcript_summary = podcast_summary_service.summarize_transcript(transcript, detail_level=detail_level)
+    transcript_summary = audio_summary_service.summarize_transcript(transcript, detail_level=detail_level)
 
     save_and_print_job_progress(db, job, 55, 'Generating transcript with timestamp')
-    transcript_with_timestamp = podcast_summary_service.generate_transcript_with_timestamp(audio_file)
+    transcript_with_timestamp = audio_summary_service.generate_transcript_with_timestamp(audio_file)
     
     save_and_print_job_progress(db, job, 65, 'Saving to PDF')
-    pdf_file = podcast_summary_service.save_to_pdf(
+    pdf_file = audio_summary_service.save_to_pdf(
         transcript=transcript_with_timestamp,
         summary=transcript_summary,
     )
 
     save_and_print_job_progress(db, job, 75, 'Uploading PDF file for storage')
     save_url, download_url = minio_service.upload_to_minio(
-        folder_name="podcast-summary",
+        folder_name="audio-summary",
         source_file=pdf_file,
         destination_file=f"podsum-{str(uuid4())}.pdf",
         content_type=mime_types.APPLICATION_PDF,
@@ -60,7 +56,6 @@ try:
 
     save_and_print_job_progress(db, job, 90, 'Cleaning up')
     delete_file(pdf_file)
-    delete_file(audio_file)
 
     save_and_print_job_progress(db, job, 95, 'Fetching result')
     result = json.dumps({
@@ -75,3 +70,6 @@ try:
 
 except Exception as e:
     raise e
+
+finally:
+    delete_file(audio_file)

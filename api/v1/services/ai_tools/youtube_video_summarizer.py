@@ -1,12 +1,14 @@
-import os, requests, csv, yt_dlp, pickle, subprocess, requests, json
+import os, requests, csv, yt_dlp, subprocess, requests, json
 from io import BytesIO
 from uuid import uuid4
 
 from api.utils.settings import settings
 from api.utils.pdf_builder import PDFBuilder
+from api.v1.services.ai_tools.general import general_service
 from api.v1.services.ffmpeg_tools import ffmpeg_service
 from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
 from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
+from api.loggers.job_info_logger import job_info_logger
 
 
 class YtVidSummarizerService:
@@ -14,33 +16,6 @@ class YtVidSummarizerService:
 
     def get_audio_stream(self, youtube_url: str):
         '''This function gets only the audio stream of the youtube video'''
-
-    #     # ydl_opts = {
-    #     #     'format': 'bestaudio/best',
-    #     #     'noplaylist': True,
-    #     #     'quiet': True,
-    #     #     'outtmpl': '-',
-    #     #     'extractaudio': True,
-    #     #     'audioformat': 'mp3',
-    #     #     'postprocessors': [{
-    #     #         'key': 'FFmpegExtractAudio',
-    #     #         'preferredcodec': 'mp3',
-    #     #         'preferredquality': '192',
-    #     #     }],
-    #     #     'no_warnings': True,
-    #     #     # 'http_headers': {
-    #     #     #     'Authorization': f'Bearer {self.oauth_token}',  # Add the OAuth token to the request
-    #     #     # },
-    #     #     # 'cookiefile': 'youtube_cookies.txt',  # Path to the cookies.txt file
-    #     # }
-
-    #     # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-    #     #     try:
-    #     #         info_dict = ydl.extract_info(youtube_url, download=False)
-    #     #         audio_url = info_dict['url']
-    #     #         return audio_url
-    #     #     except Exception as e:
-    #     #         raise e
 
         try:
             output_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
@@ -54,13 +29,6 @@ class YtVidSummarizerService:
                 "-o", output_path,  # Output path where audio will be saved
                 youtube_url  # YouTube video URL
             ]
-
-            # command = [
-            #     "yt-dlp",
-            #     "-f", "worst",  # Specify worst quality video
-            #     "-o", output_path,  # Output path where the video will be saved
-            #     youtube_url  # YouTube video URL
-            # ]
             
             # Run the command using subprocess
             result = subprocess.run(
@@ -71,18 +39,23 @@ class YtVidSummarizerService:
                 text=True
             )  
             print(result.stdout)
+            job_info_logger.info(result.stdout)
 
             return output_path
         
         except subprocess.CalledProcessError as subp_e:
-            print(f"An error occurred")
-            print("Error details:", subp_e.stderr)
-            print('Trying alternative')
+            job_info_logger.info(f"An error occurred")
+            job_info_logger.info(f"Error details: {subp_e.stderr}")
+            job_info_logger.info('Trying alternative')
             
             video_url = self.get_video_stream_alternative(youtube_url)
+
+            job_info_logger.info('Downloading video')
             video_file = self.download_video_file(video_url)
+
+            job_info_logger.info('Extracting audio from video')
             audio_path = self.extract_audio_from_video(video_file)
-            
+
             return audio_path
         
         except Exception as e:
@@ -129,23 +102,29 @@ class YtVidSummarizerService:
         
 
     # def download_audio_file(self, audio_url: str):
-    def download_video_file(self, audio_url: str):
+    def download_video_file(self, video_url: str):
         '''Download audio file from generated audio stream'''
 
-        try:
-            response = requests.get(audio_url, stream=True)
-            response.raise_for_status()  # Check for errors in the response
+        # try:
+        #     response = requests.get(audio_url, stream=True)
+        #     response.raise_for_status()  # Check for errors in the response
             
-            # file_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
-            file_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
-            with open(file_path, "wb") as file:
-                for chunk in response.iter_content(chunk_size=8192):
-                    file.write(chunk)
+        #     # file_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
+        #     file_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
+        #     with open(file_path, "wb") as file:
+        #         for chunk in response.iter_content(chunk_size=8192):
+        #             file.write(chunk)
 
-            return file_path
+        #     return file_path
 
-        except requests.RequestException as e:
-            raise e
+        # except requests.RequestException as e:
+        #     raise e
+
+        general_service.download_file(
+            url=video_url,
+            extension='mp4',
+            prefix_file_name='ytaud'
+        )
         
     
     def extract_audio_from_video(self, video_path: str):
@@ -187,37 +166,15 @@ class YtVidSummarizerService:
     def save_transcript_and_summary_to_pdf(
         self, 
         transcript: str, 
-        summary: str, 
-        transcript_with_timestamp: str
+        summary: str
     ):
         '''This function saves the transcript and summary of the transcript to a pdf file'''
 
-        pdf_buffer = BytesIO()
-        pdf_builder = PDFBuilder(pdf_buffer)
-
-        file_path = os.path.join(settings.TEMP_DIR, f"ytvidsum-{uuid4()}.pdf")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-        # Add transcript to pdf file
-        pdf_builder.add_section(title='Transcript', text=transcript)
-
-        # Add summary to pdf file
-        pdf_builder.add_section(title='Summary', text=summary)
-
-        # Add transcript with timestamp to pdf file
-        pdf_builder.add_section(title='Transcript with Timestamp', text=transcript_with_timestamp)
-
-        # Build pdf
-        pdf_builder.build()
-
-        # Save the PDF content to a file
-        pdf_buffer.seek(0)
-        with open(file_path, "wb") as f:
-            f.write(pdf_buffer.read())
-
-        pdf_buffer.close()
-
-        return file_path
+        return audio_summary_service.save_to_pdf(
+            summary=summary,
+            transcript=transcript,
+            prefix_file_name='ytvidsum'
+        )
     
 
     def save_transcript_and_summary_to_csv(
@@ -229,7 +186,7 @@ class YtVidSummarizerService:
         save_path: str
     ):
         '''This function saves the transcript and summary of the transcript to a csv file'''
-
+        
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
         # Check if the file already exists
