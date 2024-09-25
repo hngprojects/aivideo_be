@@ -121,7 +121,7 @@ async def get_root(request: Request) -> dict:
     )
 
 
-@app.get("/request-stats", response_class=success_response, tags=["Home"])
+@app.get("/request-stats", response_model=success_response, tags=["Home"])
 async def get_request_stats():
     '''Endpoint to get request stats'''
 
