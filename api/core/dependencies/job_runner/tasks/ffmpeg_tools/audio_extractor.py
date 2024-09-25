@@ -66,4 +66,5 @@ except Exception as e:
     raise e
 
 finally:
-    delete_file(video_file)
+    if video_file:
+        delete_file(video_file)
