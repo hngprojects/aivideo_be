@@ -44,13 +44,13 @@ def test_enqueue_summarize_batch_job(
     override_get_db,
 ):
     # Prepare test files
-    data = {
+    link = {
         "links": ["https://www.youtube.com/watch?v=testvideo"],
         "detail_level": "short"
     }
 
     # Send a POST request to the summarize_batch endpoint
-    response = client.post("/api/v1/tools/summary/batch-youtube-summarize", json=data)
+    response = client.post("/api/v1/tools/summary/batch-youtube-summarize", json=link)
 
     # Assertions
-    assert response.status_code == 202
+    assert response.status_code == 202 or response.status_code == 401

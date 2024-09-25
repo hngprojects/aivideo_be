@@ -8,10 +8,6 @@ from openai import OpenAI
 from io import BytesIO
 
 import PyPDF2, tiktoken
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
 
 class PDFSummaryService:
@@ -28,7 +24,7 @@ class PDFSummaryService:
     def get_reading_time(self, text: str):
         '''This function gets the reading time of a text'''
 
-        read_time = round(len(text.split()) / 250)
+        read_time = round(len(text.split()) / 250) 
         return read_time
 
     
@@ -104,10 +100,7 @@ class PDFSummaryService:
             str: The summarized version of the input text
         """
 
-        # if detail_level == 'short':
-        prompt = f'Generate a {detail_level} summary of the following text: {text}. Separate the summary into paragraphs if need be but do not add anything else except the summary alone.'
-        # else:
-            # prompt = f'Generate a very detailed summary of the following text: {text}. Separate the summary into paragraphs if need be but do not add anything else except the summary alone.'
+        prompt = f'Generate a {detail_level} summary of the following text: {text}. Separate the summary into paragraphs if need be but do not add anything else except the summary alone. Although, please ensure that the summary is shorter than the text itself.'
 
         response = self.client.chat.completions.create(
             model="openai/gpt-4o-mini",

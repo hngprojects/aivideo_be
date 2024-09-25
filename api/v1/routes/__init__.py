@@ -27,6 +27,7 @@ from api.v1.routes.ai_tools.script_to_video import ttv_router
 from api.v1.routes.utilities import utilities
 from api.v1.routes.blog import blog
 from api.v1.routes.ffmpeg_tools import ffmpeg_router
+from api.v1.routes.ai_tools.article_translator import article_router
 from tests.run_all_test import test_rout
 
 
@@ -41,6 +42,7 @@ api_version_one.include_router(summary)
 api_version_one.include_router(video_router)
 api_version_one.include_router(video_summary)
 api_version_one.include_router(ttv_router)
+api_version_one.include_router(article_router)
 api_version_one.include_router(ffmpeg_router)
 api_version_one.include_router(job_router)
 api_version_one.include_router(profile)

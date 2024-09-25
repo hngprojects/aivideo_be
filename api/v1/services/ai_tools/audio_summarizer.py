@@ -1,3 +1,5 @@
+import os
+from io import BytesIO
 import assemblyai as aai
 from uuid import uuid4
 from langchain_community.document_loaders import AssemblyAIAudioTranscriptLoader
@@ -34,9 +36,50 @@ class AudioSummaryService:
             transcript_format=TranscriptFormat.SUBTITLES_VTT if not as_srt else TranscriptFormat.SUBTITLES_SRT
         )
         docs = loader.load()
+        result = docs[0].page_content
 
-        return docs[0].page_content
+        if not as_srt:
+            result = result.replace('WEBVTT\n\n', '')
+
+        return result
+
+
+    def summarize_transcript(self, transcript: str, detail_level: str = 'short'):
+        '''This function summarizes the transcript'''
+
+        return pdf_summary_service.summarize_text(
+            text=transcript, 
+            detail_level=detail_level
+        )
+
+
+    def save_to_pdf(self, summary: str, transcript: str, prefix_file_name: str = 'audsum'):
+        '''This saves the generated summary and transcript to a file as a pdf'''
+
+        pdf_buffer = BytesIO()
+        pdf_builder = PDFBuilder(pdf_buffer)
+
+        file_path = os.path.join(settings.TEMP_DIR, f"{prefix_file_name}-{uuid4()}.pdf")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        # Add summary to pdf file
+        pdf_builder.add_section(title='Summary', text=summary)
+
+        # Add transcript to pdf file
+        pdf_builder.add_section(title='Transcript', text=transcript)
+
+        # Build pdf
+        pdf_builder.build()
+
+        # Save the PDF content to a file
+        pdf_buffer.seek(0)
+        with open(file_path, "wb") as f:
+            f.write(pdf_buffer.read())
+
+        pdf_buffer.close()
+
+        return file_path
 
 
 audio_summary_service = AudioSummaryService()
-    
+   

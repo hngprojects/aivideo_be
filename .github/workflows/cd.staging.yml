@@ -36,6 +36,7 @@ jobs:
             alembic revision --autogenerate
             alembic upgrade head
             pm2 restart aivideo_be_staging --update-env
+            pm2 restart jobs_script_staging
 
   release:
     runs-on: hng-runner
