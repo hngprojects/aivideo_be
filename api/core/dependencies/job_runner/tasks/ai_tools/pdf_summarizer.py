@@ -46,8 +46,11 @@ try:
     save_and_print_job_progress(db, job, 70, 'Making calculations')
     # Calculate time saved
     time_saved = pdf_summary_service.get_reading_time(pdf_data.get('text'))- pdf_summary_service.get_reading_time(final_summary)
+    final_time_saved = time_saved if time_saved > 0 else 0
+
     # Calculate summary word count
     summary_word_count = len(final_summary.split())
+    
     # Calculate summary read time
     summary_read_time = pdf_summary_service.get_reading_time(summary)
     estimated_summary_read_time = f'{summary_read_time} minute' if summary_read_time == 1 else f'{summary_read_time} minutes'
@@ -75,7 +78,7 @@ try:
         'summary': final_summary,
         'summary_word_count': summary_word_count,
         'summary_read_time': estimated_summary_read_time,
-        'time_saved': f'{time_saved} minute' if time_saved == 1 else f'{time_saved} minutes',
+        'time_saved': f'{final_time_saved} minute' if final_time_saved == 1 else f'{final_time_saved} minutes',
         "preview_url": preview_url,
         "download_url": download_url,
     })

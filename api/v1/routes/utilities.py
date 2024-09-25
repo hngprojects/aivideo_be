@@ -49,3 +49,6 @@ async def translate_text(schema: TextTranslateRequest):
             'translated_text': translated_text
         }
     )
+
+
+

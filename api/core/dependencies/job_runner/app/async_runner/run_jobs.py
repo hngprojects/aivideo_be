@@ -27,11 +27,14 @@ print('\n')
 import threading, asyncio
 from uvicorn import Config, Server
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, StreamingResponse
 from starlette.routing import Route
+from starlette.requests import Request
+
 from api.core.dependencies.job_runner.app.async_runner import job_handlers
-from api.core.dependencies.job_runner.app.logger import logger
+from api.loggers.job_logger import job_logger
 from api.utils.settings import settings
+from api.utils.log_streamer import log_streamer
 
 
 job_available_event = threading.Event()
@@ -43,7 +46,7 @@ def job_runner():
     while True:
         # Skip waiting if there are jobs in the database
         if job_handlers.check_available_jobs():  # Check if there are any jobs in the DB
-            print("New jobs available in the DB, processing immediately.")
+            job_logger.info("New jobs available in the DB, processing immediately.")
         else:
             # Wait for a job to become available with a timeout of 60 seconds
             job_available_event.wait(60)
@@ -63,7 +66,7 @@ def job_runner():
             job_available_event.clear()
 
         except Exception as e:
-            logger.error(f"Error processing jobs: {e}")
+            job_logger.info(f"Error processing jobs: {e}")
         
         finally:
             # Delay before next execution
@@ -73,7 +76,7 @@ def job_runner():
 # ---------------------------------------------------------------------------
 # ------------- LIGHTWEIGHT APP TO NOTIFY SCRIPT ABOUT NEW JOBS -------------
 
-def notify_new_job(request):
+def notify_new_job(request: Request):
     '''Endpoint to notify the server that a job is available'''
 
     # Check if jobs are already running and queue the jobs that are coming in
@@ -90,11 +93,24 @@ def notify_new_job(request):
         content={"message": "Job notification received, processing jobs"}
     )
 
+# Endpoint to stream logs
+async def stream_logs(request: Request):
+    """Stream the log file to the client."""
+
+    # Get the 'lines' query parameter, defaulting to None if not provided
+    lines_param = request.query_params.get("lines")
+    lines = int(lines_param) if lines_param else None
+
+    return StreamingResponse(log_streamer('logs/job_logs.log', lines), media_type="text/event-stream")
 
 # Starlette app definition
 app = Starlette(debug=True, routes=[
     Route('/notify-job', notify_new_job, methods=['GET']),
+    Route('/logs', stream_logs, methods=['GET']),
 ])
+
+# -------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 
 # Set up port to listen for job notifications
 def job_listener():
