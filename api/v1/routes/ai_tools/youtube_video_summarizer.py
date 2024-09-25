@@ -14,6 +14,7 @@ from api.v1.models.project import ProjectToolsEnum
 from api.v1.services.job import tifi_job_service
 from api.v1.services.user import user_service
 from api.utils.minio_service import minio_service
+from api.v1.routes.ai_tools.summary import check_detail_level
 
 
 video_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])
@@ -29,15 +30,11 @@ async def batch_summarize_video(
     files: List[UploadFile] = File(...),
     detail_level: str = Form(default='short'),
     db: Session = Depends(get_db),
-    user: Optional[User] = Depends(user_service.get_current_user_optional)
+    user: User = Depends(user_service.get_current_user)
 ):
     """Enqueue a batch job to summarize a video"""
 
-    if detail_level not in ['short', 'detailed', 'very short']:
-        raise HTTPException(
-            status_code=400, 
-            detail='Detail level must be one of short, detailed, very short'
-        )
+    check_detail_level(detail_level)
 
     uploaded_files = await upload_multiple_files_to_tmp_dir(
         files,
@@ -96,15 +93,11 @@ async def batch_summarize_youtube_video(
     schema: YTLinksRequest,
     request: Request,
     db: Session = Depends(get_db),
-    user: Optional[User] = Depends(user_service.get_current_user_optional)
+    user: User = Depends(user_service.get_current_user)
 ):
     """Endpoint to download and summarize a single youtube video"""
 
-    if schema.detail_level not in ['short', 'detailed', 'very short']:
-        raise HTTPException(
-            status_code=400, 
-            detail='Detail level must be one of short, detailed, very short'
-        )
+    check_detail_level(schema.detail_level)
 
     job = tifi_job_service.create(
         db=db,
@@ -141,11 +134,7 @@ async def summarize_video(
 ):
     """Endpoint to summarize a single video"""
 
-    if detail_level not in ['short', 'detailed', 'very short']:
-        raise HTTPException(
-            status_code=400, 
-            detail='Detail level must be one of short, detailed, very short'
-        )
+    check_detail_level(detail_level)
 
     video_file = await upload_to_temp_dir(
         file,
@@ -204,11 +193,7 @@ async def summarize_youtube_video(
 ):
     """Endpoint to download and summarize a single youtube video"""
 
-    if schema.detail_level not in ['short', 'detailed', 'very short']:
-        raise HTTPException(
-            status_code=400, 
-            detail='Detail level must be one of short, detailed, very short'
-        )
+    check_detail_level(schema.detail_level)
 
     job = tifi_job_service.create(
         db=db,

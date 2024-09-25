@@ -9,13 +9,14 @@ FFMPEG_BASE_DIR = f'{BASE_DIR}/ffmpeg_tools'
 # This is basically to register task scripts
 tool_to_script_mapping = {
     # AI TOOLS
-    tools.talking_avatar.value: f'{AI_TOOLS_BASE_DIR}/talking_avatar.py',
-    tools.script_to_video.value: f'{AI_TOOLS_BASE_DIR}/script_to_video.py',
-    tools.image_to_video.value: f'{AI_TOOLS_BASE_DIR}/image_to_video.py',
     tools.podcast_summarizer.value: f'{AI_TOOLS_BASE_DIR}/podcast_summarizer.py',
     tools.youtube_video_summarizer.value: f'{AI_TOOLS_BASE_DIR}/youtube_video_summarizer.py',
     tools.pdf_summarizer.value: f'{AI_TOOLS_BASE_DIR}/pdf_summarizer.py',
     tools.article_translator.value: f'{AI_TOOLS_BASE_DIR}/article_translator.py',
+    tools.audio_summarizer.value: f'{AI_TOOLS_BASE_DIR}/audio_summarizer.py',
+    tools.talking_avatar.value: f'{AI_TOOLS_BASE_DIR}/talking_avatar.py',
+    tools.script_to_video.value: f'{AI_TOOLS_BASE_DIR}/script_to_video.py',
+    tools.image_to_video.value: f'{AI_TOOLS_BASE_DIR}/image_to_video.py',
 
     # FFMPEG TOOLS
     tools.audio_extractor.value: f'{FFMPEG_BASE_DIR}/audio_extractor.py',

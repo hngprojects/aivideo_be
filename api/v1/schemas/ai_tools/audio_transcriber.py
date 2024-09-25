@@ -10,3 +10,5 @@ class TranslationRequest(BaseModel):
 class PodcastRequest(BaseModel):
     
     podcast_url: str
+    detail_level: str
+    

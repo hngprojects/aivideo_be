@@ -76,9 +76,8 @@ try:
         if not batch:
             save_and_print_job_progress(db, job, 65, 'Saving to PDF')
         pdf_file = ytvid_service.save_transcript_and_summary_to_pdf(
-            transcript=transcript,
+            transcript=transcript_with_timestamp,
             summary=transcript_summary,
-            transcript_with_timestamp=transcript_with_timestamp
         )
 
         # Update and save csv file

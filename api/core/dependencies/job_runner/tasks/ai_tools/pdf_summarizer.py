@@ -47,8 +47,10 @@ try:
     # Calculate time saved
     time_saved = pdf_summary_service.get_reading_time(pdf_data.get('text'))- pdf_summary_service.get_reading_time(final_summary)
     final_time_saved = time_saved if time_saved > 0 else 0
+
     # Calculate summary word count
     summary_word_count = len(final_summary.split())
+    
     # Calculate summary read time
     summary_read_time = pdf_summary_service.get_reading_time(summary)
     estimated_summary_read_time = f'{summary_read_time} minute' if summary_read_time == 1 else f'{summary_read_time} minutes'
