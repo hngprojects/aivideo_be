@@ -8,7 +8,7 @@ from api.v1.services.ai_tools.general import general_service
 from api.v1.services.ffmpeg_tools import ffmpeg_service
 from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
 from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
-from api.loggers.job_info_logger import job_info_logger
+from api.loggers.job_logger import job_logger
 
 
 class YtVidSummarizerService:
@@ -39,21 +39,21 @@ class YtVidSummarizerService:
                 text=True
             )  
             print(result.stdout)
-            job_info_logger.info(result.stdout)
+            job_logger.info(result.stdout)
 
             return output_path
         
         except subprocess.CalledProcessError as subp_e:
-            job_info_logger.info(f"An error occurred")
-            job_info_logger.info(f"Error details: {subp_e.stderr}")
-            job_info_logger.info('Trying alternative')
+            job_logger.info(f"An error occurred")
+            job_logger.info(f"Error details: {subp_e.stderr}")
+            job_logger.info('Trying alternative')
             
             video_url = self.get_video_stream_alternative(youtube_url)
 
-            job_info_logger.info('Downloading video')
+            job_logger.info('Downloading video')
             video_file = self.download_video_file(video_url)
 
-            job_info_logger.info('Extracting audio from video')
+            job_logger.info('Extracting audio from video')
             audio_path = self.extract_audio_from_video(video_file)
 
             return audio_path

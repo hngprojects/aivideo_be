@@ -11,7 +11,7 @@ from api.v1.services.user import user_service
 from api.v1.services.notification import notification_service
 from api.v1.services.job import tifi_job_service
 from api.v1.models.job import TifiJob, JobStatus
-from api.loggers.job_info_logger import job_info_logger
+from api.loggers.job_logger import job_logger
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent
@@ -50,7 +50,7 @@ def run_job_script(job: TifiJob):
         result_output = ''
         for line in iter(process.stdout.readline, ''):
             # print(line)
-            job_info_logger.info(line)
+            job_logger.info(line)
             result_output = line.strip()  # get the last line printed out to the console
 
         # Ensure the process is finished
@@ -110,7 +110,7 @@ def process_job(job_id: str, with_lock: bool = False):
         db.commit()
 
         print(f'Job {job.id} completed\n')
-        job_info_logger.info(f'Job {job.id} completed\n')
+        job_logger.info(f'Job {job.id} completed\n')
 
     except Exception as e:
         job.status = JobStatus.failed
@@ -131,7 +131,7 @@ def process_job(job_id: str, with_lock: bool = False):
         
         # print(f'Job with {job.id} for tool {job.tool_name} failed')
         # print(f'An exception occured: {str(e)}')
-        job_info_logger.info(f'Error processing job {job_id}: {str(e)}')
+        job_logger.info(f'Error processing job {job_id}: {str(e)}')
 
 
 def run_available_jobs():

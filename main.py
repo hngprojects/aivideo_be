@@ -1,6 +1,7 @@
-import uvicorn, os
+import uvicorn, os, time
+from typing import Optional
 from sqlalchemy.exc import IntegrityError
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Query, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -33,29 +34,6 @@ app = FastAPI(
     title='Tifi.TV API'
 )
 
-# In-memory request counter by endpoint and IP address
-request_counter = defaultdict(lambda: defaultdict(int))
-
-# Middleware to track request counts and IP addresses
-class RequestCountMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        endpoint = request.url.path
-        ip_address = request.client.host
-        request_counter[endpoint][ip_address] += 1
-        response = await call_next(request)
-        return response
-
-
-app.add_middleware(RequestCountMiddleware)
-
-# Endpoint to get request stats
-@app.get("/request-stats", response_class=JSONResponse)
-async def get_request_stats():
-    return success_response(
-        status_code=status.HTTP_200_OK, 
-        message="Endpoints request retreived successfully", 
-        data={"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}}
-    )
 
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')
@@ -81,6 +59,18 @@ origins = [
 ]
 
 
+# In-memory request counter by endpoint and IP address
+request_counter = defaultdict(lambda: defaultdict(int))
+# Middleware to track request counts and IP addresses
+class RequestCountMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        endpoint = request.url.path
+        ip_address = request.client.host
+        request_counter[endpoint][ip_address] += 1
+        response = await call_next(request)
+        return response
+
+app.add_middleware(RequestCountMiddleware)
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 app.add_middleware(
     CORSMiddleware,
@@ -90,21 +80,65 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Middleware to log details after each request
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    # Capture request start time
+    start_time = time.time()
+
+    # Process the request
+    response = await call_next(request)
+
+    # Calculate processing time
+    process_time = time.time() - start_time
+    formatted_process_time = f"{process_time:.3f}s"
+
+    # Capture request and response details
+    client_ip = request.client.host
+    method = request.method
+    url = request.url.path
+    status_code = response.status_code
+
+    # Format the log string similar to your example
+    log_string = (
+        f"{client_ip} - \"{method} {url} HTTP/1.1\" {status_code} - {formatted_process_time}"
+    )
+
+    # Log the formatted string
+    app_logger.info(log_string)
+
+    return response
+
+
 app.include_router(api_version_one)
 
 @app.get("/", tags=["Home"])
 async def get_root(request: Request) -> dict:
     return success_response(
         message="Welcome to API", 
-        status_code=status.HTTP_200_OK, 
-        data={"URL": ""}
+        status_code=status.HTTP_200_OK
     )
 
+
+@app.get("/request-stats", response_class=success_response, tags=["Home"])
+async def get_request_stats():
+    '''Endpoint to get request stats'''
+
+    return success_response(
+        status_code=status.HTTP_200_OK, 
+        message="Endpoints request retreived successfully", 
+        data={
+            "request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}
+        }
+    )
+
+
 @app.get("/logs", tags=["Home"])
-async def stream_logs():
+async def stream_logs(lines: Optional[int] = Query(None)):
     '''Endpoint to stream logs'''
     
-    return StreamingResponse(log_streamer('logs/app_logs.log'), media_type="text/plain")
+    return StreamingResponse(log_streamer('logs/app_logs.log', lines), media_type="text/event-stream")
 
 
 # REGISTER EXCEPTION HANDLERS
@@ -150,13 +184,13 @@ async def validation_exception(request: Request, exc: RequestValidationError):
 async def integrity_exception(request: Request, exc: IntegrityError):
     """Integrity error exception handlers"""
 
-    app_logger.info(f"Exception occured: {request.url.path} | {exc}")
+    app_logger.info(f"Exception occured: {request.url.path} | 500 | {exc}")
 
     return JSONResponse(
-        status_code=400,
+        status_code=500,
         content={
             "status": False,
-            "status_code": 400,
+            "status_code": 500,
             "message": f"An unexpected error occurred: {exc}",
         },
     )
@@ -166,7 +200,7 @@ async def integrity_exception(request: Request, exc: IntegrityError):
 async def exception(request: Request, exc: Exception):
     """Other exception handlers"""
 
-    app_logger.info(f"Exception occured | {request.url.path} | {exc}")
+    app_logger.info(f"Exception occured | {request.url.path} | 500 | {exc}")
 
     return JSONResponse(
         status_code=500,
