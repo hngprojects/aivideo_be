@@ -3,7 +3,7 @@ import requests
 from api.core.dependencies.job_runner.app.async_runner import thread_config
 from api.core.dependencies.job_runner.app.services import regular_service
 from api.utils.settings import settings
-from api.loggers.job_error_logger import job_error_logger
+from api.loggers.job_logger import job_logger
 from api.db.database import get_db
 from api.v1.models.job import JobStatus
 from api.v1.services.job import tifi_job_service
@@ -21,16 +21,16 @@ def fetch_and_mark_jobs_as_processing(fetch_parallel: bool=True):
 
             # Check for available jobs
             if len(jobs) == 0:
-                print('No jobs available at this time')
+                job_logger.info('No jobs available at this time')
                 return None
             
             return jobs
         else:
-            job_error_logger.error(f'Error retrieving jobs: {response.status_code} - {response.json()} - {url}')
+            job_logger.info(f'Error retrieving jobs: {response.status_code} - {response.json()} - {url}')
             return None
         
     except Exception as e:
-        job_error_logger.error(f'Error fetching and marking jobs as processing: {str(e)}')
+        job_logger.info(f'Error fetching and marking jobs as processing: {str(e)}')
         return None
 
 
@@ -43,7 +43,7 @@ def handle_parallel_jobs():
     if not jobs:
         return
 
-    print('Running parallel jobs')
+    job_logger.info('Running parallel jobs')
     
     futures = []
     
@@ -55,7 +55,7 @@ def handle_parallel_jobs():
     for future in futures:
         future.result()
     
-    print('All parallel jobs completed')
+    job_logger.info('All parallel jobs completed')
 
 
 def handle_serial_jobs():
@@ -67,14 +67,14 @@ def handle_serial_jobs():
     if not jobs:
         return
 
-    print('Running serial jobs')
+    job_logger.info('Running serial jobs')
 
     # Process serial jobs one by one
     for job in jobs:
         with thread_config.db_lock:
             regular_service.process_job(job['id'], with_lock=True)
     
-    print('All serial jobs processed')
+    job_logger.info('All serial jobs processed')
 
 
 def check_available_jobs():
