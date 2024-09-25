@@ -33,29 +33,6 @@ app = FastAPI(
     title='Tifi.TV API'
 )
 
-# In-memory request counter by endpoint and IP address
-request_counter = defaultdict(lambda: defaultdict(int))
-
-# Middleware to track request counts and IP addresses
-class RequestCountMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        endpoint = request.url.path
-        ip_address = request.client.host
-        request_counter[endpoint][ip_address] += 1
-        response = await call_next(request)
-        return response
-
-
-app.add_middleware(RequestCountMiddleware)
-
-# Endpoint to get request stats
-@app.get("/request-stats", response_class=JSONResponse)
-async def get_request_stats():
-    return success_response(
-        status_code=status.HTTP_200_OK, 
-        message="Endpoints request retreived successfully", 
-        data={"request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}}
-    )
 
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')
@@ -81,6 +58,18 @@ origins = [
 ]
 
 
+# In-memory request counter by endpoint and IP address
+request_counter = defaultdict(lambda: defaultdict(int))
+# Middleware to track request counts and IP addresses
+class RequestCountMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        endpoint = request.url.path
+        ip_address = request.client.host
+        request_counter[endpoint][ip_address] += 1
+        response = await call_next(request)
+        return response
+
+app.add_middleware(RequestCountMiddleware)
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 app.add_middleware(
     CORSMiddleware,
@@ -100,11 +89,24 @@ async def get_root(request: Request) -> dict:
         data={"URL": ""}
     )
 
+
+@app.get("/request-stats", response_class=success_response, tags=["Home"])
+async def get_request_stats():
+    '''Endpoint to get request stats'''
+
+    return success_response(
+        status_code=status.HTTP_200_OK, 
+        message="Endpoints request retreived successfully", 
+        data={
+            "request_counts": {endpoint: dict(ips) for endpoint, ips in request_counter.items()}
+        }
+    )
+
 @app.get("/logs", tags=["Home"])
 async def stream_logs():
     '''Endpoint to stream logs'''
     
-    return StreamingResponse(log_streamer('logs/app_logs.log'), media_type="text/plain")
+    return StreamingResponse(log_streamer('logs/app_logs.log'), media_type="text/event-stream")
 
 
 # REGISTER EXCEPTION HANDLERS

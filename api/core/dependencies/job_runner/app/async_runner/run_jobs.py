@@ -95,7 +95,7 @@ def notify_new_job(request):
 async def stream_logs(request):
     """Stream the log file to the client."""
 
-    return StreamingResponse(log_streamer('logs/job_info_logs.log'), media_type="text/plain")
+    return StreamingResponse(log_streamer('logs/job_info_logs.log'), media_type="text/event-stream")
 
 # Starlette app definition
 app = Starlette(debug=True, routes=[
