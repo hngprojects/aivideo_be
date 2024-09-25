@@ -54,7 +54,7 @@ def override_get_db(mock_db):
 
 
 def test_enqueue_summarize_batch_job(
-    mock_current_user,
+    # mock_current_user,
     mock_create,
     override_get_db,
 ):
@@ -67,9 +67,9 @@ def test_enqueue_summarize_batch_job(
     # Send a POST request to the summarize_batch endpoint
     response = client.post(
         "/api/v1/tools/summary/batch-youtube-summarize", 
-        headers={
-            'Authorization': 'Bearer test_token'
-        },
+        # headers={
+        #     'Authorization': 'Bearer test_token'
+        # },
         json=data
     )
 
