@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Union
+from typing import Union, Optional
 
 class TranslationRequest(BaseModel):
 
@@ -10,5 +10,5 @@ class TranslationRequest(BaseModel):
 class PodcastRequest(BaseModel):
     
     podcast_url: str
-    detail_level: str
+    detail_level: Optional[str] = 'short'
     

@@ -5,6 +5,7 @@ from collections import deque
 
 # Async generator to yield log lines
 async def log_streamer(file_path: str, lines: Optional[int] = None):
+    
     new_lines = []
 
     with open(file_path, "r") as f:
@@ -36,18 +37,3 @@ async def log_streamer(file_path: str, lines: Optional[int] = None):
             else:
                 # If no new lines, sleep for a short time before checking again
                 await asyncio.sleep(0.1)
-
-
-        # Yield the initial lines (newest at the top)
-        # for line in reversed(all_lines):
-        #     yield line
-
-        # # Continue streaming new lines appended to the file
-        # while True:
-        #     line = f.readline()
-        #     if line:
-        #         # Immediately yield new lines as they are read
-        #         yield line
-        #     else:
-        #         # If no new lines, sleep for a short time before checking again
-        #         await asyncio.sleep(0.1)
