@@ -134,11 +134,11 @@ async def get_request_stats():
     )
 
 
-@app.get("/logs", tags=["Home"])
-async def stream_logs(lines: Optional[int] = Query(None)):
-    '''Endpoint to stream logs'''
+# @app.get("/logs", tags=["Home"])
+# async def stream_logs(lines: Optional[int] = Query(None)):
+#     '''Endpoint to stream logs'''
     
-    return StreamingResponse(log_streamer('logs/app_logs.log', lines), media_type="text/event-stream")
+#     return StreamingResponse(log_streamer('logs/app_logs.log', lines), media_type="text/event-stream")
 
 
 # REGISTER EXCEPTION HANDLERS
