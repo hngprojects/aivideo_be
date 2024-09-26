@@ -201,6 +201,8 @@ async def job_progress_event_generator(job_id: str):
                 'status_message': job.status_message
             }
 
+            event_name = 'other'
+
             if status == JobStatus.pending:
                 data['status_message'] = 'Pending'
                 yield f'event: {event_name}\ndata: {json.dumps(data)}\n\n'
@@ -221,7 +223,6 @@ async def job_progress_event_generator(job_id: str):
                 break
 
             else:
-                event_name = 'other'
                 yield f'event: {event_name}\ndata: {json.dumps(data)}\n\n'
         
         finally:
