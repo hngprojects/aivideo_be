@@ -106,7 +106,7 @@ async def stream_logs(request: Request):
 # Starlette app definition
 app = Starlette(debug=True, routes=[
     Route('/notify-job', notify_new_job, methods=['GET']),
-    Route('/logs', stream_logs, methods=['GET']),
+    # Route('/logs', stream_logs, methods=['GET']),
 ])
 
 # -------------------------------------------------------------------------------------
