@@ -168,7 +168,7 @@ async def get_single_job(job_id: str, db: Session = Depends(get_db)):
     )
 
 
-@job_router.get("/{job_id}", response_model=success_response, status_code=status.HTTP_200_OK)
+@job_router.patch("/{job_id}", response_model=success_response, status_code=status.HTTP_200_OK)
 async def update_job(
     job_id: str, 
     schema: UpdateJob,
