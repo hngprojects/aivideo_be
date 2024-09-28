@@ -50,7 +50,7 @@ jobs:
           
       - name: Run app
         run: |
-          python3 main.py &
+          uvicorn main:app --host 0.0.0.0 --port 5001 &
           pid=$!
           sleep 10
           if ps -p $pid > /dev/null; then
