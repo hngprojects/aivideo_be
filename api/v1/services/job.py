@@ -218,6 +218,31 @@ class TifiJobService:
         csv_file.seek(0)
 
         return csv_file
+    
+    
+    def update(
+        self, 
+        db: Session,
+        job_id: str, 
+        user_id: str, 
+        job_name: str, 
+        job_thumbnail_url: Optional[str] = None
+    ):
+        '''Service to update the relevant parts of a job'''
+        
+        job = self.fetch(db, job_id)
+        
+        if job.user_id != user_id:
+            raise HTTPException(status_code=403, detail='You do not have access to edit this job')
+        
+        job.job_name = job_name
+        if job_thumbnail_url:
+            job.job_thumbnail_url = job_thumbnail_url
+        
+        db.commit()
+        db.refresh(job)
+        
+        return job
 
 
 tifi_job_service = TifiJobService()

@@ -9,3 +9,9 @@ class JobResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UpdateJob(BaseModel):
+    
+    job_nmme: str
+    job_thumbnail_url: Optional[str] = None

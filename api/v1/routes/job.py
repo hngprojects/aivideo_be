@@ -11,6 +11,7 @@ from api.utils.pagination import paginated_response
 from api.utils.success_response import success_response
 from api.v1.models.job import JobStatus, TifiJob
 from api.v1.models.user import User
+from api.v1.schemas.job import UpdateJob
 from api.v1.services.user import user_service
 from api.v1.services.job import tifi_job_service
 import json
@@ -163,6 +164,30 @@ async def get_single_job(job_id: str, db: Session = Depends(get_db)):
     return success_response(
         status_code=200,
         message='Job fetched successfully',
+        data=jsonable_encoder(job)
+    )
+
+
+@job_router.get("/{job_id}", response_model=success_response, status_code=status.HTTP_200_OK)
+async def update_job(
+    job_id: str, 
+    schema: UpdateJob,
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(user_service.get_current_user)
+):
+    """This endpoint updates a job in the database"""
+
+    job = tifi_job_service.update(
+        db=db, 
+        job_id=job_id,
+        user_id=current_user.id,
+        job_name=schema.job_nmme,
+        job_thumbnail_url=schema.job_thumbnail_url
+    )
+
+    return success_response(
+        status_code=200,
+        message='Job updated successfully',
         data=jsonable_encoder(job)
     )
 
