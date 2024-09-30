@@ -285,7 +285,6 @@ async def job_progress_event_generator(job_id: str):
 async def send_job_status_updates_over_sse(
     job_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(user_service.get_current_user_optional),
 ):
     '''
     Function to send job status over server sent events and this updates the project associated with the job.

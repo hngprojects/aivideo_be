@@ -105,7 +105,7 @@ class YtVidSummarizerService:
     def download_video_file(self, video_url: str):
         '''Download audio file from generated audio stream'''
 
-        general_service.download_file(
+        return general_service.download_file(
             url=video_url,
             extension='mp4',
             prefix_file_name='ytaud'

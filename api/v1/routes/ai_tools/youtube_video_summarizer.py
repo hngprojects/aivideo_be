@@ -30,7 +30,7 @@ async def batch_summarize_video(
     files: List[UploadFile] = File(...),
     detail_level: str = Form(default='short'),
     db: Session = Depends(get_db),
-    user: Optional[User] = Depends(user_service.get_current_user)
+    user: User = Depends(user_service.get_current_user)
 ):
     """Enqueue a batch job to summarize a video"""
 
@@ -93,7 +93,7 @@ async def batch_summarize_youtube_video(
     schema: YTLinksRequest,
     request: Request,
     db: Session = Depends(get_db),
-    user: Optional[User] = Depends(user_service.get_current_user)
+    user: User = Depends(user_service.get_current_user)
 ):
     """Endpoint to download and summarize a single youtube video"""
 
