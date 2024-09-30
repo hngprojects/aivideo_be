@@ -53,7 +53,7 @@ try:
             db, 
             job, 
             progress = (i+1) * progress_per_article, 
-            progress_info = f'{languages[i]} article generated. {number_to_process-(i-1)} remaining'
+            progress_info = f'{languages[i]} article generated. {number_to_process-(i+1)} remaining'
         )
     
     save_and_print_job_progress(db, job, 80, 'Building PDF file')

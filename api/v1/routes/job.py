@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from uuid import uuid4
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Form, File, UploadFile
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
@@ -9,6 +10,9 @@ from sse_starlette import EventSourceResponse
 from api.db.database import get_db
 from api.utils.pagination import paginated_response
 from api.utils.success_response import success_response
+from api.utils.minio_service import minio_service
+from api.utils import mime_types
+from api.utils.files import delete_file, upload_to_temp_dir
 from api.v1.models.job import JobStatus, TifiJob
 from api.v1.models.user import User
 from api.v1.services.user import user_service
@@ -167,6 +171,52 @@ async def get_single_job(job_id: str, db: Session = Depends(get_db)):
     )
 
 
+@job_router.patch("/{job_id}", response_model=success_response, status_code=status.HTTP_200_OK)
+async def update_job(
+    job_id: str,
+    job_name: str = Form(),
+    thumbnail: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(user_service.get_current_user)
+):
+    """This endpoint updates a job in the database"""
+    
+    thumbnail_url = None
+    if thumbnail:
+        # Upload to temporary file storage
+        file_path = await upload_to_temp_dir(
+            thumbnail,
+            allowed_extensions=['jpg', 'png', 'jpeg', 'jfif'],
+            save_extension='png',
+            max_file_size=5
+        )
+        
+        # Upload to minio 
+        thumbnail_url, download_url = minio_service.upload_to_minio(
+            folder_name='job-thumbnails',
+            source_file=file_path,
+            destination_file=f'thumbnail-{uuid4()}.png',
+            content_type=mime_types.IMAGE_PNG
+        )
+        
+        # Delete file
+        delete_file(file_path)
+
+    job = tifi_job_service.update(
+        db=db, 
+        job_id=job_id,
+        user_id=current_user.id,
+        job_name=job_name,
+        job_thumbnail_url=thumbnail_url
+    )
+
+    return success_response(
+        status_code=200,
+        message='Job updated successfully',
+        data=jsonable_encoder(job)
+    )
+
+
 @job_router.get("/{job_id}/retry", response_model=success_response, status_code=status.HTTP_200_OK)
 async def retry_failed_job(job_id: str, db: Session = Depends(get_db)):
     """Endpoint to retry a failed job."""
@@ -235,7 +285,6 @@ async def job_progress_event_generator(job_id: str):
 async def send_job_status_updates_over_sse(
     job_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(user_service.get_current_user_optional),
 ):
     '''
     Function to send job status over server sent events and this updates the project associated with the job.
