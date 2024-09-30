@@ -67,6 +67,22 @@ async def upload_to_temp_dir(
     max_file_size: int,
     save_extension: str
 ):
+    """_summary_
+
+    Args:
+        file (_type_): _description_
+        allowed_extensions (Optional[list]): _description_
+        max_file_size (int): Maximum file size that can be uploaded in MB
+        save_extension (str): _description_
+
+    Raises:
+        HTTPException: _description_
+        HTTPException: _description_
+        HTTPException: _description_
+
+    Returns:
+        str: Path to stored file
+    """
 
     file_extension = file.filename.split('.')[-1]
     name = file.filename.split('.')[0]
@@ -86,10 +102,10 @@ async def upload_to_temp_dir(
 
     # Check file size
     file_size = len(file.file.read())
-    if file_size > max_file_size:
+    if file_size > (max_file_size * (1024 * 1024)):
         raise HTTPException(
             status_code=400,
-            detail=f"File too large. Max size is {max_file_size / (1024 * 1024)} MB.",
+            detail=f"File too large. Max size is {max_file_size} MB.",
         )
 
     # Reset file pointer after reading
