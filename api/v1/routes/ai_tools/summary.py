@@ -59,7 +59,7 @@ async def summarize_pdf(
         file,
         allowed_extensions=['pdf'],
         save_extension="pdf",
-        max_file_size=20 * 1024 * 1024,
+        max_file_size=20,
     )
 
     # Upload pdf file to temporary stirage bucket
@@ -132,7 +132,7 @@ async def summarize_audio(
         file,
         allowed_extensions=['mp3', 'wav'],
         save_extension="mp3",
-        max_file_size=20 * 1024 * 1024,
+        max_file_size=20,
     )
 
     # Upload pdf file to temporary stirage bucket

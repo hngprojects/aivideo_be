@@ -105,21 +105,6 @@ class YtVidSummarizerService:
     def download_video_file(self, video_url: str):
         '''Download audio file from generated audio stream'''
 
-        # try:
-        #     response = requests.get(audio_url, stream=True)
-        #     response.raise_for_status()  # Check for errors in the response
-            
-        #     # file_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
-        #     file_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
-        #     with open(file_path, "wb") as file:
-        #         for chunk in response.iter_content(chunk_size=8192):
-        #             file.write(chunk)
-
-        #     return file_path
-
-        # except requests.RequestException as e:
-        #     raise e
-
         general_service.download_file(
             url=video_url,
             extension='mp4',

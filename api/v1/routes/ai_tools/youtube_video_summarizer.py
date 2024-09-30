@@ -51,7 +51,7 @@ async def batch_summarize_video(
             'mpeg',
             'mpg'
         ],
-        max_file_size=50 * 1024 * 1024,
+        max_file_size=195,
         save_extension='mp4'
     )
 
@@ -152,7 +152,7 @@ async def summarize_video(
             "mpg",
         ],
         save_extension="mp4",
-        max_file_size=50 * 1024 * 1024,
+        max_file_size=195,
     )
 
     # Upload video file to temporary stirage bucket

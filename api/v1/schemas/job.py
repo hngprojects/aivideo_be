@@ -13,5 +13,6 @@ class JobResponse(BaseModel):
 
 class UpdateJob(BaseModel):
     
-    job_nmme: str
+    job_name: str
     job_thumbnail_url: Optional[str] = None
+    
