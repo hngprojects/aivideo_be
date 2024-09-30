@@ -37,7 +37,7 @@ async def talking_head_image_upload(
         file, 
         allowed_extensions=['jpg', 'jpeg', 'png'],
         save_extension=file_extension,
-        max_file_size=10 * 1024 * 1024
+        max_file_size=20
     )
 
     # Check if image contains a face
