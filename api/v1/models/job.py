@@ -66,7 +66,7 @@ def update_job(mapper, connection, target):
             .where(TifiJob.id == target.id)
             .values(
                 expiration_time=target.created_at + timedelta(hours=1),
-                job_name=f'{target.tool_name}{token_hex(5)}',
+                job_name=f'{target.tool_name}-{token_hex(5)}',
                 job_thumbnail_url="https://firebasestorage.googleapis.com/v0/b/python-storage-d1e10.appspot.com/o/tifi%2Ftifi-logo.jpg?alt=media&token=79189e4d-f235-4b95-ae16-93b27d3a8570"
             )
         )
