@@ -40,11 +40,13 @@ try:
     )
 
     save_and_print_job_progress(db, job, 70, f'Generating preview and download links for generated audio')
+    
+    mime_type = mime_types.AUDIO_MP3 if audio_extension == 'mp3' else mime_types.AUDIO_WAV
     save_url, download_url = minio_service.upload_to_minio(
         folder_name='audio-extractor',
         source_file=audio_path,
         destination_file=f'audioextr-{uuid4()}.{audio_extension}',
-        content_type=mime_types.VIDEO_MP4
+        content_type=mime_type
     )
 
     save_and_print_job_progress(db, job, 80, 'Cleaning up')
