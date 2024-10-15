@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from fastapi import (
     Depends,
     Form,
@@ -15,7 +15,7 @@ import io
 
 from api.db.database import get_db
 from api.utils.success_response import success_response
-from api.utils.files import delete_file, upload_file_to_current_dir, upload_to_temp_dir
+from api.utils.files import delete_file, upload_multiple_files_to_tmp_dir, upload_to_temp_dir
 from api.utils.minio_service import minio_service
 from api.v1.models.project import ProjectToolsEnum
 from api.v1.schemas.ai_tools.audio_transcriber import PodcastRequest
@@ -69,7 +69,11 @@ async def summarize_pdf(
     job = tifi_job_service.create(
         db=db,
         tool_name=ProjectToolsEnum.pdf_summarizer.value,
-        payload={'pdf_file_url': pdf_file_url, 'detail_level': detail_level},
+        payload={
+            'pdf_file_urls': [pdf_file_url], 
+            'detail_level': detail_level, 
+            'batch': False
+        },
         user_id=user.id if user else None,
         is_parallel=True
     )
@@ -84,6 +88,57 @@ async def summarize_pdf(
     )
 
 
+@summary.post(
+    "/pdf-summarizer-batch",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=success_response,
+)
+# @track_tool_usage(ProjectToolsEnum.pdf_summarizer)
+async def batch_summarize_pdf(
+    request: Request,
+    files: List[UploadFile] = File(...),
+    detail_level: str = Form(default='short'),
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(user_service.get_current_user_optional)
+):
+    """Endpoint to summarize PDF in a batch"""
+
+    check_detail_level(detail_level)
+    
+    uploaded_files = await upload_multiple_files_to_tmp_dir(
+        files,
+        allowed_extensions=['pdf'],
+        save_extension="pdf",
+        max_file_size=20,
+    )
+
+    file_urls = []
+    
+    for file_path in uploaded_files:
+        # Upload pdf file to temporary stirage bucket
+        pdf_file_url = minio_service.upload_to_tmp_bucket(source_file=file_path)
+        file_urls.append(pdf_file_url)
+        delete_file(file_path)
+
+    job = tifi_job_service.create(
+        db=db,
+        tool_name=ProjectToolsEnum.pdf_summarizer.value,
+        payload={
+            'pdf_file_urls': file_urls, 
+            'detail_level': detail_level, 
+            'batch': True
+        },
+        user_id=user.id if user else None,
+        is_parallel=True
+    )
+
+    return success_response(
+        status_code=202,
+        message=f"{ProjectToolsEnum.pdf_summarizer.value} task initiated successfully",
+        data={"job_id": job.id}
+    )
+
+
 @summary.post("/summarize-podcast", status_code=status.HTTP_202_ACCEPTED, response_model=success_response)
 async def summarize_podcast(
     schema: PodcastRequest, 
@@ -93,7 +148,6 @@ async def summarize_podcast(
 ):
 
     podcast_details = summary_service.get_podcast_details(schema.podcast_url)
-    # audio_url = summary_service.get_audio_url(schema.podcast_url)
 
     check_detail_level(schema.detail_level)
 
