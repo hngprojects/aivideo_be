@@ -22,6 +22,8 @@ save_and_print_job_progress(db, job, 0, 'Job started')
 
 video_url = payload.get('video_url')
 audio_extension = payload.get('audio_extension')
+start_time = payload.get('start_time')
+end_time = payload.get('end_time')
 
 # Download video file from minio
 save_and_print_job_progress(db, job, 10, f'Downloading and opening video file from {video_url}')
@@ -36,7 +38,9 @@ try:
     ffmpeg_service.extract_audio_from_video(
         input_video=video_file,
         output_path=audio_path,
-        audio_extension=audio_extension
+        audio_extension=audio_extension,
+        start_time=start_time,
+        end_time=end_time
     )
 
     save_and_print_job_progress(db, job, 70, f'Generating preview and download links for generated audio')

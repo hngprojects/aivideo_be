@@ -11,6 +11,7 @@ from api.utils.tool_limiter import track_tool_usage
 from api.v1.models.project import ProjectToolsEnum
 from api.v1.models.user import User
 from api.v1.services.user import user_service
+from api.v1.services.ffmpeg_tools import ffmpeg_service
 from api.v1.services.job import tifi_job_service
 
 
@@ -73,11 +74,21 @@ async def extract_audio_from_video(
     request: Request,
     file: UploadFile = File(...),
     audio_extension: str = Form(default='mp3'),
+    start_time: Optional[str] = Form(None),
+    end_time: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to extract the audio from a video'''
 
+    if start_time:
+        start_time_in_seconds = ffmpeg_service.time_to_seconds(start_time)
+    if end_time:
+        end_time_in_seconds = ffmpeg_service.time_to_seconds(end_time)
+    
+    if (start_time and end_time) and (start_time_in_seconds > end_time_in_seconds):
+        raise HTTPException(status_code=400, detail="Start time must be less than or equal to end time")
+    
     video_url = await upload_video_file(file)
 
     job = tifi_job_service.create(
@@ -86,6 +97,8 @@ async def extract_audio_from_video(
         payload={
             'video_url': video_url,
             'audio_extension': audio_extension.lower(),
+            'start_time': start_time,
+            'end_time': end_time,
         },
         user_id=user.id if user else None,
         is_parallel=False
