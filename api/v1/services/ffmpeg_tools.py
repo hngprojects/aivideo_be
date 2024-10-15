@@ -4,24 +4,65 @@ import os, ffmpeg
 class FfmpegService:
     '''Service class for all ffmpeg tools'''
 
+    def time_to_seconds(self, time_str: str):
+        if time_str is None:
+            return None
+        time_parts = list(map(float, time_str.split(":")))
+        if len(time_parts) == 3:  # HH:MM:SS format
+            return time_parts[0] * 3600 + time_parts[1] * 60 + time_parts[2]
+        elif len(time_parts) == 2:  # MM:SS format
+            return time_parts[0] * 60 + time_parts[1]
+        else:
+            return time_parts[0]  # Just seconds
+    
     def extract_audio_from_video(
         self, 
         input_video: str, 
         output_path: str, 
-        audio_extension: str = 'mp3'
+        audio_extension: str = 'mp3',
+        start_time: str = None,  # Start time in format 'HH:MM:SS' or 'seconds'
+        end_time: str = None     # End time in format 'HH:MM:SS' or 'seconds'
     ):
-        '''This extracts audio from a video file'''
+        '''This extracts audio from a portion of a video file'''
 
         try:
+            # Check video duration to ensure start_time and end_time are within bounds
+            probe = ffmpeg.probe(input_video)
+            video_duration = float(probe['format']['duration'])  # Get video duration in seconds
+
+            start_seconds = self.time_to_seconds(start_time)
+            end_seconds = self.time_to_seconds(end_time)
+
+            # Validate start and end times
+            if start_seconds and start_seconds >= video_duration:
+                raise ValueError(f"Start time {start_time} exceeds video duration of {video_duration} seconds")
+            if end_seconds and end_seconds > video_duration:
+                raise ValueError(f"End time {end_time} exceeds video duration of {video_duration} seconds")
+            if start_seconds and end_seconds and start_seconds >= end_seconds:
+                raise ValueError(f"Start time {start_time} must be less than end time {end_time}")
+
+            # Prepare the ffmpeg input
+            ffmpeg_input = ffmpeg.input(input_video)
+
+            # Apply the start and end time if provided
+            if start_seconds:
+                ffmpeg_input = ffmpeg_input.filter('atrim', start=start_seconds)
+            if end_seconds:
+                ffmpeg_input = ffmpeg_input.filter('atrim', end=end_seconds)
+
+            # Execute the ffmpeg command
             (
-                ffmpeg
-                .input(input_video)
+                ffmpeg_input
                 .output(output_path, format=audio_extension)
                 .run(overwrite_output=True)
             )
 
         except ffmpeg.Error as e:
+            print(f"ffmpeg error: {e.stderr.decode()}")
             raise e
+        except ValueError as ve:
+            print(f"Value error: {ve}")
+            raise ve
         
     
     def resize_video(
