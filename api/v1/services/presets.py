@@ -1,10 +1,11 @@
-import os
+import os, random
 from pathlib import Path
 from secrets import token_hex
 from typing import Any, Optional
 from uuid import uuid4
 import openai
 from sqlalchemy.orm import Session
+
 from api.utils.settings import settings
 from api.utils.minio_service import minio_service
 from api.utils import mime_types
@@ -26,8 +27,8 @@ class PresetService:
         for root, dir, files in os.walk(AVATAR_FOLDER):
             for file_name in files:
                 file_path = os.path.join(root, file_name)
-
-                # file_url = f'{settings.APP_URL}/{AVATAR_FOLDER}/{file_name}'
+                gender = file_name.split('-')[-1].replace('.png', '')
+                print(gender)
 
                 # Check if avatar already exists in the database
                 if not db.query(Avatar).filter(Avatar.file_name==file_name).first():
@@ -43,7 +44,8 @@ class PresetService:
                     avatar = Avatar(
                         file_url=file_url,
                         file_name=file_name,
-                        file_path=file_path
+                        file_path=file_path,
+                        gender=gender
                     )
 
                     db.add(avatar)
@@ -153,17 +155,20 @@ class PresetService:
         '''Generates new avatar images'''
 
         client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+        
+        gender = ['man', 'woman']
+        choice = random.choice(gender)
 
         response = client.images.generate(
             model="dall-e-3",
-            prompt=f"Generate one hyper-realistic headshot image of a human avatar",
+            prompt=f"Generate one hyper-realistic headshot image of a {choice} human avatar",
             size="1024x1024",
             quality="standard",
             n=1,
         )
         image_url = response.data[0].url
 
-        file_name = f"avatar-{token_hex(5)}.png"
+        file_name = f"avatar-{token_hex(5)}-{choice}.png"
         save_path = os.path.join(BASE_DIR, 'presets', 'avatars', file_name)
 
         video_service.download_file(
@@ -171,13 +176,20 @@ class PresetService:
             save_path=save_path
         )
 
-        file_url = f'{settings.APP_URL}/{AVATAR_FOLDER}/{file_name}'
+        # Upload file to minio
+        file_url, download_url = minio_service.upload_to_minio(
+            folder_name='preset-avatars',
+            source_file=save_path,
+            destination_file=file_name,
+            content_type=mime_types.IMAGE_PNG
+        )
 
         # Check if avatar already exists in the database
         avatar = Avatar(
             file_url=file_url,
             file_name=file_name,
-            file_path=f'{AVATAR_FOLDER}/{file_name}'
+            file_path=f'{AVATAR_FOLDER}/{file_name}',
+            gender=choice
         )
 
         db.add(avatar)
