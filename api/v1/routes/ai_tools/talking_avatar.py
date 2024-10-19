@@ -106,7 +106,7 @@ async def talking_head_avatar_selection(
             'audio_url': audio_url if schema.audio_id else None,
             'aspect_ratio': schema.aspect_ratio.lower(),
             'script': schema.script,
-            'voice_over': schema.voice_over.lower(),
+            'voice_over': avatar.gender.lower(),
         },
         user_id=user.id if user else None,
         is_parallel=False,
