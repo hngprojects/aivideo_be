@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from api.v1.routes.ai_tools.youtube_video_summarizer import video_summary
+from api.v1.routes.ai_tools.tweet_to_tiktok import tweet_to_tiktok_router
 from api.v1.routes.api_status import api_status
 from api.v1.routes.auth import auth
 from api.v1.routes.help_topics import help_topics
@@ -41,6 +42,7 @@ api_version_one.include_router(user_router)
 api_version_one.include_router(summary)
 api_version_one.include_router(video_router)
 api_version_one.include_router(video_summary)
+api_version_one.include_router(tweet_to_tiktok_router)
 api_version_one.include_router(ttv_router)
 api_version_one.include_router(article_router)
 api_version_one.include_router(ffmpeg_router)

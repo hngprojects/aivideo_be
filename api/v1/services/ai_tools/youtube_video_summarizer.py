@@ -24,6 +24,8 @@ class YtVidSummarizerService:
             # The command to run yt-dlp to download audio only
             command = [
                 "yt-dlp",
+                "-u", settings.YOUTUBE_USERNAME,
+                "-p", settings.YOUTUBE_PASSWORD,
                 "-x",  # Extract audio
                 "--audio-format", "mp3",  # Specify the audio format (e.g., mp3, m4a, etc.)
                 "-o", output_path,  # Output path where audio will be saved
@@ -38,25 +40,27 @@ class YtVidSummarizerService:
                 stderr=subprocess.PIPE, 
                 text=True
             )  
-            print(result.stdout)
+            # print(result.stdout)
             job_logger.info(result.stdout)
 
             return output_path
         
         except subprocess.CalledProcessError as subp_e:
-            job_logger.info(f"An error occurred")
-            job_logger.info(f"Error details: {subp_e.stderr}")
-            job_logger.info('Trying alternative')
+            # job_logger.info(f"An error occurred")
+            # job_logger.info(f"Error details: {subp_e.stderr}")
+            # job_logger.info('Trying alternative')
             
-            video_url = self.get_video_stream_alternative(youtube_url)
+            # video_url = self.get_video_stream_alternative(youtube_url)
 
-            job_logger.info('Downloading video')
-            video_file = self.download_video_file(video_url)
+            # job_logger.info('Downloading video')
+            # video_file = self.download_video_file(video_url)
 
-            job_logger.info('Extracting audio from video')
-            audio_path = self.extract_audio_from_video(video_file)
+            # job_logger.info('Extracting audio from video')
+            # audio_path = self.extract_audio_from_video(video_file)
 
-            return audio_path
+            # return audio_path
+        
+            raise subp_e
         
         except Exception as e:
             raise e

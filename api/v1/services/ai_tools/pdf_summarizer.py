@@ -2,6 +2,7 @@ import os
 import uuid
 from api.utils.pdf_builder import PDFBuilder
 from api.utils.settings import settings
+from api.utils.openai_service import openai_service
 from io import BytesIO
 from deep_translator import GoogleTranslator
 from openai import OpenAI
@@ -14,11 +15,6 @@ class PDFSummaryService:
 
     def __init__(self):
         self.translator = GoogleTranslator()
-
-        self.client = OpenAI(
-            base_url='https://openrouter.ai/api/v1',
-            api_key=settings.OPENROUTER_API_KEY,
-        )
 
     
     def get_reading_time(self, text: str):
@@ -101,16 +97,13 @@ class PDFSummaryService:
         """
 
         prompt = f'Generate a {detail_level} summary of the following text: {text}. Separate the summary into paragraphs if need be but do not add anything else except the summary alone. Although, please ensure that the summary is shorter than the text itself.'
-
-        response = self.client.chat.completions.create(
-            model="openai/gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a summarization assistant."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=max_tokens  # Adjust based on the token limit
+        
+        response = openai_service.prompt_ai(
+            prompt=prompt,
+            system_role_desc='You are a great summarization assistant.',
+            max_tokens=max_tokens
         )
-        return response.choices[0].message.content
+        return response
 
     
     def translate_summary(self, text, target_lang):

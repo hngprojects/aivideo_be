@@ -3,7 +3,6 @@ from fastapi.encoders import jsonable_encoder
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
 
-from scripts.presets import load_resources
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.v1.models.user import User
@@ -93,7 +92,7 @@ async def get_resources(
     Returns:
         ResourceData
     """
-    load_resources()
+    ()
     query_params = {
         "is_published": is_published,
         "is_deleted": is_deleted,
@@ -119,7 +118,7 @@ async def get_public_resources(
     Returns:
         ResourceData
     """
-    load_resources()
+    
     return resource_service.fetch_all(
         db=db,
         page=page,

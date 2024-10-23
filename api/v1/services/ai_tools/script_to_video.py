@@ -6,6 +6,7 @@ import openai
 from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip
 
 from api.utils.minio_service import minio_service
+from api.utils.openai_service import openai_service
 from api.utils import mime_types
 from api.utils.files import delete_file
 from api.utils.settings import settings
@@ -16,36 +17,26 @@ class ScriptToVideoService:
 
     def __init__(self):
         self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.openrouter_client = openai.OpenAI(
-            base_url='https://openrouter.ai/api/v1',
-            api_key=settings.OPENROUTER_API_KEY
-        )
     
-
     def generate_scene_descriptions(self, script: str):
-
-        response = self.openrouter_client.chat.completions.create(
-            model="openai/gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": f"Generate five simple scene descriptions that can be used as an image description for the following script and I do not want any form of numbering or bulleting on them. Also, don not say anoy other thing other than the scene descriptions. Here is the script: :\n\n{script}\n\nScene Descriptions:"}
-            ]
+        
+        response = openai_service.prompt_ai(
+            prompt=f'Generate five simple and short scene descriptions not more than 100 characters that can be used as an image description for AI and stock images and videos API query for the following script and I do not want any form of numbering or bulleting on them. Also, do not say any other thing other than the scene descriptions. Here is the script: :\n\n{script}\n\nScene Descriptions:',
+            system_role_desc='You are a great scene description generator.'
         )
-        scenes = [scene.strip() for scene in response.choices[0].message.content.strip().split('\n') if scene.strip()]
+        
+        scenes = [scene.strip() for scene in response.strip().split('\n') if scene.strip()]
         return scenes
     
 
     def recompose_script(self, script: str):
-
-        response = self.openrouter_client.chat.completions.create(
-            model="openai/gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": f"I will add a script for you to recompose. Do not say anything else than the recomposition:\n\n{script}"}
-            ]
+        
+        response = openai_service.prompt_ai(
+            prompt=f'I will add a script for you to recompose. Do not say anything else than the recomposition:\n\n{script}',
+            system_role_desc='You are a great text recomposer.'
         )
-        recomposed_script = response.choices[0].message.content
-        return recomposed_script
+        
+        return response
     
 
     def generate_images_for_scenes(self, scenes: List[str]):

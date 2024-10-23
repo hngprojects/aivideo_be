@@ -1,0 +1,53 @@
+[Script Info]
+PlayResY: 1920
+PlayResX: 1080
+WrapStyle: 1
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, BorderStyle, Outline, Shadow, Alignment, Encoding
+Style: S00, impact, 70, &H00FFA500, &H00FFFF00, &H00FFFFFF, 3, 0, 1, 5, 0
+
+[Fonts]
+impact: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/impact.ttf
+comic sans ms: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/comic.ttf
+ar christy: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/ARCHRISTY.ttf
+ar carter: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/ARCARTER.ttf
+ar bonnie: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/ARBONNIE.ttf
+levenim mt: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/lvnm.ttf
+segoe script: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/segoesc.ttf
+segoe print: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/segoepr.ttf
+segoe print bold: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/segoeprb.ttf
+bebas neue: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/BebasNeue.ttf
+montserrat bold: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Montserrat-Bold.ttf
+poppins bold: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Poppins-Bold.ttf
+lobster: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Lobster-Regular.ttf
+oswald: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Oswald-Regular.ttf
+raleway: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Raleway-Regular.ttf
+anton: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Anton-Regular.ttf
+pacifico: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Pacifico-Regular.ttf
+roboto bold: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Roboto-Bold.ttf
+playfair display: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/PlayfairDisplay-Regular.ttf
+dancing script: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/DancingScript-Regular.ttf
+amatic sc: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/AmaticSC-Regular.ttf
+open sans bold: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/OpenSans-Bold.ttf
+merriweather bold: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Merriweather-Bold.ttf
+bangers: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Bangers-Regular.ttf
+caveat: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Caveat-Regular.ttf
+fredoka one: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/FredokaOne-Regular.ttf
+chewy: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/Chewy-Regular.ttf
+great vibes: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/GreatVibes-Regular.ttf
+shadows into light: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/ShadowsIntoLight-Regular.ttf
+archivo: /mnt/6E5C97F05C97B177/Documents/Projects/Web app development/Backend/HNG Internship/aivideo_be/presets/fonts/ArchivoBlack-Regular.ttf
+
+[Events]
+Format: Start, End, Style, Text
+Dialogue: 00:00:00.12,00:00:03.79,S00,{\pos(540,1260)}THIS PULL REQUEST MODIFIES THE RESPONSE STRUCTURE OF THE SPECIFIED
+Dialogue: 00:00:03.89,00:00:07.47,S00,{\pos(540,1260)}ENDPOINT TO DYNAMICALLY ADJUST BASED ON THE REQUEST
+Dialogue: 00:00:07.53,00:00:10.90,S00,{\pos(540,1260)}FROM THE FRONT END. THE CHANGE ENSURES THAT THE DATA
+Dialogue: 00:00:10.96,00:00:15.68,S00,{\pos(540,1260)}RETURNED IS TAILORED TO THE SPECIFIC NEEDS OF THE FRONTEND, IMPROVING EFFICIENCY
+Dialogue: 00:00:15.75,00:00:19.60,S00,{\pos(540,1260)}AND USER EXPERIENCE. THIS CHANGE IS REQUIRED TO
+Dialogue: 00:00:19.63,00:00:23.58,S00,{\pos(540,1260)}ENSURE THAT THE BACKEND CAN PROVIDE RESPONSES THAT ARE MORE ALIGNED WITH
+Dialogue: 00:00:23.60,00:00:27.03,S00,{\pos(540,1260)}THE REQUIREMENTS OF THE FRONT END. IT ADDRESSES THE ISSUE OF
+Dialogue: 00:00:27.09,00:00:30.03,S00,{\pos(540,1260)}UNNECESSARY DATA BEING SENT TO THE FRONT END,
+Dialogue: 00:00:30.13,00:00:34.09,S00,{\pos(540,1260)}WHICH CAN LEAD TO PERFORMANCE INEFFICIENCIES AND A SUBOPTIMAL USER
+Dialogue: 00:00:34.12,00:00:34.20,S00,{\pos(540,1260)}EXPERIENCE.

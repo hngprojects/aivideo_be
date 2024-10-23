@@ -17,14 +17,15 @@ from api.v1.routes import api_version_one
 from api.utils.settings import settings
 from starlette.middleware.base import BaseHTTPMiddleware
 from collections import defaultdict
-from scripts.presets import load_avatars_in_db, load_audio_in_db, load_billing_plans_in_db
+# from scripts.presets import load_avatars_in_db, load_audio_in_db
+from scripts.load_billing_plans import load_billing_plans_in_db
 from api.utils.log_streamer import log_streamer
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_avatars_in_db()
-    load_audio_in_db()
+    # load_avatars_in_db()
+    # load_audio_in_db()
     load_billing_plans_in_db()
     yield
 

@@ -9,7 +9,7 @@ from api.utils.db_validators import check_model_existence, get_model_by_params
 from api.v1.schemas.billing_plan import CreateBillingPlanSchema
 from api.v1.models.billing_plan import BillingPlan
 from api.v1.models.user import User
-from scripts.presets import load_billing_plans_in_db
+from scripts.load_billing_plans import load_billing_plans_in_db
 
 class BillingPlanService:
     """Product service functionality"""

@@ -1,16 +1,12 @@
-import mimetypes
+import os, requests, io, mimetypes, cv2, asyncio
 from typing import List, Optional, Union
-import os
 from secrets import token_hex
 from fastapi import HTTPException, status, UploadFile
 from pathlib import Path
 from api.utils.settings import settings
-import aiofiles
-import asyncio
-import cv2
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 async def upload_file_to_current_dir(
@@ -19,7 +15,7 @@ async def upload_file_to_current_dir(
     save_extension: str
 ):
 
-    BASE_DIR = Path(__file__).resolve().parent
+    # BASE_DIR = Path(__file__).resolve().parent
 
     # Check against invalid extensions
 
@@ -173,3 +169,12 @@ def get_media_type_from_extension(file_extension):
     """
     media_type, _ = mimetypes.guess_type(f"dummy.{file_extension}")
     return media_type
+
+
+def get_bytes_data_from_url(url: str):
+    '''This function gets bytes data for a medis from a url'''
+    
+    response = requests.get(url, stream=True)
+    bytes_data = io.BytesIO(response.content)
+    
+    return bytes_data

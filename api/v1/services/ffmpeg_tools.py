@@ -14,6 +14,7 @@ class FfmpegService:
             return time_parts[0] * 60 + time_parts[1]
         else:
             return time_parts[0]  # Just seconds
+        
     
     def extract_audio_from_video(
         self, 
