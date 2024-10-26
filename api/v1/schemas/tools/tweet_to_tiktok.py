@@ -9,6 +9,7 @@ class TweetToTiktokRequest(BaseModel):
     audio_id: Optional[str] = None
     voice_over: str
     scene_media_urls: List[str]
+    media_type: str
     
     @field_validator("voice_over")
     def check_voice_over(cls, value):
@@ -21,6 +22,22 @@ class TweetToTiktokRequest(BaseModel):
     def check_length_of_scene_media_urls_list(cls, value):
         if len(value) < 2:
             raise ValueError("Number of scene media links cannot be less than two")
+        return value
+    
+    @field_validator("media_type")
+    def check_media_type(cls, value):
+        allowed_types = [
+            "stock images",
+            "stock videos", 
+            "takling avatar",
+            "ai images",
+            "3d moving videos",
+            "ai illustrations"
+        ]
+        
+        if value not in allowed_types:
+            raise ValueError(f"Invalid media type: {value}. Must be one of {', '.join(allowed_types)}.")
+        
         return value
 
 

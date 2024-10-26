@@ -1,4 +1,8 @@
 import os, ffmpeg
+from uuid import uuid4
+
+from api.utils.settings import settings
+from api.v1.services.tools.general_video_service import video_service
 
 
 class FfmpegService:
@@ -19,14 +23,16 @@ class FfmpegService:
     def extract_audio_from_video(
         self, 
         input_video: str, 
-        output_path: str, 
         audio_extension: str = 'mp3',
         start_time: str = None,  # Start time in format 'HH:MM:SS' or 'seconds'
         end_time: str = None     # End time in format 'HH:MM:SS' or 'seconds'
     ):
         '''This extracts audio from a portion of a video file'''
+        
 
         try:
+            output_path = os.path.join(settings.TEMP_DIR, f'audio-{uuid4().hex}.{audio_extension}')
+            
             # Check video duration to ensure start_time and end_time are within bounds
             probe = ffmpeg.probe(input_video)
             video_duration = float(probe['format']['duration'])  # Get video duration in seconds
@@ -57,6 +63,8 @@ class FfmpegService:
                 .output(output_path, format=audio_extension)
                 .run(overwrite_output=True)
             )
+            
+            return output_path
 
         except ffmpeg.Error as e:
             print(f"ffmpeg error: {e.stderr.decode()}")
@@ -69,7 +77,6 @@ class FfmpegService:
     def resize_video(
         self,
         input_video: str,
-        output_path: str,
         # aspect_ratio: str,
         width: int,
         height: int
@@ -79,12 +86,13 @@ class FfmpegService:
 
         Args:
             input_video (str): The path to the input video file.
-            output_path (str): The path to the output (resized) video file.
             width (int): The desired width of the output video.
             height (int): The desired height of the output video.
         """
 
         try:
+            output_path = os.path.join(settings.TEMP_DIR, f'video-{uuid4().hex}.mp4')
+            
             # if aspect_ratio == 'square':
             #     width, height = (1000, 1000)
             # elif aspect_ratio == 'horizontal':
@@ -103,6 +111,8 @@ class FfmpegService:
                 .output(output_path, vf=filter_complex)
                 .run(overwrite_output=True)
             )
+            
+            return output_path
         
         except ffmpeg.Error as e:
             raise e
@@ -111,7 +121,6 @@ class FfmpegService:
     def compress_video(
         self, 
         input_video: str,
-        output_path: str,
         compression_speed: str = 'medium'
     ):
         """
@@ -119,7 +128,6 @@ class FfmpegService:
 
         Args:
             input_video (str): Path to the input video file.
-            output_path (str): Path to save the compressed output video.
             compression_speed (str): Compression speed preset (default is 'medium'). Options: 'ultrafast', 'superfast', 
                         'veryfast', 'faster', 'fast', 'medium', 'slow', 'slower', 'veryslow'.
         
@@ -130,15 +138,14 @@ class FfmpegService:
         """
 
         try:
-            # Get video stream info using ffmpeg.probe
-            probe = ffmpeg.probe(input_video)
+            output_path = os.path.join(settings.TEMP_DIR, f'video-{uuid4().hex}.mp4')
             
-            # Extract the video stream metadata
-            video_stream = next(stream for stream in probe['streams'] if stream['codec_type'] == 'video')
+            # Get video details
+            video_details = video_service.get_video_details(input_video)
 
             # Get the resolution
-            width = int(video_stream['width'])
-            height = int(video_stream['height'])
+            width = video_details['width']
+            height = video_details['height']
 
             # Calculate the total number of pixels (width x height)
             total_pixels = width * height
@@ -165,6 +172,8 @@ class FfmpegService:
                 )
                 .run(overwrite_output=True)
             )
+            
+            return output_path
 
         except ffmpeg.Error as e:
             raise e
@@ -173,7 +182,6 @@ class FfmpegService:
     def create_gif_from_video(
         self, 
         input_video, 
-        output_gif, 
         start_time=0, 
         duration=5, 
     ):
@@ -189,6 +197,8 @@ class FfmpegService:
         """
 
         try:
+            output_gif = os.path.join(settings.TEMP_DIR, f'gif-{uuid4().hex}.gif')
+            
             # Use ffmpeg to create a GIF
             (
                 ffmpeg
@@ -198,6 +208,8 @@ class FfmpegService:
                 .output(output_gif, loop=0)  # Output as a GIF
                 .run()
             )
+            
+            return output_gif
 
         except ffmpeg.Error as e:
             raise e
@@ -207,7 +219,6 @@ class FfmpegService:
         self, 
         input_video, 
         watermark_image, 
-        output_video, 
         position="top-right"
     ):
         """
@@ -237,6 +248,7 @@ class FfmpegService:
         position_coords = positions[position]
         
         try:
+            output_video = os.path.join(settings.TEMP_DIR, f'video-{uuid4().hex}.mp4')
 
             (
                 ffmpeg
@@ -249,6 +261,8 @@ class FfmpegService:
                 )
                 .run()
             )
+            
+            return output_video
 
         except ffmpeg.Error as e:
             raise e

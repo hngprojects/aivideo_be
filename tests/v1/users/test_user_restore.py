@@ -18,7 +18,7 @@ from api.v1.services.user import user_service, UserService
 
 client = TestClient(app)
 
-mock_id = str(uuid7())
+mock_id = str(uuid7().hex)
 ENDPOINT = f"/api/v1/users/{mock_id}/restore"
 
 
@@ -59,7 +59,7 @@ def override_get_current_super_admin():
     """Mock the get_current_super_admin dependency"""
 
     app.dependency_overrides[user_service.get_current_super_admin] = lambda: User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="admintestuser@gmail.com",
         password=user_service.hash_password("Testpassword@123"),
         first_name="AdminTest",
@@ -103,7 +103,7 @@ def test_non_admin_access(
     """Test for non admin user access to endpoint"""
 
     mock_get_current_user.return_value = User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="admintestuser@gmail.com",
         password=user_service.hash_password("Testpassword@123"),
         first_name="AdminTest",

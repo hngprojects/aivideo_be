@@ -21,7 +21,7 @@ fake = Faker()
 
 def mock_get_current_user():
     return User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="user103@example.com",
         password="hashed_password",
         first_name='John',
@@ -53,7 +53,7 @@ def test_update_region(client, db_session_mock):
     app.dependency_overrides[user_service.get_current_user] = lambda: mock_get_current_user()
 
     
-    region_id = str(uuid7())
+    region_id = str(uuid7().hex)
     update_data = {"region": "Updated Region", "timezone": "UTC+1", "language": "French"}
     mock_region = {**update_data, "id": region_id, "user_id": "test_user_id"}
     

@@ -8,10 +8,10 @@ from api.v1.services.user import user_service
 from api.utils.tool_limiter import track_tool_usage
 from api.utils.success_response import success_response
 from api.v1.services.job import tifi_job_service
-from api.v1.services.ai_tools.script_to_video import ttv_service
+from api.v1.services.tools.script_to_video import ttv_service
 from api.v1.services.presets import preset_service
 from api.v1.models.project import ProjectToolsEnum
-from api.v1.schemas.ai_tools.script_to_video import SceneGeneration, TTVSchema
+from api.v1.schemas.tools.script_to_video import SceneGeneration, TTVSchema
 
 
 ttv_router = APIRouter(prefix='/tools/video', tags=['Tools'])

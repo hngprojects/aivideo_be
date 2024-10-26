@@ -146,7 +146,7 @@ def mock_db_session(mocker):
 @pytest.fixture
 def test_user():
     user = User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="testuser@gmail.com",
         password="hashedpassword",
         first_name="test",
@@ -172,7 +172,7 @@ def test_bill_plan():
 @pytest.fixture()
 def test_payment(test_user):
     payment = Payment(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         amount=49.99,
         currency="usd",
         status="completed",

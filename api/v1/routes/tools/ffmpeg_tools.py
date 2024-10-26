@@ -11,7 +11,7 @@ from api.utils.tool_limiter import track_tool_usage
 from api.v1.models.project import ProjectToolsEnum
 from api.v1.models.user import User
 from api.v1.services.user import user_service
-from api.v1.services.ffmpeg_tools import ffmpeg_service
+from api.v1.services.tools.ffmpeg_tools import ffmpeg_service
 from api.v1.services.job import tifi_job_service
 
 

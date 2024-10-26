@@ -2,9 +2,9 @@ import sys, json, os, requests
 from uuid import uuid4
 
 from api.utils.files import delete_file
-from api.v1.services.ai_tools.general import general_service
-from api.v1.services.ai_tools.talking_avatar import talking_avatar_service
-from api.v1.services.ai_tools.general_video_service import video_service
+from api.v1.services.tools.general import general_service
+from api.v1.services.tools.talking_avatar import talking_avatar_service
+from api.v1.services.tools.general_video_service import video_service
 from api.db.database import get_db
 from api.utils.minio_service import minio_service
 from api.utils.settings import settings
@@ -42,7 +42,7 @@ audio_file=audio_file
 
 try:
     save_and_print_job_progress(db, job, 20, 'Generating audio from script')
-    audio = video_service.generate_audio_from_script(script=script, voice_over=voice_over)
+    audio = video_service.convert_text_to_speech(script=script, voice_over=voice_over)
 
     save_and_print_job_progress(db, job, 30, 'Generating talking avatar video')
     url = talking_avatar_service.generate_talking_avatar_video(image_file, audio)
@@ -58,7 +58,7 @@ try:
 
     if audio_file:
         save_and_print_job_progress(db, job, 55, 'Applying background audio')
-        video_audio_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4())}.mp4')
+        video_audio_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4().hex)}.mp4')
         # Add background audio to the file
         video_service.add_background_audio(
             video_path=initial_save_path,
@@ -68,7 +68,7 @@ try:
 
     video_dir = os.path.join(settings.STORAGE_DIR, 'video')
     os.makedirs(video_dir, exist_ok=True)
-    final_save_path = os.path.join(video_dir, f'video-{str(uuid4())}.mp4')
+    final_save_path = os.path.join(video_dir, f'video-{str(uuid4().hex)}.mp4')
 
     save_and_print_job_progress(db, job, 60, 'Changing aspect ratio')
     # Perform aspect ratio resizing based on user input
@@ -86,7 +86,7 @@ try:
     delete_file(audio)
 
     save_and_print_job_progress(db, job, 75, 'Generating video preview link')
-    minio_save_file = f'tavtr-{str(uuid4())}.mp4'
+    minio_save_file = f'tavtr-{str(uuid4().hex)}.mp4'
     save_url, download_url = minio_service.upload_to_minio(
         folder_name='talking-avatar',
         source_file=final_save_path,
@@ -100,14 +100,14 @@ try:
     low_quality_vid_preview, low_quality_vid_download = minio_service.upload_to_minio(
         folder_name='talking-avatar',
         source_file=low_quality,
-        destination_file=f'tavtr-{str(uuid4())}.mp4',
+        destination_file=f'tavtr-{str(uuid4().hex)}.mp4',
         content_type=mime_types.VIDEO_MP4
     )
     medium_quality = video_service.compress_video(input_file=final_save_path, bitrate=1080)
     medium_quality_vid_preview, medium_quality_vid_download = minio_service.upload_to_minio(
         folder_name='talking-avatar',
         source_file=medium_quality,
-        destination_file=f'tavtr-{str(uuid4())}.mp4',
+        destination_file=f'tavtr-{str(uuid4().hex)}.mp4',
         content_type=mime_types.VIDEO_MP4
     )
 

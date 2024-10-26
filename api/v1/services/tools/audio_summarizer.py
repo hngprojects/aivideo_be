@@ -7,7 +7,7 @@ from langchain_community.document_loaders.assemblyai import TranscriptFormat
 
 from api.utils.settings import settings
 from api.utils.pdf_builder import PDFBuilder
-from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
+from api.v1.services.tools.pdf_summarizer import pdf_summary_service
 
 
 class AudioSummaryService:
@@ -59,7 +59,7 @@ class AudioSummaryService:
         pdf_buffer = BytesIO()
         pdf_builder = PDFBuilder(pdf_buffer)
 
-        file_path = os.path.join(settings.TEMP_DIR, f"{prefix_file_name}-{uuid4()}.pdf")
+        file_path = os.path.join(settings.TEMP_DIR, f"{prefix_file_name}-{uuid4().hex}.pdf")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
         # Add summary to pdf file

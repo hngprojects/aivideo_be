@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch, Mock
 from fastapi.testclient import TestClient
 from api.v1.models.user import User
-from api.v1.routes.ai_tools.youtube_video_summarizer import video_summary
+from api.v1.routes.tools.youtube_video_summarizer import video_summary
 from api.v1.services.user import user_service
 from api.db.database import get_db
 from uuid import uuid4

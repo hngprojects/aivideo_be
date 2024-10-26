@@ -1,9 +1,9 @@
 import requests, json, os
 from bs4 import BeautifulSoup
 
-from api.v1.services.ai_tools.general import general_service
-from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
-from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
+from api.v1.services.tools.general import general_service
+from api.v1.services.tools.pdf_summarizer import pdf_summary_service
+from api.v1.services.tools.audio_summarizer import audio_summary_service
 
 
 class PodcastSummaryService:

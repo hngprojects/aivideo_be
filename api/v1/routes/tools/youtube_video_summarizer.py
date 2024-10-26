@@ -9,12 +9,12 @@ from api.utils.files import delete_file, upload_multiple_files_to_tmp_dir, uploa
 from api.utils.success_response import success_response
 from api.utils.tool_limiter import track_tool_usage
 from api.v1.models.user import User
-from api.v1.schemas.ai_tools.youtube import VideoLinkRequest, YTLinksRequest
+from api.v1.schemas.tools.youtube import VideoLinkRequest, YTLinksRequest
 from api.v1.models.project import ProjectToolsEnum
 from api.v1.services.job import tifi_job_service
 from api.v1.services.user import user_service
 from api.utils.minio_service import minio_service
-from api.v1.routes.ai_tools.summary import check_detail_level
+from api.v1.routes.tools.summary import check_detail_level
 
 
 video_summary = APIRouter(prefix="/tools/summary", tags=["Tools"])

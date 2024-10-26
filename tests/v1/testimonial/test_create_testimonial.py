@@ -13,7 +13,7 @@ from main import app
 
 def mock_testimonial():
     return Testimonial(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         client_name="Zxenon",
         content="Very Useful Product",
         rating=4.5,

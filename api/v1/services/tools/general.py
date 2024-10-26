@@ -12,7 +12,7 @@ class GeneralService:
             response = requests.get(url, stream=True)
             response.raise_for_status()  # Check for errors in the response
             
-            file_path = os.path.join(settings.TEMP_DIR, f'{prefix_file_name}-{uuid4()}.{extension}')
+            file_path = os.path.join(settings.TEMP_DIR, f'{prefix_file_name}-{uuid4().hex}.{extension}')
             with open(file_path, "wb") as file:
                 for chunk in response.iter_content(chunk_size=8192):
                     file.write(chunk)

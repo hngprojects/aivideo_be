@@ -1,14 +1,14 @@
 from fastapi import APIRouter
 
-from api.v1.routes.ai_tools.youtube_video_summarizer import video_summary
-from api.v1.routes.ai_tools.tweet_to_tiktok import tweet_to_tiktok_router
+from api.v1.routes.tools.youtube_video_summarizer import video_summary
+from api.v1.routes.tools.tweet_to_tiktok import tweet_to_tiktok_router
 from api.v1.routes.api_status import api_status
 from api.v1.routes.auth import auth
 from api.v1.routes.help_topics import help_topics
 from api.v1.routes.user import user_router
 from api.v1.routes.payment import payments
 from api.v1.routes.billing_plan import billing_plan
-from api.v1.routes.ai_tools.summary import summary
+from api.v1.routes.tools.summary import summary
 from api.v1.routes.notification_settings import notification_setting
 from api.v1.routes.faq import faq
 from api.v1.routes.resource import resource
@@ -21,14 +21,14 @@ from api.v1.routes.request_password import pwd_reset
 from api.v1.routes.profile import profile
 from api.v1.routes.notification import notification
 from api.v1.routes.user_subscription import user_subs
-from api.v1.routes.ai_tools.talking_avatar import video_router
+from api.v1.routes.tools.talking_avatar import video_router
 from api.v1.routes.testimonial import testimonial
 from api.v1.routes.job import job_router
-from api.v1.routes.ai_tools.script_to_video import ttv_router
+from api.v1.routes.tools.script_to_video import ttv_router
 from api.v1.routes.utilities import utilities
 from api.v1.routes.blog import blog
-from api.v1.routes.ffmpeg_tools import ffmpeg_router
-from api.v1.routes.ai_tools.article_translator import article_router
+from api.v1.routes.tools.ffmpeg_tools import ffmpeg_router
+from api.v1.routes.tools.article_translator import article_router
 from tests.run_all_test import test_rout
 
 

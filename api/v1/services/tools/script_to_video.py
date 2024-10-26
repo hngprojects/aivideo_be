@@ -10,7 +10,7 @@ from api.utils.openai_service import openai_service
 from api.utils import mime_types
 from api.utils.files import delete_file
 from api.utils.settings import settings
-from api.v1.services.ai_tools.general_video_service import video_service
+from api.v1.services.tools.general_video_service import video_service
 
 
 class ScriptToVideoService:
@@ -69,7 +69,7 @@ class ScriptToVideoService:
         duration_per_image = 10  # Duration each image will be displayed (in seconds)
         transition_duration = 2  # Duration of the fade transition (in seconds)
 
-        output_video_file = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
+        output_video_file = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4().hex)}.mp4')
 
         for image_file in images:
             # Create an ImageClip for each image

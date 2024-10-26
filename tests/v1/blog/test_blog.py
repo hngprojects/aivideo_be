@@ -21,7 +21,7 @@ def mock_db_session():
 @pytest.fixture
 def mock_blog():
     return Blog(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         title="Test Blog Title",
         content="Test Blog Content",
         image_url="http://example.com/image.jpg",
@@ -49,7 +49,7 @@ class TestBlogEndpoints:
         mock_blog_data = [
             mock_blog,
             Blog(
-                id=str(uuid7()), title="Another Blog", content="Another Content",
+                id=str(uuid7().hex), title="Another Blog", content="Another Content",
                 image_url="http://example.com/another.jpg", cover_image_url="http://example.com/another_cover.jpg",
                 is_deleted=False, category="Health", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc)),
         ]

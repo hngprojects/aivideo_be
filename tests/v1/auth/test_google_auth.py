@@ -42,7 +42,7 @@ def test_google_login_existing_user(mock_user_service, mock_google_oauth_service
 
     # Mock user data
     mock_user = User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email=email,
         first_name='Existing',
         created_at=datetime.now(timezone.utc),
@@ -88,7 +88,7 @@ def test_google_login_new_user(mock_user_service, mock_google_oauth_service, moc
 
         # Mock the GoogleOauthServices create method
         mock_user = User(
-            id=str(uuid7()),
+            id=str(uuid7().hex),
             email=email,
             first_name='New',
             created_at=datetime.now(timezone.utc),

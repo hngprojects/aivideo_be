@@ -22,7 +22,7 @@ class BillingPlanService:
         Create and return a new billing plan
         """
         try:
-            plan = BillingPlan(id=str(uuid7()), **schema.model_dump())
+            plan = BillingPlan(id=str(uuid7().hex), **schema.model_dump())
             db.add(plan)
             db.commit()
             db.refresh(plan)

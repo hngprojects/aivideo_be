@@ -40,7 +40,7 @@ def test_get_all_audio(mock_get_db):
     response = client.get("/api/v1/presets/audio")
     assert response.status_code == 200
 
-@patch("api.v1.services.presets.preset_service.load_audio_in_db")
+@patch("api.v1.services.presets.preset_service.load_music_in_db")
 @patch("api.db.database.get_db", return_value=MagicMock(spec=Session))
 def test_load_all_audio(mock_get_db, mock_load_audio):
     response = client.get("/api/v1/presets/load-audio")
@@ -57,7 +57,7 @@ def test_get_all_audio(mock_get_db):
     response = client.get("/api/v1/presets/audio")
     assert response.status_code == 200
 
-@patch("api.v1.services.presets.preset_service.load_audio_in_db")
+@patch("api.v1.services.presets.preset_service.load_music_in_db")
 @patch("api.db.database.get_db", return_value=MagicMock(spec=Session))
 def test_load_all_audio(mock_get_db, mock_load_audio):
     response = client.get("/api/v1/presets/load-audio")

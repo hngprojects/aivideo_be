@@ -107,7 +107,7 @@ WrapStyle: 1
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, BorderStyle, Outline, Shadow, Alignment, Encoding
-Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color}, 3, 0, 1, 5, 0
+Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color}, 1, 1, 1, 5, 0
 
 [Fonts]
 """
@@ -117,7 +117,7 @@ captions = "00:00.120 --> 00:03.798\nThis pull request modifies the response str
 captions_list = captions.split('\n\n')
 caption_timestamps = [caption[0:23] for caption in captions_list if len(caption) == 23]
 formatted_subtitles = []
-subtitles_file = f'./tst_scripts/subtitles-{uuid4()}.ass'
+subtitles_file = f'./tst_scripts/subtitles-{uuid4().hex}.ass'
 
 for caption in captions_list:
     single_caption_list = caption.split('\n')

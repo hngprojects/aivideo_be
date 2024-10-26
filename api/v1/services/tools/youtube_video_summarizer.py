@@ -4,10 +4,10 @@ from uuid import uuid4
 
 from api.utils.settings import settings
 from api.utils.pdf_builder import PDFBuilder
-from api.v1.services.ai_tools.general import general_service
-from api.v1.services.ffmpeg_tools import ffmpeg_service
-from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
-from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
+from api.v1.services.tools.general import general_service
+from api.v1.services.tools.ffmpeg_tools import ffmpeg_service
+from api.v1.services.tools.pdf_summarizer import pdf_summary_service
+from api.v1.services.tools.audio_summarizer import audio_summary_service
 from api.loggers.job_logger import job_logger
 
 
@@ -18,8 +18,8 @@ class YtVidSummarizerService:
         '''This function gets only the audio stream of the youtube video'''
 
         try:
-            output_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
-            # output_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4()}.mp4')
+            output_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4().hex}.mp3')
+            # output_path = os.path.join(settings.TEMP_DIR, f'ytvid-{uuid4().hex}.mp4')
 
             # The command to run yt-dlp to download audio only
             command = [
@@ -119,7 +119,7 @@ class YtVidSummarizerService:
     def extract_audio_from_video(self, video_path: str):
         '''This function extracts audio from a video and returns the audio file'''
 
-        output_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4()}.mp3')
+        output_path = os.path.join(settings.TEMP_DIR, f'ytaud-{uuid4().hex}.mp3')
         # Use ffmpeg to extract the audio from the video
         ffmpeg_service.extract_audio_from_video(
             input_video=video_path,

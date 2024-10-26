@@ -28,7 +28,7 @@ def mock_user_sub_service():
 @pytest.fixture
 def test_user():
     return User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="testuser@gmail.com",
         password="hashedpassword",
         first_name="test",
@@ -41,7 +41,7 @@ def test_user():
 @pytest.fixture
 def test_billing_plan():
     return BillingPlan(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         plan_name="plan one",
         price=5000,
         currency="NGN",
@@ -54,7 +54,7 @@ def test_billing_plan():
 @pytest.fixture
 def test_user_subscription(test_user, test_billing_plan):
     user_sub = UserSubscription(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         user_id=test_user.id,
         start_date=datetime.now(),
         billing_plan_id=test_billing_plan.id,

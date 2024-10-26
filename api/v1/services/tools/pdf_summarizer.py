@@ -119,7 +119,7 @@ class PDFSummaryService:
         pdf_buffer = BytesIO()
         pdf_builder = PDFBuilder(pdf_buffer)
 
-        file_path = os.path.join(settings.TEMP_DIR, f"pdfsum-{uuid.uuid4()}.pdf")
+        file_path = os.path.join(settings.TEMP_DIR, f"pdfsum-{uuid.uuid4().hex}.pdf")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
         # Add summary to pdf file

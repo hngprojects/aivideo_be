@@ -315,7 +315,7 @@ class SummaryService():
 
         """Save the PDF to a temporary file"""
         pdf_file.seek(0)
-        temp_file_path = f'/tmp/summary_export_{uuid.uuid4()}.pdf'
+        temp_file_path = f'/tmp/summary_export_{uuid.uuid4().hex}.pdf'
         with open(temp_file_path, 'wb') as f:
             f.write(pdf_file.getvalue())
 

@@ -30,7 +30,7 @@ def override_get_db(db_session_mock):
 
 @pytest.fixture
 def test_admin_user():
-    return User(id=str(uuid7()))
+    return User(id=str(uuid7().hex))
 
 
 @pytest.fixture

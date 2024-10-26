@@ -35,7 +35,7 @@ class FetchStockMediaRequest(BaseModel):
         return value
 
     @field_validator("media_type")
-    def check_image_type(cls, value):
+    def check_media_type(cls, value):
         allowed_types = [
             "stock images",
             "stock videos", 
@@ -46,7 +46,7 @@ class FetchStockMediaRequest(BaseModel):
         ]
         
         if value not in allowed_types:
-            raise ValueError(f"Invalid image type: {value}. Must be one of {', '.join(allowed_types)}.")
+            raise ValueError(f"Invalid media type: {value}. Must be one of {', '.join(allowed_types)}.")
         
         return value
     

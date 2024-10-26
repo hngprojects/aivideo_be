@@ -66,7 +66,7 @@ class ResourceService(Service):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(image.file, buffer)
 
-        minio_save_file = f"resource-{resource_id}-{str(uuid7())}.{extension}"
+        minio_save_file = f"resource-{resource_id}-{str(uuid7().hex)}.{extension}"
         minio_response = minio_service.upload_to_minio(
             folder_name="resources",
             source_file=file_path,

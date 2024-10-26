@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from api.db.database import get_db
 from api.utils.success_response import success_response
 from api.v1.models.project import ProjectToolsEnum
-from api.v1.schemas.ai_tools.article_translator import TranslateArticle
+from api.v1.schemas.tools.article_translator import TranslateArticle
 from api.v1.services.job import tifi_job_service
 from api.v1.services.user import user_service
 from api.utils.tool_limiter import track_tool_usage

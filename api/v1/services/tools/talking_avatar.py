@@ -10,7 +10,7 @@ import openai
 import requests
 
 from api.utils.files import delete_file
-from api.v1.services.ai_tools.general_video_service import video_service
+from api.v1.services.tools.general_video_service import video_service
 
 
 class TalkingAvatarService:

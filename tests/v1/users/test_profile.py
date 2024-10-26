@@ -44,7 +44,7 @@ def create_temp_file():
 
 def mock_get_current_user():
     return User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="user103@example.com",
         password=user_service.hash_password("TestaUser@123"),
         first_name='John',
@@ -57,8 +57,8 @@ def mock_get_current_user():
 
 def mock_profile():
     return Profile(
-        id=str(uuid7()),
-        user_id=str(uuid7()),
+        id=str(uuid7().hex),
+        user_id=str(uuid7().hex),
         username="john_doe",
         pronouns="he/him",
         job_title="Software Engineer",

@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from datetime import datetime
 
 from main import app
-from api.v1.routes.ai_tools.talking_avatar import video_router
+from api.v1.routes.tools.talking_avatar import video_router
 
 client = TestClient(app)
 

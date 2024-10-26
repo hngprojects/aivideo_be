@@ -28,7 +28,7 @@ def mock_db_session(mocker):
 @pytest.fixture
 def test_user():
     user = User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="testuser@gmail.com",
         password="hashedpassword",
         first_name="test",
@@ -43,7 +43,7 @@ def test_bill_plan():
         features=['One', 'Two'],
         plan_interval="one-off",
         plan_name="Plan 1",
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         currency="NGN",
         price=3000
     )
@@ -60,7 +60,7 @@ def access_token_user(test_user):
 
 @pytest.fixture
 def random_access_token():
-    return user_service.create_access_token(user_id=str(uuid7()))
+    return user_service.create_access_token(user_id=str(uuid7().hex))
 
 
 @pytest.mark.asyncio

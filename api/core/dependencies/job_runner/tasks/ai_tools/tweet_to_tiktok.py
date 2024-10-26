@@ -1,9 +1,9 @@
 import sys, json, os
 from uuid import uuid4
 
-from api.v1.services.ai_tools.script_to_video import ttv_service
+from api.v1.services.tools.script_to_video import ttv_service
 from api.utils.files import delete_file
-from api.v1.services.ai_tools.general_video_service import video_service
+from api.v1.services.tools.general_video_service import video_service
 from api.db.database import get_db
 from api.utils.minio_service import minio_service
 from api.utils.settings import settings
@@ -34,7 +34,7 @@ voice_over=payload.get('voice_over')
 
 try:
     save_and_print_job_progress(db, job, 15, 'Generating audio from script')
-    audio_file = video_service.generate_audio_from_script(script, voice_over)
+    audio_file = video_service.convert_text_to_speech(script, voice_over)
 
     save_and_print_job_progress(db, job, 25, 'Generating subtitle file from generated audio')
     subtitle_file = video_service.generate_subtitles_from_audio(audio_file)
@@ -47,7 +47,7 @@ try:
 
     save_and_print_job_progress(db, job, 55, 'Embedding subtitles in generated video')
     # Add subtitles to video
-    video_with_subtitles_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
+    video_with_subtitles_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4().hex)}.mp4')
     video_with_subtitles = video_service.add_subtitles_to_video(
         input_video=video_file, 
         subtitles_file=subtitle_file, 
@@ -57,7 +57,7 @@ try:
     if background_audio:
         save_and_print_job_progress(db, job, 60, 'Applying background music to the video')
         # Add background music to video
-        video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4())}.mp4')
+        video_with_bg_music_path = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4().hex)}.mp4')
         video_with_audio = video_service.add_background_audio(
             video_path=video_with_subtitles, 
             audio_path=background_audio, 
@@ -70,7 +70,7 @@ try:
     os.makedirs(video_dir, exist_ok=True)
 
     save_and_print_job_progress(db, job, 75, 'Changing aspect ratio of video')
-    output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4())}.mp4')
+    output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4().hex)}.mp4')
     # Adjust aspect ratio
     final_result_file = video_service.change_aspect_ratio(
         input_file=video_with_audio if background_audio is not None else video_with_subtitles, 
@@ -92,7 +92,7 @@ try:
     # save_url = f'{settings.APP_URL}/{final_result_file}'
 
     save_and_print_job_progress(db, job, 85, 'Generating preview and download links for generated video')
-    minio_save_file = f'scrtovid-{str(uuid4())}.mp4'
+    minio_save_file = f'scrtovid-{str(uuid4().hex)}.mp4'
     save_url, download_url = minio_service.upload_to_minio(
         folder_name='script-to-video',
         source_file=final_result_file,

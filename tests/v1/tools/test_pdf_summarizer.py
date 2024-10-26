@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from main import app
 
-from api.v1.services.ai_tools.summary import summary_service
+from api.v1.services.tools.summary import summary_service
 import pytest
 from langchain.chains.llm import LLMChain
 from langchain_core.prompts import PromptTemplate

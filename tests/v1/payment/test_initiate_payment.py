@@ -36,7 +36,7 @@ def test_bill_plan():
         features=['One', 'Two'],
         plan_interval="one-off",
         plan_name="Plan 1",
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         currency="NGN",
         price=5000
     )
@@ -47,7 +47,7 @@ def test_bill_plan():
 @pytest.fixture
 def test_user():
     user = User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="testuser@gmail.com",
         password="hashedpassword",
         first_name="test",
@@ -60,13 +60,13 @@ def test_user():
 @pytest.fixture()
 def test_payment(test_user):
     payment = Payment(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         amount=5000.00,
         currency="NGN",
         status="completed",
         method="flutterwave",
         user_id=test_user.id,
-        transaction_id=str(uuid7()),
+        transaction_id=str(uuid7().hex),
         created_at=datetime.now(tz=timezone.utc)
     )
 
@@ -98,7 +98,7 @@ def access_token_user(test_user):
 
 @pytest.fixture
 def random_access_token():
-    return user_service.create_access_token(user_id=str(uuid7()))
+    return user_service.create_access_token(user_id=str(uuid7().hex))
 
 
 @pytest.mark.asyncio
@@ -117,7 +117,7 @@ async def test_initiate_payment_successful(
     mock_initiate_payment_schema
 ):
     # Setup mocks
-    uuid_for_tx_ref = uuid7()
+    uuid_for_tx_ref = uuid7().hex
     mock_settings.STRIPE_SECRET = "test_secret_key"
     mock_settings.FLUTTERWAVE_SECRET = "test_secret_key"
     mock_uuid7.return_value = uuid_for_tx_ref

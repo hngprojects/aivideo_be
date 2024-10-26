@@ -7,7 +7,7 @@ from api.utils.files import delete_file
 from api.utils.minio_service import minio_service
 from api.utils.settings import settings
 from api.utils import mime_types
-from api.v1.services.ai_tools.youtube_video_summarizer import ytvid_service
+from api.v1.services.tools.youtube_video_summarizer import ytvid_service
 from api.core.dependencies.job_runner.app.utils import save_and_print_job_progress
 
 db = next(get_db())
@@ -34,7 +34,7 @@ number_of_videos_to_process = len(links)
 progress_per_video = round(95 / number_of_videos_to_process)
 
 # Set up save path for csv file for batch upload
-csv_save_path = os.path.join(settings.TEMP_DIR, f"ytvidsum-{uuid4()}.csv")
+csv_save_path = os.path.join(settings.TEMP_DIR, f"ytvidsum-{uuid4().hex}.csv")
 
 video_file = None
 audio_file = None
@@ -96,7 +96,7 @@ try:
         pdf_preview_url, pdf_download_url = minio_service.upload_to_minio(
             folder_name='youtube-video-summarizer',
             source_file=pdf_file,
-            destination_file=f"ytvidsum-{str(uuid4())}.pdf",
+            destination_file=f"ytvidsum-{str(uuid4().hex)}.pdf",
             content_type=mime_types.APPLICATION_PDF,
         )
     
@@ -140,7 +140,7 @@ try:
         csv_preview_url, csv_download_url = minio_service.upload_to_minio(
             folder_name='youtube-video-summarizer',
             source_file=csv_save_path,
-            destination_file=f"ytvidsum-{str(uuid4())}.csv",
+            destination_file=f"ytvidsum-{str(uuid4().hex)}.csv",
             content_type=mime_types.TEXT_CSV,
         )
         delete_file(csv_save_path)

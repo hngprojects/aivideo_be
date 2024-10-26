@@ -16,7 +16,7 @@ from deepgram import (
 )
 
 from api.utils.settings import settings
-from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
+from api.v1.services.tools.audio_summarizer import audio_summary_service
 
 
 class GeneralVideoService:
@@ -56,7 +56,7 @@ class GeneralVideoService:
         - bitrate: Desired bitrate for the output video (e.g., '1000k' for 1000 kbps).
         """
 
-        output_file = os.path.join(settings.STORAGE_DIR, 'video', f'video-{str(uuid4())}.mp4')
+        output_file = os.path.join(settings.STORAGE_DIR, 'video', f'video-{str(uuid4().hex)}.mp4')
         try:
             clip = VideoFileClip(input_file)
             clip.write_videofile(output_file, bitrate=f"{bitrate}k")
@@ -67,8 +67,9 @@ class GeneralVideoService:
             return input_file
 
 
-    def generate_audio_from_script(self, script, voice_over='man'):
-        file_path = os.path.join(settings.TEMP_DIR, f'audio-{str(uuid4())}.wav')
+    # TODO: Update this function to use replicate and pick a voice from the voices in the db
+    def convert_text_to_speech(self, script, voice_over='man'):
+        file_path = os.path.join(settings.TEMP_DIR, f'audio-{str(uuid4().hex)}.wav')
 
         female = ["nova", "shimmer"]
         neutral = ["fable", "alloy"]
@@ -99,7 +100,7 @@ class GeneralVideoService:
                 as_srt=True
             )
 
-            subtitles_file = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4()}.srt')
+            subtitles_file = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.srt')
             with open(subtitles_file, 'w') as subtitles:
                 subtitles.write(captions)
             
@@ -201,7 +202,6 @@ class GeneralVideoService:
             "&H00A52A2A",  # Brown
         ]
 
-
         outline_colors = [
             "&H00000000",  # Black
             "&H00FFFFFF",  # White
@@ -247,7 +247,7 @@ class GeneralVideoService:
         """
         
         try:
-            subtitles_file = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4()}.ass')
+            subtitles_file = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.ass')
             captions = audio_summary_service.generate_transcript_with_timestamp(
                 audio_file, 
                 as_srt=False
@@ -280,10 +280,13 @@ class GeneralVideoService:
             print(f"Exception: {e}")
     
     
-    def add_subtitles_to_video(self, input_video: str, subtitles_file: str, output_video: str):
+    # def add_subtitles_to_video(self, input_video: str, subtitles_file: str, output_video: str):
+    def add_subtitles_to_video(self, input_video: str, subtitles_file: str):
         
         if '.srt' not in subtitles_file:
             raise ValueError("Subtitle file must be in SRT format.")
+        
+        output_video = os.path.join(settings.TEMP_DIR, f'sibtitles-{uuid4().hex}.mp4')
         
         # Load the input video
         input_stream = ffmpeg.input(input_video)
@@ -300,12 +303,13 @@ class GeneralVideoService:
         return output_video
     
     
-    def add_custom_subtitles_to_video(self, input_video: str, subtitles_file: str, output_video: str):
+    def add_custom_subtitles_to_video(self, input_video: str, subtitles_file: str):
         '''THis function adds a customized subtitle file in ass format to a video'''
         
         if '.ass' not in subtitles_file:
             raise ValueError("Subtitle file must be in ASS format.")
         
+        output_video = os.path.join(settings.TEMP_DIR, f'video-{uuid4().hex}.mp4')
         (
             ffmpeg
             .input(input_video)
