@@ -62,7 +62,7 @@ def get_all_voices(db: Session = Depends(get_db)):
 
 
 @preset_router.get('/load-presets')
-def load_all_presets(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def load_all_presets(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     '''Endpoint to load all presets into the db'''
     
     background_tasks.add_task(

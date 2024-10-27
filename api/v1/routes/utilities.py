@@ -58,7 +58,7 @@ async def translate_text(schema: TextTranslateRequest):
     )
     
 
-@utilities.get('/fetch-stock-media', status_code=200)
+@utilities.post('/fetch-stock-media', status_code=200)
 async def fetch_stock_media(
     schema: FetchStockMediaRequest,
     page: int = Query(1),
@@ -71,6 +71,7 @@ async def fetch_stock_media(
     result = None
     
     if isinstance(schema.query, str):
+        result = []
         stock_service = StockMediaService(
             query=schema.query,
             page=page,
@@ -106,7 +107,9 @@ async def fetch_stock_media(
             pass
     
     elif isinstance(schema.query, list):
+        result = {}
         for query in schema.query:
+            # try:
             stock_service = StockMediaService(
                 query=query,
                 page=page,
@@ -140,6 +143,10 @@ async def fetch_stock_media(
             
             elif schema.media_type == '3d moving videos':
                 pass
+                
+            # except Exception as e:
+            #     continue
+            
     return success_response(
         status_code=200,
         message='Stock media fetched successfully',

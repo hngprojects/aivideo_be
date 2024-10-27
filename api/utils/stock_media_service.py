@@ -139,11 +139,11 @@ class StockMediaService:
         images = []
         
         unsplash_images = self.__unsplash()
-        pexels_images = self.__pexels('image')
+        # pexels_images = self.__pexels('image')
         pixabay_images = self.__pixabay('image')
         
         images.extend(unsplash_images)
-        images.extend(pexels_images)
+        # images.extend(pexels_images)
         images.extend(pixabay_images)
         
         return images

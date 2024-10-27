@@ -450,8 +450,10 @@ class GeneralVideoService:
             print(f"An error occurred: {e}")
 
 
-    def add_background_audio(self, video_path: str, audio_path: str, output_path: str):
+    def add_background_audio(self, video_path: str, audio_path: str):
         try:
+            output_path = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4().hex)}.mp4')
+            
             # Load the video file with its audio
             video = ffmpeg.input(video_path)
 

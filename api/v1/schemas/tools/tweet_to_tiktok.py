@@ -9,7 +9,7 @@ class TweetToTiktokRequest(BaseModel):
     audio_id: Optional[str] = None
     voice_over: str
     scene_media_urls: List[str]
-    media_type: str
+    video_style: str
     
     @field_validator("voice_over")
     def check_voice_over(cls, value):
@@ -24,8 +24,8 @@ class TweetToTiktokRequest(BaseModel):
             raise ValueError("Number of scene media links cannot be less than two")
         return value
     
-    @field_validator("media_type")
-    def check_media_type(cls, value):
+    @field_validator("video_style")
+    def check_video_style(cls, value):
         allowed_types = [
             "stock images",
             "stock videos", 

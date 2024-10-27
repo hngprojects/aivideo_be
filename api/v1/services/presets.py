@@ -25,11 +25,11 @@ class PresetService:
     # --------------- AVATARS ---------------
     # ---------------------------------------
     
-    def load_avatars_in_db(self, db: Session):
+    async def load_avatars_in_db(self, db: Session):
         '''Function to load all avatar presets as static files in the database'''
         
         # Load avatar voices in db fiest
-        self.load_voices_in_db(db)
+        await self.load_voices_in_db(db)
 
         for root, dir, files in os.walk(AVATAR_FOLDER):
             for file_name in files:
@@ -156,7 +156,7 @@ class PresetService:
     # --------------- AUDIO -----------------
     # ---------------------------------------
 
-    def load_music_in_db(self, db: Session):
+    async def load_music_in_db(self, db: Session):
         '''Function to load all audio presets as static files in the database'''
 
         for root, dir, files in os.walk(BACKGROUND_MUSIC_FOLDER):
@@ -222,14 +222,14 @@ class PresetService:
     # --------------- VOICES ----------------
     # ---------------------------------------
     
-    def load_voices_in_db(self, db: Session):
+    async def load_voices_in_db(self, db: Session):
         '''Function to load all voice presets as static files in the database'''
 
         for root, dir, files in os.walk(VOICE_FOLDER):
             for file_name in files:
                 file_path = os.path.join(root, file_name)
                 name = file_name.split('-')[0]
-                gender = file_name.split('-')[1]
+                gender = file_name.split('-')[1].replace('.mp3', '')
 
                 # Check if voice already exists in the database
                 if not db.query(Voice).filter(Voice.file_name==file_name).first():
@@ -292,7 +292,7 @@ class PresetService:
     # ------------- BG IMAGES ---------------
     # ---------------------------------------
     
-    def load_background_images_in_db(self, db: Session):
+    async def load_background_images_in_db(self, db: Session):
         '''Function to load all background_image presets as static files in the database'''
 
         for root, dir, files in os.walk(BACKGROUND_IMAGE_FOLDER):

@@ -75,6 +75,7 @@ async def convert_tweet_to_video(
             'scene_media_urls': schema.scene_media_urls,
             'audio_url': audio_url if schema.audio_id else None,
             'voice_over': schema.voice_over.lower(),
+            'video_style': schema.video_style.lower(),
         },
         user_id=user.id if user else None,
         is_parallel=False

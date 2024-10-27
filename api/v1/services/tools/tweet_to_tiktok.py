@@ -14,7 +14,7 @@ class TweetToTiktokService:
     def generate_scene_descriptions(self, script: str):
         
         response = openai_service.prompt_ai(
-            prompt=f'Generate five simple and short scene descriptions not more than 100 characters that can be used as an image description for AI and stock images and videos API query for the following script and I do not want any form of numbering or bulleting on them. Also, do not say any other thing other than the scene descriptions. Here is the script: :\n\n{script}\n\nScene Descriptions:',
+            prompt=f'Generate five simple and short scene descriptions not more than 30 characters that can be used as an image description for AI and stock images and videos API query for the following script and I do not want any form of numbering or bulleting on them. Also, do not say any other thing other than the scene descriptions. Here is the script: :\n\n{script}\n\nScene Descriptions:',
             system_role_desc='You are a great scene description generator.'
         )
         

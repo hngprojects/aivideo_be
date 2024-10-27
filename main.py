@@ -28,9 +28,9 @@ from api.v1.services.presets import preset_service
 async def lifespan(app: FastAPI):
     db = next(get_db())
     
-    preset_service.load_background_images_in_db(db)
-    preset_service.load_music_in_db(db)
-    preset_service.load_avatars_in_db(db)
+    await preset_service.load_background_images_in_db(db)
+    await preset_service.load_music_in_db(db)
+    await preset_service.load_avatars_in_db(db)
     load_billing_plans_in_db()
     
     yield
