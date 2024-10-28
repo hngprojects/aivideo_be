@@ -152,10 +152,10 @@ class StockMediaService:
     def fetch_videos(self):
         videos = []
         
-        pexels_videos = self.__pexels('video')
+        # pexels_videos = self.__pexels('video')
         pixabay_videos = self.__pixabay('video')
         
-        videos.extend(pexels_videos)
+        # videos.extend(pexels_videos)
         videos.extend(pixabay_videos)
         
         return videos

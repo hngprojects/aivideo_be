@@ -38,7 +38,7 @@ async def generate_scenes(
 
 
 @tweet_to_tiktok_router.post(
-    '/tweet-to-tiktok/generate-video', 
+    '/generate-video', 
     status_code=202, 
     response_model=success_response
 )
@@ -69,11 +69,11 @@ async def convert_tweet_to_video(
         
     job = tifi_job_service.create(
         db=db,
-        tool_name=ProjectToolsEnum.script_to_video.value,
+        tool_name=ProjectToolsEnum.tweet_to_tiktok.value,
         payload={
             'text': schema.text,
             'scene_media_urls': schema.scene_media_urls,
-            'audio_url': audio_url if schema.audio_id else None,
+            'bg_audio_url': audio_url if schema.audio_id else None,
             'voice_over': schema.voice_over.lower(),
             'video_style': schema.video_style.lower(),
         },

@@ -228,7 +228,7 @@ class PresetService:
         for root, dir, files in os.walk(VOICE_FOLDER):
             for file_name in files:
                 file_path = os.path.join(root, file_name)
-                name = file_name.split('-')[0]
+                name = file_name.split('-')[0].capitalize()
                 gender = file_name.split('-')[1].replace('.mp3', '')
 
                 # Check if voice already exists in the database

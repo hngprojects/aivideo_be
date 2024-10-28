@@ -22,7 +22,7 @@ job = tifi_job_service.fetch(db, job_id)
 
 save_and_print_job_progress(db, job, 0, 'Job started')
 
-audio_url = payload.get('audio_url', None)
+audio_url = payload.get('bg_audio_url', None)
 
 background_audio = None
 if audio_url:
@@ -36,7 +36,8 @@ video_style = payload.get('video_style')
 
 try:
     save_and_print_job_progress(db, job, 15, 'Generating audio from script')
-    audio_file = tweet_to_tiktok_service.generate_audio(script, voice_over)
+    # audio_file = tweet_to_tiktok_service.generate_audio(script, voice_over)
+    audio_file = os.path.join('tst_scripts', 'results', 'testing.wav')
     
     save_and_print_job_progress(db, job, 20, 'Generating subtitle file from generated audio')
     subtitles_file = tweet_to_tiktok_service.generate_subtitles(audio_file)
@@ -48,14 +49,15 @@ try:
         save_and_print_job_progress(db, job, 25, 'Downloading media files')
         media_files = tweet_to_tiktok_service.download_media(media_urls)
 
-        save_and_print_job_progress(db, job, 45, 'Generating images for scenes')
-        video_file = tweet_to_tiktok_service.compose_video(audio_file, media_files)
+        save_and_print_job_progress(db, job, 45, 'Composing video with media files')
+        video_file = tweet_to_tiktok_service.compose_video(
+            audio_file, media_files,
+            width=int(1080 * 0.75),
+            height=int(1920* 0.75)
+        )
 
     save_and_print_job_progress(db, job, 60, 'Embedding subtitles in generated video')
     video_with_subtitles = tweet_to_tiktok_service.add_subtitles_to_video(subtitles_file, video_file)
-
-    save_and_print_job_progress(db, job, 65, 'Resizing video')
-    final_video_file = tweet_to_tiktok_service.resize_video(video_with_subtitles)
 
     if background_audio:
         save_and_print_job_progress(db, job, 70, 'Applying background music to the video')
@@ -67,10 +69,10 @@ try:
 
     save_and_print_job_progress(db, job, 80, 'Cleaning up')
     # Delete unnecessary files
-    delete_file(audio_file)
+    # delete_file(audio_file)
     delete_file(subtitles_file)
     delete_file(video_file)
-    delete_file(video_with_subtitles)
+    # delete_file(video_with_subtitles)
     if background_audio:
         delete_file(video_with_audio)
 
@@ -80,7 +82,7 @@ try:
     minio_save_file = f'twttotiktk-{str(uuid4().hex)}.mp4'
     save_url, download_url = minio_service.upload_to_minio(
         folder_name='tweet-to-tiktok',
-        source_file=final_video_file,
+        source_file=video_with_subtitles,
         destination_file=minio_save_file,
         content_type=mime_types.VIDEO_MP4
     )
@@ -91,7 +93,7 @@ try:
         "download_url": download_url,
     }
 
-    delete_file(final_video_file)
+    delete_file(video_with_subtitles)
 
     save_and_print_job_progress(db, job, 95)
 

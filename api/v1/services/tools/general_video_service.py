@@ -235,16 +235,16 @@ class GeneralVideoService:
         
         # .ass subtitle file header
         header = f"""[Script Info]
-        PlayResY: {video_height}
-        PlayResX: {video_width}
-        WrapStyle: 1
+PlayResY: {video_height}
+PlayResX: {video_width}
+WrapStyle: 1
 
-        [V4+ Styles]
-        Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, BorderStyle, Outline, Shadow, Alignment, Encoding
-        Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color}, 3, 0, 1, 5, 0
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, BorderStyle, Outline, Shadow, Alignment, Encoding
+Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color}, 1, 1, 1, 5, 0
 
-        [Fonts]
-        """
+[Fonts]
+"""
         
         try:
             subtitles_file = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.ass')

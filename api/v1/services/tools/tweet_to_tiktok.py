@@ -1,6 +1,8 @@
 from typing import List
 from uuid import uuid4
 import ffmpeg, os
+from moviepy.editor import VideoFileClip, concatenate_videoclips, AudioFileClip, ImageClip
+from moviepy.video import fx as vfx
 
 from api.utils.openai_service import openai_service
 from api.utils.settings import settings
@@ -49,7 +51,7 @@ class TweetToTiktokService:
     def generate_subtitles(self, audio_file: str):
         '''This function generates subtitles from an audio file'''
         
-        video_service.generate_custom_subtitles_from_audio(
+        return video_service.generate_custom_subtitles_from_audio(
             audio_file=audio_file,
             video_width=1080,
             video_height=1920
@@ -60,51 +62,76 @@ class TweetToTiktokService:
         '''This function adds subtitles to a video file'''
         
         return video_service.add_custom_subtitles_to_video(
-            video_file=video_file,
+            input_video=video_file,
             subtitles_file=subtitles_file
         )
         
-        
-    def process_media(self, media_file: str, display_time: float):
+    
+    def process_media(
+        self, 
+        media_file: str, 
+        display_time: float, 
+        width: int=1080, 
+        height: int=1920
+    ):
         '''Process a single media file'''
         
         # Check for media extension
-        is_image = media_file.split('.')[-1].lower() in ['jpg', 'jpeg', 'png']
-        is_video = media_file.split('.')[-1].lower() in ['mp4', 'mov']
+        file_ext = media_file.split('.')[-1].lower()
+        is_image = file_ext in ['jpg', 'jpeg', 'png']
+        is_video = file_ext in ['mp4', 'mov']
         
         if is_image:
-            # Load image and loop it for display_time duration
-            input_media = ffmpeg.input(media_file, loop=1, t=display_time)
-            # Apply fade effects to the image
-            processed_media = (
-                input_media
-                .filter('fade', type='in', start_time=0, duration=1)
-                .filter('fade', type='out', start_time=display_time - 1, duration=1)
-            )
+            img_clip = ImageClip(media_file).set_duration(display_time)
+            # Resize while preserving aspect ratio, then add padding
+            img_clip = img_clip.resize(height=height) if img_clip.h > img_clip.w else img_clip.resize(width=width)
+            final_clip = img_clip.on_color(size=(width, height), color=(0, 0, 0), pos="center")
+            final_clip = final_clip.fadein(1).fadeout(1)  # Add transitions
             
         elif is_video:
-            # Get video details
-            video_details = video_service.get_video_details(media_file)
+            video_clip = VideoFileClip(media_file)
+            # Resize video while preserving aspect ratio
+            video_clip = video_clip.resize(height=height) if video_clip.h > video_clip.w else video_clip.resize(width=width)
+            # Add padding to fit the specified width and height
+            final_clip = video_clip.on_color(size=(width, height), color=(0, 0, 0), pos="center")
+            clips = []
+            remaining_time = display_time
             
-            # For video, load and set duration with fade in/out if necessary
-            input_media = ffmpeg.input(media_file)
-            
-            # Apply fade effects to the video and trim/pad to fit display_time
-            processed_media = (
-                input_media
-                .trim(start=0, end=min(display_time, video_details['duration']))  # Trim or extend
-                .setpts(f'{display_time}/TBA*PTS')  # Adjust speed if video is shorter/longer
-                .filter('fade', type='in', start_time=0, duration=1)
-                .filter('fade', type='out', start_time=display_time - 1, duration=1)
-            )
+            # Loop the video until the display time is met
+            while remaining_time > 0:
+                clip_duration = min(remaining_time, final_clip.duration)
+                clips.append(final_clip.subclip(0, clip_duration))
+                remaining_time -= clip_duration
 
-        # Save processed media to a temp file
-        output_file = os.path.join(settings.TEMP_DIR, f'tmp-{uuid4().hex}.mp4')
-        processed_media.output(output_file, vcodec='libx264', pix_fmt='yuv420p').run()
-        return output_file
+            # Concatenate all the repeated clips to match the display time
+            final_clip = concatenate_videoclips(clips).set_duration(display_time)
+            # Apply fade-in and fade-out effects
+            final_clip = final_clip.fadein(1).fadeout(1)
+        
+        return final_clip
+            
+            # original_duration = video_clip.duration
     
+            # # If the video duration is different from display time, resize it accordingly
+            # if original_duration != display_time:
+            #     # Calculate speed factor
+            #     speed_factor = original_duration / display_time
+            #     # Adjust speed to match display time
+            #     adjusted_clip = video_clip.fx(vfx.speedx, speed_factor).set_duration(display_time)
+            # else:
+            #     adjusted_clip = video_clip
+
+            # # Apply fade-in and fade-out effects
+            # final_clip = adjusted_clip.fadein(1).fadeout(1)
+            # return final_clip
     
-    def compose_video(self, audio_file: str, media_files: List[str]):
+    def compose_video(
+        self, 
+        audio_file: str, 
+        media_files: List[str],
+        width: int=1080, 
+        height: int=1920
+    ):
         '''Function to bring all video components together'''
         
         audio_details = video_service.get_audio_details(audio_file)
@@ -112,48 +139,52 @@ class TweetToTiktokService:
         
         # Get display time per media file
         display_time_per_media = audio_duration / len(media_files)
-        
-        processed_media = []
-        for file in media_files:
-            media = self.process_media(file, display_time_per_media)
-            processed_media.append(media)
             
-        # Concatenate processed media files and add audio
-        input_streams = [ffmpeg.input(file) for file in processed_media]
+        video_clips = [
+            self.process_media(file, display_time_per_media, width, height) 
+            for file in media_files
+        ]
         
-        concat_video_path = os.path.join(settings.TEMP_DIR, f'tmp-{uuid4().hex}.mp4')
-        ffmpeg.concat(*input_streams, v=1, a=0).output(concat_video_path)
+        # Concatenate the clips with transition effects
+        video = concatenate_videoclips(video_clips, method="compose")
 
-        # Add audio to the concatenated video
-        final_file = os.path.join(settings.TEMP_DIR, f'tmp-{uuid4().hex}.mp4')
-        final_output = (
-            ffmpeg
-            .input(concat_video_path)
-            .output(
-                audio_file,
-                final_file,
-                vcodec='libx264', 
-                acodec='aac', 
-                pix_fmt='yuv420p'
-            )
+        # Add the audio file
+        audio = AudioFileClip(audio_file)
+        video = video.set_audio(audio)
+
+        # Set the duration of the video to match the audio duration
+        video = video.set_duration(audio.duration)
+
+        output_video_file = os.path.join(settings.TEMP_DIR, f'video-{uuid4().hex}.mp4')
+        # Write the final video file to the specified output path
+        video.write_videofile(
+            output_video_file, 
+            codec='libx264', 
+            audio_codec="aac", 
+            fps=24, 
+            threads=1,  # Try reducing threads for stability
+            preset="ultrafast",  # Speeds up rendering at the cost of file size
         )
-        final_output.run()
         
-        # Remove temp files
-        os.remove(concat_video_path)
-        for file in processed_media:
+        # Clean up
+        for file in media_files:
             os.remove(file)
         
-        return final_file
-
+        return output_video_file
+       
     
-    def resize_video(self, video_file: str):
+    def resize_video(
+        self, 
+        video_file: str,
+        width: int=1080, 
+        height: int=1920
+    ):
         '''Function to resize the video'''
 
         return ffmpeg_service.resize_video(
             input_video=video_file,
-            width=1080,
-            height=1920
+            width=width,
+            height=height
         )
         
 
