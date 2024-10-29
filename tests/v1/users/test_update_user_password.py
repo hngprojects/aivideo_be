@@ -20,7 +20,7 @@ fake = Faker()
 
 def mock_get_current_user():
     return User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="user103@example.com",
         password=user_service.hash_password("TestaUser@123"),
         first_name='John',
@@ -33,7 +33,7 @@ def mock_get_current_user():
     
 def mock_other_current_user():
     return User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="user3@example.com",
         password="",
         first_name='John',

@@ -11,7 +11,7 @@ from main import app
 
 def mock_faq():
     return FAQ(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         question="TTest question?",
         answer="TAnswer",
         category="Policies",

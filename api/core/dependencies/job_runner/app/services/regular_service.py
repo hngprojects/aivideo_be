@@ -12,12 +12,13 @@ from api.v1.services.notification import notification_service
 from api.v1.services.job import tifi_job_service
 from api.v1.models.job import TifiJob, JobStatus
 from api.loggers.job_logger import job_logger
+from api.core.dependencies.email.email_sender import send_email
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent
 
 
-def run_job_script(job: TifiJob):
+async def run_job_script(job: TifiJob):
     '''THis function runs the tool to run the job script for each job'''
 
     try:
@@ -72,7 +73,7 @@ def run_job_script(job: TifiJob):
         raise e
 
 
-def process_job(job_id: str, with_lock: bool = False):
+async def process_job(job_id: str, with_lock: bool = False):
     '''This function processes a job and updates the status of the job'''
 
     db = next(get_db())
@@ -103,7 +104,21 @@ def process_job(job_id: str, with_lock: bool = False):
                 message=f"The job for '{job.tool_name}' was successful",
                 type='success'
             )
-        
+            
+            # Send email to user
+            # await send_email(
+            #     recipient=user.email,
+            #     template_name='job-successful.html',
+            #     subject=f'{job.tool_name} job successful',
+            #     context={
+            #         # "request": request,
+            #         "user": user,
+            #         "job": job,
+            #         # "url": "https://tifi.tv"
+            #     }
+            # )
+            
+    
         # Save job as completed
         job.progress = '100% complete'
         job.status_message = 'Job completed successfully'
@@ -128,13 +143,25 @@ def process_job(job_id: str, with_lock: bool = False):
                 message=f"The job '{job.tool_name}' was unsuccessful",
                 type='warning'
             )
+            
+            # await send_email(
+            #     recipient=user.email,
+            #     template_name='job-failed.html',
+            #     subject=f'{job.tool_name} job failed',
+            #     context={
+            #         # "request": request,
+            #         "user": user,
+            #         "job": job,
+            #         # "url": "https://tifi.tv"
+            #     }
+            # )
         
         # print(f'Job with {job.id} for tool {job.tool_name} failed')
         # print(f'An exception occured: {str(e)}')
         job_logger.info(f'Error processing job {job_id}: {str(e)}')
 
 
-def run_available_jobs():
+async def run_available_jobs():
     '''This function checks for and runs all pending jobs in the database'''
 
     while True:

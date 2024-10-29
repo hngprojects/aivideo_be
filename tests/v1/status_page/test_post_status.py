@@ -26,7 +26,7 @@ def client(db_session_mock):
 
 def mock_post_api_status():
     return APIStatus(
-        id=str(uuid7()), 
+        id=str(uuid7().hex), 
         api_group="Blog API",
         status="Down",
         response_time=None,

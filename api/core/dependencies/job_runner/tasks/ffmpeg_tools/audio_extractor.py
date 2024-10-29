@@ -8,7 +8,7 @@ from api.utils.minio_service import minio_service
 from api.utils.settings import settings
 from api.utils import mime_types
 from api.v1.services.job import tifi_job_service
-from api.v1.services.ffmpeg_tools import ffmpeg_service
+from api.v1.services.tools.ffmpeg_tools import ffmpeg_service
 from api.core.dependencies.job_runner.app.utils import save_and_print_job_progress
 
 db = next(get_db())
@@ -30,14 +30,10 @@ save_and_print_job_progress(db, job, 10, f'Downloading and opening video file fr
 video_file = minio_service.download_file_from_minio(video_url)
 
 try:
-    save_and_print_job_progress(db, job, 25, f'Setting up audio storage location')
-    audio_path = os.path.join(settings.TEMP_DIR, f'audio-{uuid4()}.{audio_extension}')
-
-    save_and_print_job_progress(db, job, 40, f'Extracting audio from video')
+    save_and_print_job_progress(db, job, 35, f'Extracting audio from video')
     # Use ffmpeg to extract audio from the video
-    ffmpeg_service.extract_audio_from_video(
+    audio_path = ffmpeg_service.extract_audio_from_video(
         input_video=video_file,
-        output_path=audio_path,
         audio_extension=audio_extension,
         start_time=start_time,
         end_time=end_time
@@ -49,7 +45,7 @@ try:
     save_url, download_url = minio_service.upload_to_minio(
         folder_name='audio-extractor',
         source_file=audio_path,
-        destination_file=f'audioextr-{uuid4()}.{audio_extension}',
+        destination_file=f'audioextr-{uuid4().hex}.{audio_extension}',
         content_type=mime_type
     )
 

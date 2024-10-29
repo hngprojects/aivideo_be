@@ -61,7 +61,7 @@ class MinioService:
         self, 
         folder_name: str, 
         source_file: str, 
-        destination_file: str = str(uuid4()),
+        destination_file: str = str(uuid4().hex),
         content_type: str = 'application/octet-stream'
     ):
         """This function saves a file to a minio bucket
@@ -118,7 +118,7 @@ class MinioService:
         bucket_name = 'tifi'
         file_extension = source_file.split('.')[-1]
         content_type = mime_types[file_extension]
-        destination = f"tmp/tmp-{str(uuid4())}.{file_extension}"
+        destination = f"tmp/tmp-{str(uuid4().hex)}.{file_extension}"
         
         try:
             if not self.minio_client.bucket_exists(bucket_name):
@@ -157,7 +157,7 @@ class MinioService:
             save_file_extension = url.split('.')[-1]
 
             # Configure save path to save file to temporary directory
-            save_path = os.path.join(settings.TEMP_DIR, f'tmp-{str(uuid4())}.{save_file_extension}')
+            save_path = os.path.join(settings.TEMP_DIR, f'tmp-{str(uuid4().hex)}.{save_file_extension}')
             response = requests.get(url, stream=True)
             response.raise_for_status()
 

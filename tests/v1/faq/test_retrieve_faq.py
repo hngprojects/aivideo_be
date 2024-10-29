@@ -17,7 +17,7 @@ from main import app
 
 def mock_faq():
     return FAQ(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         question="TTest question?",
         answer="TAnswer",
         category="Policies",
@@ -52,9 +52,9 @@ class TestCodeUnderTest:
         """Test to verify response for getting all FAQs."""
 
         mock_faq_data = [
-            FAQ(id=str(uuid7()), question="TTest question?", answer="TAnswer",
+            FAQ(id=str(uuid7().hex), question="TTest question?", answer="TAnswer",
                 category="Policies", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc)),
-            FAQ(id=str(uuid7()), question="TTest question?", answer="TAnswer",
+            FAQ(id=str(uuid7().hex), question="TTest question?", answer="TAnswer",
                 category="Policies", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc)),
         ]
 
@@ -102,7 +102,7 @@ class TestCodeUnderTest:
     def test_get_faq_not_found(self, client):
         """Test when the FAQ ID does not exist."""
 
-        nonexistent_id = str(uuid7())
+        nonexistent_id = str(uuid7().hex)
 
         mock_query = MagicMock()
         mock_filter = MagicMock()

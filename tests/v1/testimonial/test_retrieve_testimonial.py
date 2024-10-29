@@ -17,7 +17,7 @@ from main import app
 
 def mock_testimonial():
     return Testimonial(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         client_name="Zxenon",
         content="Very Useful Product",
         client_position="Mentor",
@@ -55,12 +55,12 @@ class TestCodeUnderTest:
         """Test to verify response for getting all testimonials."""
 
         mock_data = [
-            Testimonial(id=str(uuid7()), client_name="Zxenon", content="Very Useful Product",
+            Testimonial(id=str(uuid7().hex), client_name="Zxenon", content="Very Useful Product",
                         rating=4.5, created_at=datetime.now(timezone.utc),
                         client_position="Mentor",
                         updated_at=datetime.now(timezone.utc)
                         ),
-            Testimonial(id=str(uuid7()), client_name="Zeus", content="Doesn't strike me as useful",
+            Testimonial(id=str(uuid7().hex), client_name="Zeus", content="Doesn't strike me as useful",
                         rating=2, created_at=datetime.now(timezone.utc),
                         client_position="Mentor",
                         updated_at=datetime.now(timezone.utc)
@@ -111,7 +111,7 @@ class TestCodeUnderTest:
     def test_get_testimonial_not_found(self, client):
         """Test when the testimonial ID does not exist."""
 
-        nonexistent_id = str(uuid7())
+        nonexistent_id = str(uuid7().hex)
         with patch("api.v1.services.testimonial.testimonial_service.fetch", return_value=None):
             response = client.get(
                 f'{ENDPOINT}/{nonexistent_id}',
