@@ -45,9 +45,17 @@ class Settings(BaseSettings):
     DEEPGRAM_API_KEY: str = config("DEEPGRAM_API_KEY")
     UNREAL_SPEECH_API_KEY: str = config("UNREAL_SPEECH_API_KEY")
     REPLICATE_API_TOKEN: str = config("REPLICATE_API_TOKEN")
+    
+    PIXABAY_API_KEY: str = config("PIXABAY_API_KEY")
+    UNSPLASH_ACCESS_KEY: str = config("UNSPLASH_ACCESS_KEY")
+    UNSPLASH_SECRET_KEY: str = config("UNSPLASH_SECRET_KEY")
+    PEXELS_API_KEY: str = config("PEXELS_API_KEY")
 
     MINIO_ACCESS_KEY: str = config("MINIO_ACCESS_KEY")
     MINIO_SECRET_KEY: str = config("MINIO_SECRET_KEY")
+    
+    YOUTUBE_USERNAME: str = config("YOUTUBE_USERNAME")
+    YOUTUBE_PASSWORD: str = config("YOUTUBE_PASSWORD")
 
     TEMP_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent, 'tmp', 'media')
     FRONTEND_MAGICLINK_URL : str = config("FRONTEND_MAGICLINK_URL")

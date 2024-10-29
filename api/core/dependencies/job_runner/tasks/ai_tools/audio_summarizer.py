@@ -2,8 +2,8 @@ import json, sys
 from uuid import uuid4
 
 from api.utils.files import delete_file
-from api.v1.services.ai_tools.audio_summarizer import audio_summary_service
-from api.v1.services.ai_tools.pdf_summarizer import pdf_summary_service
+from api.v1.services.tools.audio_summarizer import audio_summary_service
+from api.v1.services.tools.pdf_summarizer import pdf_summary_service
 from api.utils import mime_types
 from api.db.database import get_db
 from api.utils.minio_service import minio_service
@@ -45,7 +45,7 @@ try:
     save_url, download_url = minio_service.upload_to_minio(
         folder_name="audio-summary",
         source_file=pdf_file,
-        destination_file=f"podsum-{str(uuid4())}.pdf",
+        destination_file=f"podsum-{str(uuid4().hex)}.pdf",
         content_type=mime_types.APPLICATION_PDF,
     )
 

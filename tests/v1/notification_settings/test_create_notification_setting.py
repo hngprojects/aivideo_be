@@ -14,7 +14,7 @@ from main import app
 
 def mock_get_current_user():
     return User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="test@gmail.com",
         password=user_service.hash_password("Testuser@123"),
         first_name='Test',
@@ -28,7 +28,7 @@ def mock_get_current_user():
 
 def mock_settings():
     return NotificationSetting(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         mobile_push_notifications=True,
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc)

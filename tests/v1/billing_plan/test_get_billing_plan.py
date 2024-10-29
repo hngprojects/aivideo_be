@@ -28,7 +28,7 @@ def mock_user_service():
 @pytest.fixture
 def test_user():
     return User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="testuser@gmail.com",
         password="hashedpassword",
         first_name="test",
@@ -40,7 +40,7 @@ def test_user():
 @pytest.fixture
 def test_billing_plan():
     return BillingPlan(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         plan_name="plan one",
         price=5000,
         currency="NGN",

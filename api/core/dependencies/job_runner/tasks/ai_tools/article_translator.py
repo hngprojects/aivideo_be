@@ -8,7 +8,7 @@ from api.utils.minio_service import minio_service
 from api.utils.settings import settings
 from api.utils.pdf_builder import PDFBuilder
 from api.utils import mime_types
-from api.v1.services.ai_tools.article_translator import article_translator_service
+from api.v1.services.tools.article_translator import article_translator_service
 from api.core.dependencies.job_runner.app.utils import save_and_print_job_progress
 
 db = next(get_db())
@@ -62,7 +62,7 @@ try:
     save_and_print_job_progress(db, job, 85, 'Saving PDF file')
     # Save the PDF content to a file
     pdf_buffer.seek(0)
-    pdf_file = os.path.join(settings.TEMP_DIR, f"artclgen-{uuid4()}.pdf")
+    pdf_file = os.path.join(settings.TEMP_DIR, f"artclgen-{uuid4().hex}.pdf")
     with open(pdf_file, "wb") as f:
         f.write(pdf_buffer.read())
 
@@ -72,7 +72,7 @@ try:
     save_url, download_url = minio_service.upload_to_minio(
         folder_name="article-translator-generator",
         source_file=pdf_file,
-        destination_file=f"artclgen-{str(uuid4())}.pdf",
+        destination_file=f"artclgen-{str(uuid4().hex)}.pdf",
         content_type=mime_types.APPLICATION_PDF,
     )
 

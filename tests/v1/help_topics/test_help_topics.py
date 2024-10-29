@@ -28,7 +28,7 @@ def client(db_session_mock):
 
 def mock_post_help_topic():
     return HelpTopics(
-        id=str(uuid7()), 
+        id=str(uuid7().hex), 
         title="How to Generate Videos from Images using Convey",
         description="Discover how to create stunning videos from your images with Convey's Image-to-Video Generator.",
     )

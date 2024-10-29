@@ -35,7 +35,7 @@ def mock_user_service():
 def create_mock_user(mock_user_service, mock_db_session):
     """Create a mock user in the mock database session."""
     mock_user = User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="testuser@gmail.com",
         password=user_service.hash_password("Testpassword@123"),
         first_name="Test",
@@ -55,7 +55,7 @@ def create_mock_user(mock_user_service, mock_db_session):
 def test_delete_billing_plan(mock_user_service, mock_db_session):
     """Billing plan delete test."""
     mock_user = create_mock_user(mock_user_service, mock_db_session)
-    access_token = user_service.create_access_token(user_id=str(uuid7()))
+    access_token = user_service.create_access_token(user_id=str(uuid7().hex))
 
     response = client.delete(
         "/api/v1/billing-plans/123-1221-090",

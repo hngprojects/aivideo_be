@@ -17,6 +17,7 @@ tool_to_script_mapping = {
     tools.talking_avatar.value: f'{AI_TOOLS_BASE_DIR}/talking_avatar.py',
     tools.script_to_video.value: f'{AI_TOOLS_BASE_DIR}/script_to_video.py',
     tools.image_to_video.value: f'{AI_TOOLS_BASE_DIR}/image_to_video.py',
+    tools.tweet_to_tiktok.value: f'{AI_TOOLS_BASE_DIR}/tweet_to_tiktok.py',
 
     # FFMPEG TOOLS
     tools.audio_extractor.value: f'{FFMPEG_BASE_DIR}/audio_extractor.py',

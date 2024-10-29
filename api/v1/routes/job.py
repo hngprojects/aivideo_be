@@ -195,7 +195,7 @@ async def update_job(
         thumbnail_url, download_url = minio_service.upload_to_minio(
             folder_name='job-thumbnails',
             source_file=file_path,
-            destination_file=f'thumbnail-{uuid4()}.png',
+            destination_file=f'thumbnail-{uuid4().hex}.png',
             content_type=mime_types.IMAGE_PNG
         )
         

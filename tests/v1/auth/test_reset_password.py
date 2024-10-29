@@ -37,7 +37,7 @@ def mock_user_service():
 def create_mock_user(mock_user_service, mock_db_session):
     """Create a mock user in the mock database session."""
     mock_user = User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="testuser@gmail.com",
         password=user_service.hash_password("Testpassword@123"),
         first_name="Test",

@@ -39,7 +39,7 @@ def test_user_login(db_session_mock):
 
     # Create a mock user
     mock_user = User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="testuser1@gmail.com",
         password=user_service.hash_password("Testpassword@123"),
         first_name='Test',
@@ -61,11 +61,11 @@ def test_user_login(db_session_mock):
 
 def test_rate_limiting(db_session_mock):
     db_session_mock.query(User).filter().first.return_value = None
-    billing_plan =  BillingPlan(id=str(uuid7()),plan_name='Free', price='5.00',currency='dollars', features=['testfeature1', 'testfeature2'], access_limit=15)
+    billing_plan =  BillingPlan(id=str(uuid7().hex),plan_name='Free', price='5.00',currency='dollars', features=['testfeature1', 'testfeature2'], access_limit=15)
     db_session_mock.add.return_value = None
     db_session_mock.commit.return_value = None
     
-    unique_email = f"rate.limit.{uuid.uuid4()}@gmail.com"
+    unique_email = f"rate.limit.{uuid.uuid4().hex}@gmail.com"
     user = {
         "password": "ValidP@ssw0rd!",
         "first_name": "Rate",
