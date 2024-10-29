@@ -124,6 +124,7 @@ class TweetToTiktokService:
             # # Apply fade-in and fade-out effects
             # final_clip = adjusted_clip.fadein(1).fadeout(1)
             # return final_clip
+            
     
     def compose_video(
         self, 

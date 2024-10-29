@@ -277,7 +277,7 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
             return subtitles_file
 
         except Exception as e:
-            print(f"Exception: {e}")
+            raise e
     
     
     # def add_subtitles_to_video(self, input_video: str, subtitles_file: str, output_video: str):

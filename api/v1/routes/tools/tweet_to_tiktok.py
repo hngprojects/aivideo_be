@@ -18,7 +18,7 @@ from api.v1.services.tools.tweet_to_tiktok import tweet_to_tiktok_service
 from api.v1.models.project import ProjectToolsEnum
 
 
-tweet_to_tiktok_router = APIRouter(prefix="/tools/tweet-to-tiktok", tags=["Tools"])
+tweet_to_tiktok_router = APIRouter(prefix="/tools", tags=["Tools"])
 
 @tweet_to_tiktok_router.post('/generate-scenes', status_code=200)
 async def generate_scenes(
@@ -38,7 +38,7 @@ async def generate_scenes(
 
 
 @tweet_to_tiktok_router.post(
-    '/generate-video', 
+    '/tweet-to-tiktok/generate-video', 
     status_code=202, 
     response_model=success_response
 )
