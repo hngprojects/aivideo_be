@@ -67,7 +67,7 @@ async def test_script_to_video_success_validation_error(
     # assert response.status_code == 202 or response.status_code == 403 
 
 
-@patch("api.v1.services.ai_tools.script_to_video.ttv_service.recompose_script")
+@patch("api.v1.services.tools.script_to_video.ttv_service.recompose_script")
 def test_recompose_script(mock_recompose_script):
     # Arrange
     mock_script = "This is an example script."
