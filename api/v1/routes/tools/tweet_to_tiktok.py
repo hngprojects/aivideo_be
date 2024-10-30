@@ -23,7 +23,7 @@ tweet_to_tiktok_router = APIRouter(prefix="/tools", tags=["Tools"])
 
 async def upload_audio_file(file):
     file_extension = file.filename.split(".")[-1]
-    video_file = await upload_to_temp_dir(
+    audio_file = await upload_to_temp_dir(
         file, 
         allowed_extensions=[
             'mp3',
@@ -34,10 +34,30 @@ async def upload_audio_file(file):
     )
 
     # Upload video file to temporary stirage bucket
-    video_url = minio_service.upload_to_tmp_bucket(source_file=video_file)
-    delete_file(video_file)
+    audio_file = minio_service.upload_to_tmp_bucket(source_file=audio_file)
+    delete_file(audio_file)
 
-    return video_url
+    return audio_file
+
+async def upload_image_file(file):
+    file_extension = file.filename.split(".")[-1]
+    image_file = await upload_to_temp_dir(
+        file, 
+        allowed_extensions=[
+            'jpg',
+            'png',
+            'jpeg',
+            'jfif'
+        ],
+        save_extension=file_extension,
+        max_file_size=20
+    )
+
+    # Upload video file to temporary stirage bucket
+    image_url = minio_service.upload_to_tmp_bucket(source_file=image_file)
+    delete_file(image_file)
+
+    return image_url
 
 
 @tweet_to_tiktok_router.post('/generate-scenes', status_code=200)
@@ -70,7 +90,8 @@ async def convert_tweet_to_video(
     text: Optional[str] = Form(None),
     tweet_link: Optional[str] = Form(None),
     avatar_id: Optional[str] = Form(None),
-    audio_id: Optional[str] = Form(None),
+    custom_avatar: Optional[UploadFile] = File(None),
+    background_audio_id: Optional[str] = Form(None),
     custom_audio: Optional[UploadFile] = File(None),
     voice_id: Optional[str] = Form(None),
     custom_voice: Optional[UploadFile] = File(None),
@@ -82,6 +103,7 @@ async def convert_tweet_to_video(
     
     bg_audio_url = None
     voice_url = None
+    avatar_url = None
     
     if tweet_link and text:
         raise HTTPException(status_code=400, detail='Cannot have both text and tweet links')
@@ -89,7 +111,7 @@ async def convert_tweet_to_video(
     if not text and not tweet_link:
         raise HTTPException(status_code=400, detail='Must provide either text or tweet link')
     
-    if custom_audio and audio_id:
+    if custom_audio and background_audio_id:
         raise HTTPException(status_code=400, detail='Cannot use both custom audio and preset audio')
     
     if custom_voice and voice_id:
@@ -98,11 +120,18 @@ async def convert_tweet_to_video(
     if not custom_voice and not voice_id:
         raise HTTPException(status_code=400, detail='Cannot leave both custom voice and voice id empty')
     
+    if custom_avatar and avatar_id:
+        raise HTTPException(status_code=400, detail='Cannot use both custom avatar and preset avatar')
+    
+    if custom_avatar and (not voice_id or not custom_voice):
+        raise HTTPException(status_code=400, detail='Cannot use custom avatar without a voice selection')
+    
+    
     # -----------------------------------------------------------
     
-    if audio_id:
+    if background_audio_id:
         audio = preset_service.fetch_music_by_id(
-            db=db, music_id=audio_id
+            db=db, music_id=background_audio_id
         )
         bg_audio_url = audio.file_url
     
@@ -124,6 +153,9 @@ async def convert_tweet_to_video(
     
     if custom_voice:
         voice_url = await upload_audio_file(custom_voice)
+        
+    if custom_avatar:
+        avatar_url = await upload_image_file(custom_avatar)
     
     if tweet_link:
         # TODO: Get tweet text from tweet link
@@ -138,7 +170,7 @@ async def convert_tweet_to_video(
             'bg_audio_url': bg_audio_url,
             # 'voice_over': voice_over.lower(),
             'voice_url': voice_url,
-            'avatar_image_url': avatar_url if avatar_id else None,
+            'avatar_image_url': avatar_url,
             'video_style': video_style.lower(),
         },
         user_id=user.id if user else None,
