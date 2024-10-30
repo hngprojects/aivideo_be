@@ -262,6 +262,8 @@ class TifiJobService:
         job.payload = json.loads(payload)
         # Update job status
         job.status = JobStatus.pending
+        job.status_message = None
+        job.progress = "0% complete"
         
         db.commit()
         db.refresh(job)
