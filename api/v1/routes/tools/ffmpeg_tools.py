@@ -37,7 +37,7 @@ async def upload_video_file(file):
             'mpg'
         ],
         save_extension=file_extension,
-        max_file_size=50 * 1024 * 1024
+        max_file_size=195
     )
 
     # Upload video file to temporary stirage bucket
@@ -58,7 +58,7 @@ async def upload_image_file(file):
             'jfif'
         ],
         save_extension=file_extension,
-        max_file_size=10 * 1024 * 1024
+        max_file_size=20
     )
 
     # Upload video file to temporary stirage bucket

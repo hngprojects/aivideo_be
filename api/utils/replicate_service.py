@@ -18,12 +18,18 @@ class ReplicateService:
         return result['output']
     
     
-    def convert_text_to_speech(self, text: str, sample_audio_file: str):
+    def convert_text_to_speech(
+        self, 
+        text: str, 
+        sample_audio_file: str,
+        language: str = 'en'
+    ):
         """This function converts text to speech
 
         Args:
             text (str): Text to be converted to audio file
             sample_audio_file (str): This is a file or url that links to a sample voice that willbe used as the voice for the generated audio file
+            language (str, optional): Language of the generated audio. Defaults to 'en'.
 
         Returns:
             str: The URL of the audio generated
@@ -34,7 +40,7 @@ class ReplicateService:
             input={
                 "text": text,
                 "speaker": sample_audio_file,
-                "language": "en",
+                "language": language,
                 "cleanup_voice": False
             }
         )
