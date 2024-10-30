@@ -8,34 +8,30 @@ import ffmpeg
 import requests
 from moviepy.editor import VideoFileClip
 
-from deepgram_captions import DeepgramConverter, srt
-from deepgram import (
-    DeepgramClient,
-    PrerecordedOptions,
-    FileSource,
-)
-
 from api.utils.settings import settings
+from api.utils.replicate_service import replicate_service
+from api.v1.services.tools.general import general_service
+
 from api.v1.services.tools.audio_summarizer import audio_summary_service
 
 
 class GeneralVideoService:
 
-    def __init__(self):
-        self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+    # def __init__(self):
+    #     self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
     
-    def download_file(self, url, save_path):
+    def download_file(self, url: str, save_file_path: str):
         try:
             with requests.get(url, stream=True) as response:
                 response.raise_for_status()
-                with open(save_path, "wb") as f:
+                with open(save_file_path, "wb") as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
-            print(f"Large file downloaded successfully and saved as {save_path}")
+            print(f"Large file downloaded successfully and saved as {save_file_path}")
 
-            return save_path
+            return save_file_path
         except requests.RequestException as e:
-            print(f"Error downloading large file: {e}")
+            print(f"Error downloading large file: {e}") 
 
     
     def get_audio_duration(self, audio_path):
@@ -68,29 +64,42 @@ class GeneralVideoService:
 
 
     # TODO: Update this function to use replicate and pick a voice from the voices in the db
-    def convert_text_to_speech(self, script, voice_over='man'):
-        file_path = os.path.join(settings.TEMP_DIR, f'audio-{str(uuid4().hex)}.wav')
+    # def convert_text_to_speech(self, script, voice_over='man'):
+    #     file_path = os.path.join(settings.TEMP_DIR, f'audio-{str(uuid4().hex)}.wav')
 
-        female = ["nova", "shimmer"]
-        neutral = ["fable", "alloy"]
-        male = ["echo", "onyx"]
+    #     female = ["nova", "shimmer"]
+    #     neutral = ["fable", "alloy"]
+    #     male = ["echo", "onyx"]
 
-        voice = male[random.randint(0, 1)]
+    #     voice = male[random.randint(0, 1)]
 
-        if voice_over == 'woman':
-            voice = female[random.randint(0, 1)]
-        elif voice_over == 'neutral':
-            voice = neutral[random.randint(0, 1)]
+    #     if voice_over == 'woman':
+    #         voice = female[random.randint(0, 1)]
+    #     elif voice_over == 'neutral':
+    #         voice = neutral[random.randint(0, 1)]
 
-        response = self.client.audio.speech.create(
-            model="tts-1",
-            voice=voice,
-            input=script,
-            response_format="wav"
+    #     response = self.client.audio.speech.create(
+    #         model="tts-1",
+    #         voice=voice,
+    #         input=script,
+    #         response_format="wav"
+    #     )
+
+    #     response.stream_to_file(file_path)
+    #     return file_path
+    
+    def convert_text_to_speech(self, script: str, voice: str):
+                
+        audio_url = replicate_service.convert_text_to_speech(
+            text=script, 
+            sample_audio_file=voice
         )
-
-        response.stream_to_file(file_path)
-        return file_path
+        
+        return general_service.download_file(
+            url=audio_url,
+            extension='mp3',
+            prefix_file_name='audio'
+        )
     
 
     def generate_subtitles_from_audio(self, audio_file: str):
