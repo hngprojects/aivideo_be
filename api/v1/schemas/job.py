@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Any, Dict, Optional
 
 class JobResponse(BaseModel):
     job_id: str
@@ -15,4 +15,9 @@ class UpdateJob(BaseModel):
     
     job_name: str
     job_thumbnail_url: Optional[str] = None
+    
+
+class UpdateJobPayload(BaseModel):
+    
+    payload: Dict[str, Any]
     
