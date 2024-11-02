@@ -39,8 +39,6 @@ avatar_image_url = payload.get('avatar_image_url')
 # voice_over = payload.get('voice_over')
 
 try:
-    # save_and_print_job_progress(db, job, 10, f'Downloading and opening voice audio file from {voice_url}')
-    # voice = minio_service.download_file_from_minio(voice_url)
     
     save_and_print_job_progress(db, job, 15, 'Generating audio from script')
     audio_file = tweet_to_tiktok_service.generate_audio(script, voice_url)
@@ -101,7 +99,7 @@ try:
     minio_save_file = f'twttotiktk-{str(uuid4().hex)}.mp4'
     save_url, download_url = minio_service.upload_to_minio(
         folder_name='tweet-to-tiktok',
-        source_file=video_with_subtitles,
+        source_file=video_with_subtitles if not background_audio else video_with_audio,
         destination_file=minio_save_file,
         content_type=mime_types.VIDEO_MP4
     )

@@ -66,17 +66,7 @@ async def load_all_presets(background_tasks: BackgroundTasks, db: Session = Depe
     '''Endpoint to load all presets into the db'''
     
     background_tasks.add_task(
-        preset_service.load_avatars_in_db,
-        db=db
-    )
-    
-    background_tasks.add_task(
-        preset_service.load_background_images_in_db,
-        db=db
-    )
-    
-    background_tasks.add_task(
-        preset_service.load_music_in_db,
+        preset_service.load_all_presets,
         db=db
     )
 

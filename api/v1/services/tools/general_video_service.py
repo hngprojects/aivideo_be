@@ -295,7 +295,7 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         if '.srt' not in subtitles_file:
             raise ValueError("Subtitle file must be in SRT format.")
         
-        output_video = os.path.join(settings.TEMP_DIR, f'sibtitles-{uuid4().hex}.mp4')
+        output_video = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.mp4')
         
         # Load the input video
         input_stream = ffmpeg.input(input_video)
@@ -318,11 +318,11 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         if '.ass' not in subtitles_file:
             raise ValueError("Subtitle file must be in ASS format.")
         
-        output_video = os.path.join(settings.TEMP_DIR, f'video-{uuid4().hex}.mp4')
+        output_video = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.mp4')
         (
             ffmpeg
             .input(input_video)
-            .output(output_video, vf=f"ass={subtitles_file}")
+            .output(output_video, vf=f"ass={subtitles_file}", preset='ultrafast')
             .run(overwrite_output=True)
         )
         
@@ -483,7 +483,8 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
                 vcodec='copy',                # Copy the video codec (no re-encoding)
                 acodec='aac',                 # Encode the audio with AAC codec
                 strict='experimental',        # Allow use of experimental codecs
-                shortest=None                 # Stop the output when the shortest input ends
+                shortest=None,               # Stop the output when the shortest input ends
+                preset='ultrafast'
             )
 
             # Run the ffmpeg command
