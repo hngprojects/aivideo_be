@@ -104,7 +104,7 @@ class TweetToTiktokService:
                 remaining_time -= clip_duration
 
             # Concatenate all the repeated clips to match the display time
-            final_clip = concatenate_videoclips(clips).set_duration(display_time)
+            final_clip = concatenate_videoclips(clips, method='compose').set_duration(display_time)
             # Apply fade-in and fade-out effects
             final_clip = final_clip.fadein(1).fadeout(1)
         

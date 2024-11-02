@@ -25,6 +25,14 @@ class PresetService:
     # --------------- AVATARS ---------------
     # ---------------------------------------
     
+    async def load_all_presets(self, db: Session):
+        '''Load all avatar presets'''
+        
+        await self.load_avatars_in_db(db)
+        await self.load_background_images_in_db(db)
+        await self.load_music_in_db(db)
+        
+    
     async def load_avatars_in_db(self, db: Session):
         '''Function to load all avatar presets as static files in the database'''
         

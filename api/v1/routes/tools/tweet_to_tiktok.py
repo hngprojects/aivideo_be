@@ -95,11 +95,13 @@ async def convert_tweet_to_video(
     custom_audio: Optional[UploadFile] = File(None),
     voice_id: Optional[str] = Form(None),
     custom_voice: Optional[UploadFile] = File(None),
-    scene_media_urls: List[str] = Form(...),
+    scene_media_urls: str = Form(...),
     video_style: str = Form(...),
     user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to convert a script to video'''
+    
+    scene_media_urls_list = [url.strip() for url in scene_media_urls.split(',')]
     
     bg_audio_url = None
     voice_url = None
@@ -166,7 +168,7 @@ async def convert_tweet_to_video(
         tool_name=ProjectToolsEnum.tweet_to_tiktok.value,
         payload={
             'text': text,
-            'scene_media_urls': scene_media_urls,
+            'scene_media_urls': scene_media_urls_list,
             'bg_audio_url': bg_audio_url,
             # 'voice_over': voice_over.lower(),
             'voice_url': voice_url,

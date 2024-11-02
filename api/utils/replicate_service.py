@@ -15,7 +15,9 @@ class ReplicateService:
             model_id,
             input=input
         )
-        return result['output']
+        
+        print(result)
+        return result
     
     
     def convert_text_to_speech(
