@@ -39,12 +39,10 @@ avatar_image_url = payload.get('avatar_image_url')
 # voice_over = payload.get('voice_over')
 
 try:
-    # save_and_print_job_progress(db, job, 10, f'Downloading and opening voice audio file from {voice_url}')
-    # voice = minio_service.download_file_from_minio(voice_url)
     
     save_and_print_job_progress(db, job, 15, 'Generating audio from script')
-    # audio_file = tweet_to_tiktok_service.generate_audio(script, voice_url)
-    audio_file = os.path.join('tst_scripts', 'results', 'testing.wav')
+    audio_file = tweet_to_tiktok_service.generate_audio(script, voice_url)
+    # audio_file = os.path.join('tst_scripts', 'results', 'testing.wav')
     
     save_and_print_job_progress(db, job, 20, 'Generating subtitle file from generated audio')
     subtitles_file = tweet_to_tiktok_service.generate_subtitles(audio_file)
@@ -89,7 +87,8 @@ try:
     save_and_print_job_progress(db, job, 80, 'Cleaning up')
     # Delete unnecessary files
     # TODO: Uncomment this
-    # delete_file(audio_file)
+    if 'testing' not in audio_file:
+        delete_file(audio_file)
     delete_file(subtitles_file)
     delete_file(video_file)
     # delete_file(video_with_subtitles)
@@ -100,7 +99,7 @@ try:
     minio_save_file = f'twttotiktk-{str(uuid4().hex)}.mp4'
     save_url, download_url = minio_service.upload_to_minio(
         folder_name='tweet-to-tiktok',
-        source_file=video_with_subtitles,
+        source_file=video_with_subtitles if not background_audio else video_with_audio,
         destination_file=minio_save_file,
         content_type=mime_types.VIDEO_MP4
     )

@@ -167,35 +167,35 @@ class GeneralVideoService:
         base_font_path = os.path.abspath('presets/fonts')
 
         fonts = {
-            'impact': f'{base_font_path}/impact.ttf',
-            'comic sans ms': f'{base_font_path}/comic.ttf',
-            'ar christy': f'{base_font_path}/ARCHRISTY.ttf',
-            'ar carter': f'{base_font_path}/ARCARTER.ttf',
-            'ar bonnie': f'{base_font_path}/ARBONNIE.ttf',
-            'levenim mt': f'{base_font_path}/lvnm.ttf',
-            'segoe script': f'{base_font_path}/segoesc.ttf',
-            'segoe print': f'{base_font_path}/segoepr.ttf',
-            'segoe print bold': f'{base_font_path}/segoeprb.ttf',
-            'bebas neue': f'{base_font_path}/BebasNeue.ttf',
-            'montserrat bold': f'{base_font_path}/Montserrat-Bold.ttf',
-            'poppins bold': f'{base_font_path}/Poppins-Bold.ttf',
-            'lobster': f'{base_font_path}/Lobster-Regular.ttf',
-            'oswald': f'{base_font_path}/Oswald-Regular.ttf',
-            'raleway': f'{base_font_path}/Raleway-Regular.ttf',
-            'anton': f'{base_font_path}/Anton-Regular.ttf',
-            'pacifico': f'{base_font_path}/Pacifico-Regular.ttf',
-            'roboto bold': f'{base_font_path}/Roboto-Bold.ttf',
-            'playfair display': f'{base_font_path}/PlayfairDisplay-Regular.ttf',
-            'dancing script': f'{base_font_path}/DancingScript-Regular.ttf',
-            'amatic sc': f'{base_font_path}/AmaticSC-Regular.ttf',
-            'open sans bold': f'{base_font_path}/OpenSans-Bold.ttf',
-            'merriweather bold': f'{base_font_path}/Merriweather-Bold.ttf',
-            'bangers': f'{base_font_path}/Bangers-Regular.ttf',
-            'caveat': f'{base_font_path}/Caveat-Regular.ttf',
-            'fredoka one': f'{base_font_path}/FredokaOne-Regular.ttf',
-            'chewy': f'{base_font_path}/Chewy-Regular.ttf',
-            'great vibes': f'{base_font_path}/GreatVibes-Regular.ttf',
-            'shadows into light': f'{base_font_path}/ShadowsIntoLight-Regular.ttf',
+            # 'impact': f'{base_font_path}/impact.ttf',
+            # 'comic sans ms': f'{base_font_path}/comic.ttf',
+            # 'ar christy': f'{base_font_path}/ARCHRISTY.ttf',
+            # 'ar carter': f'{base_font_path}/ARCARTER.ttf',
+            # 'ar bonnie': f'{base_font_path}/ARBONNIE.ttf',
+            # 'levenim mt': f'{base_font_path}/lvnm.ttf',
+            # 'segoe script': f'{base_font_path}/segoesc.ttf',
+            # 'segoe print': f'{base_font_path}/segoepr.ttf',
+            # 'segoe print bold': f'{base_font_path}/segoeprb.ttf',
+            # 'bebas neue': f'{base_font_path}/BebasNeue.ttf',
+            # 'montserrat bold': f'{base_font_path}/Montserrat-Bold.ttf',
+            # 'poppins bold': f'{base_font_path}/Poppins-Bold.ttf',
+            # 'lobster': f'{base_font_path}/Lobster-Regular.ttf',
+            # 'oswald': f'{base_font_path}/Oswald-Regular.ttf',
+            # 'raleway': f'{base_font_path}/Raleway-Regular.ttf',
+            # 'anton': f'{base_font_path}/Anton-Regular.ttf',
+            # 'pacifico': f'{base_font_path}/Pacifico-Regular.ttf',
+            # 'roboto bold': f'{base_font_path}/Roboto-Bold.ttf',
+            # 'playfair display': f'{base_font_path}/PlayfairDisplay-Regular.ttf',
+            # 'dancing script': f'{base_font_path}/DancingScript-Regular.ttf',
+            # 'amatic sc': f'{base_font_path}/AmaticSC-Regular.ttf',
+            # 'open sans bold': f'{base_font_path}/OpenSans-Bold.ttf',
+            # 'merriweather bold': f'{base_font_path}/Merriweather-Bold.ttf',
+            # 'bangers': f'{base_font_path}/Bangers-Regular.ttf',
+            # 'caveat': f'{base_font_path}/Caveat-Regular.ttf',
+            # 'fredoka one': f'{base_font_path}/FredokaOne-Regular.ttf',
+            # 'chewy': f'{base_font_path}/Chewy-Regular.ttf',
+            # 'great vibes': f'{base_font_path}/GreatVibes-Regular.ttf',
+            # 'shadows into light': f'{base_font_path}/ShadowsIntoLight-Regular.ttf',
             'archivo': f'{base_font_path}/ArchivoBlack-Regular.ttf'
         }
 
@@ -295,7 +295,7 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         if '.srt' not in subtitles_file:
             raise ValueError("Subtitle file must be in SRT format.")
         
-        output_video = os.path.join(settings.TEMP_DIR, f'sibtitles-{uuid4().hex}.mp4')
+        output_video = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.mp4')
         
         # Load the input video
         input_stream = ffmpeg.input(input_video)
@@ -318,11 +318,11 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         if '.ass' not in subtitles_file:
             raise ValueError("Subtitle file must be in ASS format.")
         
-        output_video = os.path.join(settings.TEMP_DIR, f'video-{uuid4().hex}.mp4')
+        output_video = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.mp4')
         (
             ffmpeg
             .input(input_video)
-            .output(output_video, vf=f"ass={subtitles_file}")
+            .output(output_video, vf=f"ass={subtitles_file}", preset='ultrafast')
             .run(overwrite_output=True)
         )
         
@@ -483,7 +483,8 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
                 vcodec='copy',                # Copy the video codec (no re-encoding)
                 acodec='aac',                 # Encode the audio with AAC codec
                 strict='experimental',        # Allow use of experimental codecs
-                shortest=None                 # Stop the output when the shortest input ends
+                shortest=None,               # Stop the output when the shortest input ends
+                preset='ultrafast'
             )
 
             # Run the ffmpeg command
