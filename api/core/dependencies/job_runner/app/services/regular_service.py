@@ -18,7 +18,7 @@ from api.core.dependencies.email.email_sender import send_email
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent
 
 
-async def run_job_script(job: TifiJob):
+def run_job_script(job: TifiJob):
     '''THis function runs the tool to run the job script for each job'''
 
     try:
@@ -72,8 +72,7 @@ async def run_job_script(job: TifiJob):
     except Exception as e:
         raise e
 
-
-async def process_job(job_id: str, with_lock: bool = False):
+def process_job(job_id: str, with_lock: bool = False):
     '''This function processes a job and updates the status of the job'''
 
     db = next(get_db())
@@ -161,7 +160,7 @@ async def process_job(job_id: str, with_lock: bool = False):
         job_logger.info(f'Error processing job {job_id}: {str(e)}')
 
 
-async def run_available_jobs():
+def run_available_jobs():
     '''This function checks for and runs all pending jobs in the database'''
 
     while True:

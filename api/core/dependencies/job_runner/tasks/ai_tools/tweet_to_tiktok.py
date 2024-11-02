@@ -43,8 +43,8 @@ try:
     # voice = minio_service.download_file_from_minio(voice_url)
     
     save_and_print_job_progress(db, job, 15, 'Generating audio from script')
-    # audio_file = tweet_to_tiktok_service.generate_audio(script, voice_url)
-    audio_file = os.path.join('tst_scripts', 'results', 'testing.wav')
+    audio_file = tweet_to_tiktok_service.generate_audio(script, voice_url)
+    # audio_file = os.path.join('tst_scripts', 'results', 'testing.wav')
     
     save_and_print_job_progress(db, job, 20, 'Generating subtitle file from generated audio')
     subtitles_file = tweet_to_tiktok_service.generate_subtitles(audio_file)
@@ -89,7 +89,8 @@ try:
     save_and_print_job_progress(db, job, 80, 'Cleaning up')
     # Delete unnecessary files
     # TODO: Uncomment this
-    # delete_file(audio_file)
+    if 'testing' not in audio_file:
+        delete_file(audio_file)
     delete_file(subtitles_file)
     delete_file(video_file)
     # delete_file(video_with_subtitles)
