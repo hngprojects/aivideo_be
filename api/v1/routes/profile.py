@@ -76,7 +76,7 @@ def update_user_profile(
         # Check if the cleaned filename is not empty or None
         if cleaned_filename:
             # Upload the avatar to Minio
-            minio_save_file = f"profilepic-{str(uuid4())}.{avatar.filename.split('.')[-1]}"
+            minio_save_file = f"profilepic-{str(uuid4().hex)}.{avatar.filename.split('.')[-1]}"
             minio_content_type = avatar.content_type
 
             # Create a temporary file to save the avatar

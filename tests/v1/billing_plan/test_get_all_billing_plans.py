@@ -23,7 +23,7 @@
 # @pytest.fixture
 # def test_user():
 #     return User(
-#         id=str(uuid7()),
+#         id=str(uuid7().hex),
 #         email="testuser@gmail.com",
 #         password="hashedpassword",
 #         first_name="test",
@@ -35,7 +35,7 @@
 # @pytest.fixture
 # def test_billing_plan():
 #     return BillingPlan(
-#         id=str(uuid7()),
+#         id=str(uuid7().hex),
 #         plan_name="one",
 #         price=5000,
 #         currency="NGN",
@@ -50,7 +50,7 @@
 
 # @pytest.fixture
 # def random_access_token():
-#     return user_service.create_access_token(user_id=str(uuid7()))
+#     return user_service.create_access_token(user_id=str(uuid7().hex))
 
 
 # # Test for successful retrieve of billing_plans

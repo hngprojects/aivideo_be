@@ -15,7 +15,7 @@ from main import app
 
 def mock_resource():
     return Resource(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         title="TTest title?",
         content="TAnswer",
         image_url="random.com",

@@ -13,6 +13,7 @@ from api.utils.success_response import success_response
 from api.utils.minio_service import minio_service
 from api.utils import mime_types
 from api.utils.files import delete_file, upload_to_temp_dir
+from api.v1.schemas.job import UpdateJobPayload
 from api.v1.models.job import JobStatus, TifiJob
 from api.v1.models.user import User
 from api.v1.services.user import user_service
@@ -195,7 +196,7 @@ async def update_job(
         thumbnail_url, download_url = minio_service.upload_to_minio(
             folder_name='job-thumbnails',
             source_file=file_path,
-            destination_file=f'thumbnail-{uuid4()}.png',
+            destination_file=f'thumbnail-{uuid4().hex}.png',
             content_type=mime_types.IMAGE_PNG
         )
         
@@ -208,6 +209,29 @@ async def update_job(
         user_id=current_user.id,
         job_name=job_name,
         job_thumbnail_url=thumbnail_url
+    )
+
+    return success_response(
+        status_code=200,
+        message='Job updated successfully',
+        data=jsonable_encoder(job)
+    )
+    
+    
+@job_router.patch("/{job_id}/payload", response_model=success_response, status_code=status.HTTP_200_OK)
+async def update_job_payload(
+    job_id: str,
+    schema: UpdateJobPayload,
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(user_service.get_current_user)
+):
+    """This endpoint updates a job in the database"""
+
+    job = tifi_job_service.update_payload(
+        db=db, 
+        job_id=job_id,
+        user_id=current_user.id,
+        payload=schema.payload
     )
 
     return success_response(

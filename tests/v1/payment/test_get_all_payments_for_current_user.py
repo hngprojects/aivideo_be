@@ -33,7 +33,7 @@ def mock_payment_service():
 @pytest.fixture
 def test_user():
     return User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="testuser@gmail.com",
         password="hashedpassword",
         first_name="test",
@@ -46,13 +46,13 @@ def test_user():
 @pytest.fixture()
 def test_payment(test_user):
     payment = Payment(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         amount=5000.00,
         currency="NGN",
         status="completed",
         method="flutterwave",
         user_id=test_user.id,
-        transaction_id=str(uuid7()),
+        transaction_id=str(uuid7().hex),
         created_at=datetime.now(tz=timezone.utc)
     )
     return payment

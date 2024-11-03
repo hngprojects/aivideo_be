@@ -18,7 +18,7 @@ from main import app
 
 def mock_get_current_user():
     return User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="test@gmail.com",
         password=user_service.hash_password("Testuser@123"),
         first_name='Test',
@@ -32,7 +32,7 @@ def mock_get_current_user():
 
 def mock_privacy_settings():
     return DataPrivacySetting(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         user_id=mock_get_current_user().id,
         profile_visibility=True,
         share_data_with_partners=False,

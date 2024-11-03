@@ -17,7 +17,7 @@ from main import app
 
 def mock_get_current_user():
     return User(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         email="user@gmail.com",
         password=user_service.hash_password("Testuser@123"),
         first_name='Test',
@@ -31,7 +31,7 @@ def mock_get_current_user():
 
 def mock_notification():
     return Notification(
-        id=str(uuid7()),
+        id=str(uuid7().hex),
         title="TTest qustion?",
         message="TAnswer"
     )
@@ -76,7 +76,7 @@ def test_notification_not_found(client, db_session_mock):
     app.dependency_overrides[notification_service.delete] = None
 
     # Simulate a non-existent organisation
-    nonexistent_id = str(uuid7())
+    nonexistent_id = str(uuid7().hex)
 
     # Mock the organisation service to raise an exception for a non-existent notification
     with patch("api.v1.services.notification.notification_service.delete", side_effect=HTTPException(status_code=404, detail="Notification not found")):

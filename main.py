@@ -11,29 +11,34 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware  # required by google oauth
+from starlette.middleware.base import BaseHTTPMiddleware
+from collections import defaultdict
+
+from api.db.database import get_db
 from api.loggers.app_logger import app_logger
 from api.utils.success_response import success_response
 from api.v1.routes import api_version_one
 from api.utils.settings import settings
-from starlette.middleware.base import BaseHTTPMiddleware
-from collections import defaultdict
-from scripts.presets import load_avatars_in_db, load_audio_in_db, load_billing_plans_in_db
+from scripts.load_billing_plans import load_billing_plans_in_db
 from api.utils.log_streamer import log_streamer
+from api.v1.services.presets import preset_service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_avatars_in_db()
-    load_audio_in_db()
+    db = next(get_db())
+    
+    await preset_service.load_background_images_in_db(db)
+    await preset_service.load_music_in_db(db)
+    await preset_service.load_avatars_in_db(db)
     load_billing_plans_in_db()
+    
     yield
-
 
 app = FastAPI(
     lifespan=lifespan,
     title='Tifi.TV API'
 )
-
 
 # Set up email templates and css static files
 email_templates = Jinja2Templates(directory='api/core/dependencies/email/templates')
@@ -218,4 +223,5 @@ if __name__ == "__main__":
         port=7001, 
         reload=True,
         workers=4,
+        reload_excludes=['logs']
     )

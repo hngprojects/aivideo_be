@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 import json
 from time import sleep
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from fastapi import HTTPException
 from fastapi import status as HTTPStatus
 from fastapi.encoders import jsonable_encoder
@@ -238,6 +238,32 @@ class TifiJobService:
         job.job_name = job_name
         if job_thumbnail_url:
             job.job_thumbnail_url = job_thumbnail_url
+        
+        db.commit()
+        db.refresh(job)
+        
+        return job
+    
+    
+    def update_payload(
+        self, 
+        db: Session,
+        job_id: str,
+        payload: Dict[str, Any],
+        user_id: str
+    ):
+        '''Service to update the relevant parts of a job'''
+        
+        job = self.fetch(db, job_id)
+        
+        if job.user_id != user_id:
+            raise HTTPException(status_code=403, detail='You do not have access to edit this job')
+        
+        job.payload = json.loads(payload)
+        # Update job status
+        job.status = JobStatus.pending
+        job.status_message = None
+        job.progress = "0% complete"
         
         db.commit()
         db.refresh(job)

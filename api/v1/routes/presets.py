@@ -22,28 +22,6 @@ def get_all_avatars(db: Session = Depends(get_db)):
     )
 
 
-@preset_router.get('/load-avatars')
-def load_all_avatars(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    '''Endpoint to get all avatars'''
-
-    background_tasks.add_task(
-        preset_service.load_avatars_in_db,
-        db=db
-    )
-
-    return success_response(
-        status_code=200,
-        message='Avatars loading in the background',
-    )
-
-
-@preset_router.delete('/avatars', status_code=204)
-def delete_all_avatars(db: Session = Depends(get_db)):
-    '''Endpoint to delete all preset avatars'''
-
-    preset_service.delete_all_avatars(db=db)
-
-
 @preset_router.get('/audio')
 def get_all_audio(db: Session = Depends(get_db)):
     '''Endpoint to get all audio'''
@@ -55,28 +33,57 @@ def get_all_audio(db: Session = Depends(get_db)):
         message='Audio retrieved successfully',
         data=jsonable_encoder(audio)
     )
+    
+
+@preset_router.get('/bg-images')
+def get_all_bg_images(db: Session = Depends(get_db)):
+    '''Endpoint to get all bg images'''
+
+    bg_images = preset_service.fetch_all_background_images(db=db)
+
+    return success_response(
+        status_code=200,
+        message='bg-images retrieved successfully',
+        data=jsonable_encoder(bg_images)
+    )
 
 
-@preset_router.get('/load-audio')
-def load_all_audio(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    '''Endpoint to get all audio'''
+@preset_router.get('/voices')
+def get_all_voices(db: Session = Depends(get_db)):
+    '''Endpoint to get all voices'''
 
+    voices = preset_service.fetch_all_voices(db=db)
+
+    return success_response(
+        status_code=200,
+        message='Voices retrieved successfully',
+        data=jsonable_encoder(voices)
+    )
+
+
+@preset_router.get('/load-presets')
+async def load_all_presets(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    '''Endpoint to load all presets into the db'''
+    
     background_tasks.add_task(
-        preset_service.load_audio_in_db,
+        preset_service.load_all_presets,
         db=db
     )
 
     return success_response(
         status_code=200,
-        message='Audio loading in the background',
+        message='Presets loading in the background',
     )
 
 
-@preset_router.delete('/audio', status_code=204)
-def delete_all_audio(db: Session = Depends(get_db)):
-    '''Endpoint to delete all preset audio'''
+@preset_router.delete('/delete-presets', status_code=204)
+def delete_all_presets(db: Session = Depends(get_db)):
+    '''Endpoint to delete all preset avatars'''
 
+    preset_service.delete_all_avatars(db=db)
+    preset_service.delete_all_voices(db=db)
     preset_service.delete_all_music(db=db)
+    preset_service.delete_all_background_images(db=db)
 
 
 @preset_router.get('/avatars/generate', status_code=200)
@@ -92,3 +99,27 @@ def generate_new_avatars(background_tasks: BackgroundTasks,db: Session = Depends
         status_code=200,
         message='Generating avatar',
     )
+    
+
+
+# @preset_router.get('/load-audio')
+# def load_all_audio(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+#     '''Endpoint to get all audio'''
+
+#     background_tasks.add_task(
+#         preset_service.load_music_in_db,
+#         db=db
+#     )
+
+#     return success_response(
+#         status_code=200,
+#         message='Audio loading in the background',
+#     )
+
+
+# @preset_router.delete('/audio', status_code=204)
+# def delete_all_audio(db: Session = Depends(get_db)):
+#     '''Endpoint to delete all preset audio'''
+
+#     preset_service.delete_all_music(db=db)
+
