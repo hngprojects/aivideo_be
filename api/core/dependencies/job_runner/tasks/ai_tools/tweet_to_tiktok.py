@@ -92,8 +92,6 @@ try:
     delete_file(subtitles_file)
     delete_file(video_file)
     # delete_file(video_with_subtitles)
-    if background_audio:
-        delete_file(video_with_audio)
 
     save_and_print_job_progress(db, job, 85, 'Generating preview and download links for generated video')
     minio_save_file = f'twttotiktk-{str(uuid4().hex)}.mp4'
@@ -111,6 +109,8 @@ try:
     }
 
     delete_file(video_with_subtitles)
+    if background_audio:
+        delete_file(video_with_audio)
 
     save_and_print_job_progress(db, job, 95)
 
