@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     REPLICATE_API_TOKEN: str = config("REPLICATE_API_TOKEN")
     
     PIXABAY_API_KEY: str = config("PIXABAY_API_KEY")
+    # FREEPIK_API_KEY: str = config("FREEPIK_API_KEY")
     UNSPLASH_ACCESS_KEY: str = config("UNSPLASH_ACCESS_KEY")
     UNSPLASH_SECRET_KEY: str = config("UNSPLASH_SECRET_KEY")
     PEXELS_API_KEY: str = config("PEXELS_API_KEY")
