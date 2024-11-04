@@ -23,6 +23,7 @@ class StockMediaService:
         """Helper function to build the request url"""
         
         try:
+            # response = requests.get(url, headers=headers, verify=False)
             response = requests.get(url, headers=headers)
             response.raise_for_status()
             
@@ -35,6 +36,11 @@ class StockMediaService:
             raise HTTPException(status_code=500, detail='Connection timeout')
         
         except requests.exceptions.RequestException as e:
+            print(response.status_code)
+
+            # Raising a more informative error if the 403 persists
+            if response.status_code == 403:
+                raise HTTPException(status_code=403, detail=f'Access forbidden for {url}: Check API key or access restrictions')
             raise e
         
         except Exception as e:
@@ -74,10 +80,29 @@ class StockMediaService:
         
         api_key = settings.PIXABAY_API_KEY
         final_result = []
+        
+        # headers = {
+        #     # "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+        #     # 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0'
+        #     # 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+        # }
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+        }
 
         if media_type == 'image':
             url = f"https://pixabay.com/api/?key={api_key}&q={self.query.replace(' ', '+')}&page={self.page}&per_page={self.per_page}&image_type=photo"
-            data = self.__build_request(url)
+            data = self.__build_request(url, headers)
             
             image_data: list = data['hits']
             final_result = [{
@@ -88,7 +113,7 @@ class StockMediaService:
         elif media_type == 'video':
             url = f"https://pixabay.com/api/videos/?key={api_key}&q={self.query.replace(' ', '+')}&page={self.page}&per_page={self.per_page}"
             
-            data = self.__build_request(url)
+            data = self.__build_request(url, headers)
             
             video_data: list = data['hits']
             final_result = [{
@@ -109,7 +134,26 @@ class StockMediaService:
         """
         
         api_key = settings.PEXELS_API_KEY
-        headers = {'Authorization': api_key}
+        # headers = {
+        #     'Authorization': api_key,
+        #     # "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        #     # 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0'
+        #     # 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+        #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+        # }
+        
+        headers = {
+            'Authorization': api_key,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+        }
         final_result = []
         
         if media_type == 'image':
@@ -140,11 +184,11 @@ class StockMediaService:
         
         unsplash_images = self.__unsplash()
         # pexels_images = self.__pexels('image')
-        pixabay_images = self.__pixabay('image')
+        # pixabay_images = self.__pixabay('image')
         
         images.extend(unsplash_images)
         # images.extend(pexels_images)
-        images.extend(pixabay_images)
+        # images.extend(pixabay_images)
         
         return images
     
@@ -153,9 +197,9 @@ class StockMediaService:
         videos = []
         
         # pexels_videos = self.__pexels('video')
-        pixabay_videos = self.__pixabay('video')
+        # pixabay_videos = self.__pixabay('video')
         
         # videos.extend(pexels_videos)
-        videos.extend(pixabay_videos)
+        # videos.extend(pixabay_videos)
         
         return videos
