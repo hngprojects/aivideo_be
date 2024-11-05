@@ -28,7 +28,10 @@ async def generate_scenes(
 ):
     '''Endpoint to generate scenes descriptions from a script'''
     
-    scenes = tweet_to_tiktok_service.generate_scene_descriptions(schema.script)
+    scenes = tweet_to_tiktok_service.generate_scene_descriptions(
+        schema.script,
+        no_of_scenes=schema.no_of_scenes if schema.no_of_scenes else 5,
+    )
     
     return success_response(
         status_code=200,
@@ -55,15 +58,14 @@ async def convert_tweet_to_video(
     custom_audio: Optional[UploadFile] = File(None),
     voice_id: Optional[str] = Form(None),
     custom_voice: Optional[UploadFile] = File(None),
-    scene_media_urls: str = Form(...),
+    scene_media_urls: Optional[str] = Form(None),
     video_style: str = Form('stock images'),
     aspect_ratio: str = Form('square'),
     user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to convert a script to video'''
     
-    scene_media_urls_list = [url.strip() for url in scene_media_urls.split(',')]
-    
+    scene_media_urls_list = []
     bg_audio_url = None
     voice_url = None
     avatar_url = None
@@ -80,7 +82,7 @@ async def convert_tweet_to_video(
     if custom_voice and voice_id:
         raise HTTPException(status_code=400, detail='Cannot use both custom voice and preset voice')
     
-    if not custom_voice and not voice_id:
+    if (not custom_voice and not voice_id) and not avatar_id:
         raise HTTPException(status_code=400, detail='Cannot leave both custom voice and voice id empty')
     
     if custom_avatar and avatar_id:
@@ -92,12 +94,23 @@ async def convert_tweet_to_video(
     if avatar_id and voice_id:
         raise HTTPException(status_code=400, detail='Cannot select avatar and voice')
     
+    if (avatar_id and scene_media_urls) or (custom_avatar and scene_media_urls):
+        raise HTTPException(status_code=400, detail='Cannot select scenes with talking avatar video style')
+    
+    # -----------------------------------------------------------
     
     # Determine aspect ratio
     width, height = video_service.set_aspect_ratio(aspect_ratio.lower())
     
-    # -----------------------------------------------------------
-    
+    if scene_media_urls:
+        scene_media_urls_list = [url.strip() for url in scene_media_urls.split(',')]
+        # if len(scene_media_urls_list) > 5:
+        #     raise HTTPException(status_code=400, detail='Cannot have more than 5 scene media URLs')
+        
+        for url in scene_media_urls_list:
+            if not url.startswith('http'):
+                raise HTTPException(status_code=400, detail='All scene media URLs must start with http')
+        
     if background_audio_id:
         audio = preset_service.fetch_music_by_id(
             db=db, music_id=background_audio_id
