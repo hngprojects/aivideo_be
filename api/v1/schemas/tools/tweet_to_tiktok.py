@@ -38,7 +38,7 @@ class TweetToTiktokRequest(BaseModel):
         allowed_types = [
             "stock images",
             "stock videos", 
-            "takling avatar",
+            "talking avatar",
             "ai images",
             "3d moving videos",
             "ai illustrations"
@@ -53,3 +53,4 @@ class TweetToTiktokRequest(BaseModel):
 
 class SceneGeneration(BaseModel):
     script: str
+    no_of_scenes: Optional[int] = 5
