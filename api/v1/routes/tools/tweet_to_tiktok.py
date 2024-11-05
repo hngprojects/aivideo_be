@@ -4,60 +4,20 @@ from sqlalchemy.orm import Session
 
 from api.db.database import get_db
 from api.utils.minio_service import minio_service
-from api.utils.stock_media_service import StockMediaService
-from api.utils import mime_types
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.utils.tool_limiter import track_tool_usage
 from api.utils.success_response import success_response
-from api.utils.files import delete_file, upload_to_temp_dir, contains_face
+from api.utils import files
 from api.v1.services.job import tifi_job_service
 from api.v1.services.presets import preset_service
-from api.v1.schemas.tools.tweet_to_tiktok import SceneGeneration, TweetToTiktokRequest
 from api.v1.services.tools.tweet_to_tiktok import tweet_to_tiktok_service
+from api.v1.services.tools.general_video_service import video_service
+from api.v1.schemas.tools.tweet_to_tiktok import SceneGeneration
 from api.v1.models.project import ProjectToolsEnum
 
 
 tweet_to_tiktok_router = APIRouter(prefix="/tools", tags=["Tools"])
-
-
-async def upload_audio_file(file):
-    file_extension = file.filename.split(".")[-1]
-    audio_file = await upload_to_temp_dir(
-        file, 
-        allowed_extensions=[
-            'mp3',
-            'wav',
-        ],
-        save_extension=file_extension,
-        max_file_size=50
-    )
-
-    # Upload video file to temporary stirage bucket
-    audio_file = minio_service.upload_to_tmp_bucket(source_file=audio_file)
-    delete_file(audio_file)
-
-    return audio_file
-
-async def upload_image_file(file):
-    file_extension = file.filename.split(".")[-1]
-    image_file = await upload_to_temp_dir(
-        file, 
-        allowed_extensions=[
-            'jpg',
-            'png',
-            'jpeg',
-            'jfif'
-        ],
-        save_extension=file_extension,
-        max_file_size=20
-    )
-
-    # Upload video file to temporary stirage bucket
-    image_url = minio_service.upload_to_tmp_bucket(source_file=image_file)
-    delete_file(image_file)
-
-    return image_url
 
 
 @tweet_to_tiktok_router.post('/generate-scenes', status_code=200)
@@ -96,7 +56,8 @@ async def convert_tweet_to_video(
     voice_id: Optional[str] = Form(None),
     custom_voice: Optional[UploadFile] = File(None),
     scene_media_urls: str = Form(...),
-    video_style: str = Form(...),
+    video_style: str = Form('stock images'),
+    aspect_ratio: str = Form('square'),
     user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to convert a script to video'''
@@ -128,6 +89,12 @@ async def convert_tweet_to_video(
     if custom_avatar and (not voice_id or not custom_voice):
         raise HTTPException(status_code=400, detail='Cannot use custom avatar without a voice selection')
     
+    if avatar_id and voice_id:
+        raise HTTPException(status_code=400, detail='Cannot select avatar and voice')
+    
+    
+    # Determine aspect ratio
+    width, height = video_service.set_aspect_ratio(aspect_ratio.lower())
     
     # -----------------------------------------------------------
     
@@ -151,17 +118,18 @@ async def convert_tweet_to_video(
         voice_url = avatar.voice.file_url
     
     if custom_audio:
-        bg_audio_url = await upload_audio_file(custom_audio)
+        bg_audio_url = await files.upload_audio_file(custom_audio)
     
     if custom_voice:
-        voice_url = await upload_audio_file(custom_voice)
+        voice_url = await files.upload_audio_file(custom_voice)
         
     if custom_avatar:
-        avatar_url = await upload_image_file(custom_avatar)
+        avatar_url = await files.upload_image_file(custom_avatar)
     
     if tweet_link:
         # TODO: Get tweet text from tweet link
         text = ''
+        
         
     job = tifi_job_service.create(
         db=db,
@@ -170,10 +138,11 @@ async def convert_tweet_to_video(
             'text': text,
             'scene_media_urls': scene_media_urls_list,
             'bg_audio_url': bg_audio_url,
-            # 'voice_over': voice_over.lower(),
             'voice_url': voice_url,
             'avatar_image_url': avatar_url,
             'video_style': video_style.lower(),
+            'width': width,
+            'height': height,
         },
         user_id=user.id if user else None,
         is_parallel=False
