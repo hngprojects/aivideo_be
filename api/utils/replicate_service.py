@@ -51,7 +51,7 @@ class ReplicateService:
         return output
     
     
-    def generate_image(self, prompt: str, num_outputs: int=5, img_width: int=1024, img_height: int=1024):
+    def generate_image(self, prompt: str, num_outputs: int=3, img_width: int=1024, img_height: int=1024):
         """This function uses stable diffusion to generate an image
 
         Args:
