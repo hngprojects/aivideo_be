@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from api.db.database import get_db
 from api.utils.files import get_media_type_from_extension
 from api.utils.settings import settings
+from api.utils.replicate_service import replicate_service
 from api.utils.stock_media_service import StockMediaService
 from api.utils.success_response import success_response
 from api.v1.models.user import User
@@ -88,23 +89,46 @@ async def fetch_stock_media(
         
         elif schema.media_type == 'talking avatar':
             avatars = preset_service.fetch_all_avatars(db)
-            avatar_list = [
+            result = [
                 {
                     'preview': avatar.file_url,
                     'normal': avatar.file_url,
                 } for avatar in avatars
             ]
-            result = avatar_list
         
         # Need generation of images here
         elif schema.media_type == 'ai images':
-            pass
+            images = replicate_service.generate_image(
+                prompt=f'{schema.query}, realistic image',
+            )
+            result = [
+                {
+                    'preview': url,
+                    'normal': url,
+                } for url in images
+            ]
         
         elif schema.media_type == 'ai illustrations':
-            pass
+            images = replicate_service.generate_image(
+                prompt=f'{schema.query}, illustration',
+            )
+            result = [
+                {
+                    'preview': url,
+                    'normal': url,
+                } for url in images
+            ]
         
         elif schema.media_type == '3d moving videos':
-            pass
+            videos = replicate_service.generate_video(
+                prompt=f'{query}, hyper-realistic',
+            )
+            result = [
+                {
+                    'preview': url,
+                    'normal': url,
+                } for url in videos
+            ]
     
     elif isinstance(schema.query, list):
         result = {}
@@ -136,13 +160,37 @@ async def fetch_stock_media(
             
             # Need generation of images here
             elif schema.media_type == 'ai images':
-                pass
+                images = replicate_service.generate_image(
+                    prompt=f'{query}, hyper-realistic image',
+                )
+                result[query] = [
+                    {
+                        'preview': url,
+                        'normal': url,
+                    } for url in images
+                ]
             
             elif schema.media_type == 'ai illustrations':
-                pass
+                images = replicate_service.generate_image(
+                    prompt=f'{query}, illustration',
+                )
+                result[query] = [
+                    {
+                        'preview': url,
+                        'normal': url,
+                    } for url in images
+                ]
             
             elif schema.media_type == '3d moving videos':
-                pass
+                videos = replicate_service.generate_video(
+                    prompt=f'{query}, hyper-realistic',
+                )
+                result[query] = [
+                    {
+                        'preview': url,
+                        'normal': url,
+                    } for url in videos
+                ]
                 
             # except Exception as e:
             #     continue

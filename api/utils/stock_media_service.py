@@ -1,5 +1,6 @@
 from fastapi import HTTPException
-import requests
+import requests, urllib.request, urllib.error, urllib.parse, json
+
 from api.utils.settings import settings
 
 
@@ -45,6 +46,31 @@ class StockMediaService:
         
         except Exception as e:
             raise e   
+    
+    # def __build_request(self, url: str, headers={}):
+    #     """Helper function to build the request url using urllib"""
+        
+    #     try:
+    #         req = urllib.request.Request(url, headers=headers)
+    #         with urllib.request.urlopen(req) as response:
+    #             if response.status != 200:
+    #                 raise HTTPException(status_code=response.status, detail=f"Request failed with status: {response.status}")
+                
+    #             data = response.read().decode('utf-8')
+    #             return json.loads(data)
+
+    #     except urllib.error.HTTPError as e:
+    #         if e.code == 403:
+    #             raise HTTPException(status_code=403, detail='Access forbidden: Check API key or access restrictions')
+    #         elif e.code == 404:
+    #             raise HTTPException(status_code=404, detail='Resource not found')
+    #         else:
+    #             raise HTTPException(status_code=e.code, detail=str(e))
+    #     except urllib.error.URLError as e:
+    #         raise HTTPException(status_code=500, detail='Network error: Unable to reach the server')
+    #     except json.JSONDecodeError:
+    #         raise HTTPException(status_code=500, detail='Failed to decode JSON response')
+  
              
 
     def __unsplash(self):
@@ -56,7 +82,8 @@ class StockMediaService:
         """
         
         api_key = settings.UNSPLASH_ACCESS_KEY
-        url = f"https://api.unsplash.com/search/photos?query={self.query}&client_id={api_key}&page={self.page}&per_page={self.per_page}"
+        encoded_query = urllib.parse.quote(self.query)
+        url = f"https://api.unsplash.com/search/photos?query={encoded_query}&client_id={api_key}&page={self.page}&per_page={self.per_page}"
         
         data = self.__build_request(url)
         image_data: list = data['results']
@@ -184,11 +211,11 @@ class StockMediaService:
         
         unsplash_images = self.__unsplash()
         # pexels_images = self.__pexels('image')
-        # pixabay_images = self.__pixabay('image')
+        pixabay_images = self.__pixabay('image')
         
         images.extend(unsplash_images)
         # images.extend(pexels_images)
-        # images.extend(pixabay_images)
+        images.extend(pixabay_images)
         
         return images
     
@@ -197,9 +224,9 @@ class StockMediaService:
         videos = []
         
         # pexels_videos = self.__pexels('video')
-        # pixabay_videos = self.__pixabay('video')
+        pixabay_videos = self.__pixabay('video')
         
         # videos.extend(pexels_videos)
-        # videos.extend(pixabay_videos)
+        videos.extend(pixabay_videos)
         
         return videos

@@ -429,10 +429,14 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         elif aspect_ratio == 'horizontal':
             return (1920, 1080)
         elif aspect_ratio =='vertical':
-            return (720, 1280)
+            # return (720, 1280)
+            return (1080, 1920)
+        else:
+            raise ValueError('Invalid aspect_ratio selected.')
         
 
-    def change_aspect_ratio(self, input_file: str, output_file: str, aspect_ratio: str):
+    # def change_aspect_ratio(self, input_file: str, output_file: str, aspect_ratio: str):
+    def change_aspect_ratio(self, input_file: str, width: int, height: int):
         """
         Change the aspect ratio of a video by resizing and/or adding padding.
         
@@ -440,12 +444,13 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         :param output_file: Path to save the output video file.
         :param aspect_ratio: Desired aspect ratio of the video, Can be one of square, horizontal or veritcal.
         """
-
-        aspect_ratio = self.set_aspect_ratio(aspect_ratio)
+        
+        output_file = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4().hex)}.mp4')
+        
         # Define the scaling and padding filter
         filter_complex = (
-            f"scale={aspect_ratio[0]}:{aspect_ratio[1]}:force_original_aspect_ratio=decrease,"
-            f"pad={aspect_ratio[0]}:{aspect_ratio[1]}:(ow-iw)/2:(oh-ih)/2"
+            f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+            f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
         )
 
         try:

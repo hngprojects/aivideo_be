@@ -48,13 +48,13 @@ class TweetToTiktokService:
         return video_service.convert_text_to_speech(script, voice_over)
     
     
-    def generate_subtitles(self, audio_file: str):
+    def generate_subtitles(self, audio_file: str, width: int=1080, height: int=1920):
         '''This function generates subtitles from an audio file'''
         
         return video_service.generate_custom_subtitles_from_audio(
             audio_file=audio_file,
-            video_width=1080,
-            video_height=1920
+            video_width=width,
+            video_height=height
         )
         
     
