@@ -26,8 +26,8 @@ class GeneralService:
         }
 
         try:
-            response = requests.get(url, stream=True, headers=headers)
-            # response = requests.get(url, stream=True)
+            # response = requests.get(url, stream=True, headers=headers)
+            response = requests.get(url, stream=True)
             response.raise_for_status()  # Check for errors in the response
             
             file_path = os.path.join(settings.TEMP_DIR, f'{prefix_file_name}-{uuid4().hex}.{extension}')
