@@ -31,13 +31,14 @@ if audio_url:
 
 script=payload.get('script')
 scenes=payload.get('scenes')
-voice_over=payload.get('voice_over')
-aspect_ratio=payload.get('aspect_ratio')
+voice_url=payload.get('voice_url')
+width=payload.get('width')
+height=payload.get('height')
 background_audio=background_audio
 
 try:
     save_and_print_job_progress(db, job, 15, 'Generating audio from script')
-    audio_file = video_service.convert_text_to_speech(script, voice_over)
+    audio_file = video_service.convert_text_to_speech(script, voice_url)
 
     save_and_print_job_progress(db, job, 25, 'Generating subtitle file from generated audio')
     subtitle_file = video_service.generate_subtitles_from_audio(audio_file)
@@ -50,7 +51,6 @@ try:
 
     save_and_print_job_progress(db, job, 55, 'Embedding subtitles in generated video')
     # Add subtitles to video
-    # video_with_subtitles = os.path.join(settings.TEMP_DIR, f'ttvideo-{str(uuid4().hex)}.mp4')
     video_with_subtitles = video_service.add_subtitles_to_video(
         input_video=video_file, 
         subtitles_file=subtitle_file,
@@ -66,18 +66,12 @@ try:
             output_path=video_with_bg_music_path
         )
 
-    save_and_print_job_progress(db, job, 65, 'Setting up storage location')
-    # Set up for final result
-    video_dir = os.path.join(settings.STORAGE_DIR, 'video')
-    os.makedirs(video_dir, exist_ok=True)
-
     save_and_print_job_progress(db, job, 75, 'Changing aspect ratio of video')
-    output_video_file = os.path.join(video_dir, f'ttvideo-{str(uuid4().hex)}.mp4')
     # Adjust aspect ratio
     final_result_file = video_service.change_aspect_ratio(
         input_file=video_with_audio if background_audio is not None else video_with_subtitles, 
-        output_file=output_video_file, 
-        aspect_ratio=aspect_ratio
+        width=width,
+        height=height
     )
 
     save_and_print_job_progress(db, job, 80, 'Cleaning up')

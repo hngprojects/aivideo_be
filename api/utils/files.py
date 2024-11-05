@@ -4,6 +4,7 @@ from secrets import token_hex
 from fastapi import HTTPException, status, UploadFile
 from pathlib import Path
 from api.utils.settings import settings
+from api.utils.minio_service import minio_service
 
 
 # BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -161,6 +162,46 @@ async def contains_face(image_path):
 
     raise HTTPException(
         status_code=400, detail=f"Image does not contain a face.",)
+
+
+async def upload_audio_file(file):
+    file_extension = file.filename.split(".")[-1]
+    audio_file = await upload_to_temp_dir(
+        file, 
+        allowed_extensions=[
+            'mp3',
+            'wav',
+        ],
+        save_extension=file_extension,
+        max_file_size=50
+    )
+
+    # Upload video file to temporary stirage bucket
+    audio_url = minio_service.upload_to_tmp_bucket(source_file=audio_file)
+    delete_file(audio_file)
+
+    return audio_file
+
+async def upload_image_file(file):
+    file_extension = file.filename.split(".")[-1]
+    image_file = await upload_to_temp_dir(
+        file, 
+        allowed_extensions=[
+            'jpg',
+            'png',
+            'jpeg',
+            'jfif'
+        ],
+        save_extension=file_extension,
+        max_file_size=20
+    )
+
+    # Upload video file to temporary stirage bucket
+    image_url = minio_service.upload_to_tmp_bucket(source_file=image_file)
+    delete_file(image_file)
+
+    return image_url
+
 
 
 def get_media_type_from_extension(file_extension):
