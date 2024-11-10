@@ -9,7 +9,7 @@ from api.utils.settings import settings
 from api.utils import mime_types
 from api.v1.services.job import tifi_job_service
 from api.v1.services.tools.ffmpeg_tools import ffmpeg_service
-from api.core.dependencies.job_runner.app.utils import save_and_print_job_progress
+from api.core.dependencies.job_runner.app.utils import run_ffmpeg_with_progress, save_and_print_job_progress
 
 db = next(get_db())
 
@@ -26,20 +26,22 @@ start_time = payload.get('start_time')
 end_time = payload.get('end_time')
 
 # Download video file from minio
-save_and_print_job_progress(db, job, 10, f'Downloading and opening video file from {video_url}')
+save_and_print_job_progress(db, job, 0, f'Downloading and opening video file from {video_url}')
 video_file = minio_service.download_file_from_minio(video_url)
 
 try:
-    save_and_print_job_progress(db, job, 35, f'Extracting audio from video')
     # Use ffmpeg to extract audio from the video
-    audio_path = ffmpeg_service.extract_audio_from_video(
+    cmd, duration, audio_path = ffmpeg_service.extract_audio_from_video(
         input_video=video_file,
         audio_extension=audio_extension,
         start_time=start_time,
         end_time=end_time
     )
+    
+    # Run ffmpeg command
+    run_ffmpeg_with_progress(db, job, 'Extracting audio from video', cmd, duration)
 
-    save_and_print_job_progress(db, job, 70, f'Generating preview and download links for generated audio')
+    save_and_print_job_progress(db, job, 100, f'Generating preview and download links for generated audio')
     
     mime_type = mime_types.AUDIO_MP3 if audio_extension == 'mp3' else mime_types.AUDIO_WAV
     save_url, download_url = minio_service.upload_to_minio(
@@ -49,16 +51,19 @@ try:
         content_type=mime_type
     )
 
-    save_and_print_job_progress(db, job, 80, 'Cleaning up')
+    # save_and_print_job_progress(db, job, 80, 'Cleaning up')
+    save_and_print_job_progress(db, job, 100, 'Cleaning up')
     delete_file(audio_path)
 
-    save_and_print_job_progress(db, job, 90, 'Generating result')
+    # save_and_print_job_progress(db, job, 90, 'Generating result')
+    save_and_print_job_progress(db, job, 100, 'Generating result')
     result = {
         'preview_url': save_url,
         'download_url': download_url,
     }
 
-    save_and_print_job_progress(db, job, 95)
+    # save_and_print_job_progress(db, job, 95)
+    save_and_print_job_progress(db, job, 100)
     print(json.dumps(result))
 
 except ffmpeg.Error as ffmpeg_error:
