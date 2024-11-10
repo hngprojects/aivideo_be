@@ -25,17 +25,17 @@ class FfmpegService:
         input_video: str, 
         audio_extension: str = 'mp3',
         start_time: str = None,  # Start time in format 'HH:MM:SS' or 'seconds'
-        end_time: str = None     # End time in format 'HH:MM:SS' or 'seconds'
+        end_time: str = None,     # End time in format 'HH:MM:SS' or 'seconds'
+        use_subprocess: bool = True
     ):
         '''This extracts audio from a portion of a video file'''
         
-
         try:
             output_path = os.path.join(settings.TEMP_DIR, f'audio-{uuid4().hex}.{audio_extension}')
             
             # Check video duration to ensure start_time and end_time are within bounds
-            probe = ffmpeg.probe(input_video)
-            video_duration = float(probe['format']['duration'])  # Get video duration in seconds
+            video_details = video_service.get_video_details(input_video)
+            video_duration = video_details['duration']
 
             start_seconds = self.time_to_seconds(start_time)
             end_seconds = self.time_to_seconds(end_time)
@@ -48,24 +48,43 @@ class FfmpegService:
             if start_seconds and end_seconds and start_seconds >= end_seconds:
                 raise ValueError(f"Start time {start_time} must be less than end time {end_time}")
 
-            # Prepare the ffmpeg input
-            ffmpeg_input = ffmpeg.input(input_video)
+            if use_subprocess:
+                # Prepare the FFmpeg input command
+                command = ['ffmpeg', '-i', input_video]
 
-            # Apply the start and end time if provided
-            if start_seconds:
-                ffmpeg_input = ffmpeg_input.filter('atrim', start=start_seconds)
-            if end_seconds:
-                ffmpeg_input = ffmpeg_input.filter('atrim', end=end_seconds)
+                # Apply the start and end time if provided
+                if start_seconds:
+                    command.extend(['-ss', str(start_seconds)])  # Start time
+                if end_seconds:
+                    command.extend(['-to', str(end_seconds)])   # End time
 
-            # Execute the ffmpeg command
-            (
-                ffmpeg_input
-                .output(output_path, format=audio_extension)
-                .run(overwrite_output=True)
-            )
+                # Output format and file path
+                command.extend(['-f', audio_extension, output_path])
+
+                # Overwrite the output file without asking
+                command.append('-y')
+                
+                return command, video_duration, output_path
             
-            return output_path
+            else:
+                # Prepare the ffmpeg input
+                ffmpeg_input = ffmpeg.input(input_video)
 
+                # Apply the start and end time if provided
+                if start_seconds:
+                    ffmpeg_input = ffmpeg_input.filter('atrim', start=start_seconds)
+                if end_seconds:
+                    ffmpeg_input = ffmpeg_input.filter('atrim', end=end_seconds)
+
+                # Execute the ffmpeg command
+                ffmpeg_command = (
+                    ffmpeg_input
+                    .output(output_path, format=audio_extension)
+                    .run(overwrite_output=True)
+                )
+                
+                return output_path
+            
         except ffmpeg.Error as e:
             print(f"ffmpeg error: {e.stderr.decode()}")
             raise e
@@ -79,7 +98,8 @@ class FfmpegService:
         input_video: str,
         # aspect_ratio: str,
         width: int,
-        height: int
+        height: int,
+        use_subprocess: bool = True
     ):
         """
         Resizes a video to the specified width and height.
@@ -91,6 +111,9 @@ class FfmpegService:
         """
 
         try:
+            video_details = video_service.get_video_details(input_video)
+            video_duration = video_details['duration']
+            
             output_path = os.path.join(settings.TEMP_DIR, f'video-{uuid4().hex}.mp4')
             
             # if aspect_ratio == 'square':
@@ -100,20 +123,34 @@ class FfmpegService:
             # elif aspect_ratio =='vertical':
             #     width, height = (720, 1280)
 
-            filter_complex = (
-                f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
-                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
-            )
-
-            (
-                ffmpeg
-                .input(input_video)
-                .output(output_path, vf=filter_complex)
-                .run(overwrite_output=True)
-            )
             
-            return output_path
-        
+            if use_subprocess:
+                command = [
+                    'ffmpeg',
+                    '-i', input_video,  # Input file
+                    '-vf', f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                        f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",  # Video filter
+                    '-y',  # Overwrite output file without asking
+                    output_path  # Output file
+                ]
+                
+                return command, video_duration, output_path
+            
+            else:
+                filter_complex = (
+                    f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                    f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
+                )
+
+                (
+                    ffmpeg
+                    .input(input_video)
+                    .output(output_path, vf=filter_complex)
+                    .run(overwrite_output=True)
+                )
+                
+                return output_path
+                    
         except ffmpeg.Error as e:
             raise e
     
@@ -146,6 +183,7 @@ class FfmpegService:
             # Get the resolution
             width = video_details['width']
             height = video_details['height']
+            video_duration = video_details['duration']
 
             # Calculate the total number of pixels (width x height)
             total_pixels = width * height
@@ -160,20 +198,31 @@ class FfmpegService:
             else:
                 quality = 30  # Very low resolutions, more compression``
 
-            (
-                ffmpeg
-                .input(input_video)
-                .output(
-                    output_path, 
-                    crf=quality, 
-                    preset=compression_speed, 
-                    vcodec='libx264', 
-                    acodec='aac'
-                )
-                .run(overwrite_output=True)
-            )
+            # (
+            #     ffmpeg
+            #     .input(input_video)
+            #     .output(
+            #         output_path, 
+            #         crf=quality, 
+            #         preset=compression_speed, 
+            #         vcodec='libx264', 
+            #         acodec='aac'
+            #     )
+            #     .run(overwrite_output=True)
+            # )
             
-            return output_path
+            command = [
+                'ffmpeg',
+                '-i', input_video,  # Input file
+                '-crf', str(quality),  # Constant Rate Factor (CRF) for video quality
+                '-preset', compression_speed,  # Compression speed preset
+                '-vcodec', 'libx264',  # Video codec
+                '-acodec', 'aac',  # Audio codec
+                '-y',  # Overwrite output file without asking
+                output_path  # Output file
+            ]
+            
+            return command, video_duration, output_path
 
         except ffmpeg.Error as e:
             raise e
@@ -197,19 +246,32 @@ class FfmpegService:
         """
 
         try:
+            video_details = video_service.get_video_details(input_video)
+            video_duration = video_details['duration']
+            
             output_gif = os.path.join(settings.TEMP_DIR, f'gif-{uuid4().hex}.gif')
             
             # Use ffmpeg to create a GIF
-            (
-                ffmpeg
-                .input(input_video, ss=start_time, t=duration)  # Input file, start time, and duration
-                .filter('fps', fps=15)  # Set frame rate
-                .filter('scale', 360, -1)  # Resize, keep aspect ratio (-1)
-                .output(output_gif, loop=0)  # Output as a GIF
-                .run()
-            )
+            # (
+            #     ffmpeg
+            #     .input(input_video, ss=start_time, t=duration)  # Input file, start time, and duration
+            #     .filter('fps', fps=15)  # Set frame rate
+            #     .filter('scale', 360, -1)  # Resize, keep aspect ratio (-1)
+            #     .output(output_gif, loop=0)  # Output as a GIF
+            #     .run()
+            # )
             
-            return output_gif
+            command = [
+                'ffmpeg',
+                '-i', input_video,  # Input file
+                '-ss', str(start_time),  # Start time
+                '-t', str(duration),  # Duration of the GIF
+                '-vf', 'fps=15,scale=360:-1',  # Set frame rate and resize, keeping aspect ratio
+                '-loop', '0',  # Loop the GIF indefinitely
+                output_gif  # Output file
+            ]
+            
+            return command, video_duration, output_gif
 
         except ffmpeg.Error as e:
             raise e
@@ -248,21 +310,33 @@ class FfmpegService:
         position_coords = positions[position]
         
         try:
+            video_details = video_service.get_video_details(input_video)
+            video_duration = video_details['duration']
+            
             output_video = os.path.join(settings.TEMP_DIR, f'video-{uuid4().hex}.mp4')
 
-            (
-                ffmpeg
-                .input(input_video)
-                .output(
-                    output_video, 
-                    vf=f"movie={watermark_image},\
-                        scale=50:50 [watermark];\
-                        [in][watermark] overlay={position_coords}"
-                )
-                .run()
-            )
+            # (
+            #     ffmpeg
+            #     .input(input_video)
+            #     .output(
+            #         output_video, 
+            #         vf=f"movie={watermark_image},\
+            #             scale=50:50 [watermark];\
+            #             [in][watermark] overlay={position_coords}"
+            #     )
+            #     .run()
+            # )
             
-            return output_video
+            command = [
+                'ffmpeg',
+                '-i', input_video,  # Input file
+                '-i', watermark_image,  # Watermark image
+                '-filter_complex', f"movie={watermark_image},scale=50:50[watermark];[in][watermark]overlay={position_coords}",  # Apply watermark
+                '-y',  # Overwrite output file if it exists
+                output_video  # Output file
+            ]
+            
+            return command, video_duration, output_video
 
         except ffmpeg.Error as e:
             raise e
