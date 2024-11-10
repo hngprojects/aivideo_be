@@ -120,7 +120,7 @@ class YtVidSummarizerService:
         '''This function extracts audio from a video and returns the audio file'''
 
         # Use ffmpeg to extract the audio from the video
-        return ffmpeg_service.extract_audio_from_video(input_video=video_path)
+        return ffmpeg_service.extract_audio_from_video(input_video=video_path, use_subprocess=False)
 
     
     def transcribe_audio(self, audio_path_or_url: str):

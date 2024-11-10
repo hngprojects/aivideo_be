@@ -185,7 +185,8 @@ class TweetToTiktokService:
         return ffmpeg_service.resize_video(
             input_video=video_file,
             width=width,
-            height=height
+            height=height,
+            use_subprocess=False
         )
         
 

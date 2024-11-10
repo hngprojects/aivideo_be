@@ -25,7 +25,8 @@ class FfmpegService:
         input_video: str, 
         audio_extension: str = 'mp3',
         start_time: str = None,  # Start time in format 'HH:MM:SS' or 'seconds'
-        end_time: str = None     # End time in format 'HH:MM:SS' or 'seconds'
+        end_time: str = None,     # End time in format 'HH:MM:SS' or 'seconds'
+        use_subprocess: bool = True
     ):
         '''This extracts audio from a portion of a video file'''
         
@@ -47,40 +48,43 @@ class FfmpegService:
             if start_seconds and end_seconds and start_seconds >= end_seconds:
                 raise ValueError(f"Start time {start_time} must be less than end time {end_time}")
 
-            # # Prepare the ffmpeg input
-            # ffmpeg_input = ffmpeg.input(input_video)
+            if use_subprocess:
+                # Prepare the FFmpeg input command
+                command = ['ffmpeg', '-i', input_video]
 
-            # # Apply the start and end time if provided
-            # if start_seconds:
-            #     ffmpeg_input = ffmpeg_input.filter('atrim', start=start_seconds)
-            # if end_seconds:
-            #     ffmpeg_input = ffmpeg_input.filter('atrim', end=end_seconds)
+                # Apply the start and end time if provided
+                if start_seconds:
+                    command.extend(['-ss', str(start_seconds)])  # Start time
+                if end_seconds:
+                    command.extend(['-to', str(end_seconds)])   # End time
 
-            # # Execute the ffmpeg command
-            # ffmpeg_command = (
-            #     ffmpeg_input
-            #     .output(output_path, format=audio_extension)
-            #     .run(overwrite_output=True)
-            # )
+                # Output format and file path
+                command.extend(['-f', audio_extension, output_path])
+
+                # Overwrite the output file without asking
+                command.append('-y')
+                
+                return command, video_duration, output_path
             
+            else:
+                # Prepare the ffmpeg input
+                ffmpeg_input = ffmpeg.input(input_video)
+
+                # Apply the start and end time if provided
+                if start_seconds:
+                    ffmpeg_input = ffmpeg_input.filter('atrim', start=start_seconds)
+                if end_seconds:
+                    ffmpeg_input = ffmpeg_input.filter('atrim', end=end_seconds)
+
+                # Execute the ffmpeg command
+                ffmpeg_command = (
+                    ffmpeg_input
+                    .output(output_path, format=audio_extension)
+                    .run(overwrite_output=True)
+                )
+                
+                return output_path
             
-            # Prepare the FFmpeg input command
-            command = ['ffmpeg', '-i', input_video]
-
-            # Apply the start and end time if provided
-            if start_seconds:
-                command.extend(['-ss', str(start_seconds)])  # Start time
-            if end_seconds:
-                command.extend(['-to', str(end_seconds)])   # End time
-
-            # Output format and file path
-            command.extend(['-f', audio_extension, output_path])
-
-            # Overwrite the output file without asking
-            command.append('-y')
-            
-            return command, video_duration, output_path
-
         except ffmpeg.Error as e:
             print(f"ffmpeg error: {e.stderr.decode()}")
             raise e
@@ -94,7 +98,8 @@ class FfmpegService:
         input_video: str,
         # aspect_ratio: str,
         width: int,
-        height: int
+        height: int,
+        use_subprocess: bool = True
     ):
         """
         Resizes a video to the specified width and height.
@@ -118,29 +123,34 @@ class FfmpegService:
             # elif aspect_ratio =='vertical':
             #     width, height = (720, 1280)
 
-            # filter_complex = (
-            #     f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
-            #     f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
-            # )
+            
+            if use_subprocess:
+                command = [
+                    'ffmpeg',
+                    '-i', input_video,  # Input file
+                    '-vf', f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                        f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",  # Video filter
+                    '-y',  # Overwrite output file without asking
+                    output_path  # Output file
+                ]
+                
+                return command, video_duration, output_path
+            
+            else:
+                filter_complex = (
+                    f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                    f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
+                )
 
-            # (
-            #     ffmpeg
-            #     .input(input_video)
-            #     .output(output_path, vf=filter_complex)
-            #     .run(overwrite_output=True)
-            # )
-            
-            command = [
-                'ffmpeg',
-                '-i', input_video,  # Input file
-                '-vf', f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
-                    f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",  # Video filter
-                '-y',  # Overwrite output file without asking
-                output_path  # Output file
-            ]
-            
-            return command, video_duration, output_path
-        
+                (
+                    ffmpeg
+                    .input(input_video)
+                    .output(output_path, vf=filter_complex)
+                    .run(overwrite_output=True)
+                )
+                
+                return output_path
+                    
         except ffmpeg.Error as e:
             raise e
     
