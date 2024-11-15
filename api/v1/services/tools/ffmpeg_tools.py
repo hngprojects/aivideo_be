@@ -123,7 +123,6 @@ class FfmpegService:
             # elif aspect_ratio =='vertical':
             #     width, height = (720, 1280)
 
-            
             if use_subprocess:
                 command = [
                     'ffmpeg',
