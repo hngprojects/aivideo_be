@@ -37,6 +37,7 @@ async def talking_head_image_upload(
     
     audio_url = None
     voice_url = None
+    avatar_url = None
     
     # Validation checks
     if custom_audio and bg_audio_id:
