@@ -57,6 +57,7 @@ ecdsa==0.19.0
 email_validator==2.1.2
 eventlet==0.36.1
 exceptiongroup==1.2.2
+fake-useragent==1.5.1
 Faker==26.0.0
 fastapi==0.111.1
 fastapi-cli==0.0.4
@@ -214,6 +215,7 @@ rsa==4.9
 safetensors==0.4.4
 scikit-learn==1.5.1
 scipy==1.14.0
+setuptools==75.1.0
 shapely==2.0.5
 shellingham==1.5.4
 six==1.16.0
@@ -254,6 +256,7 @@ Wave==0.0.2
 wcwidth==0.2.13
 webencodings==0.5.1
 websockets==12.0
+wheel==0.44.0
 wrapt==1.16.0
 yarl==1.9.4
 yt-dlp==2024.8.6

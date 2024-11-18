@@ -24,6 +24,7 @@ class YtVidSummarizerService:
             # The command to run yt-dlp to download audio only
             command = [
                 "yt-dlp",
+                "-v",
                 "-u", settings.YOUTUBE_USERNAME,
                 "-p", settings.YOUTUBE_PASSWORD,
                 "-x",  # Extract audio
@@ -59,6 +60,9 @@ class YtVidSummarizerService:
             # audio_path = self.extract_audio_from_video(video_file)
 
             # return audio_path
+            
+            job_logger.error("An error occurred during yt-dlp execution.")
+            job_logger.error(f"Error output: {subp_e.stderr}")
         
             raise subp_e
         
@@ -68,41 +72,95 @@ class YtVidSummarizerService:
     
     def get_video_stream_alternative(self, youtube_url: str):
         '''Fetch audio url'''
+        
+        from fake_useragent import UserAgent
 
         try:
+            # Create a UserAgent object
+            ua = UserAgent()
+
+            # Generate a random user agent
+
+            # Define the URL and payload
+            url = "https://cnvmp3.com/fetch.php"
+            payload = {
+                "url": youtube_url,
+                "downloadMode": "audio",
+                "filenameStyle": "pretty",
+                "audioBitrate": "96"
+            }
+
+            # Define the headers
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0',
-                'Accept': 'application/json',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Referer': 'https://cobalt.tools/',
-                'Content-Type': 'application/json',
-                'Origin': 'https://cobalt.tools',
-                'Connection': 'keep-alive',
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-site',
-                'Priority': 'u=4'
+                "User-Agent": ua.random,
+                "Accept": "application/json",
+                "Accept-Language": "en-US,en;q=0.5",
+                "Accept-Encoding": "gzip, deflate, br, zstd",
+                "Referer": "https://cnvmp3.com/",
+                "Content-Type": "application/json",
+                "Origin": "https://cnvmp3.com",
+                "Connection": "keep-alive",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin",
+                "Priority": "u=0",
+                "Pragma": "no-cache",
+                "Cache-Control": "no-cache",
+                "TE": "trailers"
             }
-            data = {
-                "url": youtube_url
-            }
-            response = requests.post(
-                'https://api.cobalt.tools/', 
-                headers=headers, 
-                data=json.dumps(data)
-            )
+            
+            # Make the POST request
+            response = requests.post(url, json=payload, headers=headers)
 
-            # # Parse response data
-            data = response.json()
+            # Check the response
+            if response.status_code == 200:
+                data = response.content
+                print(data)
 
-            # Check if the response contains a valid download URL
-            if data and 'url' in data:
-                return data['url']
+                # Check if the response contains a valid download URL
+                # if data and 'url' in data:
+                #     return data['url']
+                # else:
+                #     raise Exception('Error converting video from youtube.com')
             else:
-                raise Exception('Error converting video from youtube.com')
+                raise Exception("Failed to fetch video data:", response.status_code, response.text)
             
         except Exception as e:
             raise e
+        # try:
+        #     headers = {
+        #         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0',
+        #         'Accept': 'application/json',
+        #         'Accept-Language': 'en-US,en;q=0.5',
+        #         'Referer': 'https://cobalt.tools/',
+        #         'Content-Type': 'application/json',
+        #         'Origin': 'https://cobalt.tools',
+        #         'Connection': 'keep-alive',
+        #         'Sec-Fetch-Dest': 'empty',
+        #         'Sec-Fetch-Mode': 'cors',
+        #         'Sec-Fetch-Site': 'same-site',
+        #         'Priority': 'u=4'
+        #     }
+        #     data = {
+        #         "url": youtube_url
+        #     }
+        #     response = requests.post(
+        #         'https://api.cobalt.tools/', 
+        #         headers=headers, 
+        #         data=json.dumps(data)
+        #     )
+
+        #     # # Parse response data
+        #     data = response.json()
+
+        #     # Check if the response contains a valid download URL
+        #     if data and 'url' in data:
+        #         return data['url']
+        #     else:
+        #         raise Exception('Error converting video from youtube.com')
+            
+        # except Exception as e:
+        #     raise e
         
 
     # def download_audio_file(self, audio_url: str):

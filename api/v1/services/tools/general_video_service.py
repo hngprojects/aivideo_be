@@ -52,7 +52,7 @@ class GeneralVideoService:
         - bitrate: Desired bitrate for the output video (e.g., '1000k' for 1000 kbps).
         """
 
-        output_file = os.path.join(settings.STORAGE_DIR, 'video', f'video-{str(uuid4().hex)}.mp4')
+        output_file = os.path.join(settings.TEMP_DIR, f'video-{str(uuid4().hex)}.mp4')
         try:
             clip = VideoFileClip(input_file)
             clip.write_videofile(output_file, bitrate=f"{bitrate}k")
@@ -455,7 +455,13 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
 
         try:
             # Run the ffmpeg command
-            ffmpeg.input(input_file).output(output_file, vf=filter_complex).run(overwrite_output=True)
+            ffmpeg.input(input_file).output(
+                output_file, 
+                vf=filter_complex,
+                vcodec='libx264',  # Video codec
+                preset='fast',     # Preset for speed/quality trade-off
+                acodec='aac'
+            ).run(overwrite_output=True)
             print(f"Aspect ratio changed. Output saved to {output_file}")
 
             return output_file
