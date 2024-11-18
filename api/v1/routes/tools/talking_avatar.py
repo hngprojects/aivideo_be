@@ -37,6 +37,7 @@ async def talking_head_image_upload(
     
     audio_url = None
     voice_url = None
+    avatar_url = None
     
     # Validation checks
     if custom_audio and bg_audio_id:
@@ -51,7 +52,7 @@ async def talking_head_image_upload(
     if custom_avatar and avatar_id:
         raise HTTPException(status_code=400, detail='Cannot use both custom avatar and preset avatar')
     
-    if custom_avatar and (not voice_id or not custom_voice):
+    if custom_avatar and not(voice_id or custom_voice):
         raise HTTPException(status_code=400, detail='Cannot use custom avatar without a voice selection')
     
     if avatar_id and voice_id:
