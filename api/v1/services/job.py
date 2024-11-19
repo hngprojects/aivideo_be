@@ -64,7 +64,7 @@ class TifiJobService:
         
         # Notify jobs runner to start executing jobs
         # Or queue up the jobs in case there are jobs in execution
-        # notify_job_runner()
+        notify_job_runner()
 
         # return (job, project) if project else job
         return job
