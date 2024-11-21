@@ -8,6 +8,7 @@ from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.utils.tool_limiter import track_tool_usage
 from api.utils.success_response import success_response
+from api.utils.tweet_service import tweet_service
 from api.utils import files
 from api.v1.services.job import tifi_job_service
 from api.v1.services.presets import preset_service
@@ -39,6 +40,25 @@ async def generate_scenes(
         data={"scenes": scenes}
     )
 
+@tweet_to_tiktok_router.post(
+    '/tweet-to-tiktok/extract-text-from-tweet', 
+    status_code=200, 
+    response_model=success_response
+)
+# @track_tool_usage(ProjectToolsEnum.tweet_to_tiktok)
+async def extract_text_from_tweet_link(
+    tweet_link: str = Form(),
+):
+    '''Endpoint for extracting text from tweet link'''
+    
+    text = tweet_service.get_tweet(tweet_link)
+    
+    return success_response(
+        status_code=200,
+        message="Extracted text from tweet successfully",
+        data={"text": text}
+    )
+    
 
 @tweet_to_tiktok_router.post(
     '/tweet-to-tiktok/generate-video', 
@@ -50,8 +70,9 @@ async def convert_tweet_to_video(
     # schema: TweetToTiktokRequest,
     request: Request,
     db: Session = Depends(get_db),
-    text: Optional[str] = Form(None),
-    tweet_link: Optional[str] = Form(None),
+    text: str = Form(),
+    # text: Optional[str] = Form(None),
+    # tweet_link: Optional[str] = Form(None),
     avatar_id: Optional[str] = Form(None),
     custom_avatar: Optional[UploadFile] = File(None),
     background_audio_id: Optional[str] = Form(None),
@@ -70,11 +91,11 @@ async def convert_tweet_to_video(
     voice_url = None
     avatar_url = None
     
-    if tweet_link and text:
-        raise HTTPException(status_code=400, detail='Cannot have both text and tweet links')
+    # if tweet_link and text:
+    #     raise HTTPException(status_code=400, detail='Cannot have both text and tweet links')
     
-    if not text and not tweet_link:
-        raise HTTPException(status_code=400, detail='Must provide either text or tweet link')
+    # if not text and not tweet_link:
+    #     raise HTTPException(status_code=400, detail='Must provide either text or tweet link')
     
     if custom_audio and background_audio_id:
         raise HTTPException(status_code=400, detail='Cannot use both custom audio and preset audio')
@@ -139,10 +160,9 @@ async def convert_tweet_to_video(
     if custom_avatar:
         avatar_url = await files.upload_image_file(custom_avatar)
     
-    if tweet_link:
-        # TODO: Get tweet text from tweet link
-        text = ''
-        
+    # if tweet_link:
+    #     text = tweet_service.get_tweet(tweet_link)
+    #     print(text)
         
     job = tifi_job_service.create(
         db=db,

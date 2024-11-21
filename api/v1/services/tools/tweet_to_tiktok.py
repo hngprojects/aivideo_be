@@ -137,6 +137,7 @@ class TweetToTiktokService:
         
         audio_details = video_service.get_audio_details(audio_file)
         audio_duration = audio_details['duration']
+        print('Audio details gotten')
         
         # Get display time per media file
         display_time_per_media = audio_duration / len(media_files)
@@ -145,9 +146,11 @@ class TweetToTiktokService:
             self.process_media(file, display_time_per_media, width, height) 
             for file in media_files
         ]
+        print('All media processed')
         
         # Concatenate the clips with transition effects
         video = concatenate_videoclips(video_clips, method="compose")
+        print('Media clips concatenated')
 
         # Add the audio file
         audio = AudioFileClip(audio_file)
@@ -155,6 +158,7 @@ class TweetToTiktokService:
 
         # Set the duration of the video to match the audio duration
         video = video.set_duration(audio.duration)
+        print('Audio set and video duration set')
 
         output_video_file = os.path.join(settings.TEMP_DIR, f'video-{uuid4().hex}.mp4')
         # Write the final video file to the specified output path
@@ -163,9 +167,14 @@ class TweetToTiktokService:
             codec='libx264', 
             audio_codec="aac", 
             fps=24, 
-            threads=1,  # Try reducing threads for stability
-            preset="ultrafast",  # Speeds up rendering at the cost of file size
+            # threads=1,  # Try reducing threads for stability
+            # preset="fast",  # Speeds up rendering at the cost of file size
+            threads=4, 
+            preset="faster", 
+            ffmpeg_params=["-crf", "23"],
+            # progress_bar=True
         )
+        print('Video file written')
         
         # Clean up
         for file in media_files:

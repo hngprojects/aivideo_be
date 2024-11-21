@@ -322,7 +322,7 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         (
             ffmpeg
             .input(input_video)
-            .output(output_video, vf=f"ass={subtitles_file}", preset='ultrafast')
+            .output(output_video, vf=f"ass={subtitles_file}", preset='fast')
             .run(overwrite_output=True)
         )
         
@@ -495,7 +495,7 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
                 acodec='aac',                 # Encode the audio with AAC codec
                 strict='experimental',        # Allow use of experimental codecs
                 shortest=None,               # Stop the output when the shortest input ends
-                preset='ultrafast'
+                preset='fast'
             )
 
             # Run the ffmpeg command
