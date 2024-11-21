@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     
     YOUTUBE_USERNAME: str = config("YOUTUBE_USERNAME")
     YOUTUBE_PASSWORD: str = config("YOUTUBE_PASSWORD")
+    
+    TWITTER_BEARER_TOKEN: str = config("TWITTER_BEARER_TOKEN")
 
     TEMP_DIR: str = os.path.join(Path(__file__).resolve().parent.parent.parent, 'tmp', 'media')
     FRONTEND_MAGICLINK_URL : str = config("FRONTEND_MAGICLINK_URL")
