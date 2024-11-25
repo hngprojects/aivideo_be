@@ -9,7 +9,7 @@ class ProjectToolsEnum(str, Enum):
     # AI TOOLS
     youtube_video_summarizer = "Youtube/Video Summarizer"
     script_to_video = "Script To Video"
-    talking_avatar = "Talking Avatar"
+    talking_avatar = "Talking Avatar Generator"
     audio_summarizer = "Audio Summarizer"
     image_to_video = "Image To Video"
     podcast_summarizer = "Podcast Summarizer"
