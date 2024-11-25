@@ -1,3 +1,4 @@
+import gc
 import os
 from pathlib import Path
 import wave
@@ -61,6 +62,10 @@ class GeneralVideoService:
         except Exception as e:
             print(f"Error compressing video: {e}")
             return input_file
+        
+        finally:
+            del input_file
+            gc.collect()
 
 
     # TODO: Update this function to use replicate and pick a voice from the voices in the db
@@ -294,22 +299,29 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         
         if '.srt' not in subtitles_file:
             raise ValueError("Subtitle file must be in SRT format.")
-        
-        output_video = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.mp4')
-        
-        # Load the input video
-        input_stream = ffmpeg.input(input_video)
-        
-        # Apply the subtitles filter
-        video = input_stream.video.filter('subtitles', subtitles_file)
-        
-        # Combine the video with audio (if any) and output the result
-        output = ffmpeg.output(video, input_stream.audio, output_video)
-        
-        # Run the command
-        ffmpeg.run(output)
+        try:
+            output_video = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.mp4')
+            
+            # Load the input video
+            input_stream = ffmpeg.input(input_video)
+            
+            # Apply the subtitles filter
+            video = input_stream.video.filter('subtitles', subtitles_file)
+            
+            # Combine the video with audio (if any) and output the result
+            output = ffmpeg.output(video, input_stream.audio, output_video)
+            
+            # Run the command
+            ffmpeg.run(output)
 
-        return output_video
+            return output_video
+        
+        except ffmpeg.Error as e:
+            print(f"An error occurred: {e}")
+        
+        finally:
+            del input_video, subtitles_file
+            gc.collect()
     
     
     def add_custom_subtitles_to_video(self, input_video: str, subtitles_file: str):
@@ -318,15 +330,23 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         if '.ass' not in subtitles_file:
             raise ValueError("Subtitle file must be in ASS format.")
         
-        output_video = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.mp4')
-        (
-            ffmpeg
-            .input(input_video)
-            .output(output_video, vf=f"ass={subtitles_file}", preset='fast')
-            .run(overwrite_output=True)
-        )
+        try:
+            output_video = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.mp4')
+            (
+                ffmpeg
+                .input(input_video)
+                .output(output_video, vf=f"ass={subtitles_file}", preset='fast')
+                .run(overwrite_output=True)
+            )
+            
+            return output_video
         
-        return output_video
+        except ffmpeg.Error as e:
+            print(f"An error occurred: {e}")
+        
+        finally:
+            del input_video, subtitles_file
+            gc.collect()
     
 
     def get_video_details(self, video_file: str):
@@ -468,6 +488,10 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         
         except ffmpeg.Error as e:
             print(f"An error occurred: {e}")
+        
+        finally:
+            del input_file
+            gc.collect()
 
 
     def add_background_audio(self, video_path: str, audio_path: str):
@@ -507,6 +531,10 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
 
         except ffmpeg.Error as e:
             print(f"Error occurred: {e}")
+        
+        finally:
+            del video_path, audio_path
+            gc.collect()
 
 
 video_service = GeneralVideoService()
