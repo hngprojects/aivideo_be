@@ -1,3 +1,4 @@
+import gc
 import os, ffmpeg
 from uuid import uuid4
 
@@ -91,6 +92,9 @@ class FfmpegService:
         except ValueError as ve:
             print(f"Value error: {ve}")
             raise ve
+        finally:
+            del input_video
+            gc.collect()
         
     
     def resize_video(
@@ -152,6 +156,10 @@ class FfmpegService:
                     
         except ffmpeg.Error as e:
             raise e
+        
+        finally:
+            del input_video
+            gc.collect()
     
 
     def compress_video(
@@ -225,6 +233,10 @@ class FfmpegService:
 
         except ffmpeg.Error as e:
             raise e
+        
+        finally:
+            del input_video
+            gc.collect()
     
 
     def create_gif_from_video(
@@ -274,6 +286,10 @@ class FfmpegService:
 
         except ffmpeg.Error as e:
             raise e
+        
+        finally:
+            del input_video
+            gc.collect()
         
 
     def add_watermark_to_video(
@@ -339,6 +355,10 @@ class FfmpegService:
 
         except ffmpeg.Error as e:
             raise e
+        
+        finally:
+            del input_video
+            gc.collect()
 
 
 ffmpeg_service = FfmpegService()
