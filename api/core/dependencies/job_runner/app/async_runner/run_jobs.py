@@ -76,6 +76,15 @@ def job_runner():
 # ---------------------------------------------------------------------------
 # ------------- LIGHTWEIGHT APP TO NOTIFY SCRIPT ABOUT NEW JOBS -------------
 
+def root(request: Request):
+    '''Root endpoint for job server'''
+    
+    return JSONResponse(
+        status_code=200,
+        content={"message": "Job server is active"}
+    )
+    
+
 def notify_new_job(request: Request):
     '''Endpoint to notify the server that a job is available'''
 
@@ -92,6 +101,7 @@ def notify_new_job(request: Request):
         status_code=200,
         content={"message": "Job notification received, processing jobs"}
     )
+    
 
 # Endpoint to stream logs
 async def stream_logs(request: Request):
@@ -103,8 +113,10 @@ async def stream_logs(request: Request):
 
     return StreamingResponse(log_streamer('logs/job_logs.log', lines), media_type="text/event-stream")
 
+
 # Starlette app definition
 app = Starlette(debug=True, routes=[
+    Route('/', root, methods=['GET']),
     Route('/notify-job', notify_new_job, methods=['GET']),
     # Route('/logs', stream_logs, methods=['GET']),
 ])
