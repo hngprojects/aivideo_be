@@ -1,3 +1,4 @@
+import sys
 import uvicorn, os, time
 from typing import Optional
 from sqlalchemy.exc import IntegrityError
@@ -13,10 +14,12 @@ from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware  # required by google oauth
 from starlette.middleware.base import BaseHTTPMiddleware
 from collections import defaultdict
+from telex_python_apm.fastapi.middleware import MonitorMiddleware
 
 from api.db.database import get_db
 from api.loggers.app_logger import app_logger
 from api.utils.success_response import success_response
+from api.utils.telex_integration import TelexIntegration
 from api.v1.routes import api_version_one
 from api.utils.settings import settings
 from scripts.load_billing_plans import load_billing_plans_in_db
@@ -84,6 +87,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(MonitorMiddleware, webhook_url='https://ping.telex.im/v1/webhooks/a094d8de6f2e')
 
 
 # Middleware to log details after each request
@@ -112,6 +116,11 @@ async def log_requests(request: Request, call_next):
 
     # Log the formatted string
     app_logger.info(log_string)
+    # TelexIntegration(webhook_id='a094d8de6f2e').push_message(
+    #     event_name='App logs',
+    #     message=log_string,
+    #     status='error' if status_code not in [200, 201, 202] else 'success'
+    # )
 
     return response
 
@@ -151,7 +160,9 @@ async def get_request_stats():
 async def http_exception(request: Request, exc: HTTPException):
     """HTTP exception handler"""
 
+    exc_type, exc_obj, exc_tb = sys.exc_info()
     app_logger.info(f"HTTPException: {request.url.path} | {exc.status_code} | {exc.detail}")
+    app_logger.info(f"[ERROR] - An error occured | {exc}, {exc_type} {exc_obj} {exc_tb.tb_lineno}")
 
     return JSONResponse(
         status_code=exc.status_code,
@@ -172,7 +183,9 @@ async def validation_exception(request: Request, exc: RequestValidationError):
         for error in exc.errors()
     ]
 
+    exc_type, exc_obj, exc_tb = sys.exc_info()
     app_logger.info(f"RequestValidationError: {request.url.path} | {errors}")
+    app_logger.info(f"[ERROR] - An error occured | {exc}, {exc_type} {exc_obj} {exc_tb.tb_lineno}")
 
     return JSONResponse(
         status_code=422,
@@ -189,7 +202,9 @@ async def validation_exception(request: Request, exc: RequestValidationError):
 async def integrity_exception(request: Request, exc: IntegrityError):
     """Integrity error exception handlers"""
 
-    app_logger.info(f"Exception occured: {request.url.path} | 500 | {exc}")
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    app_logger.info(f"Exception occured | {request.url.path} | 500")
+    app_logger.info(f"[ERROR] - An error occured | {exc}, {exc_type} {exc_obj} {exc_tb.tb_lineno}")
 
     return JSONResponse(
         status_code=500,
@@ -205,7 +220,15 @@ async def integrity_exception(request: Request, exc: IntegrityError):
 async def exception(request: Request, exc: Exception):
     """Other exception handlers"""
 
-    app_logger.info(f"Exception occured | {request.url.path} | 500 | {exc}")
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    app_logger.info(f"Exception occured | {request.url.path} | 500")
+    app_logger.info(f"[ERROR] - An error occured | {exc}, {exc_type} {exc_obj} {exc_tb.tb_lineno}")
+    
+    TelexIntegration(webhook_id='f764c13bd28b').push_message(
+        event_name='App Exception',
+        message=f"Exception occured | {request.url.path}\n[ERROR] - An error occured | {exc}, {exc_type} {exc_obj} {exc_tb.tb_lineno}",
+        status='error'
+    )
 
     return JSONResponse(
         status_code=500,

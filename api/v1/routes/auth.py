@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from api.utils.success_response import success_response
+from api.utils.telex_integration import TelexIntegration
 from api.v1.models import User
 from api.v1.schemas.user import (
     LoginRequest,
@@ -87,6 +88,11 @@ def register(
         secure=True,
         samesite="none",
     )
+    
+    TelexIntegration(webhook_id='80592c026382').push_message(
+        event_name='New signup',
+        message=f'New signup detected from {user.email}\nUser details: {user.to_dict()}'
+    )
 
     return response
 
@@ -128,6 +134,11 @@ def register_as_super_admin(user: UserCreate, request: Request, db: Session = De
         httponly=True,
         secure=True,
         samesite="none",
+    )
+    
+    TelexIntegration(webhook_id='80592c026382').push_message(
+        event_name='New superadmin signup',
+        message=f'New signup detected from {user.email}\nUser details: {user.to_dict()}'
     )
 
     return response

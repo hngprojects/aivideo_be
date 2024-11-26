@@ -4,6 +4,8 @@
 import sys, time
 from pathlib import Path
 
+from api.utils.telex_integration import TelexIntegration
+
 # BASE_DIR should point to the directory that contains the 'api' package
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent
 
@@ -65,8 +67,15 @@ def job_runner():
             # Reset the event
             job_available_event.clear()
 
-        except Exception as e:
-            job_logger.info(f"Error processing jobs: {e}")
+        except Exception as exc:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            job_logger.info(f"[ERROR] - An error occured while processing jobs | {exc}, {exc_type} {exc_obj} {exc_tb.tb_lineno}")
+            
+            TelexIntegration(webhook_id='1e28b53611a4').push_message(
+                event_name='Job Exception',
+                message=f"[ERROR] - An error occured while processing jobs\n{exc}, {exc_type} {exc_obj} {exc_tb.tb_lineno}",
+                status='error'
+            )
         
         finally:
             # Delay before next execution
