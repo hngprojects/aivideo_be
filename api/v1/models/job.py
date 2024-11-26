@@ -67,7 +67,7 @@ def update_job(mapper, connection, target):
             .values(
                 expiration_time=target.created_at + timedelta(hours=1),
                 job_name=f'{target.tool_name}-{token_hex(5)}',
-                job_thumbnail_url="https://firebasestorage.googleapis.com/v0/b/python-storage-d1e10.appspot.com/o/tifi%2Ftifi-logo.jpg?alt=media&token=79189e4d-f235-4b95-ae16-93b27d3a8570"
+                job_thumbnail_url="https://firebasestorage.googleapis.com/v0/b/python-storage-d1e10.appspot.com/o/tifi%2Fnew%20tifi%20logo.png?alt=media&token=039e8410-09a0-42dd-8b84-1fb212098200"
             )
         )
     
