@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import os
 from api.db.database import get_db
+from api.utils.telex_integration import TelexIntegration
 from api.v1.services.google_oauth import GoogleOauthServices
 from api.v1.schemas.google_oauth import OAuthToken
 from api.v1.services.user import user_service
@@ -114,6 +115,12 @@ async def google_login(request: Request, background_tasks: BackgroundTasks, toke
                 secure=True,
                 samesite="none",
             )
+            
+            TelexIntegration(webhook_id='80592c026382').push_message(
+                event_name='New signup with Google',
+                message=f'New signup detected from {user.email}\nUser details: {user.to_dict()}'
+            )
+            
             return response
     except ValueError:
         # Invalid ID token
