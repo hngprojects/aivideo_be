@@ -1,5 +1,6 @@
 import json, os, secrets
 from pathlib import Path
+import sys
 import time, subprocess
 from datetime import datetime
 from sqlalchemy import asc
@@ -7,6 +8,7 @@ from sqlalchemy import asc
 from api.core.dependencies.job_runner.app.job_manager import tool_to_script_mapping
 from api.core.dependencies.job_runner.app.utils import parse_json_string
 from api.db.database import get_db, SessionLocal
+from api.utils.telex_integration import TelexIntegration
 from api.v1.services.user import user_service
 from api.v1.services.notification import notification_service
 from api.v1.services.job import tifi_job_service
@@ -157,7 +159,15 @@ def process_job(job_id: str, with_lock: bool = False):
         
         # print(f'Job with {job.id} for tool {job.tool_name} failed')
         # print(f'An exception occured: {str(e)}')
-        job_logger.info(f'Error processing job {job_id}: {str(e)}')
+        # job_logger.info(f'Error processing job {job_id}: {str(e)}')
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        job_logger.info(f"[ERROR] - An error occured while processing job {job_id}\n{e}, {exc_type} {exc_obj} {exc_tb.tb_lineno}")
+        
+        TelexIntegration(webhook_id='1e28b53611a4').push_message(
+            event_name='Job Exception',
+            message=f"[ERROR] - An error occured while processing job {job_id}\n{e}, {exc_type} {exc_obj} {exc_tb.tb_lineno}",
+            status='error'
+        )
 
 
 def run_available_jobs():
