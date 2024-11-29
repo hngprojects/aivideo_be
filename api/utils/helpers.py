@@ -12,4 +12,3 @@ def get_ip_address(request):
 
 def custom_print(obj):
     print(f'{datetime.now()}- {obj}')
-    

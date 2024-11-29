@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from api.db.database import get_db
 from api.utils.minio_service import minio_service
+from api.utils.replicate_service import replicate_service
 from api.v1.models.user import User
 from api.v1.services.user import user_service
 from api.utils.tool_limiter import track_tool_usage
@@ -82,6 +83,7 @@ async def convert_tweet_to_video(
     scene_media_urls: Optional[str] = Form(None),
     video_style: str = Form('stock images'),
     aspect_ratio: str = Form('square'),
+    avatar_prompt: Optional[str] = Form(None),
     user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to convert a script to video'''
@@ -109,14 +111,14 @@ async def convert_tweet_to_video(
     if custom_avatar and avatar_id:
         raise HTTPException(status_code=400, detail='Cannot use both custom avatar and preset avatar')
     
-    if custom_avatar and (not voice_id or not custom_voice):
+    if custom_avatar and not(voice_id or custom_voice):
         raise HTTPException(status_code=400, detail='Cannot use custom avatar without a voice selection')
     
     if avatar_id and voice_id:
         raise HTTPException(status_code=400, detail='Cannot select avatar and voice')
     
-    if (avatar_id and scene_media_urls) or (custom_avatar and scene_media_urls):
-        raise HTTPException(status_code=400, detail='Cannot select scenes with talking avatar video style')
+    # if (avatar_id and scene_media_urls) or (custom_avatar and scene_media_urls):
+    #     raise HTTPException(status_code=400, detail='Cannot select scenes with talking avatar video style')
     
     # -----------------------------------------------------------
     
@@ -150,6 +152,9 @@ async def convert_tweet_to_video(
         )
         avatar_url = avatar.file_url
         voice_url = avatar.voice.file_url
+        
+        # avatar_url = replicate_service.generate_inpaint_image(avatar_url, avatar_prompt)[0]
+        # print(avatar_url)
     
     if custom_audio:
         bg_audio_url = await files.upload_audio_file(custom_audio)
@@ -159,6 +164,8 @@ async def convert_tweet_to_video(
         
     if custom_avatar:
         avatar_url = await files.upload_image_file(custom_avatar)
+        # avatar_url = replicate_service.generate_inpaint_image(avatar_url, avatar_prompt)[0]
+        # print(avatar_url)
     
     # if tweet_link:
     #     text = tweet_service.get_tweet(tweet_link)
@@ -176,6 +183,7 @@ async def convert_tweet_to_video(
             'video_style': video_style.lower(),
             'width': width,
             'height': height,
+            'avatar_prompt': avatar_prompt,
         },
         user_id=user.id if user else None,
         is_parallel=False
