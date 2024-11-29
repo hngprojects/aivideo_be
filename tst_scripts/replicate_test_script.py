@@ -1,5 +1,6 @@
 import replicate, random, os
 from api.utils.settings import settings
+from api.utils.replicate_service import replicate_service
 
 
 # env_copy = os.environ.copy()
@@ -46,20 +47,26 @@ client = replicate.Client(api_token=settings.REPLICATE_API_TOKEN)
 # print(output)
 
 
-output = client.run(
-    "cjwbw/sadtalker:a519cc0cfebaaeade068b23899165a11ec76aaa1d2b313d40d214f204ec957a3",
-    input={
-        "facerender": "facevid2vid",
-        "pose_style": 0,
-        "preprocess": "crop",
-        "still_mode": True,
-        "driven_audio": "https://replicate.delivery/pbxt/IkgWA4bLoXpk5NwVsfOBzHh7MswfNLTgtf44Qr2gdOTOWvSX/japanese.wav",
-        "source_image": "https://replicate.delivery/pbxt/IkgW9tngATq608Qf6haUXDpg81s5YBJfS9GaBiCFjdKXk4F5/art_1.png",
-        "use_enhancer": True,
-        "use_eyeblink": True,
-        "size_of_image": 256,
-        "expression_scale": 1
-    }
+# output = client.run(
+#     "cjwbw/sadtalker:a519cc0cfebaaeade068b23899165a11ec76aaa1d2b313d40d214f204ec957a3",
+#     input={
+#         "facerender": "facevid2vid",
+#         "pose_style": 0,
+#         "preprocess": "crop",
+#         "still_mode": True,
+#         "driven_audio": "https://replicate.delivery/pbxt/IkgWA4bLoXpk5NwVsfOBzHh7MswfNLTgtf44Qr2gdOTOWvSX/japanese.wav",
+#         "source_image": "https://replicate.delivery/pbxt/IkgW9tngATq608Qf6haUXDpg81s5YBJfS9GaBiCFjdKXk4F5/art_1.png",
+#         "use_enhancer": True,
+#         "use_eyeblink": True,
+#         "size_of_image": 256,
+#         "expression_scale": 1
+#     }
+# )
+# print(output)
+
+output = replicate_service.generate_talking_avatar(
+    audio_url='https://replicate.delivery/pbxt/IkgWA4bLoXpk5NwVsfOBzHh7MswfNLTgtf44Qr2gdOTOWvSX/japanese.wav',
+    image_url="https://replicate.delivery/pbxt/IkgW9tngATq608Qf6haUXDpg81s5YBJfS9GaBiCFjdKXk4F5/art_1.png"
 )
 print(output)
 

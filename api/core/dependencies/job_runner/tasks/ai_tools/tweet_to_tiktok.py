@@ -39,57 +39,77 @@ voice_url = payload.get('voice_url')
 avatar_image_url = payload.get('avatar_image_url')
 width = payload.get('width')
 height = payload.get('height')
-# voice_over = payload.get('voice_over')
+avatar_prompt = payload.get('avatar_prompt')
 
 audio_file = None
 
 try:
     # if video_style == 'talking avatar':
-    if avatar_image_url:
-        save_and_print_job_progress(db, job, 15, 'Converting text to speech')
-        audio_url = replicate_service.convert_text_to_speech(text=script, sample_audio_file=voice_url)
-        
-        save_and_print_job_progress(db, job, 30, 'Generating talking avatar video')
-        video_url = replicate_service.generate_talking_avatar(avatar_image_url, audio_url)
+    # if avatar_image_url:
+    save_and_print_job_progress(db, job, 15, 'Generating audio from script')
+    audio_file, audio_url = tweet_to_tiktok_service.generate_audio(script, voice_url)
+    # audio_file = os.path.join('tst_scripts', 'results', 'testing.wav')
+    
+    save_and_print_job_progress(db, job, 25, 'Downloading media files')
+    media_files = tweet_to_tiktok_service.download_media(media_urls)
+    
+    # save_and_print_job_progress(db, job, 15, 'Converting text to speech')
+    # audio_url = replicate_service.convert_text_to_speech(text=script, sample_audio_file=voice_url)
+    
+    save_and_print_job_progress(db, job, 35, 'Generating inpaint avatar image')
+    avatar_url = replicate_service.generate_inpaint_image(avatar_image_url, avatar_prompt)[0]
+    
+    save_and_print_job_progress(db, job, 45, 'Generating talking avatar video')
+    video_url = replicate_service.generate_talking_avatar(avatar_url, audio_url, generate_full=True)
+    # video_url = replicate_service.generate_talking_avatar(avatar_url, audio_url)
+    # video_url = replicate_service.generate_talking_avatar(avatar_image_url, audio_url)
+    
+    save_and_print_job_progress(db, job, 55, 'Saving talking avatar video')
+    avatar_video_file = general_service.download_file(video_url, 'mp4', 'video')
 
-        save_and_print_job_progress(db, job, 45, 'Downloading and saving generated video')
-        # Download video file to the current directory
-        video_file = general_service.download_file(
-            url=video_url,
-            extension='mp4',
-            prefix_file_name='video'
-        )
+    # save_and_print_job_progress(db, job, 45, 'Downloading and saving generated video')
+    # # Download video file to the current directory
+    # video_file = general_service.download_file(
+    #     url=video_url,
+    #     extension='mp4',
+    #     prefix_file_name='video'
+    # )
         
-    else:
-        save_and_print_job_progress(db, job, 15, 'Generating audio from script')
-        audio_file = tweet_to_tiktok_service.generate_audio(script, voice_url)
-        # audio_file = os.path.join('tst_scripts', 'results', 'testing.wav')
-        
-        save_and_print_job_progress(db, job, 25, 'Downloading media files')
-        media_files = tweet_to_tiktok_service.download_media(media_urls)
+    # else:
+    # save_and_print_job_progress(db, job, 15, 'Generating audio from script')
+    # audio_file = tweet_to_tiktok_service.generate_audio(script, voice_url)
+    # # audio_file = os.path.join('tst_scripts', 'results', 'testing.wav')
+    
+    # save_and_print_job_progress(db, job, 25, 'Downloading media files')
+    # media_files = tweet_to_tiktok_service.download_media(media_urls)
 
-        save_and_print_job_progress(db, job, 45, 'Composing video with media files')
-        video_file = tweet_to_tiktok_service.compose_video(
-            audio_file, media_files,
-            width=width,
-            height=height
-        )
+    save_and_print_job_progress(db, job, 60, 'Composing video with media files')
+    video_file = tweet_to_tiktok_service.compose_video(
+        base_video_file=avatar_video_file,
+        audio_file=audio_file, 
+        overlay_media_files=media_files,
+        width=width,
+        height=height,
+        # interval=5,
+        # overlay_duration=3
+        num_overlays=3
+    )
 
-    save_and_print_job_progress(db, job, 60, 'Generating subtitle file from generated audio')
+    save_and_print_job_progress(db, job, 70, 'Generating subtitle file from generated audio')
     subtitles_file = tweet_to_tiktok_service.generate_subtitles(audio_file, width, height)
     
-    save_and_print_job_progress(db, job, 70, 'Embedding subtitles in generated video')
+    save_and_print_job_progress(db, job, 80, 'Embedding subtitles in generated video')
     video_with_subtitles = tweet_to_tiktok_service.add_subtitles_to_video(subtitles_file, video_file)
 
     if background_audio:
-        save_and_print_job_progress(db, job, 80, 'Applying background music to the video')
+        save_and_print_job_progress(db, job, 85, 'Applying background music to the video')
         # Add background music to video
         video_with_audio = video_service.add_background_audio(
             video_path=video_with_subtitles, 
             audio_path=background_audio, 
         )
 
-    save_and_print_job_progress(db, job, 90, 'Cleaning up')
+    save_and_print_job_progress(db, job, 95, 'Cleaning up')
     # Delete unnecessary files
     # TODO: Uncomment this
     if audio_file and 'testing' not in audio_file:

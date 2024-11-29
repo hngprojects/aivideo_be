@@ -100,11 +100,13 @@ class GeneralVideoService:
             sample_audio_file=voice
         )
         
-        return general_service.download_file(
+        audio_file = general_service.download_file(
             url=audio_url,
             extension='mp3',
             prefix_file_name='audio'
         )
+        
+        return audio_file, audio_url
     
 
     def generate_subtitles_from_audio(self, audio_file: str):
@@ -335,7 +337,7 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
             (
                 ffmpeg
                 .input(input_video)
-                .output(output_video, vf=f"ass={subtitles_file}", preset='fast')
+                .output(output_video, vf=f"ass={subtitles_file}", preset='ultrafast')
                 .run(overwrite_output=True)
             )
             
@@ -519,7 +521,7 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
                 acodec='aac',                 # Encode the audio with AAC codec
                 strict='experimental',        # Allow use of experimental codecs
                 shortest=None,               # Stop the output when the shortest input ends
-                preset='fast'
+                preset='ultrafast'
             )
 
             # Run the ffmpeg command

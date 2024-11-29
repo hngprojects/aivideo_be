@@ -162,7 +162,7 @@ async def http_exception(request: Request, exc: HTTPException):
 
     exc_type, exc_obj, exc_tb = sys.exc_info()
     app_logger.info(f"HTTPException: {request.url.path} | {exc.status_code} | {exc.detail}")
-    app_logger.info(f"[ERROR] - An error occured | {exc}, {exc_type} {exc_obj} {exc_tb.tb_lineno}")
+    app_logger.info(f"[ERROR] - An error occured | {exc}, {exc_type} {exc_obj} line {exc_tb.tb_lineno}")
 
     return JSONResponse(
         status_code=exc.status_code,
@@ -185,7 +185,7 @@ async def validation_exception(request: Request, exc: RequestValidationError):
 
     exc_type, exc_obj, exc_tb = sys.exc_info()
     app_logger.info(f"RequestValidationError: {request.url.path} | {errors}")
-    app_logger.info(f"[ERROR] - An error occured | {exc}, {exc_type} {exc_obj} {exc_tb.tb_lineno}")
+    app_logger.info(f"[ERROR] - An error occured | {exc}, {exc_type} {exc_obj} line {exc_tb.tb_lineno}")
 
     return JSONResponse(
         status_code=422,
