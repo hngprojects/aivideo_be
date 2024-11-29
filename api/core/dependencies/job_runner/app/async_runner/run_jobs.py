@@ -1,10 +1,8 @@
 '''This script is to be run to process all jobs'''
 
-
 import sys, time
 from pathlib import Path
 
-from api.utils.telex_integration import TelexIntegration
 
 # BASE_DIR should point to the directory that contains the 'api' package
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent
@@ -37,6 +35,7 @@ from api.core.dependencies.job_runner.app.async_runner import job_handlers
 from api.loggers.job_logger import job_logger
 from api.utils.settings import settings
 from api.utils.log_streamer import log_streamer
+from api.utils.telex_integration import TelexIntegration
 
 
 job_available_event = threading.Event()
