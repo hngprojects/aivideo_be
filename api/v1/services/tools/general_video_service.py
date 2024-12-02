@@ -7,7 +7,8 @@ from uuid import uuid4
 import openai
 import ffmpeg
 import requests
-from moviepy.editor import VideoFileClip
+# from moviepy.editor import VideoFileClip
+from moviepy.video.io.VideoFileClip import VideoFileClip
 
 from api.utils.settings import settings
 from api.utils.replicate_service import replicate_service
@@ -314,7 +315,10 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
             output = ffmpeg.output(video, input_stream.audio, output_video)
             
             # Run the command
-            ffmpeg.run(output)
+            # ffmpeg.run(output, overwrite_output=True, cmd='ffmpeg', capture_stdout=True, capture_stderr=True)
+            
+            command = ffmpeg.compile(output, overwrite_output=True)
+            general_service.run_ffmpeg_command(command)
 
             return output_video
         
@@ -334,12 +338,14 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
         
         try:
             output_video = os.path.join(settings.TEMP_DIR, f'subtitles-{uuid4().hex}.mp4')
-            (
+            command = (
                 ffmpeg
                 .input(input_video)
                 .output(output_video, vf=f"ass={subtitles_file}", preset='ultrafast')
-                .run(overwrite_output=True)
+                .compile(overwrite_output=True)
+                # .run(overwrite_output=True, cmd='ffmpeg', capture_stdout=True, capture_stderr=True)
             )
+            general_service.run_ffmpeg_command(command)
             
             return output_video
         
@@ -477,13 +483,16 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
 
         try:
             # Run the ffmpeg command
-            ffmpeg.input(input_file).output(
+            command = ffmpeg.input(input_file).output(
                 output_file, 
                 vf=filter_complex,
                 vcodec='libx264',  # Video codec
                 preset='fast',     # Preset for speed/quality trade-off
                 acodec='aac'
-            ).run(overwrite_output=True)
+            # ).run(overwrite_output=True, cmd='ffmpeg', capture_stdout=True, capture_stderr=True)
+            ).compile(overwrite_output=True)
+            general_service.run_ffmpeg_command(command)
+            
             print(f"Aspect ratio changed. Output saved to {output_file}")
 
             return output_file
@@ -519,13 +528,15 @@ Style: S00, {font_name}, 70, {primary_color}, {outline_color}, {background_color
                 output_path,                  # Output file path
                 vcodec='copy',                # Copy the video codec (no re-encoding)
                 acodec='aac',                 # Encode the audio with AAC codec
-                strict='experimental',        # Allow use of experimental codecs
+                strict='-2',  # or `experimental`       # Allow use of experimental codecs
                 shortest=None,               # Stop the output when the shortest input ends
                 preset='ultrafast'
             )
 
             # Run the ffmpeg command
-            ffmpeg.run(output, overwrite_output=True)
+            # ffmpeg.run(output, overwrite_output=True, cmd='ffmpeg', capture_stdout=True, capture_stderr=True)
+            command = ffmpeg.compile(output, overwrite_output=True)
+            general_service.run_ffmpeg_command(command)
 
             print(f"Successfully added background audio to {output_path}")
 

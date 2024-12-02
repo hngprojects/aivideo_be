@@ -1,8 +1,13 @@
 from typing import List
 from uuid import uuid4
-import ffmpeg, os
-from moviepy.editor import VideoFileClip, concatenate_videoclips, AudioFileClip, ImageClip, CompositeVideoClip
+import ffmpeg, os, gc
+# from moviepy.
+# from moviepy.editor import VideoFileClip, concatenate_videoclips, AudioFileClip, ImageClip, CompositeVideoClip
 from moviepy.video import fx as vfx
+from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.VideoClip import ImageClip
+from moviepy.audio.io.AudioFileClip import AudioFileClip
+from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 
 from api.utils.openai_service import openai_service
 from api.utils.settings import settings
@@ -369,8 +374,8 @@ class TweetToTiktokService:
         
         # Load and resize the base video
         base_video_clip = VideoFileClip(base_video_file)
-        base_video_clip = base_video_clip.resize(height=height) if base_video_clip.h > base_video_clip.w else base_video_clip.resize(width=width)
-        base_video_clip = base_video_clip.on_color(size=(width, height), color=(0, 0, 0), pos="center")
+        base_video_clip = base_video_clip.resized(height=height) if base_video_clip.h > base_video_clip.w else base_video_clip.resized(width=width)
+        base_video_clip = base_video_clip.with_background_color(size=(width, height), color=(0, 0, 0), pos="center")
 
         # Get audio details and duration
         audio = AudioFileClip(audio_file)
@@ -379,7 +384,7 @@ class TweetToTiktokService:
         print(f"Audio duration: {audio_duration}s")
 
         # Set base video duration to match audio duration
-        base_video_clip = base_video_clip.set_duration(audio_duration)
+        base_video_clip = base_video_clip.with_duration(audio_duration)
         
         # Calculate dynamic interval and overlay duration
         interval = audio_duration / (num_overlays + 1)  # Time between start of overlays
@@ -394,20 +399,20 @@ class TweetToTiktokService:
             file_ext = overlay_file.split('.')[-1].lower()
 
             if file_ext in ['jpg', 'jpeg', 'png']:
-                overlay_clip = ImageClip(overlay_file).set_duration(overlay_duration)
+                overlay_clip = ImageClip(overlay_file).with_duration(overlay_duration)
             elif file_ext in ['mp4', 'mov']:
-                video_clip = VideoFileClip(overlay_file)
-                overlay_clip = video_clip.subclip(0, min(overlay_duration, video_clip.duration))
+                video_clip = VideoFileClip(overlay_file, audio=False)
+                overlay_clip = video_clip.subclipped(0, min(overlay_duration, video_clip.duration))
             else:
                 raise ValueError(f"Unsupported file type: {file_ext}")
             
             # Resize overlay clip and match the base video size
-            overlay_clip = overlay_clip.resize(height=height) if overlay_clip.h >= overlay_clip.w else overlay_clip.resize(width=width)
+            overlay_clip = overlay_clip.resized(height=height) if overlay_clip.h >= overlay_clip.w else overlay_clip.resized(width=width)
             # Resize and position overlay clip to match the base video size
-            overlay_clip = overlay_clip.on_color(size=(width, height), color=(0, 0, 0), pos="center")
-            # overlay_clip = overlay_clip.resize(height=height).on_color(size=(width, height), color=(0, 0, 0), pos="center")
-            overlay_clip = overlay_clip.set_start(current_time).set_duration(overlay_duration)
-            overlay_clip = overlay_clip.crossfadein(1).crossfadeout(1)  # Smooth transitions
+            overlay_clip = overlay_clip.with_background_color(size=(width, height), color=(0, 0, 0), pos="center")
+            # overlay_clip = overlay_clip.resize(height=height).with_background_color(size=(width, height), color=(0, 0, 0), pos="center")
+            overlay_clip = overlay_clip.with_start(current_time).with_duration(overlay_duration)
+            overlay_clip = overlay_clip.with_effects([vfx.CrossFadeIn(1), vfx.CrossFadeOut(1)])# Smooth transitions
 
             overlay_clips.append(overlay_clip)
             current_time += interval
@@ -417,8 +422,8 @@ class TweetToTiktokService:
         final_video = CompositeVideoClip([base_video_clip] + overlay_clips)
 
         # Set audio to the final video
-        final_video = final_video.set_audio(audio)
-        final_video = final_video.set_duration(audio_duration)
+        final_video = final_video.with_audio(audio)
+        final_video = final_video.with_duration(audio_duration)
 
         # Export the video
         output_video_file = os.path.join(settings.TEMP_DIR, f'final-video-{uuid4().hex}.mp4')
@@ -429,10 +434,14 @@ class TweetToTiktokService:
             fps=24,
             threads=4,
             preset='ultrafast',
-            ffmpeg_params=['-crf', '23']
+            ffmpeg_params=['-crf', '23'],
+            logger='bar'
         )
 
         print(f"Final video saved to {output_video_file}")
+        
+        del overlay_media_files, base_video_file, audio_file, base_video_clip, overlay_clips, final_video
+        gc.collect()
         return output_video_file
 
         
