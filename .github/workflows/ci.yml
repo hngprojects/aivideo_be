@@ -8,7 +8,7 @@ on:
       
 jobs:
   build-and-test:
-    runs-on: hng-runner
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       ENV: ${{ secrets.STAGING_ENV_BASE64 }}
