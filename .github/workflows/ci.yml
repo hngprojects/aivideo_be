@@ -34,9 +34,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           
-      - name: Decode and create .env file
+      - name: create .env file
         run: |
-          echo $ENV | base64 -d > .env
+          mv .env.sample .env
         
       - name: Update .env with dynamic port
         run: |
