@@ -3,7 +3,11 @@ import os, random, secrets
 from typing import List, Optional
 from uuid import uuid4
 import openai
-from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip
+# from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip
+from moviepy.video.VideoClip import ImageClip
+from moviepy.audio.io.AudioFileClip import AudioFileClip
+from moviepy.video.compositing.CompositeVideoClip import concatenate_videoclips
+from moviepy.video import fx as vfx
 
 from api.utils.minio_service import minio_service
 from api.utils.openai_service import openai_service
@@ -73,10 +77,10 @@ class ScriptToVideoService:
 
         for image_file in images:
             # Create an ImageClip for each image
-            img_clip = ImageClip(image_file).set_duration(duration_per_image)
+            img_clip = ImageClip(image_file).with_duration(duration_per_image)
             
             # Apply fade in and fade out effects to create transitions
-            clip = img_clip.fadein(transition_duration).fadeout(transition_duration)
+            clip = img_clip.with_effects([vfx.CrossFadeIn(transition_duration), vfx.CrossFadeOut(transition_duration)])
             clips.append(clip)
 
         # Concatenate the clips with transition effects
@@ -84,13 +88,13 @@ class ScriptToVideoService:
 
         # Add the audio file
         audio = AudioFileClip(audio_file)
-        video = video.set_audio(audio)
+        video = video.with_audio(audio)
 
         # Set the duration of the video to match the audio duration
-        video = video.set_duration(audio.duration)
+        video = video.with_duration(audio.duration)
 
         # Write the final video file to the specified output path
-        video.write_videofile(output_video_file, codec='libx264', audio_codec="aac", fps=24, threads=4)
+        video.write_videofile(output_video_file, codec='libx264', audio_codec="aac", fps=24, threads=4, logger='bar')
 
         return output_video_file
     

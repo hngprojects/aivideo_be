@@ -184,6 +184,7 @@ async def fetch_stock_media(
             elif schema.media_type == '3d moving videos':
                 videos = replicate_service.generate_video(
                     prompt=f'{query}, hyper-realistic',
+                    num_outputs=1
                 )
                 result[query] = [
                     {
