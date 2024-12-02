@@ -78,6 +78,7 @@ try:
     if bg_audio_file:
         delete_file(video_audio_path)
     delete_file(initial_save_path)
+    
     # delete_file(audio)
 
     save_and_print_job_progress(db, job, 80, 'Generating video preview link')

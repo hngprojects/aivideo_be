@@ -1,9 +1,9 @@
-import gc
-import os, ffmpeg
+import os, ffmpeg, gc, subprocess
 from uuid import uuid4
 
 from api.utils.settings import settings
 from api.v1.services.tools.general_video_service import video_service
+from api.v1.services.tools.general import general_service
 
 
 class FfmpegService:
@@ -81,8 +81,10 @@ class FfmpegService:
                 ffmpeg_command = (
                     ffmpeg_input
                     .output(output_path, format=audio_extension)
-                    .run(overwrite_output=True)
+                    .compile(overwrite_output=True)
+                    # .run(overwrite_output=True, cmd='ffmpeg', capture_stdout=True, capture_stderr=True)
                 )
+                general_service.run_ffmpeg_command(ffmpeg_command)
                 
                 return output_path
             
@@ -145,12 +147,14 @@ class FfmpegService:
                     f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
                 )
 
-                (
+                command = (
                     ffmpeg
                     .input(input_video)
                     .output(output_path, vf=filter_complex)
-                    .run(overwrite_output=True)
+                    .compile(overwrite_output=True)
+                    # .run(overwrite_output=True, cmd='ffmpeg', capture_stdout=True, capture_stderr=True)
                 )
+                general_service.run_ffmpeg_command(command)
                 
                 return output_path
                     
@@ -216,6 +220,7 @@ class FfmpegService:
             #         acodec='aac'
             #     )
             #     .run(overwrite_output=True)
+            #     .compile(overwrite_output=True)
             # )
             
             command = [
@@ -270,6 +275,7 @@ class FfmpegService:
             #     .filter('scale', 360, -1)  # Resize, keep aspect ratio (-1)
             #     .output(output_gif, loop=0)  # Output as a GIF
             #     .run()
+            #     .compile(overwrite_output=True)
             # )
             
             command = [
@@ -340,6 +346,7 @@ class FfmpegService:
             #             [in][watermark] overlay={position_coords}"
             #     )
             #     .run()
+            #     .compile(overwrite_output=True)
             # )
             
             command = [

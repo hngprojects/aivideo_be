@@ -109,7 +109,7 @@ try:
             audio_path=background_audio, 
         )
 
-    save_and_print_job_progress(db, job, 95, 'Cleaning up')
+    save_and_print_job_progress(db, job, 90, 'Cleaning up')
     # Delete unnecessary files
     # TODO: Uncomment this
     if audio_file and 'testing' not in audio_file:
@@ -118,7 +118,7 @@ try:
     delete_file(video_file)
     # delete_file(video_with_subtitles)
 
-    save_and_print_job_progress(db, job, 85, 'Generating preview and download links for generated video')
+    save_and_print_job_progress(db, job, 95, 'Generating preview and download links for generated video')
     minio_save_file = f'twttotiktk-{str(uuid4().hex)}.mp4'
     save_url, download_url = minio_service.upload_to_minio(
         folder_name='tweet-to-tiktok',
@@ -137,7 +137,7 @@ try:
     if background_audio:
         delete_file(video_with_audio)
 
-    save_and_print_job_progress(db, job, 95)
+    save_and_print_job_progress(db, job, 98)
 
     print(json.dumps(result))
 
