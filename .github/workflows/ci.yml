@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: hng-runner
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       ENV: ${{ secrets.STAGING_ENV_BASE64 }}
@@ -41,10 +41,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-
-      - name: Decode and create .env file
+       
+      - name: create .env file
         run: |
-          echo $ENV | base64 -d > .env
+          mv .env.sample .env
 
       - name: Update .env with dynamic port
         run: |
