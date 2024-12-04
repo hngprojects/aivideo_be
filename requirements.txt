@@ -130,7 +130,7 @@ mccabe==0.7.0
 mdurl==0.1.2
 minio==7.2.8
 more-itertools==10.3.0
-moviepy==1.0.3
+moviepy==2.1.1
 mpmath==1.3.0
 msgpack==1.0.8
 multidict==6.0.5

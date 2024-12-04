@@ -1,4 +1,4 @@
-import requests, os, json
+import requests, os, json, subprocess
 from uuid import uuid4
 
 from api.utils.settings import settings
@@ -39,6 +39,24 @@ class GeneralService:
 
         except requests.RequestException as e:
             raise e
+    
+    def run_ffmpeg_command(self, command):
+        
+        print(f'Running command: \n{command}')
+        
+        # Run the command and stream logs
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True
+        )
+
+        # Stream the logs
+        for line in iter(process.stdout.readline, ''):
+            print(line.strip())
+
+        process.wait()
         
     
 general_service = GeneralService()
