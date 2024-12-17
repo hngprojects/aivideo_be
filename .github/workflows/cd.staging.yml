@@ -39,7 +39,7 @@ jobs:
             pm2 restart jobs_script_staging
 
   release:
-    runs-on: hng-runner
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: deploy
     permissions:
@@ -58,6 +58,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "lts/*"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: "latest"
           
       - name: Install depedencies
         run: pnpm install --no-frozen-lockfile
