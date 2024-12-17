@@ -39,7 +39,7 @@ voice_url = payload.get('voice_url')
 avatar_image_url = payload.get('avatar_image_url')
 width = payload.get('width')
 height = payload.get('height')
-avatar_prompt = payload.get('avatar_prompt')
+avatar_setting = payload.get('avatar_setting')
 
 audio_file = None
 
@@ -57,7 +57,7 @@ try:
     # audio_url = replicate_service.convert_text_to_speech(text=script, sample_audio_file=voice_url)
     
     save_and_print_job_progress(db, job, 35, 'Generating inpaint avatar image')
-    avatar_url = replicate_service.generate_inpaint_image(avatar_image_url, avatar_prompt)[0]
+    avatar_url = replicate_service.generate_inpaint_image(avatar_image_url, avatar_setting)[0]
     
     save_and_print_job_progress(db, job, 45, 'Generating talking avatar video')
     video_url = replicate_service.generate_talking_avatar(avatar_url, audio_url, generate_full=True)

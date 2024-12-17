@@ -83,7 +83,7 @@ async def convert_tweet_to_video(
     scene_media_urls: Optional[str] = Form(None),
     video_style: str = Form('stock images'),
     aspect_ratio: str = Form('square'),
-    avatar_prompt: Optional[str] = Form(None),
+    avatar_setting: Optional[str] = Form(None),
     user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
     '''Endpoint to convert a script to video'''
@@ -153,7 +153,7 @@ async def convert_tweet_to_video(
         avatar_url = avatar.file_url
         voice_url = avatar.voice.file_url
         
-        # avatar_url = replicate_service.generate_inpaint_image(avatar_url, avatar_prompt)[0]
+        # avatar_url = replicate_service.generate_inpaint_image(avatar_url, avatar_setting)[0]
         # print(avatar_url)
     
     if custom_audio:
@@ -164,7 +164,7 @@ async def convert_tweet_to_video(
         
     if custom_avatar:
         avatar_url = await files.upload_image_file(custom_avatar)
-        # avatar_url = replicate_service.generate_inpaint_image(avatar_url, avatar_prompt)[0]
+        # avatar_url = replicate_service.generate_inpaint_image(avatar_url, avatar_setting)[0]
         # print(avatar_url)
     
     # if tweet_link:
@@ -183,7 +183,7 @@ async def convert_tweet_to_video(
             'video_style': video_style.lower(),
             'width': width,
             'height': height,
-            'avatar_prompt': avatar_prompt,
+            'avatar_setting': avatar_setting,
         },
         user_id=user.id if user else None,
         is_parallel=False
