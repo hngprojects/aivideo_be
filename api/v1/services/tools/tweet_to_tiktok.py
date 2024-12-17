@@ -345,7 +345,8 @@ class TweetToTiktokService:
         # overlay_duration: float,
         num_overlays: int,
         width: int = 1080,
-        height: int = 1920
+        height: int = 1920,
+        start_end_duration: int = 5
     ) -> str:
         """
         Processes the base avatar video and overlays media clips dynamically, alternating between them.
@@ -389,12 +390,24 @@ class TweetToTiktokService:
         # Calculate dynamic interval and overlay duration
         interval = audio_duration / (num_overlays + 1)  # Time between start of overlays
         overlay_duration = min(interval * 0.8, 5)  # Overlays are 80% of the interval, capped at 5 seconds
+        
+        # Create start and end clips from the base video
+        # start_clip = base_video_clip.subclipped(0, min(start_end_duration, base_video_clip.duration))
+        # end_clip = base_video_clip.subclipped(0, min(start_end_duration, base_video_clip.duration))
+
+        # # Calculate remaining duration for overlays
+        # overlay_duration_total = audio_duration - 2 * start_end_duration
+        # interval = overlay_duration_total / (num_overlays + 1)
+        # overlay_duration = min(interval * 0.8, 5)  # Overlays are 80% of interval, capped at 5 seconds
 
         # Prepare overlay clips
         overlay_clips = []
+        current_time = start_end_duration
+        
         current_time = 0
         overlay_index = 0
         while current_time < audio_duration and overlay_index < len(overlay_media_files):
+        # for i, overlay_file in enumerate(overlay_media_files[:num_overlays]):
             overlay_file = overlay_media_files[overlay_index]
             file_ext = overlay_file.split('.')[-1].lower()
 
@@ -416,11 +429,15 @@ class TweetToTiktokService:
 
             overlay_clips.append(overlay_clip)
             current_time += interval
-            overlay_index = (overlay_index + 1) % len(overlay_media_files)  # Cycle through overlays
+            # overlay_index = (overlay_index + 1) % len(overlay_media_files)  # Cycle through overlays
 
         # Combine base video and overlays
         final_video = CompositeVideoClip([base_video_clip] + overlay_clips)
 
+        # Combine the start, overlay, and end clips
+        # main_clip = CompositeVideoClip([base_video_clip] + overlay_clips)
+        # final_video = CompositeVideoClip([start_clip, main_clip, end_clip])
+        
         # Set audio to the final video
         final_video = final_video.with_audio(audio)
         final_video = final_video.with_duration(audio_duration)
