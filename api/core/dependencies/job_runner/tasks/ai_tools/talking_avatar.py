@@ -40,16 +40,27 @@ width=payload.get('width')
 height=payload.get('height')
 script=payload.get('script')
 voice_url=payload.get('voice_url')
+avatar_setting=payload.get('avatar_setting')
+# avatar_size=payload.get('avatar_size')
 bg_audio_file=bg_audio_file
+inpaint_image_url=None
 
 try:
     save_and_print_job_progress(db, job, 20, 'Generating audio from script')
     audio_url = replicate_service.convert_text_to_speech(text=script, sample_audio_file=voice_url)
 
-    save_and_print_job_progress(db, job, 30, 'Generating talking avatar video')
-    url = replicate_service.generate_talking_avatar(image_url, audio_url)
+    if avatar_setting:
+        save_and_print_job_progress(db, job, 30, 'Generating inpaint image')
+        inpaint_image_url = replicate_service.generate_inpaint_image(image_url, avatar_setting)
+    
+    save_and_print_job_progress(db, job, 40, 'Generating talking avatar video')
+    url = replicate_service.generate_talking_avatar(
+        image_url=inpaint_image_url if inpaint_image_url else image_url, 
+        audio_url=audio_url,
+        generate_full=True if inpaint_image_url else False
+    )
 
-    save_and_print_job_progress(db, job, 45, 'Downloading and saving generated video')
+    save_and_print_job_progress(db, job, 55, 'Downloading and saving generated video')
     # Download video file to the current directory
     initial_save_path = general_service.download_file(
         url=url,
@@ -58,14 +69,14 @@ try:
     )
 
     if bg_audio_file:
-        save_and_print_job_progress(db, job, 55, 'Applying background audio')
+        save_and_print_job_progress(db, job, 60, 'Applying background audio')
         # Add background audio to the file
         video_audio_path = video_service.add_background_audio(
             video_path=initial_save_path,
             audio_path=bg_audio_file
         )
 
-    save_and_print_job_progress(db, job, 60, 'Changing aspect ratio')
+    save_and_print_job_progress(db, job, 65, 'Changing aspect ratio')
     # Perform aspect ratio resizing based on user input
     final_save_path = video_service.change_aspect_ratio(
         input_file=video_audio_path if bg_audio_file else initial_save_path,
@@ -73,7 +84,7 @@ try:
         height=height
     )
 
-    save_and_print_job_progress(db, job, 70, 'Cleaning up temporary files')
+    save_and_print_job_progress(db, job, 75, 'Cleaning up temporary files')
     # Delete the temporary audio and video file after processing is done
     if bg_audio_file:
         delete_file(video_audio_path)
@@ -81,7 +92,7 @@ try:
     
     # delete_file(audio)
 
-    save_and_print_job_progress(db, job, 80, 'Generating video preview link')
+    save_and_print_job_progress(db, job, 85, 'Generating video preview link')
     minio_save_file = f'tavtr-{str(uuid4().hex)}.mp4'
     preview_url, download_url = minio_service.upload_to_minio(
         folder_name='talking-avatar',
