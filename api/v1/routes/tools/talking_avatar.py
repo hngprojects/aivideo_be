@@ -31,7 +31,7 @@ async def talking_head_image_upload(
     voice_id: Optional[str] = Form(None),
     custom_voice: Optional[UploadFile] = File(None),
     avatar_setting: Optional[str] = Form(None),
-    avatar_size: Optional[str] = Form('full'),
+    # avatar_size: Optional[str] = Form('full'),
     db: Session = Depends(get_db),
     user: Optional[User] = Depends(user_service.get_current_user_optional)
 ):
@@ -60,8 +60,8 @@ async def talking_head_image_upload(
     if avatar_id and voice_id:
         raise HTTPException(status_code=400, detail='Cannot select avatar and voice')
     
-    if avatar_size not in ['full', 'crop']:
-        raise HTTPException(status_code=400, detail='Avatar size must be `full` or `crop` value')
+    # if avatar_size not in ['full', 'crop']:
+    #     raise HTTPException(status_code=400, detail='Avatar size must be `full` or `crop` value')
     
     
     # Determine aspect ratio
@@ -110,7 +110,7 @@ async def talking_head_image_upload(
             'width': width,
             'height': height,
             'avatar_setting': avatar_setting,
-            'avatar_size': avatar_size,
+            # 'avatar_size': avatar_size,
         },
         user_id=user.id if user else None,
         is_parallel=False

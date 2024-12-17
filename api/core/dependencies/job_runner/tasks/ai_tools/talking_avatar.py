@@ -41,7 +41,7 @@ height=payload.get('height')
 script=payload.get('script')
 voice_url=payload.get('voice_url')
 avatar_setting=payload.get('avatar_setting')
-avatar_size=payload.get('avatar_size')
+# avatar_size=payload.get('avatar_size')
 bg_audio_file=bg_audio_file
 inpaint_image_url=None
 
@@ -57,7 +57,7 @@ try:
     url = replicate_service.generate_talking_avatar(
         image_url=inpaint_image_url if inpaint_image_url else image_url, 
         audio_url=audio_url,
-        generate_full=True if avatar_size=='full' else False
+        generate_full=True if inpaint_image_url else False
     )
 
     save_and_print_job_progress(db, job, 55, 'Downloading and saving generated video')
