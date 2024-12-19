@@ -23,7 +23,7 @@ class TelexIntegration:
             message (str): Message for the enent
             status (str, optional): Status of the event. Defaults to 'success'.
         """
-        
+                
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json"
@@ -37,7 +37,8 @@ class TelexIntegration:
         }
         
         try:
-            response = requests.post(self.url, headers=headers, json=data)
+            # response = requests.post(self.url, headers=headers, params=data)
+            response = requests.get(self.url, params=data)
             
             if response.status_code == 200:
                 app_logger.info('Message sent successfully to telex')
